@@ -3762,6 +3762,11 @@ msgid "settings.about.cli.installed_subtitle"
 msgstr "مثبَّت في {cliInstallPath}"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.ready"
+msgstr ""
+
+#. js-lingui-explicit-id
 #. placeholder {0}: cliInstallStatus.command
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.path_missing_info"
@@ -4372,6 +4377,11 @@ msgid "record.name.title"
 msgstr "تسمية التسجيل"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.locked"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle.v2"
 msgstr "يتطلب ترخيص Glimpse Plus مدفوعًا"
@@ -4655,6 +4665,11 @@ msgid "settings.local_api.model.none"
 msgstr "لا شيء"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.model.none"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.invalid_audio"
 msgstr "ملف الصوت غير صالح."
@@ -4688,6 +4703,11 @@ msgstr "مساحة القرص غير كافية."
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.applications.not_installed"
 msgstr "غير مثبَّت"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.not_installed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

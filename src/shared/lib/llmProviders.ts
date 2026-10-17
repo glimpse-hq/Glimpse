@@ -29,6 +29,14 @@ const LLM_PROVIDER_PRESETS: LlmProviderPreset[] = [
     onDevice: true,
   },
   {
+    id: "bonsai",
+    label: "G1",
+    endpoint: "",
+    defaultModel: "",
+    apiKeyRequired: false,
+    onDevice: true,
+  },
+  {
     id: "lmstudio",
     label: "LM Studio",
     endpoint: "http://localhost:1234/v1",

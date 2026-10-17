@@ -3762,6 +3762,11 @@ msgid "settings.about.cli.installed_subtitle"
 msgstr "{cliInstallPath} पर इंस्टॉल किया गया"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.ready"
+msgstr ""
+
+#. js-lingui-explicit-id
 #. placeholder {0}: cliInstallStatus.command
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.path_missing_info"
@@ -4372,6 +4377,11 @@ msgid "record.name.title"
 msgstr "रिकॉर्डिंग को नाम दें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.locked"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle.v2"
 msgstr "इसके लिए ख़रीदा हुआ Glimpse Plus लाइसेंस चाहिए"
@@ -4655,6 +4665,11 @@ msgid "settings.local_api.model.none"
 msgstr "कोई नहीं"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.model.none"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.invalid_audio"
 msgstr "यह मान्य ऑडियो फ़ाइल नहीं है।"
@@ -4688,6 +4703,11 @@ msgstr "डिस्क में पर्याप्त स्थान न�
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.applications.not_installed"
 msgstr "इंस्टॉल नहीं है"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.g1.not_installed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

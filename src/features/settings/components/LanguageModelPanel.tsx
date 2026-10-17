@@ -14,6 +14,11 @@ import { detectAppPlatform } from "../../../platform/service";
 type AppleLlmAvailability =
   "available" | "not_enabled" | "not_ready" | "unsupported";
 
+type G1Status = {
+  supported: boolean;
+  installed: { key: string; label: string }[];
+};
+
 type LanguageModelPanelProps = {
   llmProvider: LlmProvider;
   setLlmProvider: (value: LlmProvider) => void;
@@ -25,6 +30,7 @@ type LanguageModelPanelProps = {
   setLlmModel: (value: string) => void;
   availableModels: string[];
   fetchAvailableModels: () => void;
+  activeLicense: boolean;
 };
 
 const LanguageModelPanel = ({
@@ -38,14 +44,17 @@ const LanguageModelPanel = ({
   setLlmModel,
   availableModels,
   fetchAvailableModels,
+  activeLicense,
 }: LanguageModelPanelProps) => {
   const { t } = useLingui();
   const providerPreset = getProviderPreset(llmProvider);
   const hasSelectedProvider = Boolean(providerPreset);
   const isOnDevice = Boolean(providerPreset?.onDevice);
+  const isG1 = llmProvider === "bonsai";
   const isMac = detectAppPlatform() === "macos";
   const [appleAvailability, setAppleAvailability] =
     useState<AppleLlmAvailability | null>(null);
+  const [g1Status, setG1Status] = useState<G1Status | null>(null);
   const uniqueModels = Array.from(
     new Set(availableModels.map((model) => model.trim()).filter(Boolean)),
   );
@@ -67,9 +76,52 @@ const LanguageModelPanel = ({
     };
   }, [isMac]);
 
+  // Rescans on provider changes, so model files copied in meanwhile show up.
+  useEffect(() => {
+    if (!isMac) {
+      return;
+    }
+    let cancelled = false;
+    invoke<G1Status>("g1_status")
+      .then((value) => {
+        if (!cancelled) setG1Status(value);
+      })
+      .catch(() => {
+        if (!cancelled) setG1Status({ supported: false, installed: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isMac, llmProvider]);
+
   // Backend probe hides this on Windows, Intel Macs, and macOS < 26.
   const showAppleProvider =
     isMac && appleAvailability !== null && appleAvailability !== "unsupported";
+  // Hidden on Windows and Intel Macs.
+  const showG1Provider = isMac && Boolean(g1Status?.supported);
+  const g1Installed = g1Status?.installed ?? [];
+  const g1Model =
+    g1Installed.find((model) => model.key === llmModel)?.key ??
+    g1Installed[0]?.key ??
+    null;
+  const g1LockedText = t({
+    id: "settings.language_model.g1.locked",
+    message: "Needs a purchased Glimpse Plus license",
+  });
+
+  const g1StatusText = !activeLicense
+    ? g1LockedText
+    : g1Status === null
+      ? " "
+      : g1Installed.length > 0
+        ? t({
+            id: "settings.language_model.g1.ready",
+            message: "Installed on this Mac.",
+          })
+        : t({
+            id: "settings.language_model.g1.not_installed",
+            message: "Not installed.",
+          });
 
   const appleStatusText =
     appleAvailability === null
@@ -163,17 +215,25 @@ const LanguageModelPanel = ({
               }),
               isHeader: true,
             },
-            ...LOCAL_PROVIDERS.filter(
-              (p) => p.id !== "custom" && (!p.onDevice || showAppleProvider),
+            ...LOCAL_PROVIDERS.filter((p) =>
+              p.id === "apple"
+                ? showAppleProvider
+                : p.id === "bonsai"
+                  ? showG1Provider
+                  : p.id !== "custom",
             ).map((p) => ({
               value: p.id,
               label: p.label,
-              description: p.onDevice
-                ? t({
-                    id: "settings.language_model.provider.on_device",
-                    message: "On-device",
-                  })
-                : p.endpoint,
+              locked: p.id === "bonsai" && !activeLicense,
+              description:
+                p.id === "bonsai" && !activeLicense
+                  ? g1LockedText
+                  : p.onDevice
+                    ? t({
+                        id: "settings.language_model.provider.on_device",
+                        message: "On-device",
+                      })
+                    : p.endpoint,
             })),
             {
               value: "_cloud_header" as LlmProvider,
@@ -206,7 +266,9 @@ const LanguageModelPanel = ({
 
       {isOnDevice && (
         <div className="px-2 pb-1">
-          <p className="ui-text-meta ui-color-muted">{appleStatusText}</p>
+          <p className="ui-text-meta ui-color-muted">
+            {isG1 ? g1StatusText : appleStatusText}
+          </p>
         </div>
       )}
 
@@ -236,6 +298,37 @@ const LanguageModelPanel = ({
               id: "settings.language_model.api_key.aria.v2",
               message: "Writing model API key",
             })}
+          />
+        </div>
+      )}
+
+      {isG1 && (
+        <div className="px-2 pb-1">
+          <span className="ui-text-label-strong ui-color-primary block">
+            {t({
+              id: "settings.language_model.model",
+              message: "Model",
+            })}
+          </span>
+          <Dropdown
+            value={g1Model}
+            ariaLabel={t({
+              id: "settings.language_model.model",
+              message: "Model",
+            })}
+            onChange={(val) => setLlmModel(val)}
+            options={g1Installed.map((model) => ({
+              value: model.key,
+              label: model.label,
+            }))}
+            placeholder={t({
+              id: "settings.language_model.g1.model.none",
+              message: "None installed",
+            })}
+            disabled={g1Installed.length < 2}
+            className="mt-2"
+            buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"
+            menuClassName="min-w-[260px]"
           />
         </div>
       )}
