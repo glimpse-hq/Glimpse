@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import ModelRow, { type ModelRowProps } from "./ModelRow";
 
-const WAVE_ROWS = 7;
-const WAVE_COLS = 12;
+const WAVE_ROWS = 5;
+const WAVE_COLS = 5;
 const WAVE_CENTER = (WAVE_ROWS - 1) / 2;
 
 // A wave seeded by the provider and model, as on the old model cards, so each
@@ -26,15 +26,9 @@ const waveDots = (seed: string): number[] => {
 };
 
 const TONES = {
-  cloud: {
-    dots: "var(--model-wave-cloud)",
-    glow: "var(--model-wave-glow-soft-cloud)",
-  },
-  server: {
-    dots: "var(--model-wave-whisper)",
-    glow: "var(--model-wave-glow-soft-whisper)",
-  },
-  none: { dots: "var(--color-border-secondary)", glow: "transparent" },
+  cloud: "var(--model-wave-cloud)",
+  server: "var(--model-wave-whisper)",
+  none: "var(--color-border-secondary)",
 };
 
 type ProviderCardProps = Omit<ModelRowProps, "leading" | "surfaceClassName"> & {
@@ -42,21 +36,15 @@ type ProviderCardProps = Omit<ModelRowProps, "leading" | "surfaceClassName"> & {
   seed: string;
 };
 
-// The server or cloud provider of a section, above its on-device list.
+// The server or cloud provider of a section, above its on-device list: a
+// normal row in a hairline border, marked with a small model wave.
 const ProviderCard = ({ kind, seed, ...row }: ProviderCardProps) => {
   const dots = useMemo(() => waveDots(seed), [seed]);
-  const tone = TONES[kind];
 
   return (
-    <div
-      className="overflow-hidden rounded-xl border border-border-secondary"
-      style={{
-        background: `radial-gradient(70% 160% at 0% 50%, ${tone.glow}, transparent 70%)`,
-      }}
-    >
+    <div className="rounded-lg border border-border-primary">
       <ModelRow
         {...row}
-        surfaceClassName="py-1"
         leading={
           <DotMatrix
             aria-hidden="true"
@@ -64,8 +52,8 @@ const ProviderCard = ({ kind, seed, ...row }: ProviderCardProps) => {
             cols={WAVE_COLS}
             activeDots={dots}
             dotSize={2}
-            gap={3}
-            color={tone.dots}
+            gap={2}
+            color={TONES[kind]}
             className="shrink-0"
           />
         }
