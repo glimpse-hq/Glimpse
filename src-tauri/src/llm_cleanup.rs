@@ -1050,10 +1050,35 @@ const NUMBER_WORDS: &str = "zero one two three four five six seven eight nine te
     eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth \
     eighteenth nineteenth twentieth thirtieth";
 
+// Whole words first: "won't" and "can't" don't follow the "n't" rule.
+const CONTRACTIONS: &[(&str, &str)] = &[
+    ("won't", "will not"),
+    ("can't", "can not"),
+    ("shan't", "shall not"),
+    ("n't", " not"),
+    ("'re", " are"),
+    ("'ll", " will"),
+    ("'ve", " have"),
+    ("'m", " am"),
+    ("'d", " would"),
+];
+
+// Contractions compare equal to their expansions, so "isn't" matches "is not".
+fn expand_contraction(word: &str) -> Vec<String> {
+    let word = word.trim_matches('\'');
+    let expanded = CONTRACTIONS
+        .iter()
+        .find_map(|(short, long)| word.strip_suffix(short).map(|stem| format!("{stem}{long}")))
+        .unwrap_or_else(|| word.to_string());
+    expanded.split(['\'', ' ']).map(str::to_string).collect()
+}
+
 fn significant_tokens(text: &str) -> HashSet<String> {
-    text.split(|ch: char| !ch.is_alphanumeric())
+    text.to_lowercase()
+        .replace('\u{2019}', "'")
+        .split(|ch: char| !ch.is_alphanumeric() && ch != '\'')
+        .flat_map(expand_contraction)
         .filter_map(|token| {
-            let token = token.trim().to_lowercase();
             let digits = ["st", "nd", "rd", "th"]
                 .iter()
                 .find_map(|suffix| token.strip_suffix(suffix))
@@ -1334,6 +1359,20 @@ mod tests {
         assert!(!cleanup_result_looks_safe(
             "So I talked to the design team this morning and they said the new onboarding flow is mostly done but they still need to finish the pricing screen and the empty states",
             "Onboarding is mostly done.",
+            false
+        ));
+    }
+
+    #[test]
+    fn cleanup_safety_treats_contractions_as_their_expansions() {
+        assert!(cleanup_result_looks_safe(
+            "the build is not ready so we will not ship it today and they are not happy",
+            "The build isn't ready, so we won't ship it today and they aren't happy.",
+            false
+        ));
+        assert!(cleanup_result_looks_safe(
+            "We\u{2019}re sure it doesn\u{2019}t work and they\u{2019}ve said we\u{2019}ll fix it",
+            "We are sure it does not work, and they have said we will fix it.",
             false
         ));
     }
