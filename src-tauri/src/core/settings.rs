@@ -195,14 +195,6 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("AI Cleanup cannot be enabled without an active language model".into());
     }
 
-    if args.llm_enabled
-        && args.llm_provider == crate::llm_cleanup::BONSAI_PROVIDER
-        && !args.llm_model.trim().is_empty()
-        && crate::speech::catalog::g1_definition(args.llm_model.trim()).is_none()
-    {
-        return Err("Unknown G1 model selection".into());
-    }
-
     if args.llm_enabled && !crate::llm_cleanup::is_on_device_provider(&args.llm_provider) {
         if args.llm_endpoint.trim().is_empty() {
             return Err("Language model endpoint cannot be empty".into());

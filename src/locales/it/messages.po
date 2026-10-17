@@ -848,6 +848,11 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.g1.model.none"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse trasforma la mia voce in testo.»"
@@ -4663,11 +4668,6 @@ msgstr "Nessuna parola rilevata. La registrazione è in Home, dove puoi riprovar
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none"
 msgstr "Nessuno"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.g1.model.none"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts

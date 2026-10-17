@@ -223,33 +223,6 @@ const G1_2B_FILES: &[CatalogFile] = &[
     ),
 ];
 
-const G1_4B_FILES: &[CatalogFile] = &[
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/model.safetensors",
-        "model.safetensors",
-    ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/config.json",
-        "config.json",
-    ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/tokenizer.json",
-        "tokenizer.json",
-    ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/adapter.safetensors",
-        "adapter.safetensors",
-    ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/LICENSE",
-        "LICENSE",
-    ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/NOTICE.txt",
-        "NOTICE.txt",
-    ),
-];
-
 /// Core ML encoder companions for transcribe.cpp models, unpacked next to the
 /// GGUF as `<gguf stem>-encoder.mlmodelc` (the name the engine looks for).
 struct TranscribeAneEncoder {
@@ -1123,34 +1096,19 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
 // G1, the on-device cleanup model, run by glimpse-language rather than the
 // speech service. The install manager treats every engine but Apple alike, so
 // `engine` only keeps these out of the Apple paths.
-pub const G1_MANIFESTS: &[LocalModelManifest] = &[
-    LocalModelManifest {
-        id: "g1_2b",
-        family: "g1",
-        label: "G1 2B",
-        description: "Cleans up dictation on this Mac.",
-        tags: &[],
-        category: MODEL_CATEGORY_CLEANUP,
-        engine: LocalModelEngine::Transcribe,
-        languages: Languages::None,
-        variant: "2B",
-        files: G1_2B_FILES,
-        capabilities: &[],
-    },
-    LocalModelManifest {
-        id: "g1_4b",
-        family: "g1",
-        label: "G1 4B",
-        description: "Cleans up dictation on this Mac.",
-        tags: &[],
-        category: MODEL_CATEGORY_CLEANUP,
-        engine: LocalModelEngine::Transcribe,
-        languages: Languages::None,
-        variant: "4B",
-        files: G1_4B_FILES,
-        capabilities: &[],
-    },
-];
+pub const G1_MANIFEST: LocalModelManifest = LocalModelManifest {
+    id: "g1_2b",
+    family: "g1",
+    label: "G1 2B",
+    description: "Cleans up dictation on this Mac.",
+    tags: &[],
+    category: MODEL_CATEGORY_CLEANUP,
+    engine: LocalModelEngine::Transcribe,
+    languages: Languages::None,
+    variant: "2B",
+    files: G1_2B_FILES,
+    capabilities: &[],
+};
 
 /// Automatic walks this in order and takes the first model that covers the
 /// user's languages. The first one usable here is also the stock default.
@@ -1289,7 +1247,7 @@ pub(crate) fn installable_definition(key: &str) -> Option<&'static LocalModelMan
 }
 
 pub fn g1_definition(key: &str) -> Option<&'static LocalModelManifest> {
-    G1_MANIFESTS.iter().find(|manifest| manifest.id == key)
+    (key == G1_MANIFEST.id).then_some(&G1_MANIFEST)
 }
 
 fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {

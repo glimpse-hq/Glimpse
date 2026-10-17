@@ -197,7 +197,7 @@ pub fn is_llm_available(settings: &UserSettings) -> bool {
         return apple_llm_ready();
     }
     if uses_bonsai_provider(settings) {
-        return crate::g1::resolve(settings).is_some();
+        return crate::g1::resolve().is_some();
     }
     settings.llm_provider != "none"
         && !settings.llm_endpoint.trim().is_empty()
@@ -229,7 +229,7 @@ pub fn prewarm_cleanup(settings: &UserSettings) {
             if let Err(err) = glimpse_language::apple::apple_prewarm(&prompt) {
                 tracing::debug!("[Apple LLM] prewarm skipped: {err}");
             }
-        } else if let Err(err) = crate::g1::prewarm(&settings, &prompt) {
+        } else if let Err(err) = crate::g1::prewarm(&prompt) {
             tracing::debug!("[G1] prewarm skipped: {err}");
         }
     });
@@ -248,9 +248,8 @@ pub fn prewarm_edit(settings: &UserSettings) {
             }
         });
     } else if uses_bonsai_provider(settings) {
-        let settings = settings.clone();
-        std::thread::spawn(move || {
-            if let Err(err) = crate::g1::prewarm(&settings, EDIT_PROMPT.trim()) {
+        std::thread::spawn(|| {
+            if let Err(err) = crate::g1::prewarm(EDIT_PROMPT.trim()) {
                 tracing::debug!("[G1] edit prewarm skipped: {err}");
             }
         });
@@ -263,9 +262,7 @@ pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {
     } else if uses_apple_provider(settings) {
         Some(APPLE_PROVIDER.to_string())
     } else if uses_bonsai_provider(settings) {
-        crate::g1::resolve(settings)
-            .and_then(crate::g1::size_label)
-            .map(|size| format!("{BONSAI_PROVIDER}:{size}"))
+        crate::g1::resolve().map(|_| format!("{BONSAI_PROVIDER}:2b"))
     } else {
         configured_model(settings).map(|model| format!("{}:{model}", settings.llm_provider.trim()))
     }
@@ -591,8 +588,8 @@ async fn run_text_task(
         task.max_tokens()
     };
     if uses_bonsai_provider(settings) {
-        let model = crate::g1::resolve(settings)
-            .ok_or_else(|| remote_lib::config_error("G1 is not installed"))?;
+        let model =
+            crate::g1::resolve().ok_or_else(|| remote_lib::config_error("G1 is not installed"))?;
         let raw =
             run_bonsai_text_task(model, on_device_max_tokens, system_prompt, user_content).await?;
         return Ok(

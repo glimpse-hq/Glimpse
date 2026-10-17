@@ -848,6 +848,11 @@ msgstr ""
 #~ msgstr "Your dictation stays on this computer"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.g1.model.none"
+#~ msgstr "None installed"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -4663,11 +4668,6 @@ msgstr "No words detected. The recording is in Home, where you can retry it."
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none"
 msgstr "None"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.g1.model.none"
-msgstr "None installed"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts

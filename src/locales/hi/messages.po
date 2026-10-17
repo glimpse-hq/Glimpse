@@ -848,6 +848,11 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.g1.model.none"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -4663,11 +4668,6 @@ msgstr "कोई शब्द नहीं मिले। रिकॉर्�
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none"
 msgstr "कोई नहीं"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.g1.model.none"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts

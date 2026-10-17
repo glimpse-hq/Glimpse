@@ -848,6 +848,11 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.g1.model.none"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -4663,11 +4668,6 @@ msgstr "Geen woorden herkend. De opname staat in Home, waar je het opnieuw kunt 
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none"
 msgstr "Geen"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.g1.model.none"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts

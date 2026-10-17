@@ -16,7 +16,7 @@ type AppleLlmAvailability =
 
 type G1Status = {
   supported: boolean;
-  installed: { key: string; label: string }[];
+  installed: boolean;
 };
 
 type LanguageModelPanelProps = {
@@ -87,7 +87,7 @@ const LanguageModelPanel = ({
         if (!cancelled) setG1Status(value);
       })
       .catch(() => {
-        if (!cancelled) setG1Status({ supported: false, installed: [] });
+        if (!cancelled) setG1Status({ supported: false, installed: false });
       });
     return () => {
       cancelled = true;
@@ -99,11 +99,6 @@ const LanguageModelPanel = ({
     isMac && appleAvailability !== null && appleAvailability !== "unsupported";
   // Hidden on Windows and Intel Macs.
   const showG1Provider = isMac && Boolean(g1Status?.supported);
-  const g1Installed = g1Status?.installed ?? [];
-  const g1Model =
-    g1Installed.find((model) => model.key === llmModel)?.key ??
-    g1Installed[0]?.key ??
-    null;
   const g1LockedText = t({
     id: "settings.language_model.g1.locked",
     message: "Needs a purchased Glimpse Plus license",
@@ -113,7 +108,7 @@ const LanguageModelPanel = ({
     ? g1LockedText
     : g1Status === null
       ? " "
-      : g1Installed.length > 0
+      : g1Status.installed
         ? t({
             id: "settings.language_model.g1.ready",
             message: "Installed on this Mac.",
@@ -298,37 +293,6 @@ const LanguageModelPanel = ({
               id: "settings.language_model.api_key.aria.v2",
               message: "Writing model API key",
             })}
-          />
-        </div>
-      )}
-
-      {isG1 && (
-        <div className="px-2 pb-1">
-          <span className="ui-text-label-strong ui-color-primary block">
-            {t({
-              id: "settings.language_model.model",
-              message: "Model",
-            })}
-          </span>
-          <Dropdown
-            value={g1Model}
-            ariaLabel={t({
-              id: "settings.language_model.model",
-              message: "Model",
-            })}
-            onChange={(val) => setLlmModel(val)}
-            options={g1Installed.map((model) => ({
-              value: model.key,
-              label: model.label,
-            }))}
-            placeholder={t({
-              id: "settings.language_model.g1.model.none",
-              message: "None installed",
-            })}
-            disabled={g1Installed.length < 2}
-            className="mt-2"
-            buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"
-            menuClassName="min-w-[260px]"
           />
         </div>
       )}

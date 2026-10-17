@@ -15,15 +15,15 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
 use crate::AppRuntime;
-use crate::settings::{SettingsStore, UserSettings};
-use crate::speech::catalog::{G1_MANIFESTS, g1_definition};
+use crate::settings::SettingsStore;
+use crate::speech::catalog::G1_MANIFEST;
 
 // bonsai/train.py's export first, then a PEFT adapter (which reads
 // adapter_config.json next to it). Without either, the base model runs.
 const ADAPTER_FILES: [&str; 2] = ["adapter.safetensors", "adapter_model.safetensors"];
 const ADAPTER_CONFIG: &str = "adapter_config.json";
-// Frees the GPU state and cached prompt (about 235 MB on the 2B, 670 MB on
-// the 4B); the next request rebuilds them in a few tens of ms.
+// Frees the GPU state and cached prompt (about 235 MB); the next request
+// rebuilds them in a few tens of ms.
 const IDLE_AFTER_USE: Duration = Duration::from_secs(30);
 // A prewarm happens when recording starts, so it has to outlast the recording.
 const IDLE_AFTER_PREWARM: Duration = Duration::from_secs(5 * 60);
@@ -31,13 +31,12 @@ const IDLE_AFTER_PREWARM: Duration = Duration::from_secs(5 * 60);
 struct Runtime {
     models_dir: PathBuf,
     store: Arc<SettingsStore>,
-    installed: Mutex<Vec<&'static str>>,
+    installed: AtomicBool,
     loaded: Mutex<Option<Loaded>>,
     uses: AtomicU64,
 }
 
 struct Loaded {
-    model: &'static str,
     files: Vec<Option<(u64, SystemTime)>>,
     bonsai: Arc<Bonsai>,
 }
@@ -74,7 +73,7 @@ fn start(models_dir: PathBuf, store: Arc<SettingsStore>) {
     let _ = RUNTIME.set(Runtime {
         models_dir,
         store,
-        installed: Mutex::new(Vec::new()),
+        installed: AtomicBool::new(false),
         loaded: Mutex::new(None),
         uses: AtomicU64::new(0),
     });
@@ -85,49 +84,29 @@ fn supported() -> bool {
     bonsai::availability() == Availability::Available
 }
 
-/// Rescans the model directories. A few file checks; keep it off the keypress
+/// Rescans the model directory. A few file checks; keep it off the keypress
 /// path.
-pub fn refresh_installed() -> Vec<&'static str> {
+pub fn refresh_installed() -> bool {
     let Some(runtime) = RUNTIME.get() else {
-        return Vec::new();
+        return false;
     };
-    let installed: Vec<&'static str> = if supported() {
-        G1_MANIFESTS
-            .iter()
-            .filter(|manifest| {
-                bonsai::describe(&runtime.models_dir.join(manifest.id))
-                    .is_ok_and(|info| info.size.label() == manifest.variant)
-            })
-            .map(|manifest| manifest.id)
-            .collect()
-    } else {
-        Vec::new()
-    };
-    *runtime.installed.lock() = installed.clone();
-    let mut loaded = runtime.loaded.lock();
-    if loaded
-        .as_ref()
-        .is_some_and(|loaded| !installed.contains(&loaded.model))
-        && let Some(old) = loaded.take()
-    {
+    let installed = supported()
+        && bonsai::describe(&runtime.models_dir.join(G1_MANIFEST.id))
+            .is_ok_and(|info| info.size.label() == G1_MANIFEST.variant);
+    runtime.installed.store(installed, Ordering::SeqCst);
+    if !installed && let Some(old) = runtime.loaded.lock().take() {
         old.bonsai.release_idle();
     }
     installed
 }
 
-/// The installed model to run: the one chosen in `llm_model`, else the
-/// smallest. Cheap, safe per dictation.
-pub fn resolve(settings: &UserSettings) -> Option<&'static str> {
-    let installed = RUNTIME.get()?.installed.lock();
-    installed
-        .iter()
-        .find(|id| **id == settings.llm_model.trim())
-        .or_else(|| installed.first())
-        .copied()
-}
-
-pub fn size_label(model: &str) -> Option<String> {
-    g1_definition(model).map(|manifest| manifest.variant.to_ascii_lowercase())
+/// The model to run, if it is installed. Cheap, safe per dictation.
+pub fn resolve() -> Option<&'static str> {
+    RUNTIME
+        .get()?
+        .installed
+        .load(Ordering::SeqCst)
+        .then_some(G1_MANIFEST.id)
 }
 
 fn error(kind: BonsaiErrorKind, message: &str) -> BonsaiError {
@@ -151,7 +130,6 @@ fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiErr
     let files = file_stamps(&dir);
     let mut loaded = runtime.loaded.lock();
     if let Some(current) = loaded.as_ref()
-        && current.model == model
         && current.files == files
     {
         return Ok(Arc::clone(&current.bonsai));
@@ -172,7 +150,6 @@ fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiErr
         adapter.is_some()
     );
     *loaded = Some(Loaded {
-        model,
         files,
         bonsai: Arc::clone(&bonsai),
     });
@@ -191,10 +168,9 @@ fn release_when_idle(runtime: &'static Runtime, bonsai: Arc<Bonsai>, after: Dura
 
 /// Loads the model and caches `system_prompt`'s state for the next request.
 /// Blocking.
-pub fn prewarm(settings: &UserSettings, system_prompt: &str) -> Result<(), BonsaiError> {
+pub fn prewarm(system_prompt: &str) -> Result<(), BonsaiError> {
     let runtime = runtime_for_use()?;
-    let model =
-        resolve(settings).ok_or_else(|| error(BonsaiErrorKind::Load, "G1 is not installed"))?;
+    let model = resolve().ok_or_else(|| error(BonsaiErrorKind::Load, "G1 is not installed"))?;
     let bonsai = load(runtime, model)?;
     runtime.uses.fetch_add(1, Ordering::SeqCst);
     let result = bonsai.prewarm(system_prompt);
@@ -226,27 +202,14 @@ pub fn generate(
 #[serde(rename_all = "camelCase")]
 pub struct G1Status {
     supported: bool,
-    installed: Vec<G1Model>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct G1Model {
-    key: &'static str,
-    label: &'static str,
+    installed: bool,
 }
 
 #[tauri::command]
 pub async fn g1_status() -> Result<G1Status, String> {
     tauri::async_runtime::spawn_blocking(|| G1Status {
         supported: RUNTIME.get().is_some() && supported(),
-        installed: refresh_installed()
-            .into_iter()
-            .filter_map(g1_definition)
-            .map(|manifest| G1Model {
-                key: manifest.id,
-                label: manifest.label,
-            })
-            .collect(),
+        installed: refresh_installed(),
     })
     .await
     .map_err(|err| err.to_string())
@@ -287,11 +250,8 @@ mod tests {
     fn cleans_up_through_the_provider_path() {
         let source = PathBuf::from(std::env::var("G1_TEST_MODEL").expect("G1_TEST_MODEL"));
         let size = bonsai::describe(&source).unwrap().size;
-        let id = G1_MANIFESTS
-            .iter()
-            .find(|manifest| manifest.variant == size.label())
-            .unwrap()
-            .id;
+        assert_eq!(size.label(), G1_MANIFEST.variant);
+        let id = G1_MANIFEST.id;
         let root = std::env::temp_dir().join(format!("g1-test-{}", std::process::id()));
         let dir = root.join("models").join(id);
         std::fs::create_dir_all(&dir).unwrap();
@@ -313,9 +273,9 @@ mod tests {
         }
         let store = Arc::new(SettingsStore::open(root.join("settings.db")).unwrap());
         start(root.join("models"), store);
-        assert_eq!(refresh_installed(), vec![id]);
+        assert!(refresh_installed());
 
-        let settings = UserSettings {
+        let settings = crate::settings::UserSettings {
             llm_enabled: true,
             cleanup_enabled: true,
             llm_provider: crate::llm_cleanup::BONSAI_PROVIDER.to_string(),
