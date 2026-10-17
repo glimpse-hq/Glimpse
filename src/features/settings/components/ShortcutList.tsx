@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
 import { Broom, DotsThree, Ghost, Trash } from "@phosphor-icons/react";
 import HoverTip from "../../../shared/ui/HoverTip";
 import SettingCard from "../../../shared/ui/SettingCard";
+import Checkbox from "../../../shared/ui/Checkbox";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
@@ -198,29 +198,29 @@ const ShortcutList = ({
                 buttonClassName="h-7 !rounded-md !border-0 !bg-transparent !px-1 !py-0 ui-text-body-sm hover:!bg-transparent"
                 menuClassName="!left-auto min-w-[220px]"
               />
-              <IconCheckbox
-                checked={binding.cleanup_enabled}
-                disabled={cleanupDisabled}
-                tone="cloud"
-                label={`${cleanupLabel}, ${display}`}
-                onChange={() =>
-                  onUpdate(mode, index, {
-                    cleanup_enabled: !binding.cleanup_enabled,
-                  })
-                }
-              >
-                <Broom size={13} aria-hidden="true" />
-              </IconCheckbox>
-              <IconCheckbox
-                checked={binding.temporary}
-                tone="local"
-                label={`${notSavedLabel}, ${display}`}
-                onChange={() =>
-                  onUpdate(mode, index, { temporary: !binding.temporary })
-                }
-              >
-                <Ghost size={13} aria-hidden="true" />
-              </IconCheckbox>
+              <div className="flex w-6 justify-center justify-self-center">
+                <Checkbox
+                  checked={binding.cleanup_enabled}
+                  disabled={cleanupDisabled}
+                  tone="cloud"
+                  ariaLabel={`${cleanupLabel}, ${display}`}
+                  onChange={() =>
+                    onUpdate(mode, index, {
+                      cleanup_enabled: !binding.cleanup_enabled,
+                    })
+                  }
+                />
+              </div>
+              <div className="flex w-6 justify-center justify-self-center">
+                <Checkbox
+                  checked={binding.temporary}
+                  tone="local"
+                  ariaLabel={`${notSavedLabel}, ${display}`}
+                  onChange={() =>
+                    onUpdate(mode, index, { temporary: !binding.temporary })
+                  }
+                />
+              </div>
               <ShortcutRowMenu
                 canRemove={rows.length > 1}
                 onRemove={() => onRemove(mode, index)}
@@ -241,41 +241,6 @@ const ShortcutList = ({
     </SettingCard>
   );
 };
-
-// Checked uses the feature's color: amber for Clean up, indigo for the ghost.
-const IconCheckbox = ({
-  checked,
-  disabled = false,
-  tone,
-  label,
-  onChange,
-  children,
-}: {
-  checked: boolean;
-  disabled?: boolean;
-  tone: "cloud" | "local";
-  label: string;
-  onChange: () => void;
-  children: ReactNode;
-}) => (
-  <button
-    type="button"
-    role="checkbox"
-    aria-checked={checked}
-    aria-label={label}
-    disabled={disabled}
-    onClick={onChange}
-    className={`box-border flex h-6 w-6 items-center justify-center justify-self-center rounded-md border leading-none transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 ${
-      checked
-        ? tone === "cloud"
-          ? "ui-color-cloud bg-[var(--color-cloud-10)] border-[var(--color-cloud-30)]"
-          : "text-[var(--color-local)] bg-[var(--color-local-10)] border-[var(--color-local-30)]"
-        : "border-border-primary ui-color-muted hover:border-border-secondary hover:ui-color-secondary"
-    }`}
-  >
-    {children}
-  </button>
-);
 
 const ShortcutRowMenu = ({
   canRemove,

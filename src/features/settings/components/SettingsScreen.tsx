@@ -177,12 +177,6 @@ const SettingsScreen = ({
                 availableModels={form.availableModels}
                 fetchAvailableModels={form.fetchAvailableModels}
                 activeLicense={form.activeLicense}
-                cleanupShortcutsOn={
-                  form.licenseGateActive &&
-                  Object.values(form.shortcutBindings).some((bindings) =>
-                    bindings.some((binding) => binding.cleanup_enabled),
-                  )
-                }
                 setLocalModel={form.setLocalModel}
                 handleDownload={form.handleDownload}
                 handleDelete={form.handleDelete}

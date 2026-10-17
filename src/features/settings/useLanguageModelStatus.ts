@@ -67,11 +67,6 @@ export function useLanguageModelStatus(
   return {
     appleAvailability,
     g1Installed: g1Status?.installed ?? null,
-    // The backend probe hides Apple on Windows, Intel Macs, and macOS < 26.
-    showApple:
-      isMac &&
-      appleAvailability !== null &&
-      appleAvailability !== "unsupported",
     showG1: isMac && Boolean(g1Status?.supported),
     ready,
   };

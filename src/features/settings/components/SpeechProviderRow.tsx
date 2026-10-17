@@ -1,24 +1,27 @@
+import { useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import {
   CLOUD_SPEECH_PROVIDERS,
   getSpeechProviderPreset,
   LOCAL_SPEECH_PROVIDERS,
+  resolvedSpeechModel,
   supportsSpeechProviderModelDiscovery,
 } from "../../../shared/lib/speechProviders";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import ApiKeyField from "../../../shared/ui/ApiKeyField";
-import ModelSourcePanel, {
+import ModelRow, {
   FIELD_BUTTON_CLASS,
+  ModelRowField,
   shortEndpoint,
-} from "./ModelSourcePanel";
+} from "./ModelRow";
 import type { RemoteSpeechProvider } from "../../../types";
 
-export type SpeechSource = RemoteSpeechProvider | "on_device";
-
-type SpeechModelPanelProps = {
-  source: SpeechSource;
-  onSourceChange: (source: SpeechSource) => void;
-  localModelLabel: string | null;
+type SpeechProviderRowProps = {
+  enabled: boolean;
+  setEnabled: (value: boolean) => void;
+  configReady: boolean;
+  provider: RemoteSpeechProvider;
+  setProvider: (value: RemoteSpeechProvider) => void;
   endpoint: string;
   setEndpoint: (value: string) => void;
   apiKey: string;
@@ -29,10 +32,12 @@ type SpeechModelPanelProps = {
   fetchAvailableModels: () => void;
 };
 
-const SpeechModelPanel = ({
-  source,
-  onSourceChange,
-  localModelLabel,
+const SpeechProviderRow = ({
+  enabled,
+  setEnabled,
+  configReady,
+  provider,
+  setProvider,
   endpoint,
   setEndpoint,
   apiKey,
@@ -41,81 +46,99 @@ const SpeechModelPanel = ({
   setModel,
   availableModels,
   fetchAvailableModels,
-}: SpeechModelPanelProps) => {
+}: SpeechProviderRowProps) => {
   const { t } = useLingui();
-  const provider = source === "on_device" ? null : source;
-  const providerPreset = provider ? getSpeechProviderPreset(provider) : null;
-  const canDiscoverModels =
-    provider !== null && supportsSpeechProviderModelDiscovery(provider);
+  const [expanded, setExpanded] = useState(false);
+  const preset = getSpeechProviderPreset(provider);
+  const isServer =
+    provider === "custom" ||
+    LOCAL_SPEECH_PROVIDERS.some((p) => p.id === provider);
+  const shown = enabled || configReady;
   const uniqueModels = Array.from(
-    new Set(availableModels.map((model) => model.trim()).filter(Boolean)),
+    new Set(availableModels.map((value) => value.trim()).filter(Boolean)),
   );
   const modelValue = model || "auto";
   const defaultModel =
-    providerPreset?.defaultModel ||
+    preset?.defaultModel ||
     t({
       id: "settings.speech_model.model.provider_default",
       message: "provider default",
     });
-  const label = t({
-    id: "settings.models.speech.transcribe_with",
-    message: "Transcribe with",
-  });
 
-  const selectSource = (value: SpeechSource) => {
-    if (value === source) return;
-    const preset =
-      value === "on_device" ? null : getSpeechProviderPreset(value);
-    if (preset) {
-      setEndpoint(preset.endpoint);
+  const selectProvider = (value: RemoteSpeechProvider) => {
+    if (value === provider) return;
+    const next = getSpeechProviderPreset(value);
+    if (enabled) setEnabled(false);
+    setProvider(value);
+    if (next) {
+      setEndpoint(next.endpoint);
       setModel("auto");
     }
-    onSourceChange(value);
   };
 
   return (
-    <ModelSourcePanel
-      label={label}
-      warning={source === "on_device" && !localModelLabel}
-      showFields={provider !== null}
-      location={
-        provider === null
-          ? "device"
-          : provider === "custom" ||
-              LOCAL_SPEECH_PROVIDERS.some((preset) => preset.id === provider)
-            ? "server"
-            : "cloud"
-      }
-      status={
-        localModelLabel
-          ? {
-              text: t({
-                id: "settings.models.status.ready",
-                message: "Ready",
-              }),
-              ready: true,
-            }
-          : {
-              text: t({
-                id: "settings.models.status.no_model",
-                message: "No model",
-              }),
-              ready: false,
-            }
-      }
-      guidance={
-        localModelLabel
-          ? null
+    <ModelRow
+      title={
+        shown && preset
+          ? preset.label
           : t({
-              id: "settings.models.speech.no_model",
-              message: "Download a speech model below.",
+              id: "settings.models.provider.title",
+              message: "Server or cloud",
             })
       }
-      select={
-        <Dropdown<SpeechSource>
-          value={source}
-          ariaLabel={label}
-          onChange={selectSource}
+      facts={
+        shown
+          ? [
+              isServer
+                ? t({
+                    id: "settings.models.group.server",
+                    message: "Local server",
+                  })
+                : t({ id: "settings.models.location.cloud", message: "Cloud" }),
+              resolvedSpeechModel(provider, model) ?? defaultModel,
+            ].join("  ·  ")
+          : t({
+              id: "settings.models.provider.facts",
+              message: "Your own endpoint or API key",
+            })
+      }
+      factsWarning={enabled && !configReady}
+      state={
+        enabled
+          ? {
+              kind: "active",
+              label: t({
+                id: "settings.models.card.active",
+                message: "Active",
+              }),
+            }
+          : configReady
+            ? { kind: "use", onUse: () => setEnabled(true) }
+            : {
+                kind: "use",
+                label: t({
+                  id: "settings.models.provider.set_up",
+                  message: "Set up",
+                }),
+                onUse: () => setExpanded(true),
+              }
+      }
+      expanded={expanded}
+      onToggleExpanded={() => setExpanded((value) => !value)}
+    >
+      <ModelRowField
+        label={t({
+          id: "settings.language_model.provider",
+          message: "Provider",
+        })}
+      >
+        <Dropdown<RemoteSpeechProvider>
+          value={provider}
+          ariaLabel={t({
+            id: "settings.language_model.provider",
+            message: "Provider",
+          })}
+          onChange={selectProvider}
           editableInput={
             provider === "custom"
               ? {
@@ -134,38 +157,17 @@ const SpeechModelPanel = ({
           }
           options={[
             {
-              value: "_device_header" as SpeechSource,
-              label: t({
-                id: "settings.models.group.this_computer",
-                message: "On this computer",
-              }),
-              isHeader: true,
-            },
-            {
-              value: "on_device" as const,
-              label:
-                localModelLabel ??
-                t({
-                  id: "settings.models.speech.no_model_label",
-                  message: "No model installed",
-                }),
-              description: t({
-                id: "settings.language_model.provider.on_device",
-                message: "On-device",
-              }),
-            },
-            {
-              value: "_local_header" as SpeechSource,
+              value: "_local_header" as RemoteSpeechProvider,
               label: t({
                 id: "settings.models.group.server",
                 message: "Local server",
               }),
               isHeader: true,
             },
-            ...LOCAL_SPEECH_PROVIDERS.map((preset) => ({
-              value: preset.id,
-              label: preset.label,
-              description: shortEndpoint(preset.endpoint),
+            ...LOCAL_SPEECH_PROVIDERS.map((p) => ({
+              value: p.id,
+              label: p.label,
+              description: shortEndpoint(p.endpoint),
             })),
             {
               value: "custom" as const,
@@ -179,16 +181,16 @@ const SpeechModelPanel = ({
               }),
             },
             {
-              value: "_cloud_header" as SpeechSource,
+              value: "_cloud_header" as RemoteSpeechProvider,
               label: t({
                 id: "settings.speech_model.provider.cloud.v2",
                 message: "Cloud (API key)",
               }),
               isHeader: true,
             },
-            ...CLOUD_SPEECH_PROVIDERS.map((preset) => ({
-              value: preset.id,
-              label: preset.label,
+            ...CLOUD_SPEECH_PROVIDERS.map((p) => ({
+              value: p.id,
+              label: p.label,
             })),
           ]}
           searchable
@@ -198,13 +200,18 @@ const SpeechModelPanel = ({
           })}
           buttonClassName={FIELD_BUTTON_CLASS}
         />
-      }
-      apiKeyField={
+      </ModelRowField>
+      <ModelRowField
+        label={t({
+          id: "settings.language_model.api_key.v2",
+          message: "API key",
+        })}
+      >
         <ApiKeyField
           value={apiKey}
           onChange={setApiKey}
           placeholder={
-            providerPreset?.apiKeyRequired
+            preset?.apiKeyRequired
               ? t({
                   id: "settings.speech_model.api_key.required",
                   message: "Required",
@@ -219,16 +226,19 @@ const SpeechModelPanel = ({
             message: "Remote speech API key",
           })}
         />
-      }
-      modelField={
+      </ModelRowField>
+      <ModelRowField
+        label={t({ id: "settings.language_model.model", message: "Model" })}
+      >
         <Dropdown
           value={modelValue}
-          ariaLabel={t({
-            id: "settings.speech_model.model",
-            message: "Model",
-          })}
+          ariaLabel={t({ id: "settings.speech_model.model", message: "Model" })}
           onChange={(val) => setModel(val)}
-          onOpen={canDiscoverModels ? fetchAvailableModels : undefined}
+          onOpen={
+            supportsSpeechProviderModelDiscovery(provider)
+              ? fetchAvailableModels
+              : undefined
+          }
           options={[
             {
               value: "auto",
@@ -237,18 +247,11 @@ const SpeechModelPanel = ({
                 message: `Automatic (${defaultModel})`,
               }),
             },
-            ...uniqueModels.map((model) => ({
-              value: model,
-              label: model,
-            })),
+            ...uniqueModels.map((value) => ({ value, label: value })),
             ...(modelValue !== "auto" && !uniqueModels.includes(modelValue)
               ? [{ value: modelValue, label: modelValue }]
               : []),
           ]}
-          placeholder={t({
-            id: "settings.speech_model.model.placeholder_default",
-            message: `Model (default: ${defaultModel})`,
-          })}
           searchable
           searchPlaceholder={t({
             id: "settings.speech_model.model.search",
@@ -256,9 +259,9 @@ const SpeechModelPanel = ({
           })}
           buttonClassName={FIELD_BUTTON_CLASS}
         />
-      }
-    />
+      </ModelRowField>
+    </ModelRow>
   );
 };
 
-export default SpeechModelPanel;
+export default SpeechProviderRow;
