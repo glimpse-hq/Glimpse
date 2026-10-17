@@ -20,7 +20,8 @@ import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { formatShortcutForDisplay } from "../../../../shared/lib/shortcuts";
-import type { DeviceInfo } from "../../../../types";
+import CleanupModelCard from "../CleanupModelCard";
+import type { DeviceInfo, LlmProvider } from "../../../../types";
 import type { TranscriptionLanguageOption } from "../../../../shared/lib/transcriptionLanguages";
 import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
 
@@ -66,6 +67,11 @@ type GeneralTabProps = {
   setAutoDictionaryEnabled: (value: boolean) => void;
   aiFeaturesReady: boolean;
   licenseGateActive: boolean;
+  activeLicense: boolean;
+  llmProvider: LlmProvider;
+  setLlmProvider: (value: LlmProvider) => void;
+  setLlmEndpoint: (value: string) => void;
+  llmConfigReady: boolean;
   onOpenAccountTab: () => void;
   onOpenProvidersTab: () => void;
 };
@@ -97,6 +103,11 @@ const GeneralTab = ({
   setAutoDictionaryEnabled,
   aiFeaturesReady,
   licenseGateActive,
+  activeLicense,
+  llmProvider,
+  setLlmProvider,
+  setLlmEndpoint,
+  llmConfigReady,
   onOpenAccountTab,
   onOpenProvidersTab,
 }: GeneralTabProps) => {
@@ -117,7 +128,6 @@ const GeneralTab = ({
     status: microphoneTestStatus,
   } = useMicrophoneTest(microphoneDevice);
   const aiFeaturesDisabled = !aiFeaturesReady;
-  const cleanupNeedsLicense = !licenseGateActive;
   const autoDictionaryBody = autoDictionarySupported
     ? t({
         id: "settings.general.auto_dictionary.body",
@@ -429,48 +439,49 @@ const GeneralTab = ({
             />
           </div>
 
-          {aiFeaturesDisabled && (
+          {!licenseGateActive && (
             <p className="ui-text-meta ui-color-muted px-0.5">
               <BrushCleaning
                 size={10}
                 className="me-1 inline-block align-[-1px]"
                 aria-hidden="true"
               />
-              {cleanupNeedsLicense
-                ? t({
-                    id: "settings.general.shortcuts.cleanup_locked.license_prefix.v2",
-                    message: "Cleanup comes with Glimpse Plus. Get it in",
-                  })
-                : t({
-                    id: "settings.general.shortcuts.cleanup_locked.provider_prefix",
-                    message: "Cleanup needs a writing model. Set one up in",
-                  })}{" "}
+              {t({
+                id: "settings.general.shortcuts.cleanup_locked.license_prefix.v2",
+                message: "Cleanup comes with Glimpse Plus. Get it in",
+              })}{" "}
               <button
                 type="button"
                 onClick={() => {
-                  if (cleanupNeedsLicense) {
-                    void invoke("track_gate_blocked", {
-                      feature: "cleanup",
-                    }).catch(() => {});
-                    onOpenAccountTab();
-                  } else {
-                    onOpenProvidersTab();
-                  }
+                  void invoke("track_gate_blocked", {
+                    feature: "cleanup",
+                  }).catch(() => {});
+                  onOpenAccountTab();
                 }}
                 className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
               >
-                {cleanupNeedsLicense
-                  ? t({
-                      id: "settings.general.shortcuts.cleanup_locked.account_link",
-                      message: "Account",
-                    })
-                  : t({
-                      id: "settings.general.shortcuts.cleanup_locked.providers_link",
-                      message: "Providers",
-                    })}
+                {t({
+                  id: "settings.general.shortcuts.cleanup_locked.account_link",
+                  message: "Account",
+                })}
               </button>
             </p>
           )}
+
+          <SectionLabel className="pt-4">
+            {t({
+              id: "settings.general.cleanup",
+              message: "Cleanup",
+            })}
+          </SectionLabel>
+          <CleanupModelCard
+            llmProvider={llmProvider}
+            setLlmProvider={setLlmProvider}
+            setLlmEndpoint={setLlmEndpoint}
+            llmConfigReady={llmConfigReady}
+            activeLicense={activeLicense}
+            onOpenProvidersTab={onOpenProvidersTab}
+          />
         </div>
 
         <div className="space-y-2">

@@ -853,6 +853,16 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.cleanup_locked.provider_prefix"
+#~ msgstr "تتطلب «التنظيف» نموذج كتابة. أعدّ واحدًا في"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.cleanup_locked.providers_link"
+#~ msgstr "الموفرون"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -1694,7 +1704,7 @@ msgid "models.card.built_in"
 msgstr "مدمج في Mac"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.ready"
 msgstr "مدمج في هذا الـ Mac."
 
@@ -1887,6 +1897,11 @@ msgid "model_picker.title"
 msgstr "اختر نموذجاً"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.model_placeholder"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.title"
 msgstr "اختر نموذجًا"
@@ -1923,6 +1938,11 @@ msgstr "جارٍ التنظيف..."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.cleanup"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup"
 msgstr "تنظيف"
 
@@ -1942,9 +1962,9 @@ msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
 msgstr "ميزة التنقيح متاحة مع Glimpse Plus. يمكنك الحصول عليها من"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup_locked.provider_prefix"
-msgstr "تتطلب «التنظيف» نموذج كتابة. أعدّ واحدًا في"
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.model_aria"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
@@ -2045,6 +2065,11 @@ msgstr "إغلاق المستجدات"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "إغلاق النافذة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -3767,7 +3792,7 @@ msgid "settings.about.cli.installed_subtitle"
 msgstr "مثبَّت في {cliInstallPath}"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.g1.ready"
 msgstr ""
 
@@ -4236,6 +4261,7 @@ msgid "native.menu.minimize"
 msgstr "تصغير"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model"
 msgstr "النموذج"
@@ -4382,7 +4408,7 @@ msgid "record.name.title"
 msgstr "تسمية التسجيل"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.g1.locked"
 msgstr ""
 
@@ -4705,7 +4731,7 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "غير مثبَّت"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.g1.not_installed"
 msgstr ""
 
@@ -4730,7 +4756,7 @@ msgid "library.retranscribe.timestamps_unsupported"
 msgstr "غير مدعوم من قِبَل هذا النموذج"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "غير مدعوم على هذا الـ Mac."
 
@@ -4795,7 +4821,7 @@ msgid "import.cat.auto_launch.on"
 msgstr "تشغيل"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.on_device"
 msgstr "على الجهاز"
 
@@ -5162,9 +5188,9 @@ msgid "settings.modal.tab.providers"
 msgstr "الموفِّرون"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup_locked.providers_link"
-msgstr "الموفرون"
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.providers_link"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -5931,6 +5957,16 @@ msgid "settings.models.cloud.set_up"
 msgstr "إعداد"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_setup_prefix"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.settings"
 msgstr "الإعدادات"
@@ -6520,7 +6556,7 @@ msgid "settings.error.api_server_restart"
 msgstr "لم يتوقف خادم API، لذا تعذّرت إعادة تشغيله."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.not_ready"
 msgstr "نموذج Apple Intelligence لا يزال قيد التنزيل."
 
@@ -6826,7 +6862,7 @@ msgid "onboarding.first_dictation.title.v2"
 msgstr "جرّب أول إملاء لك"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.not_enabled"
 msgstr "شغِّل Apple Intelligence في إعدادات النظام لاستخدام هذه الميزة."
 
@@ -7001,6 +7037,11 @@ msgid "settings.models.automatic.uses"
 msgstr "يستخدم {modelLabel} للغتك"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_ready_prefix"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.description"
 msgstr "يستخدم النموذج للغتك"
@@ -7009,6 +7050,11 @@ msgstr "يستخدم النموذج للغتك"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.help_writing"
 msgstr "يستخدم نموذج الكتابة لهذا الاختصار فقط. يُرتّب ما تمليه، ويُعيد صياغة النص المحدد عند نطق تعليمة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_custom_prefix"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

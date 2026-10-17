@@ -149,6 +149,11 @@ const SettingsScreen = ({
                 setAutoDictionaryEnabled={form.setAutoDictionaryEnabled}
                 aiFeaturesReady={form.aiFeaturesReady}
                 licenseGateActive={form.licenseGateActive}
+                activeLicense={form.activeLicense}
+                llmProvider={form.llmProvider}
+                setLlmProvider={form.setLlmProvider}
+                setLlmEndpoint={form.setLlmEndpoint}
+                llmConfigReady={form.llmConfigReady}
                 onOpenAccountTab={() => onPaneChange("account")}
                 onOpenProvidersTab={() => onPaneChange("providers")}
               />
@@ -201,7 +206,6 @@ const SettingsScreen = ({
                 setRemoteSpeechModel={form.setRemoteSpeechModel}
                 availableSpeechModels={form.availableSpeechModels}
                 fetchAvailableSpeechModels={form.fetchAvailableSpeechModels}
-                activeLicense={form.activeLicense}
                 onOpenModelsTab={() => onPaneChange("models")}
                 onOpenGeneralTab={() => onPaneChange("general")}
               />

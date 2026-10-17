@@ -853,6 +853,16 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.cleanup_locked.provider_prefix"
+#~ msgstr "Cleanup benötigt ein Schreibmodell. Richten Sie eines ein in"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.cleanup_locked.providers_link"
+#~ msgstr "Anbieter"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -1694,7 +1704,7 @@ msgid "models.card.built_in"
 msgstr "Im Mac integriert"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.ready"
 msgstr "In diesem Mac integriert."
 
@@ -1887,6 +1897,11 @@ msgid "model_picker.title"
 msgstr "Modell auswählen"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.model_placeholder"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.title"
 msgstr "Modell auswählen"
@@ -1923,6 +1938,11 @@ msgstr "Wird bereinigt …"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.cleanup"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup"
 msgstr "Bereinigung"
 
@@ -1942,9 +1962,9 @@ msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
 msgstr "Die Bereinigung ist in Glimpse Plus enthalten. Hol es dir unter"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup_locked.provider_prefix"
-msgstr "Cleanup benötigt ein Schreibmodell. Richten Sie eines ein in"
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.model_aria"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
@@ -2045,6 +2065,11 @@ msgstr "„Was ist neu?“ schließen"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "Fenster schließen"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -3767,7 +3792,7 @@ msgid "settings.about.cli.installed_subtitle"
 msgstr "Installiert unter {cliInstallPath}"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.g1.ready"
 msgstr ""
 
@@ -4236,6 +4261,7 @@ msgid "native.menu.minimize"
 msgstr "Minimieren"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model"
 msgstr "Modell"
@@ -4382,7 +4408,7 @@ msgid "record.name.title"
 msgstr "Aufnahme benennen"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.g1.locked"
 msgstr ""
 
@@ -4705,7 +4731,7 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "Nicht installiert"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.g1.not_installed"
 msgstr ""
 
@@ -4730,7 +4756,7 @@ msgid "library.retranscribe.timestamps_unsupported"
 msgstr "Von diesem Modell nicht unterstützt"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "Auf diesem Mac nicht unterstützt."
 
@@ -4795,7 +4821,7 @@ msgid "import.cat.auto_launch.on"
 msgstr "Ein"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.on_device"
 msgstr "Auf dem Gerät"
 
@@ -5162,9 +5188,9 @@ msgid "settings.modal.tab.providers"
 msgstr "Anbieter"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup_locked.providers_link"
-msgstr "Anbieter"
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.providers_link"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -5931,6 +5957,16 @@ msgid "settings.models.cloud.set_up"
 msgstr "Einrichten"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_setup_prefix"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.settings"
 msgstr "Einstellungen"
@@ -6520,7 +6556,7 @@ msgid "settings.error.api_server_restart"
 msgstr "Der API-Server wurde nicht beendet und konnte daher nicht neu gestartet werden."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.not_ready"
 msgstr "Das Apple Intelligence-Modell wird noch geladen."
 
@@ -6826,7 +6862,7 @@ msgid "onboarding.first_dictation.title.v2"
 msgstr "Probiere deine erste Diktataufnahme aus"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.apple.not_enabled"
 msgstr "Aktiviere Apple Intelligence in den Systemeinstellungen, um dies zu verwenden."
 
@@ -7001,6 +7037,11 @@ msgid "settings.models.automatic.uses"
 msgstr "Verwendet {modelLabel} für Ihre Sprache"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_ready_prefix"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.description"
 msgstr "Verwendet das Modell für Ihre Sprache"
@@ -7009,6 +7050,11 @@ msgstr "Verwendet das Modell für Ihre Sprache"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.help_writing"
 msgstr "Verwendet das Schreibmodell nur für diesen Kurzbefehl. Es bereinigt, was du diktierst, und schreibt ausgewählten Text um, wenn du eine Anweisung sprichst."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.cloud_custom_prefix"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

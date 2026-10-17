@@ -32,7 +32,6 @@ type ProvidersTabProps = {
   setRemoteSpeechModel: (value: string) => void;
   availableSpeechModels: string[];
   fetchAvailableSpeechModels: () => void;
-  activeLicense: boolean;
   onOpenModelsTab: () => void;
   onOpenGeneralTab: () => void;
 };
@@ -59,7 +58,6 @@ const ProvidersTab = ({
   setRemoteSpeechModel,
   availableSpeechModels,
   fetchAvailableSpeechModels,
-  activeLicense,
   onOpenModelsTab,
   onOpenGeneralTab,
 }: ProvidersTabProps) => {
@@ -134,7 +132,6 @@ const ProvidersTab = ({
             setLlmModel={setLlmModel}
             availableModels={availableModels}
             fetchAvailableModels={fetchAvailableModels}
-            activeLicense={activeLicense}
           />
           <ProviderGuide
             body={t({

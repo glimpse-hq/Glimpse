@@ -1998,6 +1998,7 @@ export function useSettingsForm({
     setLlmApiKey,
     llmModel,
     setLlmModel,
+    llmConfigReady,
     aiFeaturesReady,
     licenseGateActive,
     activeLicense,
