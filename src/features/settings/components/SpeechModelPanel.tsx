@@ -9,7 +9,6 @@ import { Dropdown } from "../../../shared/ui/Dropdown";
 import ApiKeyField from "../../../shared/ui/ApiKeyField";
 import ModelSourcePanel, {
   FIELD_BUTTON_CLASS,
-  MENU_CLASS,
   shortEndpoint,
 } from "./ModelSourcePanel";
 import type { RemoteSpeechProvider } from "../../../types";
@@ -137,8 +136,8 @@ const SpeechModelPanel = ({
             {
               value: "_device_header" as SpeechSource,
               label: t({
-                id: "settings.models.group.this_mac",
-                message: "On this Mac",
+                id: "settings.models.group.this_computer",
+                message: "On this computer",
               }),
               isHeader: true,
             },
@@ -198,7 +197,6 @@ const SpeechModelPanel = ({
             message: "Search speech providers...",
           })}
           buttonClassName={FIELD_BUTTON_CLASS}
-          menuClassName={MENU_CLASS}
         />
       }
       apiKeyField={
@@ -257,7 +255,6 @@ const SpeechModelPanel = ({
             message: "Search available speech models...",
           })}
           buttonClassName={FIELD_BUTTON_CLASS}
-          menuClassName={MENU_CLASS}
         />
       }
     />

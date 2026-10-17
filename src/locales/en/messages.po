@@ -4773,8 +4773,8 @@ msgstr "On"
 #: src/features/settings/components/LanguageModelPanel.tsx
 #: src/features/settings/components/ModelSourcePanel.tsx
 #: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.models.group.this_mac"
-msgstr "On this Mac"
+msgid "settings.models.group.this_computer"
+msgstr "On this computer"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx

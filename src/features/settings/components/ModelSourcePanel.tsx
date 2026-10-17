@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { Check } from "@phosphor-icons/react";
+import SettingCard from "../../../shared/ui/SettingCard";
 
+// The underline field style the other Settings cards use.
 export const FIELD_BUTTON_CLASS =
-  "!h-7 !rounded-md !bg-transparent !px-2.5 !py-0 ui-text-body-sm";
-
-// Opens leftward so it stays inside the window from either column.
-export const MENU_CLASS = "!left-auto min-w-[260px]";
+  "!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary";
 
 export const shortEndpoint = (endpoint: string) =>
   endpoint.replace(/^https?:\/\//, "").replace(/\/v1$/, "");
@@ -25,9 +24,8 @@ type ModelSourcePanelProps = {
   warning: boolean;
 };
 
-// Speech and language share this layout. Labels and controls sit in one grid
-// so they line up, and the provider fields and the on-device status share a
-// cell so the card keeps its height when the choice changes.
+// Speech and language share this layout. The provider fields and the
+// on-device status share one cell so the card keeps its height.
 const ModelSourcePanel = ({
   label,
   select,
@@ -42,19 +40,22 @@ const ModelSourcePanel = ({
   const { t } = useLingui();
   const locationText =
     location === "device"
-      ? t({ id: "settings.models.group.this_mac", message: "On this Mac" })
+      ? t({
+          id: "settings.models.group.this_computer",
+          message: "On this computer",
+        })
       : location === "server"
         ? t({ id: "settings.models.group.server", message: "Local server" })
         : t({ id: "settings.models.location.cloud", message: "Cloud" });
-  const rowLabel = "ui-text-label-strong ui-color-primary";
+  const labelClass = "ui-text-label-strong ui-color-primary block";
 
   return (
-    <div className="rounded-lg bg-surface-surface p-2.5">
-      <div className="grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-4 gap-y-2 px-2 py-1.5">
-        <span className={rowLabel}>{label}</span>
-        {select}
+    <SettingCard>
+      <div className="px-2 py-1.5">
+        <span className={labelClass}>{label}</span>
+        <div className="mt-1.5">{select}</div>
         <span
-          className={`col-start-2 flex h-4 items-center gap-1.5 ui-text-meta ui-color-muted ${
+          className={`mt-1.5 flex items-center gap-1.5 ui-text-meta ui-color-muted ${
             location ? "" : "invisible"
           }`}
         >
@@ -68,59 +69,59 @@ const ModelSourcePanel = ({
           />
           {locationText}
         </span>
+      </div>
 
-        <div className="col-span-2 grid grid-cols-subgrid border-t border-border-secondary pt-2.5">
-          <div
-            className={`col-span-2 row-start-1 grid grid-cols-subgrid gap-y-2 ${
-              showFields ? "" : "invisible"
-            }`}
-            inert={!showFields}
-          >
-            <span className={rowLabel}>
+      <div className="grid">
+        <div
+          className={`col-start-1 row-start-1 ${showFields ? "" : "invisible"}`}
+          inert={!showFields}
+        >
+          <div className="px-2 py-1.5">
+            <span className={labelClass}>
               {t({
                 id: "settings.language_model.api_key.v2",
                 message: "API key",
               })}
             </span>
-            {apiKeyField}
-            <span className={rowLabel}>
+            <div className="mt-1.5">{apiKeyField}</div>
+          </div>
+          <div className="px-2 py-1.5">
+            <span className={labelClass}>
               {t({
                 id: "settings.language_model.model",
                 message: "Model",
               })}
             </span>
-            {modelField}
-          </div>
-          <div
-            className={`col-span-2 row-start-1 grid grid-cols-subgrid content-start gap-y-1 ${
-              showFields ? "invisible" : ""
-            }`}
-            aria-live="polite"
-          >
-            <span className={`${rowLabel} flex h-7 items-center`}>
-              {t({ id: "settings.models.status", message: "Status" })}
-            </span>
-            <span
-              className={`flex h-7 items-center gap-1 ui-text-body-sm ${
-                status?.ready
-                  ? "ui-color-success"
-                  : warning
-                    ? "ui-color-warning"
-                    : "ui-color-muted"
-              }`}
-            >
-              {status?.ready && <Check size={12} aria-hidden="true" />}
-              {status?.text}
-            </span>
-            <p
-              className={`col-span-2 ui-text-meta ${warning ? "ui-color-warning" : "ui-color-muted"}`}
-            >
-              {guidance}
-            </p>
+            <div className="mt-1.5">{modelField}</div>
           </div>
         </div>
+        <div
+          className={`col-start-1 row-start-1 px-2 py-1.5 ${showFields ? "invisible" : ""}`}
+          aria-live="polite"
+        >
+          <span className={labelClass}>
+            {t({ id: "settings.models.status", message: "Status" })}
+          </span>
+          <span
+            className={`mt-1.5 flex items-center gap-1 px-0.5 py-1 ui-text-body-sm ${
+              status?.ready
+                ? "ui-color-success"
+                : warning
+                  ? "ui-color-warning"
+                  : "ui-color-muted"
+            }`}
+          >
+            {status?.ready && <Check size={12} aria-hidden="true" />}
+            {status?.text}
+          </span>
+          <p
+            className={`mt-1 ui-text-meta ${warning ? "ui-color-warning" : "ui-color-muted"}`}
+          >
+            {guidance}
+          </p>
+        </div>
       </div>
-    </div>
+    </SettingCard>
   );
 };
 

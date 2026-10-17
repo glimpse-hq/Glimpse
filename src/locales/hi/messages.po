@@ -4773,7 +4773,7 @@ msgstr "चालू"
 #: src/features/settings/components/LanguageModelPanel.tsx
 #: src/features/settings/components/ModelSourcePanel.tsx
 #: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.models.group.this_mac"
+msgid "settings.models.group.this_computer"
 msgstr ""
 
 #. js-lingui-explicit-id

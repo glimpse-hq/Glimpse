@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { Broom, DotsThree, Ghost, Trash } from "@phosphor-icons/react";
 import HoverTip from "../../../shared/ui/HoverTip";
+import SettingCard from "../../../shared/ui/SettingCard";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
@@ -100,7 +101,7 @@ const ShortcutList = ({
   });
 
   return (
-    <div className="rounded-lg bg-surface-surface p-2.5">
+    <SettingCard>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-x-3 px-2 py-1.5">
         <div className="col-span-5 grid grid-cols-subgrid pb-1 ui-text-meta ui-color-muted">
           <span>
@@ -133,7 +134,7 @@ const ShortcutList = ({
           >
             <Ghost size={13} aria-label={notSavedLabel} />
           </HoverTip>
-          <span aria-hidden="true" className="w-5" />
+          <span aria-hidden="true" className="w-6" />
         </div>
 
         {rows.map(({ mode, index, binding }) => {
@@ -194,7 +195,7 @@ const ShortcutList = ({
                 onChange={(next) => onMove(mode, index, next)}
                 options={behaviorOptions(mode)}
                 fitButtonToWidestOption
-                buttonClassName="!border-0 !bg-transparent !px-1 !py-0.5 ui-text-body-sm ui-color-secondary hover:!text-content-primary"
+                buttonClassName="h-7 !rounded-md !border-0 !bg-transparent !px-1 !py-0 ui-text-body-sm hover:!bg-transparent"
                 menuClassName="!left-auto min-w-[220px]"
               />
               <IconCheckbox
@@ -237,7 +238,7 @@ const ShortcutList = ({
           {addShortcutLabel}
         </button>
       </div>
-    </div>
+    </SettingCard>
   );
 };
 
@@ -295,14 +296,14 @@ const ShortcutRowMenu = ({
   });
 
   return (
-    <div className="relative flex w-5 justify-center" ref={ref}>
+    <div className="relative flex w-6 justify-center" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={moreLabel}
-        className={`ui-button-ghost h-5 w-5 transition-opacity ${
+        className={`ui-button-ghost h-6 w-6 transition-opacity ${
           open
             ? "opacity-100"
             : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"

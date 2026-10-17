@@ -9,7 +9,6 @@ import { Dropdown } from "../../../shared/ui/Dropdown";
 import ApiKeyField from "../../../shared/ui/ApiKeyField";
 import ModelSourcePanel, {
   FIELD_BUTTON_CLASS,
-  MENU_CLASS,
   shortEndpoint,
   type ModelLocation,
 } from "./ModelSourcePanel";
@@ -212,8 +211,8 @@ const LanguageModelPanel = ({
                   {
                     value: "_device_header" as LlmProvider,
                     label: t({
-                      id: "settings.models.group.this_mac",
-                      message: "On this Mac",
+                      id: "settings.models.group.this_computer",
+                      message: "On this computer",
                     }),
                     isHeader: true,
                   },
@@ -284,7 +283,6 @@ const LanguageModelPanel = ({
             message: "Search providers...",
           })}
           buttonClassName={FIELD_BUTTON_CLASS}
-          menuClassName={MENU_CLASS}
         />
       }
       apiKeyField={
@@ -333,7 +331,6 @@ const LanguageModelPanel = ({
             message: "Search available models...",
           })}
           buttonClassName={FIELD_BUTTON_CLASS}
-          menuClassName={MENU_CLASS}
         />
       }
     />
