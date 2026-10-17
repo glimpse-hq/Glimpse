@@ -146,7 +146,7 @@ const LanguageModelList = ({
   const appleSelected = llmProvider === "apple";
 
   return (
-    <div className="space-y-2">
+    <>
       <ProviderCard
         kind={serviceReady ? (isServer ? "server" : "cloud") : "none"}
         title={
@@ -190,57 +190,56 @@ const LanguageModelList = ({
           />
         }
       />
-      <div className="flex flex-col">
-        {showG1 && (
-          <ModelRow
-            title="G1"
-            facts={
-              g1Selected && g1Blocker
-                ? `${onDevice}  ·  ${g1Blocker}`
-                : !activeLicense
-                  ? t({
-                      id: "settings.language_model.g1.locked",
-                      message: "Needs a purchased Glimpse Plus license",
-                    })
-                  : onDevice
-            }
-            factsWarning={g1Selected && Boolean(g1Blocker)}
-            state={
-              g1Selected && !g1Blocker && g1Installed
-                ? active
-                : g1Blocker
-                  ? { kind: "status", text: g1Blocker }
-                  : g1Installed === null
-                    ? { kind: "status", text: "" }
-                    : { kind: "use", onUse: () => select("bonsai") }
-            }
-          />
-        )}
-        {appleAvailability !== null && (
-          <ModelRow
-            title="Apple Intelligence"
-            facts={
-              appleSelected && appleAvailability === "not_enabled"
+      <div className="col-span-3 h-2" aria-hidden="true" />
+      {showG1 && (
+        <ModelRow
+          title="G1"
+          facts={
+            g1Selected && g1Blocker
+              ? `${onDevice}  ·  ${g1Blocker}`
+              : !activeLicense
                 ? t({
-                    id: "settings.language_model.apple.not_enabled",
-                    message:
-                      "Turn on Apple Intelligence in System Settings to use this.",
+                    id: "settings.language_model.g1.locked",
+                    message: "Needs a purchased Glimpse Plus license",
                   })
-                : appleSelected && appleBlocker
-                  ? `${onDevice}  ·  ${appleBlocker}`
-                  : onDevice
-            }
-            factsWarning={appleSelected && Boolean(appleBlocker)}
-            state={
-              appleSelected && appleAvailability === "available"
-                ? active
-                : appleBlocker
-                  ? { kind: "status", text: appleBlocker }
-                  : { kind: "use", onUse: () => select("apple") }
-            }
-          />
-        )}
-      </div>
+                : onDevice
+          }
+          factsWarning={g1Selected && Boolean(g1Blocker)}
+          state={
+            g1Selected && !g1Blocker && g1Installed
+              ? active
+              : g1Blocker
+                ? { kind: "status", text: g1Blocker }
+                : g1Installed === null
+                  ? { kind: "status", text: "" }
+                  : { kind: "use", onUse: () => select("bonsai") }
+          }
+        />
+      )}
+      {appleAvailability !== null && (
+        <ModelRow
+          title="Apple Intelligence"
+          facts={
+            appleSelected && appleAvailability === "not_enabled"
+              ? t({
+                  id: "settings.language_model.apple.not_enabled",
+                  message:
+                    "Turn on Apple Intelligence in System Settings to use this.",
+                })
+              : appleSelected && appleBlocker
+                ? `${onDevice}  ·  ${appleBlocker}`
+                : onDevice
+          }
+          factsWarning={appleSelected && Boolean(appleBlocker)}
+          state={
+            appleSelected && appleAvailability === "available"
+              ? active
+              : appleBlocker
+                ? { kind: "status", text: appleBlocker }
+                : { kind: "use", onUse: () => select("apple") }
+          }
+        />
+      )}
       <AnimatePresence>
         {sheetOpen && (
           <ProviderSheet
@@ -275,7 +274,7 @@ const LanguageModelList = ({
           />
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 

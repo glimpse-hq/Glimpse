@@ -338,89 +338,85 @@ const ModelsTab = ({
           />
         </>
       ) : (
-        <div className="flex flex-col gap-5">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <SectionLabel className="flex-1">
-                {t({ id: "settings.models.speech", message: "Speech" })}
-              </SectionLabel>
-              <button
-                type="button"
-                onClick={() => setBrowsing(true)}
-                className="group inline-flex shrink-0 items-center gap-1 ui-text-body-sm-strong ui-color-secondary transition-colors hover:text-content-primary"
-              >
-                {t({
-                  id: "settings.models.browse_all",
-                  message: "Browse all models",
-                })}
-                <ChevronRight
-                  size={15}
-                  className="transition-transform group-hover:translate-x-0.5"
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-            <SpeechProviderRow
-              enabled={remoteSpeechEnabled}
-              setEnabled={setRemoteSpeechEnabled}
-              configReady={remoteSpeechConfigReady}
-              provider={remoteSpeechProvider}
-              setProvider={setRemoteSpeechProvider}
-              endpoint={remoteSpeechEndpoint}
-              setEndpoint={setRemoteSpeechEndpoint}
-              apiKey={remoteSpeechApiKey}
-              setApiKey={setRemoteSpeechApiKey}
-              model={remoteSpeechModel}
-              setModel={setRemoteSpeechModel}
-            />
-            <div className="flex flex-col">
-              <AutomaticModelRow
-                modelLabel={recommendedLabel}
-                progress={
-                  recommendedKey ? downloadState[recommendedKey] : undefined
-                }
-                state={
-                  automatic
-                    ? remoteSpeechEnabled
-                      ? fallbackState
-                      : activeState
-                    : { kind: "use", onUse: chooseAutomatic }
-                }
-              />
-              {installedModels.map((model) => (
-                <InstalledModelRow
-                  key={model.key}
-                  model={model}
-                  active={!automatic && model.key === installedModel?.key}
-                  fallback={remoteSpeechEnabled}
-                  aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
-                  shiftHeld={shiftHeld}
-                  onUse={() => void chooseModel(model.key)}
-                  onDelete={() => handleDelete(model.key)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <SectionLabel>
-              {t({ id: "settings.models.language", message: "Language" })}
+        // One grid for both sections, so the action columns line up.
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2">
+          <div className="col-span-3 mb-2 flex items-center gap-3">
+            <SectionLabel className="flex-1">
+              {t({ id: "settings.models.speech", message: "Speech" })}
             </SectionLabel>
-            <LanguageModelList
-              llmProvider={llmProvider}
-              setLlmProvider={setLlmProvider}
-              llmEndpoint={llmEndpoint}
-              setLlmEndpoint={setLlmEndpoint}
-              llmApiKey={llmApiKey}
-              setLlmApiKey={setLlmApiKey}
-              llmModel={llmModel}
-              setLlmModel={setLlmModel}
-              llmServiceProvider={llmServiceProvider}
-              setLlmServiceProvider={setLlmServiceProvider}
-              llmConfigReady={llmConfigReady}
-              activeLicense={activeLicense}
-            />
+            <button
+              type="button"
+              onClick={() => setBrowsing(true)}
+              className="group inline-flex shrink-0 items-center gap-1 ui-text-body-sm-strong ui-color-secondary transition-colors hover:text-content-primary"
+            >
+              {t({
+                id: "settings.models.browse_all",
+                message: "Browse all models",
+              })}
+              <ChevronRight
+                size={15}
+                className="transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </button>
           </div>
+          <SpeechProviderRow
+            enabled={remoteSpeechEnabled}
+            setEnabled={setRemoteSpeechEnabled}
+            configReady={remoteSpeechConfigReady}
+            provider={remoteSpeechProvider}
+            setProvider={setRemoteSpeechProvider}
+            endpoint={remoteSpeechEndpoint}
+            setEndpoint={setRemoteSpeechEndpoint}
+            apiKey={remoteSpeechApiKey}
+            setApiKey={setRemoteSpeechApiKey}
+            model={remoteSpeechModel}
+            setModel={setRemoteSpeechModel}
+          />
+          <div className="col-span-3 h-2" aria-hidden="true" />
+          <AutomaticModelRow
+            modelLabel={recommendedLabel}
+            progress={
+              recommendedKey ? downloadState[recommendedKey] : undefined
+            }
+            state={
+              automatic
+                ? remoteSpeechEnabled
+                  ? fallbackState
+                  : activeState
+                : { kind: "use", onUse: chooseAutomatic }
+            }
+          />
+          {installedModels.map((model) => (
+            <InstalledModelRow
+              key={model.key}
+              model={model}
+              active={!automatic && model.key === installedModel?.key}
+              fallback={remoteSpeechEnabled}
+              aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
+              shiftHeld={shiftHeld}
+              onUse={() => void chooseModel(model.key)}
+              onDelete={() => handleDelete(model.key)}
+            />
+          ))}
+
+          <SectionLabel className="col-span-3 mb-2 mt-5">
+            {t({ id: "settings.models.language", message: "Language" })}
+          </SectionLabel>
+          <LanguageModelList
+            llmProvider={llmProvider}
+            setLlmProvider={setLlmProvider}
+            llmEndpoint={llmEndpoint}
+            setLlmEndpoint={setLlmEndpoint}
+            llmApiKey={llmApiKey}
+            setLlmApiKey={setLlmApiKey}
+            llmModel={llmModel}
+            setLlmModel={setLlmModel}
+            llmServiceProvider={llmServiceProvider}
+            setLlmServiceProvider={setLlmServiceProvider}
+            llmConfigReady={llmConfigReady}
+            activeLicense={activeLicense}
+          />
         </div>
       )}
     </motion.div>

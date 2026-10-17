@@ -67,7 +67,7 @@ export const ProviderSheetButton = ({
     <button
       type="button"
       onClick={onClick}
-      className="ui-button-ghost h-6 px-2 ui-text-meta font-medium"
+      className="ui-button-ghost h-6 whitespace-nowrap px-2 ui-text-meta font-medium"
     >
       {configured
         ? t({ id: "settings.models.provider.edit", message: "Edit…" })
