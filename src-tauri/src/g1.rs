@@ -46,6 +46,10 @@ pub fn init(app: &AppHandle<AppRuntime>) {
         }
     };
     let store = Arc::clone(&app.state::<crate::AppState>().settings_store);
+    start(models_dir, store);
+}
+
+fn start(models_dir: PathBuf, store: Arc<SettingsStore>) {
     let _ = RUNTIME.set(Runtime {
         models_dir,
         store,
@@ -214,4 +218,111 @@ pub async fn g1_status() -> Result<G1Status, String> {
     })
     .await
     .map_err(|err| err.to_string())
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+    use std::time::Instant;
+
+    // Resident memory and the physical footprint, which also counts GPU buffers.
+    fn memory() -> String {
+        let pid = std::process::id().to_string();
+        let run = |cmd: &str, args: &[&str]| {
+            let out = std::process::Command::new(cmd).args(args).output().unwrap();
+            String::from_utf8_lossy(&out.stdout).into_owned()
+        };
+        let rss_kb: f64 = run("ps", &["-o", "rss=", "-p", &pid])
+            .trim()
+            .parse()
+            .unwrap_or(0.0);
+        let footprint = run("footprint", &["-p", &pid])
+            .lines()
+            .find_map(|line| {
+                line.split_once("Footprint: ")
+                    .map(|(_, rest)| rest.to_string())
+            })
+            .and_then(|rest| rest.split(" (").next().map(str::to_string))
+            .unwrap_or_default();
+        format!("rss {:.0} MB, footprint {footprint}", rss_kb / 1024.0)
+    }
+
+    // G1_TEST_MODEL=<dir with model.safetensors, config.json, tokenizer.json>
+    // and optionally G1_TEST_ADAPTER=<dir with the adapter files>, then
+    // cargo test --manifest-path src-tauri/Cargo.toml g1::tests -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn cleans_up_through_the_provider_path() {
+        let source = PathBuf::from(std::env::var("G1_TEST_MODEL").expect("G1_TEST_MODEL"));
+        let size = bonsai::describe(&source).unwrap().size;
+        let id = G1_MANIFESTS
+            .iter()
+            .find(|manifest| manifest.variant == size.label())
+            .unwrap()
+            .id;
+        let root = std::env::temp_dir().join(format!("g1-test-{}", std::process::id()));
+        let dir = root.join("models").join(id);
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut files: Vec<PathBuf> = bonsai::MODEL_FILES.iter().map(|f| source.join(f)).collect();
+        if let Ok(adapter) = std::env::var("G1_TEST_ADAPTER") {
+            for file in [
+                "adapter.safetensors",
+                "adapter_model.safetensors",
+                "adapter_config.json",
+            ] {
+                let path = PathBuf::from(&adapter).join(file);
+                if path.is_file() {
+                    files.push(path);
+                }
+            }
+        }
+        for file in files {
+            std::os::unix::fs::symlink(&file, dir.join(file.file_name().unwrap())).unwrap();
+        }
+        let store = Arc::new(SettingsStore::open(root.join("settings.db")).unwrap());
+        start(root.join("models"), store);
+        assert_eq!(refresh_installed(), vec![id]);
+
+        let settings = UserSettings {
+            llm_enabled: true,
+            cleanup_enabled: true,
+            llm_provider: crate::llm_cleanup::BONSAI_PROVIDER.to_string(),
+            personalities: Vec::new(),
+            ..Default::default()
+        };
+        assert!(crate::llm_cleanup::is_llm_available(&settings));
+        let client = reqwest::Client::new();
+        let inputs = [
+            "um so i think we should uh move the launch to thursday because the build isnt ready",
+            "send the report to alice no actually send it to bob and copy jen on it",
+            "okay so the plan for tomorrow is uh first we review the onboarding flow then we \
+             look at the pricing page and um if there's time we go through the bug list that \
+             came in from the beta testers last week and figure out which ones block the release",
+        ];
+        println!("before load: {}", memory());
+        for (round, input) in inputs.iter().enumerate() {
+            if round > 0 {
+                crate::llm_cleanup::prewarm_cleanup(&settings);
+                std::thread::sleep(Duration::from_secs(2));
+            }
+            let started = Instant::now();
+            let out = tauri::async_runtime::block_on(crate::llm_cleanup::cleanup_transcription(
+                &client, input, &settings, None,
+            ))
+            .unwrap();
+            println!(
+                "{} {} ms, {}\n  in:  {input}\n  out: {out}",
+                if round == 0 { "cold" } else { "warm" },
+                started.elapsed().as_millis(),
+                memory()
+            );
+        }
+        let (_, bonsai) = RUNTIME.get().unwrap().loaded.lock().clone().unwrap();
+        bonsai.release_idle();
+        assert!(bonsai.is_idle());
+        // Metal returns the freed buffers shortly after.
+        std::thread::sleep(Duration::from_secs(3));
+        println!("after release_idle: {}", memory());
+        std::fs::remove_dir_all(&root).unwrap();
+    }
 }
