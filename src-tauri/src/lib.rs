@@ -1405,7 +1405,7 @@ fn open_input_monitoring_settings() -> Result<(), String> {
 
 #[tauri::command]
 fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    open_settings_page(&app, SettingsPage::General)
+    open_settings_page(&app, SettingsPage::Models)
 }
 
 #[tauri::command]

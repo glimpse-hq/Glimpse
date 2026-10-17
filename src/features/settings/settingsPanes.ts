@@ -2,7 +2,6 @@ import {
   AppWindow,
   Cpu,
   Info,
-  Key,
   HardDrives as Server,
   SquaresFour,
   User,
@@ -12,7 +11,7 @@ import { msg } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 
 export type SettingsPane =
-  "account" | "general" | "app" | "about" | "models" | "providers" | "api";
+  "account" | "general" | "app" | "about" | "models" | "api";
 
 export interface SettingsPaneDef {
   id: SettingsPane;
@@ -66,14 +65,6 @@ export const SETTINGS_PANE_GROUPS: SettingsPaneGroup[] = [
         id: "models",
         icon: Cpu,
         label: msg({ id: "settings.modal.tab.models", message: "Models" }),
-      },
-      {
-        id: "providers",
-        icon: Key,
-        label: msg({
-          id: "settings.modal.tab.providers",
-          message: "Providers",
-        }),
       },
     ],
   },

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, DotsThree, Ghost, Trash } from "@phosphor-icons/react";
+import { DotsThree, Ghost, Trash } from "@phosphor-icons/react";
 import HoverTip from "../../../shared/ui/HoverTip";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../shared/ui/Dropdown";
@@ -89,11 +89,20 @@ const ShortcutList = ({
     id: "settings.general.shortcuts.column.cleanup",
     message: "Clean up",
   });
+  const notSavedLabel = t({
+    id: "settings.general.shortcuts.not_saved.v2",
+    message: "Don't save to Library",
+  });
+  const notSavedDetail = t({
+    id: "settings.general.shortcuts.not_saved_detail.v2",
+    message:
+      "Dictation from this shortcut is pasted, but its audio and transcript aren't kept.",
+  });
 
   return (
     <div className="rounded-lg bg-surface-surface p-2.5">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 px-2 py-1.5">
-        <div className="col-span-4 grid grid-cols-subgrid pb-1 ui-text-meta ui-color-muted">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-x-3 px-2 py-1.5">
+        <div className="col-span-5 grid grid-cols-subgrid pb-1 ui-text-meta ui-color-muted">
           <span>
             {t({
               id: "settings.general.shortcuts.column.shortcut",
@@ -109,13 +118,20 @@ const ShortcutList = ({
           <HoverTip
             label={cleanupLabel}
             detail={t({
-              id: "settings.general.shortcuts.column.cleanup_tip",
+              id: "settings.general.shortcuts.column.cleanup_tip.v2",
               message:
-                "Sends dictation from this shortcut through your cleanup model and writing modes. With text selected, speak an instruction to rewrite it.",
+                "Sends dictation from this shortcut through your language model and writing modes. With text selected, speak an instruction to rewrite it. Choose the model in Models.",
             })}
             className="inline-flex justify-self-center"
           >
             <span>{cleanupLabel}</span>
+          </HoverTip>
+          <HoverTip
+            label={notSavedLabel}
+            detail={notSavedDetail}
+            className="inline-flex justify-self-center"
+          >
+            <Ghost size={13} aria-label={notSavedLabel} />
           </HoverTip>
           <span aria-hidden="true" className="w-5" />
         </div>
@@ -131,7 +147,7 @@ const ShortcutList = ({
               key={`${mode}-${index}`}
               role="group"
               aria-label={display}
-              className={`group col-span-4 grid min-h-8 grid-cols-subgrid items-center border-b py-1 transition-colors ${
+              className={`group col-span-5 grid min-h-8 grid-cols-subgrid items-center border-b py-1 transition-colors ${
                 capturing
                   ? "border-border-hover"
                   : invalidDrafts[mode]?.[index]
@@ -193,12 +209,29 @@ const ShortcutList = ({
                   ariaLabel={cleanupLabel}
                 />
               </div>
+              <HoverTip
+                label={notSavedLabel}
+                detail={notSavedDetail}
+                className="inline-flex justify-self-center"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdate(mode, index, { temporary: !binding.temporary })
+                  }
+                  aria-label={notSavedLabel}
+                  aria-pressed={binding.temporary}
+                  className={`box-border flex h-5 w-5 items-center justify-center rounded-md border leading-none transition-colors ${
+                    binding.temporary
+                      ? "text-[var(--color-local)] bg-[var(--color-local-10)] border-[var(--color-local-30)]"
+                      : "border-transparent ui-color-muted hover:bg-surface-overlay hover:ui-color-secondary"
+                  }`}
+                >
+                  <Ghost size={13} aria-hidden="true" />
+                </button>
+              </HoverTip>
               <ShortcutRowMenu
-                saved={!binding.temporary}
                 canRemove={rows.length > 1}
-                onToggleSaved={() =>
-                  onUpdate(mode, index, { temporary: !binding.temporary })
-                }
                 onRemove={() => onRemove(mode, index)}
               />
             </div>
@@ -209,7 +242,7 @@ const ShortcutList = ({
           type="button"
           onClick={() => modeWithRoom && onAdd(modeWithRoom)}
           disabled={!modeWithRoom}
-          className="col-span-4 h-7 border-b border-dashed border-border-primary text-left ui-text-meta ui-color-disabled transition-colors hover:border-border-secondary hover:ui-color-muted disabled:pointer-events-none"
+          className="col-span-5 h-7 border-b border-dashed border-border-primary text-left ui-text-meta ui-color-disabled transition-colors hover:border-border-secondary hover:ui-color-muted disabled:pointer-events-none"
         >
           {addShortcutLabel}
         </button>
@@ -219,14 +252,10 @@ const ShortcutList = ({
 };
 
 const ShortcutRowMenu = ({
-  saved,
   canRemove,
-  onToggleSaved,
   onRemove,
 }: {
-  saved: boolean;
   canRemove: boolean;
-  onToggleSaved: () => void;
   onRemove: () => void;
 }) => {
   const { t } = useLingui();
@@ -235,53 +264,27 @@ const ShortcutRowMenu = ({
   const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(ref, () => setOpen(false), open);
   useMenuKeyboard(menuRef, open, () => setOpen(false));
-  const notSavedLabel = t({
-    id: "settings.general.shortcuts.not_saved",
-    message: "Not saved to Library",
-  });
   const moreLabel = t({
     id: "settings.general.shortcuts.more",
     message: "Shortcut options",
   });
 
-  const trigger = (
-    <button
-      type="button"
-      onClick={() => setOpen((value) => !value)}
-      aria-haspopup="menu"
-      aria-expanded={open}
-      aria-label={saved ? moreLabel : `${moreLabel}, ${notSavedLabel}`}
-      className={`ui-button-ghost h-5 w-5 transition-opacity ${
-        saved && !open
-          ? "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-          : "opacity-100"
-      }`}
-    >
-      {saved ? (
-        <DotsThree size={14} aria-hidden="true" />
-      ) : (
-        <Ghost size={13} aria-hidden="true" />
-      )}
-    </button>
-  );
-
   return (
     <div className="relative flex w-5 justify-center" ref={ref}>
-      {saved ? (
-        trigger
-      ) : (
-        <HoverTip
-          label={notSavedLabel}
-          detail={t({
-            id: "settings.general.shortcuts.not_saved_detail",
-            message:
-              "Text from this shortcut is pasted, but its audio and transcript aren't kept.",
-          })}
-          className="inline-flex"
-        >
-          {trigger}
-        </HoverTip>
-      )}
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={moreLabel}
+        className={`ui-button-ghost h-5 w-5 transition-opacity ${
+          open
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+        }`}
+      >
+        <DotsThree size={14} aria-hidden="true" />
+      </button>
 
       <AnimatePresence>
         {open && (
@@ -295,26 +298,6 @@ const ShortcutRowMenu = ({
             transition={{ duration: 0.12 }}
             className="ui-surface-menu absolute right-0 top-full mt-1 z-[100] min-w-[184px] origin-top-right py-1"
           >
-            <button
-              type="button"
-              role="menuitemcheckbox"
-              aria-checked={saved}
-              onClick={() => {
-                onToggleSaved();
-                setOpen(false);
-              }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors"
-            >
-              <span className="flex w-3" aria-hidden="true">
-                {saved && <Check size={12} className="text-content-muted" />}
-              </span>
-              <span>
-                {t({
-                  id: "settings.general.shortcuts.save_to_library",
-                  message: "Save to Library",
-                })}
-              </span>
-            </button>
             <button
               type="button"
               role="menuitem"

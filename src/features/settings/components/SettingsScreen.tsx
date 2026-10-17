@@ -10,19 +10,12 @@ import LocalApiTab from "./tabs/LocalApiTab";
 import LockedFeature from "../../license/components/LockedFeature";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
-import ProvidersTab from "./tabs/ProvidersTab";
 import type { PurchaseSource } from "../../license/purchaseConfig";
 import { useSettingsForm } from "../useSettingsForm";
 import { SETTINGS_PANE_LABELS, type SettingsPane } from "../settingsPanes";
 
 type LegacyTab =
-  | "general"
-  | "account"
-  | "models"
-  | "providers"
-  | "local-api"
-  | "about"
-  | "app";
+  "general" | "account" | "models" | "local-api" | "about" | "app";
 
 const paneForLegacyTab: Record<LegacyTab, SettingsPane> = {
   account: "account",
@@ -30,7 +23,6 @@ const paneForLegacyTab: Record<LegacyTab, SettingsPane> = {
   app: "app",
   about: "about",
   models: "models",
-  providers: "providers",
   "local-api": "api",
 };
 
@@ -145,16 +137,9 @@ const SettingsScreen = ({
                 licenseGateActive={form.licenseGateActive}
                 activeLicense={form.activeLicense}
                 llmProvider={form.llmProvider}
-                setLlmProvider={form.setLlmProvider}
-                llmEndpoint={form.llmEndpoint}
-                setLlmEndpoint={form.setLlmEndpoint}
-                llmApiKey={form.llmApiKey}
-                setLlmApiKey={form.setLlmApiKey}
-                llmModel={form.llmModel}
-                setLlmModel={form.setLlmModel}
-                availableModels={form.availableModels}
-                fetchAvailableModels={form.fetchAvailableModels}
+                llmConfigReady={form.llmConfigReady}
                 onOpenAccountTab={() => onPaneChange("account")}
+                onOpenModelsTab={() => onPaneChange("models")}
               />
             )}
 
@@ -170,22 +155,6 @@ const SettingsScreen = ({
                 remoteSpeechEnabled={form.remoteSpeechEnabled}
                 setRemoteSpeechEnabled={form.setRemoteSpeechEnabled}
                 remoteSpeechProvider={form.remoteSpeechProvider}
-                remoteSpeechEndpoint={form.remoteSpeechEndpoint}
-                remoteSpeechModel={form.remoteSpeechModel}
-                remoteSpeechApiKey={form.remoteSpeechApiKey}
-                setLocalModel={form.setLocalModel}
-                handleDownload={form.handleDownload}
-                handleDelete={form.handleDelete}
-                handleCancelDownload={form.handleCancelDownload}
-                onOpenProvidersTab={() => onPaneChange("providers")}
-              />
-            )}
-
-            {pane === "providers" && (
-              <ProvidersTab
-                key="providers"
-                variants={paneVariants}
-                remoteSpeechProvider={form.remoteSpeechProvider}
                 setRemoteSpeechProvider={form.setRemoteSpeechProvider}
                 remoteSpeechEndpoint={form.remoteSpeechEndpoint}
                 setRemoteSpeechEndpoint={form.setRemoteSpeechEndpoint}
@@ -193,9 +162,31 @@ const SettingsScreen = ({
                 setRemoteSpeechApiKey={form.setRemoteSpeechApiKey}
                 remoteSpeechModel={form.remoteSpeechModel}
                 setRemoteSpeechModel={form.setRemoteSpeechModel}
+                remoteSpeechConfigReady={form.remoteSpeechConfigReady}
                 availableSpeechModels={form.availableSpeechModels}
                 fetchAvailableSpeechModels={form.fetchAvailableSpeechModels}
-                onOpenModelsTab={() => onPaneChange("models")}
+                llmProvider={form.llmProvider}
+                setLlmProvider={form.setLlmProvider}
+                llmEndpoint={form.llmEndpoint}
+                setLlmEndpoint={form.setLlmEndpoint}
+                llmApiKey={form.llmApiKey}
+                setLlmApiKey={form.setLlmApiKey}
+                llmModel={form.llmModel}
+                setLlmModel={form.setLlmModel}
+                llmConfigReady={form.llmConfigReady}
+                availableModels={form.availableModels}
+                fetchAvailableModels={form.fetchAvailableModels}
+                activeLicense={form.activeLicense}
+                cleanupShortcutsOn={
+                  form.licenseGateActive &&
+                  Object.values(form.shortcutBindings).some((bindings) =>
+                    bindings.some((binding) => binding.cleanup_enabled),
+                  )
+                }
+                setLocalModel={form.setLocalModel}
+                handleDownload={form.handleDownload}
+                handleDelete={form.handleDelete}
+                handleCancelDownload={form.handleCancelDownload}
               />
             )}
 

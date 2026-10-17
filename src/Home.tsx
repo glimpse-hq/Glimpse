@@ -352,7 +352,7 @@ const Home = ({ onReady }: HomeProps) => {
     let cancelled = false;
     let unlistenNavigate: UnlistenFn | null = null;
     let unlistenHistory: UnlistenFn | null = null;
-    let unlistenSettingsTabs: UnlistenFn[] = [];
+    let unlistenModels: UnlistenFn | null = null;
     let unlistenAccount: UnlistenFn | null = null;
     let unlistenViews: UnlistenFn[] = [];
     let unlistenDragEnter: UnlistenFn | null = null;
@@ -382,20 +382,13 @@ const Home = ({ onReady }: HomeProps) => {
       else unlistenHistory = fn;
     });
 
-    const settingsTabsReady = (
-      [
-        ["navigate:models", "models"],
-        ["navigate:general", "general"],
-      ] as const
-    ).map(([event, tab]) =>
-      listen(event, () => {
-        setSettingsTab(tab);
-        setIsSettingsOpen(true);
-      }).then((fn) => {
-        if (cancelled) fn();
-        else unlistenSettingsTabs.push(fn);
-      }),
-    );
+    const modelsReady = listen("navigate:models", () => {
+      setSettingsTab("models");
+      setIsSettingsOpen(true);
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlistenModels = fn;
+    });
 
     const accountReady = listen("navigate:account", () => {
       setAccountSource("trial_toast");
@@ -440,7 +433,7 @@ const Home = ({ onReady }: HomeProps) => {
     Promise.all([
       navigateReady,
       historyReady,
-      ...settingsTabsReady,
+      modelsReady,
       accountReady,
       licenseReturnReady,
       ...viewsReady,
@@ -522,8 +515,7 @@ const Home = ({ onReady }: HomeProps) => {
       cancelled = true;
       unlistenNavigate?.();
       unlistenHistory?.();
-      unlistenSettingsTabs.forEach((fn) => fn());
-      unlistenSettingsTabs = [];
+      unlistenModels?.();
       unlistenAccount?.();
       unlistenViews.forEach((fn) => fn());
       unlistenViews = [];

@@ -130,7 +130,7 @@ pub async fn edit_transcription(
 ) -> Result<String, RemoteError> {
     if !is_llm_available(settings) {
         return Err(remote_lib::config_error(
-            "Edit mode requires a selected language model in Settings -> General",
+            "Edit mode requires a selected language model in Settings -> Models",
         ));
     }
 
@@ -619,9 +619,8 @@ async fn run_text_task(
         );
     }
 
-    let model = configured_model(settings).ok_or_else(|| {
-        remote_lib::config_error("Choose a language model in Settings -> General")
-    })?;
+    let model = configured_model(settings)
+        .ok_or_else(|| remote_lib::config_error("Choose a language model in Settings -> Models"))?;
 
     let mut body = ChatRequest::new(model, task, system_prompt, user_content);
 

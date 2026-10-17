@@ -904,12 +904,6 @@ msgid "library.import.summary.file_count"
 msgstr "{0, plural, one {# file} other {# file}}"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: stats.langCount
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.languages"
-msgstr "{0, plural, one {# lingua} other {# lingue}}"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: model.supported_languages.length
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.languages"
@@ -1003,12 +997,6 @@ msgid "record.setup.apps.closed_one"
 msgstr "{0} non è in esecuzione, quindi non verrà registrata."
 
 #. js-lingui-explicit-id
-#. placeholder {0}: model.label
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.aria"
-msgstr "{0} modello"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: filteredEntries.length
 #. placeholder {1}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -1097,11 +1085,6 @@ msgstr "{name} (Predefinito)"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_many"
 msgstr "{pairCount} coppie audio e testo"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CloudModelCard.tsx
-msgid "models.cloud_card.aria"
-msgstr "{providerLabel} modello cloud"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
@@ -1466,7 +1449,7 @@ msgid "transcriptions.time.any"
 msgstr "In qualsiasi momento"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.v2"
 msgstr "Chiave API"
 
@@ -1704,12 +1687,7 @@ msgid "onboarding.model.tier.built_in"
 msgstr "Integrato"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.built_in"
-msgstr "Integrato nel Mac"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.ready"
 msgstr "Integrato in questo Mac."
 
@@ -1731,11 +1709,6 @@ msgstr "Annulla"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.action.deactivate_cancel"
-msgstr "Annulla"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.cancel"
 msgstr "Annulla"
 
 #. js-lingui-explicit-id
@@ -1778,11 +1751,6 @@ msgstr "Annulla"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.cancel"
 msgstr "Annulla"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.cancel_download"
-msgstr "Annulla download"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -1902,7 +1870,7 @@ msgid "model_picker.title"
 msgstr "Scegli un modello"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.general.cleanup.model_placeholder"
 msgstr ""
 
@@ -1912,8 +1880,8 @@ msgid "onboarding.model.title"
 msgstr "Scegli un modello"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.choose_hint"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.language.choose_hint"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -1947,19 +1915,19 @@ msgid "settings.general.shortcuts.column.cleanup"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.with"
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.cleanup_needs_model"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.language.clean_up_with"
 msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.cleaning"
 msgstr "Pulizia in corso…"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/TrialEndedScreen.tsx
@@ -2077,12 +2045,7 @@ msgid "native.menu.close_window"
 msgstr "Chiudi finestra"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.speech.provider"
-msgstr "Cloud"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.cloud.v2"
 msgstr "Cloud (chiave API)"
 
@@ -2090,11 +2053,6 @@ msgstr "Cloud (chiave API)"
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider.cloud.v2"
 msgstr "Cloud (chiave API)"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CloudModelCard.tsx
-msgid "models.cloud_card.transcribing"
-msgstr "Trascrizione nel cloud"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2562,7 +2520,7 @@ msgid "settings.local_api.model.currently_loaded"
 msgstr "attualmente caricato: {loadedModelLabel}"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.custom"
 msgstr "Personalizzato"
 
@@ -2662,11 +2620,6 @@ msgid "transcriptions.item.delete"
 msgstr "Elimina"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.delete"
-msgstr "Elimina"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.delete"
 msgstr "Elimina"
@@ -2747,11 +2700,6 @@ msgstr "Modalità eliminazione"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.delete_mode.title"
 msgstr "Eliminare la modalità?"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.delete_model"
-msgstr "Elimina modello"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -2840,6 +2788,11 @@ msgid "settings.modal.section.dictation"
 msgstr "Dettatura"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.not_saved_detail.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer.v5"
 msgstr "La dettatura è gratuita con qualsiasi modello: trascrizione locale, dizionario, sostituzioni e cronologia, senza limiti di parole né abbonamento. Libreria, Registrazione, Pulizia e Personalizzazione sono incluse in Glimpse Plus o Glimpse Solo per un dispositivo e puoi provarle gratuitamente per 14 giorni. Entrambi si pagano una sola volta. Il server API locale e la riga di comando richiedono una licenza acquistata e non sono inclusi nella prova. Inserisci la chiave di licenza in Impostazioni → Account."
@@ -2895,6 +2848,11 @@ msgid "personalization.disable_mode"
 msgstr "Disabilita modalità"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.not_saved.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.done"
 msgstr "Fine"
@@ -2920,9 +2878,9 @@ msgid "model_picker.download"
 msgstr "Scarica"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.download"
-msgstr "Scarica"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.speech.no_model"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2933,11 +2891,6 @@ msgstr "Download non riuscito"
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.failed"
 msgstr "Download non riuscito"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.download_model"
-msgstr "Scarica modello"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2953,11 +2906,6 @@ msgstr "Il download è danneggiato"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.ready"
 msgstr "Scaricato"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.downloading"
-msgstr "Download in corso"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -3085,17 +3033,12 @@ msgid "settings.models.installed.english"
 msgstr "Inglese"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
-msgid "models.card.english_only"
-msgstr "Solo inglese"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.invalid"
 msgstr "Inserisci un dominio valido come gmail.com"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.custom.description"
 msgstr "Inserisci il tuo URL endpoint"
 
@@ -3361,8 +3304,8 @@ msgid "personalization.modal.snippets.full_list"
 msgstr "Elenco completo degli snippet"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.g1_not_installed"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.language.g1_not_installed"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -3661,7 +3604,7 @@ msgid "faq.how_it_works.question"
 msgstr "Come funziona Glimpse?"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.endpoint.placeholder.v2"
 msgstr "https://api.example.com/v1"
 
@@ -3874,6 +3817,11 @@ msgid "model_picker.diarizer.description.v2"
 msgstr "Indica chi sta parlando nelle trascrizioni della Libreria."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.language"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
 msgstr "Lingua"
@@ -4069,7 +4017,7 @@ msgid "live.prefs"
 msgstr "Impostazioni vista live"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.endpoint.aria"
 msgstr "URL endpoint LLM"
 
@@ -4094,18 +4042,14 @@ msgid "home.mode.local"
 msgstr "Locale"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider.local"
-msgstr "Locale"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.running"
 msgstr "API locale"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.group.server"
+#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.group.server"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -4256,7 +4200,7 @@ msgid "native.menu.minimize"
 msgstr "Minimizza"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model"
 msgstr "Modello"
 
@@ -4277,7 +4221,7 @@ msgstr "Modello"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: providerPreset?.defaultModel || "none"
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model.placeholder"
 msgstr "Modello (predefinito: {0})"
 
@@ -4315,6 +4259,11 @@ msgstr "Variante del modello"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.variant_installed"
 msgstr "Variante del modello (installata)"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.models_link"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4402,7 +4351,7 @@ msgid "record.name.title"
 msgstr "Assegna nome alla registrazione"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.g1.locked"
 msgstr ""
 
@@ -4542,6 +4491,11 @@ msgstr "Nessun microfono trovato."
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none_held"
 msgstr "nessun modello mantenuto in memoria tra le richieste"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.speech.no_model_label"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4730,16 +4684,6 @@ msgid "record.setup.apps.not_running"
 msgstr "Non in esecuzione"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/ShortcutList.tsx
-msgid "settings.general.shortcuts.not_saved"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.card.not_set_up"
-msgstr "Non configurato"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.timestamps_unsupported"
 msgstr "Non supportato da questo modello"
@@ -4750,7 +4694,7 @@ msgid "library.retranscribe.timestamps_unsupported"
 msgstr "Non supportato da questo modello"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "Non supportato su questo Mac."
 
@@ -4790,11 +4734,6 @@ msgid "settings.app.auto_pause_media.off"
 msgstr "Disattivato"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.card.off"
-msgstr "Disattivato"
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.source.off"
 msgstr "Disattivato"
@@ -4815,12 +4754,14 @@ msgid "import.cat.auto_launch.on"
 msgstr "Attivo"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.group.this_mac"
+#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.group.this_mac"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.language_model.provider.on_device"
 msgstr "Sul dispositivo"
 
@@ -4831,7 +4772,7 @@ msgstr "Un solo pagamento. La dettatura resta gratuita in ogni caso."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.ai_writing.answer.v3"
+msgid "faq.ai_writing.answer.v4"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -4875,11 +4816,6 @@ msgid "native.toast.model_action"
 msgstr "Apri Modelli"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.speech.action"
-msgstr "Apri Modelli"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Apri Impostazioni"
@@ -4920,7 +4856,7 @@ msgid "live.prefs.open_on_start"
 msgstr "Apri all'avvio della registrazione"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional"
 msgstr "Facoltativo"
 
@@ -5163,18 +5099,8 @@ msgstr "Elaborazione in corso…"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider"
-msgstr "Provider"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.model.provider_default"
 msgstr "predefinito del provider"
-
-#. js-lingui-explicit-id
-#: src/features/settings/settingsPanes.ts
-msgid "settings.modal.tab.providers"
-msgstr "Provider"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -5479,7 +5405,7 @@ msgid "home.local_api.requests"
 msgstr "Richieste elaborate"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.required"
 msgstr "Obbligatorio"
 
@@ -5680,8 +5606,13 @@ msgid "settings.local_api.status.running"
 msgstr "In esecuzione"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.g1_ready"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.language.runs_on_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.speech.runs_on_mac"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -5713,11 +5644,6 @@ msgstr "Salva nome"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.rename_save"
 msgstr "Salva nome"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/ShortcutList.tsx
-msgid "settings.general.shortcuts.save_to_library"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -5761,7 +5687,7 @@ msgid "onboarding.license_step.tile_raycast_body"
 msgstr "Cerca e incolla dettature precedenti."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model.search"
 msgstr "Cerca modelli disponibili…"
 
@@ -5831,7 +5757,7 @@ msgid "dictionary.search_or_add"
 msgstr "Cerca o aggiungi una parola…"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.search"
 msgstr "Cerca provider…"
 
@@ -5916,11 +5842,6 @@ msgid "settings.general.select_microphone"
 msgstr "Seleziona microfono..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider.select"
-msgstr "Seleziona provider..."
-
-#. js-lingui-explicit-id
 #: src/shared/ui/Dropdown.tsx
 msgid "dropdown.placeholder"
 msgstr "Seleziona..."
@@ -5937,18 +5858,13 @@ msgstr "Mandalo domani."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
-msgid "settings.general.shortcuts.column.cleanup_tip"
+msgid "settings.general.shortcuts.column.cleanup_tip.v2"
 msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.services"
 msgstr "Servizi"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud.set_up"
-msgstr "Configura"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -6168,9 +6084,9 @@ msgid "library.detail.speakers"
 msgstr "Parlanti"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.speech_label"
-msgstr "Voce"
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.speech"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -6186,11 +6102,6 @@ msgstr "Provider di trascrizione"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speech_provider_title"
 msgstr "Provider di trascrizione"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.title_provider"
-msgstr "Provider vocale"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -6449,11 +6360,6 @@ msgid "model_capability.live_text_detail"
 msgstr "Il testo appare nel riquadro mentre parli."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/ShortcutList.tsx
-msgid "settings.general.shortcuts.not_saved_detail"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.label.v2"
 msgstr "Dimensione del testo"
@@ -6545,7 +6451,7 @@ msgid "settings.error.api_server_restart"
 msgstr "Il server API non si è fermato, quindi non è stato possibile riavviarlo."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.not_ready"
 msgstr "Il modello Apple Intelligence è ancora in fase di download."
 
@@ -6650,11 +6556,6 @@ msgid "settings.about.data.include_timestamps"
 msgstr "Timestamp"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.speech.body"
-msgstr "Per trascrivere con questo provider, attivalo in Modelli."
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.group.today"
 msgstr "Oggi"
@@ -6733,6 +6634,11 @@ msgstr "Trascrivi file audio e video."
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_files"
 msgstr "Trascrivi file"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.speech.transcribe_with"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (progress * 100).toFixed(0)
@@ -6841,7 +6747,7 @@ msgid "onboarding.first_dictation.title.v2"
 msgstr "Prova la tua prima dettatura"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.not_enabled"
 msgstr "Attiva Apple Intelligence in Impostazioni di Sistema per usare questa funzione."
 
@@ -6921,8 +6827,8 @@ msgid "settings.general.language_info.active_model"
 msgstr "Le lingue non supportate non sono disponibili sul modello attivo. Passa a un modello compatibile per usarle."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.paste_as_spoken"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.language.paste_as_spoken"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -6996,11 +6902,6 @@ msgid "settings.models.installed.use"
 msgstr "Usa"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud.toggle"
-msgstr "Usa trascrizione cloud"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_subtitle"
 msgstr "Usa Glimpse da Terminale o script"
@@ -7041,7 +6942,6 @@ msgid "updates.available_version"
 msgstr "v{version} disponibile"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/ModelStatCard.tsx
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "models.card.verifying"
 msgstr "Verifica installazione in corso"
@@ -7182,7 +7082,7 @@ msgid "native.provider.writing"
 msgstr "Modello di scrittura"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
+#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.aria.v2"
 msgstr "Chiave API del modello di scrittura"
 
@@ -7315,11 +7215,6 @@ msgstr "Il modello di trascrizione è pronto. Premi la scorciatoia per dettare."
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_downloading"
 msgstr "Il modello vocale è ancora in fase di download. {percent}% completato."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud_active.provider_fallback"
-msgstr "il tuo servizio di riconoscimento vocale"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

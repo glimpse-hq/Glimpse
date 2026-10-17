@@ -8,8 +8,8 @@ import { Check, Info, Microphone as Mic, Square } from "@phosphor-icons/react";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
-import CleanupModelCard from "../CleanupModelCard";
 import ShortcutList from "../ShortcutList";
+import { useLanguageModelStatus } from "../../useLanguageModelStatus";
 import type { DeviceInfo, LlmProvider } from "../../../../types";
 import type { TranscriptionLanguageOption } from "../../../../shared/lib/transcriptionLanguages";
 import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
@@ -56,16 +56,9 @@ type GeneralTabProps = {
   licenseGateActive: boolean;
   activeLicense: boolean;
   llmProvider: LlmProvider;
-  setLlmProvider: (value: LlmProvider) => void;
-  llmEndpoint: string;
-  setLlmEndpoint: (value: string) => void;
-  llmApiKey: string;
-  setLlmApiKey: (value: string) => void;
-  llmModel: string;
-  setLlmModel: (value: string) => void;
-  availableModels: string[];
-  fetchAvailableModels: () => void;
+  llmConfigReady: boolean;
   onOpenAccountTab: () => void;
+  onOpenModelsTab: () => void;
 };
 
 const GeneralTab = ({
@@ -91,18 +84,22 @@ const GeneralTab = ({
   licenseGateActive,
   activeLicense,
   llmProvider,
-  setLlmProvider,
-  llmEndpoint,
-  setLlmEndpoint,
-  llmApiKey,
-  setLlmApiKey,
-  llmModel,
-  setLlmModel,
-  availableModels,
-  fetchAvailableModels,
+  llmConfigReady,
   onOpenAccountTab,
+  onOpenModelsTab,
 }: GeneralTabProps) => {
   const { t } = useLingui();
+  const languageModel = useLanguageModelStatus(
+    llmProvider,
+    llmConfigReady,
+    activeLicense,
+  );
+  const cleanupWaitsForModel =
+    licenseGateActive &&
+    languageModel.ready === false &&
+    Object.values(shortcutBindings).some((bindings) =>
+      bindings.some((binding) => binding.cleanup_enabled),
+    );
   const languageInfoId = useId();
   const [micDropdownOpen, setMicDropdownOpen] = useState(false);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
@@ -332,6 +329,25 @@ const GeneralTab = ({
             onMove={moveShortcutBinding}
           />
 
+          {cleanupWaitsForModel && (
+            <p className="ui-text-meta ui-color-warning px-0.5">
+              {t({
+                id: "settings.general.shortcuts.cleanup_needs_model",
+                message: "Clean up needs a language model. Set one up in",
+              })}{" "}
+              <button
+                type="button"
+                onClick={onOpenModelsTab}
+                className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
+              >
+                {t({
+                  id: "settings.general.shortcuts.models_link",
+                  message: "Models",
+                })}
+              </button>
+            </p>
+          )}
+
           {!licenseGateActive && (
             <p className="ui-text-meta ui-color-muted px-0.5">
               {t({
@@ -359,32 +375,6 @@ const GeneralTab = ({
 
         <div className="space-y-2">
           <SectionLabel>
-            {t({
-              id: "settings.general.cleanup",
-              message: "Cleanup",
-            })}
-          </SectionLabel>
-          <CleanupModelCard
-            llmProvider={llmProvider}
-            setLlmProvider={setLlmProvider}
-            llmEndpoint={llmEndpoint}
-            setLlmEndpoint={setLlmEndpoint}
-            llmApiKey={llmApiKey}
-            setLlmApiKey={setLlmApiKey}
-            llmModel={llmModel}
-            setLlmModel={setLlmModel}
-            availableModels={availableModels}
-            fetchAvailableModels={fetchAvailableModels}
-            activeLicense={activeLicense}
-            cleanupShortcutsOn={
-              licenseGateActive &&
-              Object.values(shortcutBindings).some((bindings) =>
-                bindings.some((binding) => binding.cleanup_enabled),
-              )
-            }
-          />
-
-          <SectionLabel className="pt-4">
             {t({
               id: "settings.general.features",
               message: "Features",

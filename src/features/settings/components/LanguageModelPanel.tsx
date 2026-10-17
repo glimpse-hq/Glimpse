@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { useLingui } from "@lingui/react/macro";
 import {
   CLOUD_PROVIDERS,
@@ -9,17 +7,10 @@ import {
 import type { LlmProvider } from "../../../types";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import ApiKeyField from "../../../shared/ui/ApiKeyField";
-import { detectAppPlatform } from "../../../platform/service";
+import ModelSourcePanel, { FIELD_BUTTON_CLASS } from "./ModelSourcePanel";
+import { useLanguageModelStatus } from "../useLanguageModelStatus";
 
-type AppleLlmAvailability =
-  "available" | "not_enabled" | "not_ready" | "unsupported";
-
-type G1Status = {
-  supported: boolean;
-  installed: boolean;
-};
-
-type CleanupModelCardProps = {
+type LanguageModelPanelProps = {
   llmProvider: LlmProvider;
   setLlmProvider: (value: LlmProvider) => void;
   llmEndpoint: string;
@@ -28,16 +19,14 @@ type CleanupModelCardProps = {
   setLlmApiKey: (value: string) => void;
   llmModel: string;
   setLlmModel: (value: string) => void;
+  llmConfigReady: boolean;
   availableModels: string[];
   fetchAvailableModels: () => void;
   activeLicense: boolean;
   cleanupShortcutsOn: boolean;
 };
 
-const FIELD_BUTTON_CLASS =
-  "!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary";
-
-const CleanupModelCard = ({
+const LanguageModelPanel = ({
   llmProvider,
   setLlmProvider,
   llmEndpoint,
@@ -46,63 +35,20 @@ const CleanupModelCard = ({
   setLlmApiKey,
   llmModel,
   setLlmModel,
+  llmConfigReady,
   availableModels,
   fetchAvailableModels,
   activeLicense,
   cleanupShortcutsOn,
-}: CleanupModelCardProps) => {
+}: LanguageModelPanelProps) => {
   const { t } = useLingui();
   const providerPreset = getProviderPreset(llmProvider);
-  const onDevice = Boolean(providerPreset?.onDevice);
   const usesService = Boolean(providerPreset && !providerPreset.onDevice);
-  const isMac = detectAppPlatform() === "macos";
-  const [appleAvailability, setAppleAvailability] =
-    useState<AppleLlmAvailability | null>(null);
-  const [g1Status, setG1Status] = useState<G1Status | null>(null);
+  const { appleAvailability, g1Installed, showApple, showG1, ready } =
+    useLanguageModelStatus(llmProvider, llmConfigReady, activeLicense);
   const uniqueModels = Array.from(
     new Set(availableModels.map((model) => model.trim()).filter(Boolean)),
   );
-
-  useEffect(() => {
-    if (!isMac) {
-      return;
-    }
-    let cancelled = false;
-    invoke<AppleLlmAvailability>("apple_llm_availability")
-      .then((value) => {
-        if (!cancelled) setAppleAvailability(value);
-      })
-      .catch(() => {
-        if (!cancelled) setAppleAvailability("unsupported");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isMac]);
-
-  // Rescans on provider changes, so model files copied in meanwhile show up.
-  useEffect(() => {
-    if (!isMac) {
-      return;
-    }
-    let cancelled = false;
-    invoke<G1Status>("g1_status")
-      .then((value) => {
-        if (!cancelled) setG1Status(value);
-      })
-      .catch(() => {
-        if (!cancelled) setG1Status({ supported: false, installed: false });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isMac, llmProvider]);
-
-  // Backend probe hides this on Windows, Intel Macs, and macOS < 26.
-  const showApple =
-    isMac && appleAvailability !== null && appleAvailability !== "unsupported";
-  // Hidden on Windows and Intel Macs.
-  const showG1 = isMac && Boolean(g1Status?.supported);
   const onDeviceLabel = t({
     id: "settings.language_model.provider.on_device",
     message: "On-device",
@@ -122,94 +68,82 @@ const CleanupModelCard = ({
     }
   };
 
-  const notReadyText = cleanupShortcutsOn
-    ? t({
-        id: "settings.general.cleanup.paste_as_spoken",
-        message:
-          "Until then, shortcuts with Clean up type exactly what you said.",
-      })
-    : null;
-
-  const status = (() => {
+  const statusText = (() => {
     if (llmProvider === "bonsai") {
-      if (!activeLicense) return { text: g1LockedText, ready: false };
-      if (g1Status === null) return null;
-      return g1Status.installed
-        ? {
-            text: t({
-              id: "settings.general.cleanup.g1_ready",
-              message: "Runs on this Mac.",
-            }),
-            ready: true,
-          }
-        : {
-            text: t({
-              id: "settings.general.cleanup.g1_not_installed",
-              message: "G1 isn't installed on this Mac yet.",
-            }),
-            ready: false,
-          };
+      if (!activeLicense) return g1LockedText;
+      if (g1Installed === null) return null;
+      return g1Installed
+        ? t({
+            id: "settings.models.language.runs_on_mac",
+            message: "Runs on this Mac.",
+          })
+        : t({
+            id: "settings.models.language.g1_not_installed",
+            message: "G1 isn't installed on this Mac yet.",
+          });
     }
     if (llmProvider === "apple") {
-      if (appleAvailability === null) return null;
       switch (appleAvailability) {
+        case null:
+          return null;
         case "available":
-          return {
-            text: t({
-              id: "settings.language_model.apple.ready",
-              message: "Built into this Mac.",
-            }),
-            ready: true,
-          };
+          return t({
+            id: "settings.language_model.apple.ready",
+            message: "Built into this Mac.",
+          });
         case "not_enabled":
-          return {
-            text: t({
-              id: "settings.language_model.apple.not_enabled",
-              message:
-                "Turn on Apple Intelligence in System Settings to use this.",
-            }),
-            ready: false,
-          };
+          return t({
+            id: "settings.language_model.apple.not_enabled",
+            message:
+              "Turn on Apple Intelligence in System Settings to use this.",
+          });
         case "not_ready":
-          return {
-            text: t({
-              id: "settings.language_model.apple.not_ready",
-              message: "The Apple Intelligence model is still downloading.",
-            }),
-            ready: false,
-          };
+          return t({
+            id: "settings.language_model.apple.not_ready",
+            message: "The Apple Intelligence model is still downloading.",
+          });
         default:
-          return {
-            text: t({
-              id: "settings.language_model.apple.unsupported",
-              message: "Not supported on this Mac.",
-            }),
-            ready: false,
-          };
+          return t({
+            id: "settings.language_model.apple.unsupported",
+            message: "Not supported on this Mac.",
+          });
       }
     }
-    return {
-      text: t({
-        id: "settings.general.cleanup.choose_hint",
-        message: "Choose a model to clean up dictation.",
-      }),
-      ready: false,
-    };
+    return t({
+      id: "settings.models.language.choose_hint",
+      message: "Choose a model to clean up dictation.",
+    });
   })();
+  const warning = cleanupShortcutsOn && ready === false;
 
   return (
-    <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
-      <div className="px-2 pt-1.5">
-        <span className="ui-text-label-strong ui-color-primary block">
-          {t({
-            id: "settings.general.cleanup.with",
-            message: "Clean up with",
-          })}
-        </span>
+    <ModelSourcePanel
+      label={t({
+        id: "settings.models.language.clean_up_with",
+        message: "Clean up with",
+      })}
+      warning={warning}
+      showFields={usesService}
+      status={
+        <>
+          {statusText}
+          {warning && providerPreset?.onDevice && (
+            <>
+              {" "}
+              {t({
+                id: "settings.models.language.paste_as_spoken",
+                message:
+                  "Until then, shortcuts with Clean up type exactly what you said.",
+              })}
+            </>
+          )}
+        </>
+      }
+      select={
         <Dropdown<LlmProvider>
           value={providerPreset ? llmProvider : null}
           ariaLabel={t({
-            id: "settings.general.cleanup.with",
+            id: "settings.models.language.clean_up_with",
             message: "Clean up with",
           })}
           onChange={selectProvider}
@@ -235,7 +169,7 @@ const CleanupModelCard = ({
                   {
                     value: "_device_header" as LlmProvider,
                     label: t({
-                      id: "settings.general.cleanup.group.this_mac",
+                      id: "settings.models.group.this_mac",
                       message: "On this Mac",
                     }),
                     isHeader: true,
@@ -264,7 +198,7 @@ const CleanupModelCard = ({
             {
               value: "_local_header" as LlmProvider,
               label: t({
-                id: "settings.general.cleanup.group.server",
+                id: "settings.models.group.server",
                 message: "Local server",
               }),
               isHeader: true,
@@ -314,16 +248,9 @@ const CleanupModelCard = ({
           buttonClassName={FIELD_BUTTON_CLASS}
           menuClassName="min-w-[260px]"
         />
-      </div>
-
-      <div
-        // Both layouts share one cell so the card keeps its height.
-        className="grid px-2 pb-1"
-      >
-        <div
-          className={`col-start-1 row-start-1 space-y-3 ${usesService ? "" : "invisible"}`}
-          inert={!usesService}
-        >
+      }
+      fields={
+        <>
           <div>
             <span className="ui-text-label-strong ui-color-primary block">
               {t({
@@ -389,21 +316,10 @@ const CleanupModelCard = ({
               menuClassName="min-w-[260px]"
             />
           </div>
-        </div>
-        <p
-          className={`col-start-1 row-start-1 ui-text-meta ${
-            usesService ? "invisible" : ""
-          } ${status && !status.ready && cleanupShortcutsOn ? "ui-color-warning" : "ui-color-muted"}`}
-          aria-live="polite"
-        >
-          {status?.text}
-          {onDevice && status && !status.ready && notReadyText && (
-            <> {notReadyText}</>
-          )}
-        </p>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 };
 
-export default CleanupModelCard;
+export default LanguageModelPanel;

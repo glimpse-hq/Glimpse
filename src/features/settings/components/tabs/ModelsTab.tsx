@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
 import {
@@ -7,9 +7,9 @@ import {
   Check,
   Trash as Trash2,
 } from "@phosphor-icons/react";
-import ModelStatCard from "../ModelStatCard";
 import ModelCapabilityIcon from "../../../../shared/ui/ModelCapabilityIcon";
-import CloudModelCard from "../CloudModelCard";
+import SpeechModelPanel, { type SpeechSource } from "../SpeechModelPanel";
+import LanguageModelPanel from "../LanguageModelPanel";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
@@ -27,11 +27,6 @@ import {
   MODEL_CAPABILITY_STREAMING,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../../shared/lib/modelCapabilities";
-import {
-  getSpeechProviderPreset,
-  isRemoteSpeechConfigured,
-  resolvedSpeechModel,
-} from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import {
   resolveLocalFallbackModel,
@@ -42,12 +37,12 @@ import { showErrorToast } from "../../../../shared/lib/errorToast";
 import { useSettings } from "../../queries";
 import type {
   DownloadEvent,
+  LlmProvider,
   ModelInfo,
   ModelStatus,
   RemoteSpeechProvider,
 } from "../../../../types";
 
-const SIDE_BY_SIDE_WIDTH = 280;
 type ModelsTabProps = {
   variants: Variants;
   modelCatalog: ModelInfo[];
@@ -58,14 +53,33 @@ type ModelsTabProps = {
   remoteSpeechEnabled: boolean;
   setRemoteSpeechEnabled: (value: boolean) => void;
   remoteSpeechProvider: RemoteSpeechProvider;
+  setRemoteSpeechProvider: (value: RemoteSpeechProvider) => void;
   remoteSpeechEndpoint: string;
-  remoteSpeechModel: string;
+  setRemoteSpeechEndpoint: (value: string) => void;
   remoteSpeechApiKey: string;
+  setRemoteSpeechApiKey: (value: string) => void;
+  remoteSpeechModel: string;
+  setRemoteSpeechModel: (value: string) => void;
+  remoteSpeechConfigReady: boolean;
+  availableSpeechModels: string[];
+  fetchAvailableSpeechModels: () => void;
+  llmProvider: LlmProvider;
+  setLlmProvider: (value: LlmProvider) => void;
+  llmEndpoint: string;
+  setLlmEndpoint: (value: string) => void;
+  llmApiKey: string;
+  setLlmApiKey: (value: string) => void;
+  llmModel: string;
+  setLlmModel: (value: string) => void;
+  llmConfigReady: boolean;
+  availableModels: string[];
+  fetchAvailableModels: () => void;
+  activeLicense: boolean;
+  cleanupShortcutsOn: boolean;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
   handleDelete: (modelKey: string) => void;
   handleCancelDownload: (modelKey: string) => void;
-  onOpenProvidersTab: () => void;
 };
 
 const InstalledModelRow = ({
@@ -228,74 +242,6 @@ const AutomaticModelRow = ({
   );
 };
 
-type CloudMode = "on" | "off" | "unconfigured";
-
-const CloudHeroCard = ({
-  mode,
-  providerLabel,
-  modelLabel,
-  width,
-  onToggle,
-  onOpenProvidersTab,
-}: {
-  mode: CloudMode;
-  providerLabel: string;
-  modelLabel: string | null;
-  width?: number;
-  onToggle: () => void;
-  onOpenProvidersTab: () => void;
-}) => {
-  const { t } = useLingui();
-  const status =
-    mode === "on"
-      ? t({ id: "settings.models.card.active", message: "Active" })
-      : mode === "off"
-        ? t({ id: "settings.models.card.off", message: "Off" })
-        : t({ id: "settings.models.card.not_set_up", message: "Not set up" });
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative">
-        <div
-          className={`transition-opacity duration-200 ${
-            mode === "on" ? "" : "opacity-45"
-          }`}
-        >
-          <CloudModelCard
-            width={width}
-            providerLabel={providerLabel}
-            modelLabel={modelLabel}
-          />
-        </div>
-        <div className="absolute bottom-4 right-5 flex h-7 items-center">
-          {mode === "unconfigured" ? (
-            <button
-              type="button"
-              onClick={onOpenProvidersTab}
-              className="inline-flex h-7 items-center rounded-md px-2.5 ui-text-button-sm ui-color-secondary transition-colors hover:bg-surface-elevated hover:text-content-primary"
-            >
-              {t({ id: "settings.models.cloud.set_up", message: "Set up" })}
-            </button>
-          ) : (
-            <ToggleSwitch
-              size="md"
-              enabled={mode === "on"}
-              onToggle={onToggle}
-              ariaLabel={t({
-                id: "settings.models.cloud.toggle",
-                message: "Use cloud transcription",
-              })}
-            />
-          )}
-        </div>
-      </div>
-      <span className="flex h-7 items-center ui-text-meta ui-color-muted">
-        {status}
-      </span>
-    </div>
-  );
-};
-
 const ModelsTab = ({
   variants,
   modelCatalog,
@@ -306,14 +252,33 @@ const ModelsTab = ({
   remoteSpeechEnabled,
   setRemoteSpeechEnabled,
   remoteSpeechProvider,
+  setRemoteSpeechProvider,
   remoteSpeechEndpoint,
-  remoteSpeechModel,
+  setRemoteSpeechEndpoint,
   remoteSpeechApiKey,
+  setRemoteSpeechApiKey,
+  remoteSpeechModel,
+  setRemoteSpeechModel,
+  remoteSpeechConfigReady,
+  availableSpeechModels,
+  fetchAvailableSpeechModels,
+  llmProvider,
+  setLlmProvider,
+  llmEndpoint,
+  setLlmEndpoint,
+  llmApiKey,
+  setLlmApiKey,
+  llmModel,
+  setLlmModel,
+  llmConfigReady,
+  availableModels,
+  fetchAvailableModels,
+  activeLicense,
+  cleanupShortcutsOn,
   setLocalModel,
   handleDownload,
   handleDelete,
   handleCancelDownload,
-  onOpenProvidersTab,
 }: ModelsTabProps) => {
   const { t } = useLingui();
   const [browsing, setBrowsing] = useState(false);
@@ -329,51 +294,31 @@ const ModelsTab = ({
     localModel,
   );
 
-  const providerLabel =
-    getSpeechProviderPreset(remoteSpeechProvider)?.label ??
-    t({
-      id: "settings.models.cloud_active.provider_fallback",
-      message: "your speech provider",
-    });
-  const activeModel = resolvedSpeechModel(
-    remoteSpeechProvider,
-    remoteSpeechModel,
-  );
+  // A cloud provider is only switched on once it's set up; until then the
+  // picker keeps showing it so its fields stay visible.
+  const [cloudPending, setCloudPending] = useState(false);
+  const speechSource: SpeechSource =
+    remoteSpeechEnabled || cloudPending ? remoteSpeechProvider : "on_device";
+
+  useEffect(() => {
+    if (!cloudPending || !remoteSpeechConfigReady) return;
+    setCloudPending(false);
+    setRemoteSpeechEnabled(true);
+  }, [cloudPending, remoteSpeechConfigReady, setRemoteSpeechEnabled]);
+
+  const changeSpeechSource = (next: SpeechSource) => {
+    setCloudPending(next !== "on_device");
+    if (next !== "on_device") setRemoteSpeechProvider(next);
+    if (remoteSpeechEnabled) setRemoteSpeechEnabled(false);
+  };
 
   const installedModels = sortInstalledModels(
     modelCatalog.filter((m) => modelStatus[m.key]?.installed),
   );
 
-  const cloudConfigured = isRemoteSpeechConfigured({
-    enabled: true,
-    provider: remoteSpeechProvider,
-    endpoint: remoteSpeechEndpoint,
-    model: remoteSpeechModel,
-    apiKey: remoteSpeechApiKey,
-  });
-  const cloudMode: CloudMode = remoteSpeechEnabled
-    ? "on"
-    : cloudConfigured
-      ? "off"
-      : "unconfigured";
-  const localRoleLabel =
-    cloudMode === "on"
-      ? t({ id: "settings.models.card.fallback", message: "Fallback" })
-      : t({ id: "settings.models.card.active", message: "Active" });
-
-  const renderLocalCard = (width?: number, compact?: boolean) =>
-    installedModel ? (
-      <ModelStatCard
-        model={installedModel}
-        status={modelStatus[installedModel.key]}
-        progress={downloadState[installedModel.key]}
-        width={width}
-        compact={compact}
-        onDownload={() => handleDownload(installedModel.key)}
-        onDelete={() => handleDelete(installedModel.key)}
-        onCancel={() => handleCancelDownload(installedModel.key)}
-      />
-    ) : null;
+  const localRoleLabel = remoteSpeechEnabled
+    ? t({ id: "settings.models.card.fallback", message: "Fallback" })
+    : t({ id: "settings.models.card.active", message: "Active" });
 
   return (
     <motion.div
@@ -410,36 +355,46 @@ const ModelsTab = ({
         </>
       ) : (
         <div className="flex h-full min-h-0 flex-col gap-5">
-          {installedModel ? (
-            <div className="flex shrink-0 items-start justify-center gap-4">
-              <CloudHeroCard
-                mode={cloudMode}
-                width={SIDE_BY_SIDE_WIDTH}
-                providerLabel={providerLabel}
-                modelLabel={activeModel ?? null}
-                onToggle={() => setRemoteSpeechEnabled(!remoteSpeechEnabled)}
-                onOpenProvidersTab={onOpenProvidersTab}
+          <div className="grid shrink-0 grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <SectionLabel>
+                {t({ id: "settings.models.speech", message: "Speech" })}
+              </SectionLabel>
+              <SpeechModelPanel
+                source={speechSource}
+                onSourceChange={changeSpeechSource}
+                localModelLabel={installedModel?.label ?? null}
+                endpoint={remoteSpeechEndpoint}
+                setEndpoint={setRemoteSpeechEndpoint}
+                apiKey={remoteSpeechApiKey}
+                setApiKey={setRemoteSpeechApiKey}
+                model={remoteSpeechModel}
+                setModel={setRemoteSpeechModel}
+                availableModels={availableSpeechModels}
+                fetchAvailableModels={fetchAvailableSpeechModels}
               />
-              <div className="flex flex-col items-center gap-2">
-                {renderLocalCard(SIDE_BY_SIDE_WIDTH, true)}
-                <span className="flex h-7 items-center ui-text-meta ui-color-muted">
-                  {localRoleLabel}
-                </span>
-              </div>
             </div>
-          ) : (
-            cloudMode !== "unconfigured" && (
-              <div className="flex shrink-0 justify-center">
-                <CloudHeroCard
-                  mode={cloudMode}
-                  providerLabel={providerLabel}
-                  modelLabel={activeModel ?? null}
-                  onToggle={() => setRemoteSpeechEnabled(!remoteSpeechEnabled)}
-                  onOpenProvidersTab={onOpenProvidersTab}
-                />
-              </div>
-            )
-          )}
+            <div className="space-y-2">
+              <SectionLabel>
+                {t({ id: "settings.models.language", message: "Language" })}
+              </SectionLabel>
+              <LanguageModelPanel
+                llmProvider={llmProvider}
+                setLlmProvider={setLlmProvider}
+                llmEndpoint={llmEndpoint}
+                setLlmEndpoint={setLlmEndpoint}
+                llmApiKey={llmApiKey}
+                setLlmApiKey={setLlmApiKey}
+                llmModel={llmModel}
+                setLlmModel={setLlmModel}
+                llmConfigReady={llmConfigReady}
+                availableModels={availableModels}
+                fetchAvailableModels={fetchAvailableModels}
+                activeLicense={activeLicense}
+                cleanupShortcutsOn={cleanupShortcutsOn}
+              />
+            </div>
+          </div>
 
           <AutomaticModelRow
             modelLabel={recommendedLabel}

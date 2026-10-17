@@ -82,13 +82,7 @@ import type {
 } from "../../types";
 
 type ActiveTab =
-  | "general"
-  | "models"
-  | "providers"
-  | "local-api"
-  | "about"
-  | "account"
-  | "app";
+  "general" | "models" | "local-api" | "about" | "account" | "app";
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureTarget = { mode: ShortcutMode; index: number } | null;
 type ShortcutTarget = { mode: ShortcutMode; index: number };
@@ -1616,7 +1610,7 @@ export function useSettingsForm({
         applyModelDiscoverySuccess(state, requestSeq, models),
       );
       if (next === previous) return;
-      if (errorSourceTab === "providers") clearSettingsError();
+      if (errorSourceTab === "models") clearSettingsError();
     } catch (err) {
       const previous = modelDiscoveryRef.current;
       const next = setModelDiscovery((state) =>
@@ -1631,7 +1625,7 @@ export function useSettingsForm({
             message: `Couldn't load writing models: ${detail}`,
           }),
         ),
-        "providers",
+        "models",
       );
     }
   }, [
@@ -1661,7 +1655,7 @@ export function useSettingsForm({
         applyModelDiscoverySuccess(state, requestSeq, models),
       );
       if (next === previous) return;
-      if (errorSourceTab === "providers") clearSettingsError();
+      if (errorSourceTab === "models") clearSettingsError();
     } catch (err) {
       const previous = speechModelDiscoveryRef.current;
       const next = setSpeechModelDiscovery((state) =>
@@ -1676,7 +1670,7 @@ export function useSettingsForm({
             message: `Couldn't load speech models: ${detail}`,
           }),
         ),
-        "providers",
+        "models",
       );
     }
   }, [
@@ -1969,6 +1963,7 @@ export function useSettingsForm({
     setRemoteSpeechApiKey: setRemoteSpeechApiKeyRawAndClearModels,
     remoteSpeechModel,
     setRemoteSpeechModel,
+    remoteSpeechConfigReady,
     microphoneDevice,
     setMicrophoneDevice,
     language: displayedLanguage,
@@ -2001,6 +1996,7 @@ export function useSettingsForm({
     setLlmApiKey,
     llmModel,
     setLlmModel,
+    llmConfigReady,
     licenseGateActive,
     activeLicense,
     availableModels,
