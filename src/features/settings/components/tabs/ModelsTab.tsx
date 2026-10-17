@@ -61,8 +61,6 @@ type ModelsTabProps = {
   remoteSpeechModel: string;
   setRemoteSpeechModel: (value: string) => void;
   remoteSpeechConfigReady: boolean;
-  availableSpeechModels: string[];
-  fetchAvailableSpeechModels: () => void;
   llmProvider: LlmProvider;
   setLlmProvider: (value: LlmProvider) => void;
   llmEndpoint: string;
@@ -72,8 +70,6 @@ type ModelsTabProps = {
   llmModel: string;
   setLlmModel: (value: string) => void;
   llmConfigReady: boolean;
-  availableModels: string[];
-  fetchAvailableModels: () => void;
   activeLicense: boolean;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
@@ -254,8 +250,6 @@ const ModelsTab = ({
   remoteSpeechModel,
   setRemoteSpeechModel,
   remoteSpeechConfigReady,
-  availableSpeechModels,
-  fetchAvailableSpeechModels,
   llmProvider,
   setLlmProvider,
   llmEndpoint,
@@ -265,8 +259,6 @@ const ModelsTab = ({
   llmModel,
   setLlmModel,
   llmConfigReady,
-  availableModels,
-  fetchAvailableModels,
   activeLicense,
   setLocalModel,
   handleDownload,
@@ -384,8 +376,6 @@ const ModelsTab = ({
                 setApiKey={setRemoteSpeechApiKey}
                 model={remoteSpeechModel}
                 setModel={setRemoteSpeechModel}
-                availableModels={availableSpeechModels}
-                fetchAvailableModels={fetchAvailableSpeechModels}
               />
             </div>
           </div>
@@ -404,8 +394,6 @@ const ModelsTab = ({
               llmModel={llmModel}
               setLlmModel={setLlmModel}
               llmConfigReady={llmConfigReady}
-              availableModels={availableModels}
-              fetchAvailableModels={fetchAvailableModels}
               activeLicense={activeLicense}
             />
           </div>

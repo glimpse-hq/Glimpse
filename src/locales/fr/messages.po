@@ -1451,8 +1451,7 @@ msgid "transcriptions.time.any"
 msgstr "À tout moment"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.api_key.v2"
 msgstr "Clé API"
 
@@ -1584,6 +1583,7 @@ msgid "onboarding.model.option.automatic"
 msgstr "Automatique"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: choice.defaultModel
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.speech_model.model.automatic_default"
 msgstr "Automatique ({defaultModel})"
@@ -1705,6 +1705,7 @@ msgid "settings.account.action.deactivate_cancel"
 msgstr "Annuler"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.cancel"
 msgstr "Annuler"
@@ -1863,7 +1864,7 @@ msgid "model_picker.title"
 msgstr "Choisir un modèle"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.general.cleanup.model_placeholder"
 msgstr ""
 
@@ -2028,20 +2029,9 @@ msgid "native.menu.close_window"
 msgstr "Fermer la fenêtre"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.location.cloud"
 msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.cloud.v2"
-msgstr "Cloud (clé API)"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.provider.cloud.v2"
-msgstr "Cloud (clé API)"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2337,6 +2327,11 @@ msgid "library.modal.export.item_not_found"
 msgstr "Cet élément de bibliothèque est introuvable. Essayez de le rouvrir."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.models_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.couldnt_load"
 msgstr "Impossible de charger les versions"
@@ -2345,16 +2340,6 @@ msgstr "Impossible de charger les versions"
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.load_failed"
 msgstr "Impossible de charger les réglages."
-
-#. js-lingui-explicit-id
-#: src/features/settings/useSettingsForm.ts
-msgid "settings.error.speech_models_failed"
-msgstr "Impossible de charger les modèles vocaux : {detail}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/useSettingsForm.ts
-msgid "settings.error.writing_models_failed"
-msgstr "Impossible de charger les modèles d'écriture : {detail}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -2842,6 +2827,11 @@ msgid "settings.general.shortcuts.not_saved.v2"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.done"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.done"
 msgstr "Terminé"
@@ -2977,6 +2967,11 @@ msgid "onboarding.license_step.tile_edit"
 msgstr "Modifier avec votre voix"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.edit"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.feedback.email"
 msgstr "E-mail"
@@ -3012,6 +3007,11 @@ msgid "settings.app.permission.enabled"
 msgstr "Activé"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.endpoint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.english"
 msgstr "Anglais"
@@ -3025,16 +3025,6 @@ msgstr "Anglais"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.invalid"
 msgstr "Saisissez un domaine valide, par exemple gmail.com"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.custom.description"
-msgstr "Saisir l'URL de votre point de terminaison"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.provider.custom.description"
-msgstr "Saisir l'URL de votre point de terminaison"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3588,14 +3578,9 @@ msgid "faq.how_it_works.question"
 msgstr "Comment fonctionne Glimpse ?"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.endpoint.placeholder.v2"
 msgstr "https://api.example.com/v1"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.endpoint.placeholder"
-msgstr "https://your-speech-endpoint.com"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3811,6 +3796,11 @@ msgid "import.cat.language"
 msgstr "Langue"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.provider.language_title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.large"
 msgstr "Grand"
@@ -3996,11 +3986,6 @@ msgid "live.prefs"
 msgstr "Réglages de la vue en direct"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.endpoint.aria"
-msgstr "URL du point de terminaison LLM"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.load_more"
 msgstr "Charger plus"
@@ -4026,8 +4011,7 @@ msgid "home.local_api.running"
 msgstr "API locale"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.group.server"
 msgstr ""
 
@@ -4184,14 +4168,8 @@ msgid "native.menu.minimize"
 msgstr "Réduire"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.model"
-msgstr "Modèle"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.model"
 msgstr "Modèle"
 
 #. js-lingui-explicit-id
@@ -4659,6 +4637,7 @@ msgstr "Non en cours d'exécution"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.status.not_set_up"
 msgstr ""
 
@@ -4833,13 +4812,8 @@ msgid "live.prefs.open_on_start"
 msgstr "Ouvrir au démarrage de l'enregistrement"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.api_key.optional"
-msgstr "Facultatif"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.api_key.optional"
 msgstr "Facultatif"
 
 #. js-lingui-explicit-id
@@ -5075,17 +5049,6 @@ msgid "pill.status.processing"
 msgstr "Traitement en cours…"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.language_model.provider"
-msgstr "Fournisseur"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.model.provider_default"
-msgstr "par défaut du fournisseur"
-
-#. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
 msgstr "Violet"
@@ -5261,16 +5224,6 @@ msgid "library.retranscribe.remote_provider"
 msgstr "Fournisseur distant"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.api_key.aria"
-msgstr "Clé API de reconnaissance vocale distante"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.endpoint.aria"
-msgstr "URL du point de terminaison vocal distant"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.remove_value"
 msgstr "supprimer"
@@ -5388,14 +5341,9 @@ msgid "home.local_api.requests"
 msgstr "Requêtes traitées"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.api_key.required"
 msgstr "Obligatoire"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.api_key.required"
-msgstr "Requis"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5660,14 +5608,9 @@ msgid "onboarding.license_step.tile_raycast_body"
 msgstr "Recherchez et collez des dictées précédentes."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.model.search"
 msgstr "Rechercher des modèles disponibles…"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.model.search"
-msgstr "Rechercher des modèles vocaux disponibles…"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -5728,16 +5671,6 @@ msgstr "Options de recherche"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.search_or_add"
 msgstr "Rechercher ou ajouter un mot…"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.search"
-msgstr "Rechercher des fournisseurs…"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.provider.search"
-msgstr "Rechercher des services de reconnaissance vocale…"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -5815,11 +5748,6 @@ msgid "settings.general.select_microphone"
 msgstr "Sélectionner un microphone…"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.select"
-msgstr "Sélectionner un fournisseur…"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/Dropdown.tsx
 msgid "dropdown.placeholder"
 msgstr "Sélectionner…"
@@ -5851,9 +5779,8 @@ msgid "native.menu.services"
 msgstr "Services"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.models.provider.set_up"
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.set_up.v2"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -6082,6 +6009,11 @@ msgstr ""
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.model.v2"
 msgstr "Modèle vocal"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechProviderRow.tsx
+msgid "settings.models.provider.speech_title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -7057,11 +6989,6 @@ msgid "native.provider.writing"
 msgstr "Modèle d’écriture"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.api_key.aria.v2"
-msgstr "Clé API du modèle d’écriture"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/TrialEndedScreen.tsx
 msgid "trial_ended.personalization.detail"
 msgstr "Styles d’écriture pour chaque application et site web."
@@ -7160,12 +7087,6 @@ msgstr "Le téléchargement de votre modèle a échoué. Réessayez ci-dessous."
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model"
 msgstr "Le téléchargement de votre modèle est en cours. Veuillez patienter."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.models.provider.facts"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx

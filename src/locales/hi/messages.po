@@ -1451,8 +1451,7 @@ msgid "transcriptions.time.any"
 msgstr "कभी भी"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.api_key.v2"
 msgstr "API कुंजी"
 
@@ -1584,6 +1583,7 @@ msgid "onboarding.model.option.automatic"
 msgstr "स्वचालित"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: choice.defaultModel
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.speech_model.model.automatic_default"
 msgstr "स्वचालित ({defaultModel})"
@@ -1705,6 +1705,7 @@ msgid "settings.account.action.deactivate_cancel"
 msgstr "रद्द करें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.cancel"
 msgstr "रद्द करें"
@@ -1863,7 +1864,7 @@ msgid "model_picker.title"
 msgstr "कोई मॉडल चुनें"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.general.cleanup.model_placeholder"
 msgstr ""
 
@@ -2028,20 +2029,9 @@ msgid "native.menu.close_window"
 msgstr "विंडो बंद करें"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.location.cloud"
 msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.cloud.v2"
-msgstr "क्लाउड (API कुंजी)"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.provider.cloud.v2"
-msgstr "क्लाउड (API कुंजी)"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2337,6 +2327,11 @@ msgid "library.modal.export.item_not_found"
 msgstr "यह लाइब्रेरी आइटम नहीं मिल सका। इसे दोबारा खोलने की कोशिश करें।"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.models_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.couldnt_load"
 msgstr "रिलीज़ लोड नहीं हो सकीं"
@@ -2345,16 +2340,6 @@ msgstr "रिलीज़ लोड नहीं हो सकीं"
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.load_failed"
 msgstr "सेटिंग्ज़ लोड नहीं की जा सकीं।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/useSettingsForm.ts
-msgid "settings.error.speech_models_failed"
-msgstr "वाक् मॉडल लोड नहीं किए जा सके: {detail}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/useSettingsForm.ts
-msgid "settings.error.writing_models_failed"
-msgstr "लेखन मॉडल लोड नहीं किए जा सके: {detail}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -2842,6 +2827,11 @@ msgid "settings.general.shortcuts.not_saved.v2"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.done"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.done"
 msgstr "हो गया"
@@ -2977,6 +2967,11 @@ msgid "onboarding.license_step.tile_edit"
 msgstr "अपनी आवाज़ से संपादित करें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.edit"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.feedback.email"
 msgstr "ईमेल"
@@ -3012,6 +3007,11 @@ msgid "settings.app.permission.enabled"
 msgstr "सक्रिय"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.endpoint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.english"
 msgstr "अंग्रेज़ी"
@@ -3025,16 +3025,6 @@ msgstr "अंग्रेज़ी"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.invalid"
 msgstr "gmail.com जैसा कोई मान्य डोमेन दर्ज करें"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.custom.description"
-msgstr "अपना endpoint URL दर्ज करें"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.provider.custom.description"
-msgstr "अपना endpoint URL दर्ज करें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3588,14 +3578,9 @@ msgid "faq.how_it_works.question"
 msgstr "Glimpse कैसे काम करता है?"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.endpoint.placeholder.v2"
 msgstr "https://api.example.com/v1"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.endpoint.placeholder"
-msgstr "https://your-speech-endpoint.com"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3811,6 +3796,11 @@ msgid "import.cat.language"
 msgstr "भाषा"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.provider.language_title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.large"
 msgstr "बड़ा"
@@ -3996,11 +3986,6 @@ msgid "live.prefs"
 msgstr "लाइव दृश्य सेटिंग्स"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.endpoint.aria"
-msgstr "LLM एन्डपॉइंट URL"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.load_more"
 msgstr "और लोड करें"
@@ -4026,8 +4011,7 @@ msgid "home.local_api.running"
 msgstr "स्थानीय API"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.group.server"
 msgstr ""
 
@@ -4184,14 +4168,8 @@ msgid "native.menu.minimize"
 msgstr "छोटा करें"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.model"
-msgstr "मॉडल"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.model"
 msgstr "मॉडल"
 
 #. js-lingui-explicit-id
@@ -4659,6 +4637,7 @@ msgstr "चल नहीं रहा"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.status.not_set_up"
 msgstr ""
 
@@ -4833,13 +4812,8 @@ msgid "live.prefs.open_on_start"
 msgstr "रिकॉर्डिंग शुरू होने पर खोलें"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.api_key.optional"
-msgstr "वैकल्पिक"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.api_key.optional"
 msgstr "वैकल्पिक"
 
 #. js-lingui-explicit-id
@@ -5075,17 +5049,6 @@ msgid "pill.status.processing"
 msgstr "प्रोसेस हो रहा है..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.language_model.provider"
-msgstr "प्रदाता"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.model.provider_default"
-msgstr "प्रदाता डिफ़ॉल्ट"
-
-#. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
 msgstr "बैंगनी"
@@ -5261,16 +5224,6 @@ msgid "library.retranscribe.remote_provider"
 msgstr "रिमोट प्रदाता"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.api_key.aria"
-msgstr "रिमोट वाक् API कुंजी"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.endpoint.aria"
-msgstr "रिमोट स्पीच एंडपॉइंट URL"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.remove_value"
 msgstr "हटाएँ"
@@ -5388,13 +5341,8 @@ msgid "home.local_api.requests"
 msgstr "संसाधित अनुरोध"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.api_key.required"
-msgstr "अनिवार्य"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.api_key.required"
 msgstr "अनिवार्य"
 
 #. js-lingui-explicit-id
@@ -5660,14 +5608,9 @@ msgid "onboarding.license_step.tile_raycast_body"
 msgstr "पिछले डिक्टेशन खोजें और पेस्ट करें।"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.language_model.model.search"
 msgstr "उपलब्ध मॉडल खोजें..."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.model.search"
-msgstr "उपलब्ध वाक् मॉडल खोजें..."
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -5728,16 +5671,6 @@ msgstr "खोज विकल्प"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.search_or_add"
 msgstr "कोई शब्द खोजें या जोड़ें..."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.search"
-msgstr "प्रदाता खोजें..."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.speech_model.provider.search"
-msgstr "वाक् प्रदाताओं में खोजें..."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -5815,11 +5748,6 @@ msgid "settings.general.select_microphone"
 msgstr "माइक्रोफ़ोन चुनें..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.select"
-msgstr "प्रदाता चुनें..."
-
-#. js-lingui-explicit-id
 #: src/shared/ui/Dropdown.tsx
 msgid "dropdown.placeholder"
 msgstr "चुनें..."
@@ -5851,9 +5779,8 @@ msgid "native.menu.services"
 msgstr "सेवाएँ"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.models.provider.set_up"
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.set_up.v2"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -6082,6 +6009,11 @@ msgstr ""
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.model.v2"
 msgstr "वाक् मॉडल"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechProviderRow.tsx
+msgid "settings.models.provider.speech_title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -7057,11 +6989,6 @@ msgid "native.provider.writing"
 msgstr "राइटिंग मॉडल"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.api_key.aria.v2"
-msgstr "राइटिंग मॉडल की API कुंजी"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/TrialEndedScreen.tsx
 msgid "trial_ended.personalization.detail"
 msgstr "हर ऐप और वेबसाइट के लिए लेखन शैलियाँ।"
@@ -7160,12 +7087,6 @@ msgstr "आपका मॉडल डाउनलोड नहीं हुआ�
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model"
 msgstr "आपका मॉडल अभी भी डाउनलोड हो रहा है। कृपया प्रतीक्षा करें।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.models.provider.facts"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx

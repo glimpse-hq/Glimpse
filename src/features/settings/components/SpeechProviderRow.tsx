@@ -1,19 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
+import { AnimatePresence } from "framer-motion";
 import {
   CLOUD_SPEECH_PROVIDERS,
   getSpeechProviderPreset,
   LOCAL_SPEECH_PROVIDERS,
+  resolvedSpeechEndpoint,
   resolvedSpeechModel,
   supportsSpeechProviderModelDiscovery,
+  type SpeechProviderPreset,
 } from "../../../shared/lib/speechProviders";
-import { Dropdown } from "../../../shared/ui/Dropdown";
-import ApiKeyField from "../../../shared/ui/ApiKeyField";
-import ModelRow, {
-  FIELD_BUTTON_CLASS,
-  ModelRowField,
-  shortEndpoint,
-} from "./ModelRow";
+import { useFetchRemoteSpeechModels } from "../models-queries";
+import ModelRow from "./ModelRow";
+import ProviderSheet, {
+  ProviderSheetButton,
+  type ProviderChoice,
+  type ProviderDraft,
+} from "./ProviderSheet";
 import type { RemoteSpeechProvider } from "../../../types";
 
 type SpeechProviderRowProps = {
@@ -28,9 +31,21 @@ type SpeechProviderRowProps = {
   setApiKey: (value: string) => void;
   model: string;
   setModel: (value: string) => void;
-  availableModels: string[];
-  fetchAvailableModels: () => void;
 };
+
+const toChoice = (
+  preset: SpeechProviderPreset,
+  server: boolean,
+): ProviderChoice => ({
+  id: preset.id,
+  label: preset.label,
+  server,
+  endpoint: preset.endpoint,
+  editableEndpoint: server,
+  apiKeyRequired: preset.apiKeyRequired,
+  defaultModel: preset.defaultModel,
+  canDiscoverModels: supportsSpeechProviderModelDiscovery(preset.id),
+});
 
 const SpeechProviderRow = ({
   enabled,
@@ -44,223 +59,126 @@ const SpeechProviderRow = ({
   setApiKey,
   model,
   setModel,
-  availableModels,
-  fetchAvailableModels,
 }: SpeechProviderRowProps) => {
   const { t } = useLingui();
-  const [expanded, setExpanded] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // Turns cloud speech on once the settings from the sheet have landed.
+  const [enableWhenReady, setEnableWhenReady] = useState(false);
+  const { mutateAsync: fetchSpeechModels } = useFetchRemoteSpeechModels();
   const preset = getSpeechProviderPreset(provider);
-  const isServer =
-    provider === "custom" ||
-    LOCAL_SPEECH_PROVIDERS.some((p) => p.id === provider);
-  const shown = enabled || configReady;
-  const uniqueModels = Array.from(
-    new Set(availableModels.map((value) => value.trim()).filter(Boolean)),
-  );
-  const modelValue = model || "auto";
-  const defaultModel =
-    preset?.defaultModel ||
-    t({
-      id: "settings.speech_model.model.provider_default",
-      message: "provider default",
-    });
+  const custom = getSpeechProviderPreset("custom");
+  const choices = [
+    ...LOCAL_SPEECH_PROVIDERS.map((item) => toChoice(item, true)),
+    ...(custom
+      ? [
+          {
+            ...toChoice(custom, true),
+            label: t({
+              id: "settings.speech_model.provider.custom",
+              message: "Custom",
+            }),
+          },
+        ]
+      : []),
+    ...CLOUD_SPEECH_PROVIDERS.map((item) => toChoice(item, false)),
+  ];
 
-  const selectProvider = (value: RemoteSpeechProvider) => {
-    if (value === provider) return;
-    const next = getSpeechProviderPreset(value);
-    if (enabled) setEnabled(false);
-    setProvider(value);
-    if (next) {
-      setEndpoint(next.endpoint);
-      setModel("auto");
-    }
+  useEffect(() => {
+    if (!enableWhenReady || !configReady) return;
+    setEnableWhenReady(false);
+    if (!enabled) setEnabled(true);
+  }, [configReady, enableWhenReady, enabled, setEnabled]);
+
+  const done = (draft: ProviderDraft) => {
+    setSheetOpen(false);
+    if (!draft.provider) return;
+    const next = draft.provider as RemoteSpeechProvider;
+    setProvider(next);
+    setEndpoint(draft.endpoint);
+    setApiKey(draft.apiKey);
+    setModel(draft.model);
+    setEnableWhenReady(true);
   };
 
   return (
-    <ModelRow
-      title={
-        shown && preset
-          ? preset.label
-          : t({
-              id: "settings.models.provider.title",
-              message: "Server or cloud",
-            })
-      }
-      facts={
-        shown
-          ? [
-              isServer
-                ? t({
-                    id: "settings.models.group.server",
-                    message: "Local server",
-                  })
-                : t({ id: "settings.models.location.cloud", message: "Cloud" }),
-              resolvedSpeechModel(provider, model) ?? defaultModel,
-            ].join("  ·  ")
-          : t({
-              id: "settings.models.provider.facts",
-              message: "Your own endpoint or API key",
-            })
-      }
-      factsWarning={enabled && !configReady}
-      state={
-        enabled
-          ? {
-              kind: "active",
-              label: t({
-                id: "settings.models.card.active",
-                message: "Active",
-              }),
-            }
-          : configReady
-            ? { kind: "use", onUse: () => setEnabled(true) }
-            : {
-                kind: "use",
+    <>
+      <ModelRow
+        title={
+          configReady && preset
+            ? preset.label
+            : t({
+                id: "settings.models.provider.title",
+                message: "Server or cloud",
+              })
+        }
+        facts={
+          configReady
+            ? (resolvedSpeechModel(provider, model) ?? "")
+            : t({
+                id: "settings.models.status.not_set_up",
+                message: "Not set up",
+              })
+        }
+        state={
+          enabled
+            ? {
+                kind: "active",
                 label: t({
-                  id: "settings.models.provider.set_up",
-                  message: "Set up",
+                  id: "settings.models.card.active",
+                  message: "Active",
                 }),
-                onUse: () => setExpanded(true),
               }
-      }
-      expanded={expanded}
-      onToggleExpanded={() => setExpanded((value) => !value)}
-    >
-      <ModelRowField
-        label={t({
-          id: "settings.language_model.provider",
-          message: "Provider",
-        })}
-      >
-        <Dropdown<RemoteSpeechProvider>
-          value={provider}
-          ariaLabel={t({
-            id: "settings.language_model.provider",
-            message: "Provider",
-          })}
-          onChange={selectProvider}
-          editableInput={
-            provider === "custom"
-              ? {
-                  value: endpoint,
-                  onChange: setEndpoint,
-                  placeholder: t({
-                    id: "settings.speech_model.endpoint.placeholder",
-                    message: "https://your-speech-endpoint.com",
-                  }),
-                  ariaLabel: t({
-                    id: "settings.speech_model.endpoint.aria",
-                    message: "Remote speech endpoint URL",
-                  }),
-                }
-              : undefined
-          }
-          options={[
-            {
-              value: "_local_header" as RemoteSpeechProvider,
-              label: t({
-                id: "settings.models.group.server",
-                message: "Local server",
-              }),
-              isHeader: true,
-            },
-            ...LOCAL_SPEECH_PROVIDERS.map((p) => ({
-              value: p.id,
-              label: p.label,
-              description: shortEndpoint(p.endpoint),
-            })),
-            {
-              value: "custom" as const,
-              label: t({
-                id: "settings.speech_model.provider.custom",
-                message: "Custom",
-              }),
-              description: t({
-                id: "settings.speech_model.provider.custom.description",
-                message: "Enter your own endpoint URL",
-              }),
-            },
-            {
-              value: "_cloud_header" as RemoteSpeechProvider,
-              label: t({
-                id: "settings.speech_model.provider.cloud.v2",
-                message: "Cloud (API key)",
-              }),
-              isHeader: true,
-            },
-            ...CLOUD_SPEECH_PROVIDERS.map((p) => ({
-              value: p.id,
-              label: p.label,
-            })),
-          ]}
-          searchable
-          searchPlaceholder={t({
-            id: "settings.speech_model.provider.search",
-            message: "Search speech providers...",
-          })}
-          buttonClassName={FIELD_BUTTON_CLASS}
-        />
-      </ModelRowField>
-      <ModelRowField
-        label={t({
-          id: "settings.language_model.api_key.v2",
-          message: "API key",
-        })}
-      >
-        <ApiKeyField
-          value={apiKey}
-          onChange={setApiKey}
-          placeholder={
-            preset?.apiKeyRequired
-              ? t({
-                  id: "settings.speech_model.api_key.required",
-                  message: "Required",
-                })
-              : t({
-                  id: "settings.speech_model.api_key.optional",
-                  message: "Optional",
-                })
-          }
-          ariaLabel={t({
-            id: "settings.speech_model.api_key.aria",
-            message: "Remote speech API key",
-          })}
-        />
-      </ModelRowField>
-      <ModelRowField
-        label={t({ id: "settings.language_model.model", message: "Model" })}
-      >
-        <Dropdown
-          value={modelValue}
-          ariaLabel={t({ id: "settings.speech_model.model", message: "Model" })}
-          onChange={(val) => setModel(val)}
-          onOpen={
-            supportsSpeechProviderModelDiscovery(provider)
-              ? fetchAvailableModels
-              : undefined
-          }
-          options={[
-            {
-              value: "auto",
-              label: t({
+            : configReady
+              ? { kind: "use", onUse: () => setEnabled(true) }
+              : { kind: "status", text: "" }
+        }
+        trailing={
+          <ProviderSheetButton
+            configured={configReady}
+            onClick={() => setSheetOpen(true)}
+          />
+        }
+      />
+      <AnimatePresence>
+        {sheetOpen && (
+          <ProviderSheet
+            title={t({
+              id: "settings.models.provider.speech_title",
+              message: "Speech provider",
+            })}
+            choices={choices}
+            initial={{
+              provider: configReady ? provider : null,
+              endpoint: configReady ? endpoint : "",
+              apiKey,
+              model: configReady ? model : "auto",
+            }}
+            automaticModel={(choice) =>
+              t({
                 id: "settings.speech_model.model.automatic_default",
-                message: `Automatic (${defaultModel})`,
-              }),
-            },
-            ...uniqueModels.map((value) => ({ value, label: value })),
-            ...(modelValue !== "auto" && !uniqueModels.includes(modelValue)
-              ? [{ value: modelValue, label: modelValue }]
-              : []),
-          ]}
-          searchable
-          searchPlaceholder={t({
-            id: "settings.speech_model.model.search",
-            message: "Search available speech models...",
-          })}
-          buttonClassName={FIELD_BUTTON_CLASS}
-        />
-      </ModelRowField>
-    </ModelRow>
+                message: `Automatic (${choice.defaultModel})`,
+              })
+            }
+            isValid={(draft) => {
+              const id = draft.provider as RemoteSpeechProvider | null;
+              const choice = id ? getSpeechProviderPreset(id) : undefined;
+              return Boolean(
+                id &&
+                choice &&
+                resolvedSpeechEndpoint(id, draft.endpoint) &&
+                resolvedSpeechModel(id, draft.model) !== undefined &&
+                (!choice.apiKeyRequired || draft.apiKey.trim()),
+              );
+            }}
+            fetchModels={(nextEndpoint, nextApiKey) =>
+              fetchSpeechModels({ endpoint: nextEndpoint, apiKey: nextApiKey })
+            }
+            onCancel={() => setSheetOpen(false)}
+            onDone={done}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
