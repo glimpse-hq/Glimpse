@@ -111,6 +111,9 @@ jobs:
           DEVELOPER_DIR="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)/Contents/Developer"
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
           DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
+          # glimpse-language compiles G1's Metal kernels at build time.
+          DEVELOPER_DIR="$DEVELOPER_DIR" xcrun -sdk macosx -f metal \
+            || DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -downloadComponent MetalToolchain
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
