@@ -2,10 +2,10 @@
 // LoRA adapter, run on the GPU by glimpse-language. Its files live in the
 // models directory like any catalog model (`speech::catalog::G1_MANIFESTS`).
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use glimpse_language::bonsai::{
     self, Availability, Bonsai, BonsaiError, BonsaiErrorKind, GenerateOptions, Generation,
@@ -21,6 +21,7 @@ use crate::speech::catalog::{G1_MANIFESTS, g1_definition};
 // bonsai/train.py's export first, then a PEFT adapter (which reads
 // adapter_config.json next to it). Without either, the base model runs.
 const ADAPTER_FILES: [&str; 2] = ["adapter.safetensors", "adapter_model.safetensors"];
+const ADAPTER_CONFIG: &str = "adapter_config.json";
 // Frees the GPU state and cached prompt (about 235 MB on the 2B, 670 MB on
 // the 4B); the next request rebuilds them in a few tens of ms.
 const IDLE_AFTER_USE: Duration = Duration::from_secs(30);
@@ -31,8 +32,28 @@ struct Runtime {
     models_dir: PathBuf,
     store: Arc<SettingsStore>,
     installed: Mutex<Vec<&'static str>>,
-    loaded: Mutex<Option<(&'static str, Arc<Bonsai>)>>,
+    loaded: Mutex<Option<Loaded>>,
     uses: AtomicU64,
+}
+
+struct Loaded {
+    model: &'static str,
+    files: Vec<Option<(u64, SystemTime)>>,
+    bonsai: Arc<Bonsai>,
+}
+
+// Size and modification time of every file a load reads, so replaced model or
+// adapter files load on the next use without a restart.
+fn file_stamps(dir: &Path) -> Vec<Option<(u64, SystemTime)>> {
+    bonsai::MODEL_FILES
+        .iter()
+        .chain(&ADAPTER_FILES)
+        .chain(&[ADAPTER_CONFIG])
+        .map(|file| {
+            let meta = std::fs::metadata(dir.join(file)).ok()?;
+            Some((meta.len(), meta.modified().ok()?))
+        })
+        .collect()
 }
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
@@ -86,9 +107,10 @@ pub fn refresh_installed() -> Vec<&'static str> {
     let mut loaded = runtime.loaded.lock();
     if loaded
         .as_ref()
-        .is_some_and(|(id, _)| !installed.contains(id))
+        .is_some_and(|loaded| !installed.contains(&loaded.model))
+        && let Some(old) = loaded.take()
     {
-        *loaded = None;
+        old.bonsai.release_idle();
     }
     installed
 }
@@ -125,13 +147,19 @@ fn runtime_for_use() -> Result<&'static Runtime, BonsaiError> {
 }
 
 fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiError> {
-    let mut loaded = runtime.loaded.lock();
-    if let Some((id, bonsai)) = loaded.as_ref()
-        && *id == model
-    {
-        return Ok(Arc::clone(bonsai));
-    }
     let dir = runtime.models_dir.join(model);
+    let files = file_stamps(&dir);
+    let mut loaded = runtime.loaded.lock();
+    if let Some(current) = loaded.as_ref()
+        && current.model == model
+        && current.files == files
+    {
+        return Ok(Arc::clone(&current.bonsai));
+    }
+    // Idle timers can still hold the old model; free its GPU state now.
+    if let Some(old) = loaded.take() {
+        old.bonsai.release_idle();
+    }
     let adapter = ADAPTER_FILES
         .iter()
         .map(|file| dir.join(file))
@@ -143,7 +171,11 @@ fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiErr
         started.elapsed().as_millis(),
         adapter.is_some()
     );
-    *loaded = Some((model, Arc::clone(&bonsai)));
+    *loaded = Some(Loaded {
+        model,
+        files,
+        bonsai: Arc::clone(&bonsai),
+    });
     Ok(bonsai)
 }
 
@@ -317,7 +349,16 @@ mod tests {
                 memory()
             );
         }
-        let (_, bonsai) = RUNTIME.get().unwrap().loaded.lock().clone().unwrap();
+        let bonsai = Arc::clone(
+            &RUNTIME
+                .get()
+                .unwrap()
+                .loaded
+                .lock()
+                .as_ref()
+                .unwrap()
+                .bonsai,
+        );
         bonsai.release_idle();
         assert!(bonsai.is_idle());
         // Metal returns the freed buffers shortly after.
