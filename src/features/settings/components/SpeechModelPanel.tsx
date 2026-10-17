@@ -7,7 +7,11 @@ import {
 } from "../../../shared/lib/speechProviders";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import ApiKeyField from "../../../shared/ui/ApiKeyField";
-import ModelSourcePanel, { FIELD_BUTTON_CLASS } from "./ModelSourcePanel";
+import ModelSourcePanel, {
+  FIELD_BUTTON_CLASS,
+  MENU_CLASS,
+  shortEndpoint,
+} from "./ModelSourcePanel";
 import type { RemoteSpeechProvider } from "../../../types";
 
 export type SpeechSource = RemoteSpeechProvider | "on_device";
@@ -75,12 +79,34 @@ const SpeechModelPanel = ({
       label={label}
       warning={source === "on_device" && !localModelLabel}
       showFields={provider !== null}
+      location={
+        provider === null
+          ? "device"
+          : provider === "custom" ||
+              LOCAL_SPEECH_PROVIDERS.some((preset) => preset.id === provider)
+            ? "server"
+            : "cloud"
+      }
       status={
         localModelLabel
-          ? t({
-              id: "settings.models.speech.runs_on_mac",
-              message: "Runs on this Mac.",
-            })
+          ? {
+              text: t({
+                id: "settings.models.status.ready",
+                message: "Ready",
+              }),
+              ready: true,
+            }
+          : {
+              text: t({
+                id: "settings.models.status.no_model",
+                message: "No model",
+              }),
+              ready: false,
+            }
+      }
+      guidance={
+        localModelLabel
+          ? null
           : t({
               id: "settings.models.speech.no_model",
               message: "Download a speech model below.",
@@ -140,7 +166,7 @@ const SpeechModelPanel = ({
             ...LOCAL_SPEECH_PROVIDERS.map((preset) => ({
               value: preset.id,
               label: preset.label,
-              description: preset.endpoint,
+              description: shortEndpoint(preset.endpoint),
             })),
             {
               value: "custom" as const,
@@ -164,7 +190,6 @@ const SpeechModelPanel = ({
             ...CLOUD_SPEECH_PROVIDERS.map((preset) => ({
               value: preset.id,
               label: preset.label,
-              description: preset.endpoint,
             })),
           ]}
           searchable
@@ -172,86 +197,68 @@ const SpeechModelPanel = ({
             id: "settings.speech_model.provider.search",
             message: "Search speech providers...",
           })}
-          className="mt-2"
           buttonClassName={FIELD_BUTTON_CLASS}
-          menuClassName="min-w-[260px]"
+          menuClassName={MENU_CLASS}
         />
       }
-      fields={
-        <>
-          <div>
-            <span className="ui-text-label-strong ui-color-primary block">
-              {t({
-                id: "settings.speech_model.api_key.v2",
-                message: "API key",
-              })}
-            </span>
-            <ApiKeyField
-              value={apiKey}
-              onChange={setApiKey}
-              placeholder={
-                providerPreset?.apiKeyRequired
-                  ? t({
-                      id: "settings.speech_model.api_key.required",
-                      message: "Required",
-                    })
-                  : t({
-                      id: "settings.speech_model.api_key.optional",
-                      message: "Optional",
-                    })
-              }
-              ariaLabel={t({
-                id: "settings.speech_model.api_key.aria",
-                message: "Remote speech API key",
-              })}
-            />
-          </div>
-          <div>
-            <span className="ui-text-label-strong ui-color-primary block">
-              {t({
-                id: "settings.speech_model.model",
-                message: "Model",
-              })}
-            </span>
-            <Dropdown
-              value={modelValue}
-              ariaLabel={t({
-                id: "settings.speech_model.model",
-                message: "Model",
-              })}
-              onChange={(val) => setModel(val)}
-              onOpen={canDiscoverModels ? fetchAvailableModels : undefined}
-              options={[
-                {
-                  value: "auto",
-                  label: t({
-                    id: "settings.speech_model.model.automatic_default",
-                    message: `Automatic (${defaultModel})`,
-                  }),
-                },
-                ...uniqueModels.map((model) => ({
-                  value: model,
-                  label: model,
-                })),
-                ...(modelValue !== "auto" && !uniqueModels.includes(modelValue)
-                  ? [{ value: modelValue, label: modelValue }]
-                  : []),
-              ]}
-              placeholder={t({
-                id: "settings.speech_model.model.placeholder_default",
-                message: `Model (default: ${defaultModel})`,
-              })}
-              searchable
-              searchPlaceholder={t({
-                id: "settings.speech_model.model.search",
-                message: "Search available speech models...",
-              })}
-              className="mt-2"
-              buttonClassName={FIELD_BUTTON_CLASS}
-              menuClassName="min-w-[260px]"
-            />
-          </div>
-        </>
+      apiKeyField={
+        <ApiKeyField
+          value={apiKey}
+          onChange={setApiKey}
+          placeholder={
+            providerPreset?.apiKeyRequired
+              ? t({
+                  id: "settings.speech_model.api_key.required",
+                  message: "Required",
+                })
+              : t({
+                  id: "settings.speech_model.api_key.optional",
+                  message: "Optional",
+                })
+          }
+          ariaLabel={t({
+            id: "settings.speech_model.api_key.aria",
+            message: "Remote speech API key",
+          })}
+        />
+      }
+      modelField={
+        <Dropdown
+          value={modelValue}
+          ariaLabel={t({
+            id: "settings.speech_model.model",
+            message: "Model",
+          })}
+          onChange={(val) => setModel(val)}
+          onOpen={canDiscoverModels ? fetchAvailableModels : undefined}
+          options={[
+            {
+              value: "auto",
+              label: t({
+                id: "settings.speech_model.model.automatic_default",
+                message: `Automatic (${defaultModel})`,
+              }),
+            },
+            ...uniqueModels.map((model) => ({
+              value: model,
+              label: model,
+            })),
+            ...(modelValue !== "auto" && !uniqueModels.includes(modelValue)
+              ? [{ value: modelValue, label: modelValue }]
+              : []),
+          ]}
+          placeholder={t({
+            id: "settings.speech_model.model.placeholder_default",
+            message: `Model (default: ${defaultModel})`,
+          })}
+          searchable
+          searchPlaceholder={t({
+            id: "settings.speech_model.model.search",
+            message: "Search available speech models...",
+          })}
+          buttonClassName={FIELD_BUTTON_CLASS}
+          menuClassName={MENU_CLASS}
+        />
       }
     />
   );

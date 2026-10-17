@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
-import { DotsThree, Ghost, Trash } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
+import { Broom, DotsThree, Ghost, Trash } from "@phosphor-icons/react";
 import HoverTip from "../../../shared/ui/HoverTip";
-import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
@@ -122,14 +122,14 @@ const ShortcutList = ({
               message:
                 "Sends dictation from this shortcut through your language model and writing modes. With text selected, speak an instruction to rewrite it. Choose the model in Models.",
             })}
-            className="inline-flex justify-self-center"
+            className="inline-flex w-6 justify-center justify-self-center"
           >
-            <span>{cleanupLabel}</span>
+            <Broom size={13} aria-label={cleanupLabel} />
           </HoverTip>
           <HoverTip
             label={notSavedLabel}
             detail={notSavedDetail}
-            className="inline-flex justify-self-center"
+            className="inline-flex w-6 justify-center justify-self-center"
           >
             <Ghost size={13} aria-label={notSavedLabel} />
           </HoverTip>
@@ -197,39 +197,29 @@ const ShortcutList = ({
                 buttonClassName="!border-0 !bg-transparent !px-1 !py-0.5 ui-text-body-sm ui-color-secondary hover:!text-content-primary"
                 menuClassName="!left-auto min-w-[220px]"
               />
-              <div className="flex justify-center">
-                <ToggleSwitch
-                  enabled={binding.cleanup_enabled}
-                  disabled={cleanupDisabled}
-                  onToggle={() =>
-                    onUpdate(mode, index, {
-                      cleanup_enabled: !binding.cleanup_enabled,
-                    })
-                  }
-                  ariaLabel={cleanupLabel}
-                />
-              </div>
-              <HoverTip
-                label={notSavedLabel}
-                detail={notSavedDetail}
-                className="inline-flex justify-self-center"
+              <IconCheckbox
+                checked={binding.cleanup_enabled}
+                disabled={cleanupDisabled}
+                tone="cloud"
+                label={`${cleanupLabel}, ${display}`}
+                onChange={() =>
+                  onUpdate(mode, index, {
+                    cleanup_enabled: !binding.cleanup_enabled,
+                  })
+                }
               >
-                <button
-                  type="button"
-                  onClick={() =>
-                    onUpdate(mode, index, { temporary: !binding.temporary })
-                  }
-                  aria-label={notSavedLabel}
-                  aria-pressed={binding.temporary}
-                  className={`box-border flex h-5 w-5 items-center justify-center rounded-md border leading-none transition-colors ${
-                    binding.temporary
-                      ? "text-[var(--color-local)] bg-[var(--color-local-10)] border-[var(--color-local-30)]"
-                      : "border-transparent ui-color-muted hover:bg-surface-overlay hover:ui-color-secondary"
-                  }`}
-                >
-                  <Ghost size={13} aria-hidden="true" />
-                </button>
-              </HoverTip>
+                <Broom size={13} aria-hidden="true" />
+              </IconCheckbox>
+              <IconCheckbox
+                checked={binding.temporary}
+                tone="local"
+                label={`${notSavedLabel}, ${display}`}
+                onChange={() =>
+                  onUpdate(mode, index, { temporary: !binding.temporary })
+                }
+              >
+                <Ghost size={13} aria-hidden="true" />
+              </IconCheckbox>
               <ShortcutRowMenu
                 canRemove={rows.length > 1}
                 onRemove={() => onRemove(mode, index)}
@@ -250,6 +240,41 @@ const ShortcutList = ({
     </div>
   );
 };
+
+// Checked uses the feature's color: amber for Clean up, indigo for the ghost.
+const IconCheckbox = ({
+  checked,
+  disabled = false,
+  tone,
+  label,
+  onChange,
+  children,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  tone: "cloud" | "local";
+  label: string;
+  onChange: () => void;
+  children: ReactNode;
+}) => (
+  <button
+    type="button"
+    role="checkbox"
+    aria-checked={checked}
+    aria-label={label}
+    disabled={disabled}
+    onClick={onChange}
+    className={`box-border flex h-6 w-6 items-center justify-center justify-self-center rounded-md border leading-none transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-40 ${
+      checked
+        ? tone === "cloud"
+          ? "ui-color-cloud bg-[var(--color-cloud-10)] border-[var(--color-cloud-30)]"
+          : "text-[var(--color-local)] bg-[var(--color-local-10)] border-[var(--color-local-30)]"
+        : "border-border-primary ui-color-muted hover:border-border-secondary hover:ui-color-secondary"
+    }`}
+  >
+    {children}
+  </button>
+);
 
 const ShortcutRowMenu = ({
   canRemove,

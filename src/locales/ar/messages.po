@@ -1449,13 +1449,8 @@ msgid "transcriptions.time.any"
 msgstr "في أي وقت"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 msgid "settings.language_model.api_key.v2"
-msgstr "مفتاح API"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key.v2"
 msgstr "مفتاح API"
 
 #. js-lingui-explicit-id
@@ -1685,11 +1680,6 @@ msgstr "مدمج"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.built_in"
 msgstr "مدمج"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.apple.ready"
-msgstr "مدمج في هذا الـ Mac."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2043,6 +2033,11 @@ msgstr "إغلاق المستجدات"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "إغلاق النافذة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ModelSourcePanel.tsx
+msgid "settings.models.location.cloud"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -2908,6 +2903,11 @@ msgid "onboarding.model.status.ready"
 msgstr "تم التنزيل"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.downloading"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.downloading"
 msgstr "جارٍ التنزيل {modelLabel} {percent}%"
@@ -3302,11 +3302,6 @@ msgstr "كامل"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.full_list"
 msgstr "قائمة المقتطفات الكاملة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.models.language.g1_not_installed"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -3817,14 +3812,14 @@ msgid "model_picker.diarizer.description.v2"
 msgstr "يحدّد المتحدثين في نصوص التسجيلات الموجودة في المكتبة."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.language"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
 msgstr "اللغة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.language"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4048,8 +4043,14 @@ msgstr "واجهة API المحلية"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.models.group.server"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.locked"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -4201,6 +4202,7 @@ msgstr "تصغير"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 msgid "settings.language_model.model"
 msgstr "النموذج"
 
@@ -4218,12 +4220,6 @@ msgstr "النموذج"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.model"
 msgstr "النموذج"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: providerPreset?.defaultModel || "none"
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.model.placeholder"
-msgstr "النموذج (الافتراضي: {0})"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
@@ -4261,11 +4257,6 @@ msgid "model_picker.variant_installed"
 msgstr "إصدار النموذج (مثبَّت)"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.models_link"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.models"
 msgstr "النماذج"
@@ -4279,6 +4270,11 @@ msgstr "النماذج"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.storage.models"
 msgstr "النماذج"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.models_link"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4488,6 +4484,11 @@ msgid "record.error.no_microphone"
 msgstr "لم يُعثر على ميكروفون."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.status.no_model"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none_held"
 msgstr "لا يُحتفظ بأي نموذج في الذاكرة بين الطلبات"
@@ -4674,6 +4675,11 @@ msgid "library.error_details.insufficient_disk_space"
 msgstr "مساحة القرص غير كافية."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.not_installed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.applications.not_installed"
 msgstr "غير مثبَّت"
@@ -4684,6 +4690,16 @@ msgid "record.setup.apps.not_running"
 msgstr "غير قيد التشغيل"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.not_set_up"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.unsupported"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.timestamps_unsupported"
 msgstr "غير مدعوم من قِبَل هذا النموذج"
@@ -4692,11 +4708,6 @@ msgstr "غير مدعوم من قِبَل هذا النموذج"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.timestamps_unsupported"
 msgstr "غير مدعوم من قِبَل هذا النموذج"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.apple.unsupported"
-msgstr "غير مدعوم على هذا الـ Mac."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
@@ -4729,6 +4740,11 @@ msgid "settings.app.permission.off"
 msgstr "إيقاف"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.off"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.off"
 msgstr "إيقاف"
@@ -4755,6 +4771,7 @@ msgstr "تشغيل"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.models.group.this_mac"
 msgstr ""
@@ -5141,6 +5158,12 @@ msgstr "هل تريد تقييم Glimpse في متجر Microsoft؟"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_raycast"
 msgstr "Raycast"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.status.ready"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -5604,16 +5627,6 @@ msgstr "تشغيل التنظيف"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.status.running"
 msgstr "قيد التشغيل"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.models.language.runs_on_mac"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.models.speech.runs_on_mac"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -6184,6 +6197,11 @@ msgid "settings.stats.title"
 msgstr "الإحصائيات"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ModelSourcePanel.tsx
+msgid "settings.models.status"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.status"
 msgstr "الحالة"
@@ -6449,11 +6467,6 @@ msgstr "خادم API متاح مع Glimpse Plus"
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.api_server_restart"
 msgstr "لم يتوقف خادم API، لذا تعذّرت إعادة تشغيله."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.apple.not_ready"
-msgstr "نموذج Apple Intelligence لا يزال قيد التنزيل."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -6825,11 +6838,6 @@ msgstr "تنسيق الملف غير مدعوم."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info.active_model"
 msgstr "اللغات غير المدعومة غير متاحة في نموذجك النشط. بدّل إلى نموذج يدعمها لاستخدامها."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.models.language.paste_as_spoken"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts

@@ -7,7 +7,12 @@ import {
 import type { LlmProvider } from "../../../types";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import ApiKeyField from "../../../shared/ui/ApiKeyField";
-import ModelSourcePanel, { FIELD_BUTTON_CLASS } from "./ModelSourcePanel";
+import ModelSourcePanel, {
+  FIELD_BUTTON_CLASS,
+  MENU_CLASS,
+  shortEndpoint,
+  type ModelLocation,
+} from "./ModelSourcePanel";
 import { useLanguageModelStatus } from "../useLanguageModelStatus";
 
 type LanguageModelPanelProps = {
@@ -53,6 +58,10 @@ const LanguageModelPanel = ({
     id: "settings.language_model.provider.on_device",
     message: "On-device",
   });
+  const chooseModelText = t({
+    id: "settings.general.cleanup.model_placeholder",
+    message: "Choose a model",
+  });
   const g1LockedText = t({
     id: "settings.language_model.g1.locked",
     message: "Needs a purchased Glimpse Plus license",
@@ -68,53 +77,99 @@ const LanguageModelPanel = ({
     }
   };
 
-  const statusText = (() => {
+  const location: ModelLocation | null = !providerPreset
+    ? null
+    : providerPreset.onDevice
+      ? "device"
+      : LOCAL_PROVIDERS.some((p) => p.id === llmProvider)
+        ? "server"
+        : "cloud";
+  const readyText = t({ id: "settings.models.status.ready", message: "Ready" });
+
+  const { status, guidance } = ((): {
+    status: { text: string; ready: boolean } | null;
+    guidance: string | null;
+  } => {
     if (llmProvider === "bonsai") {
-      if (!activeLicense) return g1LockedText;
-      if (g1Installed === null) return null;
-      return g1Installed
-        ? t({
-            id: "settings.models.language.runs_on_mac",
-            message: "Runs on this Mac.",
-          })
-        : t({
-            id: "settings.models.language.g1_not_installed",
-            message: "G1 isn't installed on this Mac yet.",
-          });
+      if (!activeLicense) {
+        return {
+          status: {
+            text: t({ id: "settings.models.status.locked", message: "Locked" }),
+            ready: false,
+          },
+          guidance: g1LockedText,
+        };
+      }
+      if (g1Installed === null) return { status: null, guidance: null };
+      return {
+        status: g1Installed
+          ? { text: readyText, ready: true }
+          : {
+              text: t({
+                id: "settings.models.status.not_installed",
+                message: "Not installed",
+              }),
+              ready: false,
+            },
+        guidance: null,
+      };
     }
     if (llmProvider === "apple") {
       switch (appleAvailability) {
         case null:
-          return null;
+          return { status: null, guidance: null };
         case "available":
-          return t({
-            id: "settings.language_model.apple.ready",
-            message: "Built into this Mac.",
-          });
+          return { status: { text: readyText, ready: true }, guidance: null };
         case "not_enabled":
-          return t({
-            id: "settings.language_model.apple.not_enabled",
-            message:
-              "Turn on Apple Intelligence in System Settings to use this.",
-          });
+          return {
+            status: {
+              text: t({ id: "settings.models.status.off", message: "Off" }),
+              ready: false,
+            },
+            guidance: t({
+              id: "settings.language_model.apple.not_enabled",
+              message:
+                "Turn on Apple Intelligence in System Settings to use this.",
+            }),
+          };
         case "not_ready":
-          return t({
-            id: "settings.language_model.apple.not_ready",
-            message: "The Apple Intelligence model is still downloading.",
-          });
+          return {
+            status: {
+              text: t({
+                id: "settings.models.status.downloading",
+                message: "Downloading",
+              }),
+              ready: false,
+            },
+            guidance: null,
+          };
         default:
-          return t({
-            id: "settings.language_model.apple.unsupported",
-            message: "Not supported on this Mac.",
-          });
+          return {
+            status: {
+              text: t({
+                id: "settings.models.status.unsupported",
+                message: "Not supported",
+              }),
+              ready: false,
+            },
+            guidance: null,
+          };
       }
     }
-    return t({
-      id: "settings.models.language.choose_hint",
-      message: "Choose a model to clean up dictation.",
-    });
+    return {
+      status: {
+        text: t({
+          id: "settings.models.status.not_set_up",
+          message: "Not set up",
+        }),
+        ready: false,
+      },
+      guidance: t({
+        id: "settings.models.language.choose_hint",
+        message: "Choose a model to clean up dictation.",
+      }),
+    };
   })();
-  const warning = cleanupShortcutsOn && ready === false;
 
   return (
     <ModelSourcePanel
@@ -122,23 +177,11 @@ const LanguageModelPanel = ({
         id: "settings.models.language.clean_up_with",
         message: "Clean up with",
       })}
-      warning={warning}
+      warning={cleanupShortcutsOn && ready === false}
+      location={location}
       showFields={usesService}
-      status={
-        <>
-          {statusText}
-          {warning && providerPreset?.onDevice && (
-            <>
-              {" "}
-              {t({
-                id: "settings.models.language.paste_as_spoken",
-                message:
-                  "Until then, shortcuts with Clean up type exactly what you said.",
-              })}
-            </>
-          )}
-        </>
-      }
+      status={status}
+      guidance={guidance}
       select={
         <Dropdown<LlmProvider>
           value={providerPreset ? llmProvider : null}
@@ -208,7 +251,7 @@ const LanguageModelPanel = ({
             ).map((p) => ({
               value: p.id,
               label: p.label,
-              description: p.endpoint,
+              description: shortEndpoint(p.endpoint),
             })),
             {
               value: "custom" as LlmProvider,
@@ -232,91 +275,66 @@ const LanguageModelPanel = ({
             ...CLOUD_PROVIDERS.map((p) => ({
               value: p.id,
               label: p.label,
-              description: p.endpoint,
             })),
           ]}
-          placeholder={t({
-            id: "settings.general.cleanup.model_placeholder",
-            message: "Choose a model",
-          })}
+          placeholder={chooseModelText}
           searchable
           searchPlaceholder={t({
             id: "settings.language_model.provider.search",
             message: "Search providers...",
           })}
-          className="mt-2"
           buttonClassName={FIELD_BUTTON_CLASS}
-          menuClassName="min-w-[260px]"
+          menuClassName={MENU_CLASS}
         />
       }
-      fields={
-        <>
-          <div>
-            <span className="ui-text-label-strong ui-color-primary block">
-              {t({
-                id: "settings.language_model.api_key.v2",
-                message: "API key",
-              })}
-            </span>
-            <ApiKeyField
-              value={llmApiKey}
-              onChange={setLlmApiKey}
-              placeholder={
-                providerPreset?.apiKeyRequired
-                  ? t({
-                      id: "settings.language_model.api_key.required",
-                      message: "Required",
-                    })
-                  : t({
-                      id: "settings.language_model.api_key.optional",
-                      message: "Optional",
-                    })
-              }
-              ariaLabel={t({
-                id: "settings.language_model.api_key.aria.v2",
-                message: "Writing model API key",
-              })}
-            />
-          </div>
-          <div>
-            <span className="ui-text-label-strong ui-color-primary block">
-              {t({
-                id: "settings.language_model.model",
-                message: "Model",
-              })}
-            </span>
-            <Dropdown
-              value={llmModel}
-              ariaLabel={t({
-                id: "settings.language_model.model",
-                message: "Model",
-              })}
-              onChange={(val) => setLlmModel(val)}
-              onOpen={usesService ? fetchAvailableModels : undefined}
-              options={[
-                ...uniqueModels.map((model) => ({
-                  value: model,
-                  label: model,
-                })),
-                ...(llmModel && !uniqueModels.includes(llmModel)
-                  ? [{ value: llmModel, label: llmModel }]
-                  : []),
-              ]}
-              placeholder={t({
-                id: "settings.language_model.model.placeholder",
-                message: `Model (default: ${providerPreset?.defaultModel || "none"})`,
-              })}
-              searchable
-              searchPlaceholder={t({
-                id: "settings.language_model.model.search",
-                message: "Search available models...",
-              })}
-              className="mt-2"
-              buttonClassName={FIELD_BUTTON_CLASS}
-              menuClassName="min-w-[260px]"
-            />
-          </div>
-        </>
+      apiKeyField={
+        <ApiKeyField
+          value={llmApiKey}
+          onChange={setLlmApiKey}
+          placeholder={
+            providerPreset?.apiKeyRequired
+              ? t({
+                  id: "settings.language_model.api_key.required",
+                  message: "Required",
+                })
+              : t({
+                  id: "settings.language_model.api_key.optional",
+                  message: "Optional",
+                })
+          }
+          ariaLabel={t({
+            id: "settings.language_model.api_key.aria.v2",
+            message: "Writing model API key",
+          })}
+        />
+      }
+      modelField={
+        <Dropdown
+          value={llmModel || null}
+          ariaLabel={t({
+            id: "settings.language_model.model",
+            message: "Model",
+          })}
+          onChange={(val) => setLlmModel(val)}
+          onOpen={usesService ? fetchAvailableModels : undefined}
+          options={[
+            ...uniqueModels.map((model) => ({
+              value: model,
+              label: model,
+            })),
+            ...(llmModel && !uniqueModels.includes(llmModel)
+              ? [{ value: llmModel, label: llmModel }]
+              : []),
+          ]}
+          placeholder={chooseModelText}
+          searchable
+          searchPlaceholder={t({
+            id: "settings.language_model.model.search",
+            message: "Search available models...",
+          })}
+          buttonClassName={FIELD_BUTTON_CLASS}
+          menuClassName={MENU_CLASS}
+        />
       }
     />
   );

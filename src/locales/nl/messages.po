@@ -1449,13 +1449,8 @@ msgid "transcriptions.time.any"
 msgstr "Altijd"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 msgid "settings.language_model.api_key.v2"
-msgstr "API-sleutel"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key.v2"
 msgstr "API-sleutel"
 
 #. js-lingui-explicit-id
@@ -1685,11 +1680,6 @@ msgstr "Ingebouwd"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.built_in"
 msgstr "Ingebouwd"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.apple.ready"
-msgstr "Ingebouwd in deze Mac."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2043,6 +2033,11 @@ msgstr "'Wat is er nieuw' sluiten"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "Sluit venster"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ModelSourcePanel.tsx
+msgid "settings.models.location.cloud"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -2908,6 +2903,11 @@ msgid "onboarding.model.status.ready"
 msgstr "Gedownload"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.downloading"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.downloading"
 msgstr "Downloaden {modelLabel} {percent}%"
@@ -3302,11 +3302,6 @@ msgstr "Vol"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.full_list"
 msgstr "Volledige snippetlijst"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.models.language.g1_not_installed"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -3817,14 +3812,14 @@ msgid "model_picker.diarizer.description.v2"
 msgstr "Labelt wie er spreekt in transcripties in Bibliotheek."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.language"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
 msgstr "Taal"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.language"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4048,8 +4043,14 @@ msgstr "Lokale API"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.models.group.server"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.locked"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -4201,6 +4202,7 @@ msgstr "Minimaliseer"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 msgid "settings.language_model.model"
 msgstr "Model"
 
@@ -4218,12 +4220,6 @@ msgstr "Model"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.model"
 msgstr "Model"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: providerPreset?.defaultModel || "none"
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.model.placeholder"
-msgstr "Model (standaard: {0})"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
@@ -4261,11 +4257,6 @@ msgid "model_picker.variant_installed"
 msgstr "Modelvariant (geïnstalleerd)"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.models_link"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.models"
 msgstr "Modellen"
@@ -4279,6 +4270,11 @@ msgstr "Modellen"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.storage.models"
 msgstr "Modellen"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.models_link"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4488,6 +4484,11 @@ msgid "record.error.no_microphone"
 msgstr "Er is geen microfoon gevonden."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.status.no_model"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none_held"
 msgstr "geen model in het geheugen tussen aanvragen"
@@ -4674,6 +4675,11 @@ msgid "library.error_details.insufficient_disk_space"
 msgstr "Onvoldoende schijfruimte."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.not_installed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.applications.not_installed"
 msgstr "Niet geïnstalleerd"
@@ -4684,6 +4690,16 @@ msgid "record.setup.apps.not_running"
 msgstr "Niet actief"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.not_set_up"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.unsupported"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.timestamps_unsupported"
 msgstr "Niet ondersteund door dit model"
@@ -4692,11 +4708,6 @@ msgstr "Niet ondersteund door dit model"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.timestamps_unsupported"
 msgstr "Niet ondersteund door dit model"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.apple.unsupported"
-msgstr "Niet ondersteund op deze Mac."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
@@ -4729,6 +4740,11 @@ msgid "settings.app.permission.off"
 msgstr "uit"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.models.status.off"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.off"
 msgstr "Uit"
@@ -4755,6 +4771,7 @@ msgstr "Aan"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/ModelSourcePanel.tsx
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.models.group.this_mac"
 msgstr ""
@@ -5141,6 +5158,12 @@ msgstr "Glimpse beoordelen in de Microsoft Store?"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_raycast"
 msgstr "Raycast"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.models.status.ready"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -5604,16 +5627,6 @@ msgstr "Opschonen uitvoeren"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.status.running"
 msgstr "Actief"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.models.language.runs_on_mac"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.models.speech.runs_on_mac"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -6184,6 +6197,11 @@ msgid "settings.stats.title"
 msgstr "Statistieken"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ModelSourcePanel.tsx
+msgid "settings.models.status"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.status"
 msgstr "Status"
@@ -6449,11 +6467,6 @@ msgstr "De API-server is inbegrepen bij Glimpse Plus"
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.api_server_restart"
 msgstr "De API-server is niet gestopt en kon daarom niet opnieuw worden gestart."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.apple.not_ready"
-msgstr "Het Apple Intelligence-model wordt nog gedownload."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -6825,11 +6838,6 @@ msgstr "Niet-ondersteund bestandsformaat."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info.active_model"
 msgstr "Niet-ondersteunde talen zijn niet beschikbaar op je actieve model. Schakel over naar een geschikt model om ze te gebruiken."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.models.language.paste_as_spoken"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
