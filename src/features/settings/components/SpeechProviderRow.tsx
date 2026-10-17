@@ -107,7 +107,6 @@ const SpeechProviderRow = ({
     <>
       <ProviderCard
         kind={configReady ? (isServer ? "server" : "cloud") : "none"}
-        seed={`${provider}:${model}`}
         title={
           configReady && preset
             ? preset.label

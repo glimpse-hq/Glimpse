@@ -149,7 +149,6 @@ const LanguageModelList = ({
     <div className="space-y-2">
       <ProviderCard
         kind={serviceReady ? (isServer ? "server" : "cloud") : "none"}
-        seed={`${service?.id ?? ""}:${llmModel}`}
         title={
           service && !service.onDevice
             ? service.label
