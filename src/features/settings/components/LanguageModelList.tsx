@@ -167,7 +167,6 @@ const LanguageModelList = ({
       message: "Glimpse's cleanup model",
     }),
     formatModelSize(G1_SIZE_MB),
-    t({ id: "settings.models.language.plus", message: "Plus" }),
   ].join("  ·  ");
   const appleFacts = t({
     id: "settings.models.language.apple_description",

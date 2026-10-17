@@ -863,6 +863,11 @@ msgstr ""
 #~ msgstr "Anbieter"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+#~ msgid "settings.models.language.plus"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -4976,11 +4981,6 @@ msgstr "Wiedergabeeinstellungen"
 #: src/main.tsx
 msgid "crash.body"
 msgstr "Bitte starte die App neu."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.models.language.plus"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx

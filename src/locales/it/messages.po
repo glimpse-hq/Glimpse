@@ -863,6 +863,11 @@ msgstr ""
 #~ msgstr "Provider"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+#~ msgid "settings.models.language.plus"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse trasforma la mia voce in testo.»"
@@ -4976,11 +4981,6 @@ msgstr "Impostazioni di riproduzione"
 #: src/main.tsx
 msgid "crash.body"
 msgstr "Riavvia l'app."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.models.language.plus"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx

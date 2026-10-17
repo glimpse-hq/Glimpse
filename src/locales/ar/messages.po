@@ -863,6 +863,11 @@ msgstr ""
 #~ msgstr "الموفرون"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+#~ msgid "settings.models.language.plus"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -4976,11 +4981,6 @@ msgstr "إعدادات التشغيل"
 #: src/main.tsx
 msgid "crash.body"
 msgstr "يرجى إعادة تشغيل التطبيق."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.models.language.plus"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
