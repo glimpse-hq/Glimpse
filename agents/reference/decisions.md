@@ -5,7 +5,7 @@ These look wrong or redundant but are deliberate. Don't "fix" them. Add one line
 - **Cached mic permission gate** in `pill.rs`. The fresh check can block for minutes; a failed stream start shows the permission toast and refreshes the cache.
 - **The pill shows pre-roll until audio arrives.** It must never look ready before the mic is live.
 - **Hold and Toggle modes stay next to Smart.** Pedals and switch access need deterministic behavior.
-- **Edit Mode is its own toggle, not part of cleanup.** It changes what the words mean.
+- **Edit Mode rides on a shortcut's Clean up switch.** A shortcut without it types the words as spoken, even over a selection, and writing modes never apply to it.
 - **Whole-struct `update_settings`.** See `settings.md`.
 - **Whisper runs with non-speech tokens allowed, plus segment × VAD masking** against hallucinated phrases. Phrase blocklists, audio trimming, `no_speech_prob`, and `avg_logprob` were measured and failed.
 - **Apple Speech is batch-only.** Its streaming output is too bursty for the pill.

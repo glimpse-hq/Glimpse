@@ -47,6 +47,7 @@ static SETTINGS_WINDOW_BUILDING: AtomicBool = AtomicBool::new(false);
 pub(crate) enum SettingsPage {
     About,
     History,
+    General,
     Models,
     Account,
     Dictionary,
@@ -61,6 +62,7 @@ impl SettingsPage {
         match self {
             Self::About => "navigate:about",
             Self::History => "navigate:history",
+            Self::General => "navigate:general",
             Self::Models => "navigate:models",
             Self::Account => "navigate:account",
             Self::Dictionary => "navigate:dictionary",

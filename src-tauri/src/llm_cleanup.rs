@@ -130,7 +130,7 @@ pub async fn edit_transcription(
 ) -> Result<String, RemoteError> {
     if !is_llm_available(settings) {
         return Err(remote_lib::config_error(
-            "Edit mode requires a selected language model in Settings -> Models",
+            "Edit mode requires a selected language model in Settings -> General",
         ));
     }
 
@@ -204,8 +204,10 @@ pub fn is_llm_available(settings: &UserSettings) -> bool {
         && configured_model(settings).is_some()
 }
 
-pub fn should_refine_transcript(settings: &UserSettings, mode: Option<&Personality>) -> bool {
-    is_llm_available(settings) && (settings.cleanup_enabled || personality_has_style_guidance(mode))
+// Writing modes only apply through a shortcut with Clean up on; without it the
+// transcript is pasted as spoken.
+pub fn should_refine_transcript(settings: &UserSettings) -> bool {
+    settings.cleanup_enabled && is_llm_available(settings)
 }
 
 pub fn prewarm_cleanup(settings: &UserSettings) {
@@ -219,10 +221,10 @@ pub fn prewarm_cleanup(settings: &UserSettings) {
             // Picks up model files copied in since the last scan.
             crate::g1::refresh_installed();
         }
-        let mode = mode_context::resolve_active_personality(&settings);
-        if !should_refine_transcript(&settings, mode.as_ref()) {
+        if !should_refine_transcript(&settings) {
             return;
         }
+        let mode = mode_context::resolve_active_personality(&settings);
         let guidance = style_guidance(&settings, mode.as_ref());
         let prompt = build_cleanup_system_prompt(&settings, guidance.as_deref());
         if apple {
@@ -617,8 +619,9 @@ async fn run_text_task(
         );
     }
 
-    let model = configured_model(settings)
-        .ok_or_else(|| remote_lib::config_error("Choose a language model in Settings -> Models"))?;
+    let model = configured_model(settings).ok_or_else(|| {
+        remote_lib::config_error("Choose a language model in Settings -> General")
+    })?;
 
     let mut body = ChatRequest::new(model, task, system_prompt, user_content);
 
@@ -1199,11 +1202,6 @@ fn word_count(text: &str) -> usize {
     text.split_whitespace().count()
 }
 
-fn personality_has_style_guidance(mode: Option<&Personality>) -> bool {
-    mode.and_then(mode_context::format_cleanup_style_guidance_for_personality)
-        .is_some()
-}
-
 pub const PREFLIGHT_TTL: Duration = Duration::from_secs(300);
 const PREFLIGHT_NOTICE_COOLDOWN: Duration = Duration::from_secs(45);
 
@@ -1259,11 +1257,8 @@ fn preflight_availability_from_models(models: &[String]) -> Option<bool> {
 }
 
 pub async fn run_preflight(client: Client, settings: UserSettings) {
-    let has_personalization = settings.personalities.iter().any(|personality| {
-        personality.enabled
-            && mode_context::format_cleanup_style_guidance_for_personality(personality).is_some()
-    });
-    let llm_is_needed = settings.cleanup_enabled || has_personalization;
+    let llm_is_needed =
+        settings.cleanup_enabled || settings.shortcut_bindings.any_cleanup_enabled();
 
     if settings.transcription_mode != TranscriptionMode::Local
         || !is_llm_available(&settings)
@@ -1297,26 +1292,6 @@ pub async fn run_preflight(client: Client, settings: UserSettings) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn sample_personality(instructions: &[&str]) -> Personality {
-        Personality {
-            id: "sample".to_string(),
-            name: "Sample".to_string(),
-            enabled: true,
-            apps: Vec::new(),
-            websites: Vec::new(),
-            instructions: instructions.iter().map(|value| value.to_string()).collect(),
-        }
-    }
-
-    fn llm_settings() -> UserSettings {
-        UserSettings {
-            llm_enabled: true,
-            cleanup_enabled: false,
-            llm_provider: "openai".to_string(),
-            ..Default::default()
-        }
-    }
 
     #[test]
     fn strips_json_wrapper_from_response() {
@@ -1431,15 +1406,6 @@ mod tests {
             5
         );
         assert_eq!(list_item_count("-1 is negative\n3.14 is a number"), 0);
-    }
-
-    #[test]
-    fn blank_personality_guidance_does_not_enable_refinement() {
-        let settings = llm_settings();
-        let personality = sample_personality(&["", "   "]);
-
-        assert!(!personality_has_style_guidance(Some(&personality)));
-        assert!(!should_refine_transcript(&settings, Some(&personality)));
     }
 
     #[test]

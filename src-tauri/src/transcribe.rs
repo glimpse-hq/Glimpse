@@ -792,7 +792,7 @@ async fn process_transcript_text(
     let is_edit_mode = pending_selected_text.is_some();
     let llm_kind = if is_edit_mode { "edit" } else { "cleanup" };
     let llm_available = llm_cleanup::is_llm_available(settings);
-    let should_refine_transcript = llm_cleanup::should_refine_transcript(settings, active_mode);
+    let should_refine_transcript = llm_cleanup::should_refine_transcript(settings);
     let llm_needed = is_edit_mode || should_refine_transcript;
     let preflight_unavailable =
         llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
@@ -1114,8 +1114,7 @@ pub(crate) fn retry_transcription_async(
                     return;
                 }
 
-                let should_refine_transcript =
-                    llm_cleanup::should_refine_transcript(&settings, saved_personality.as_ref());
+                let should_refine_transcript = llm_cleanup::should_refine_transcript(&settings);
                 let preflight_unavailable = should_refine_transcript
                     && matches!(llm_cleanup::cached_preflight_available(), Some(false));
                 let should_use_llm = should_refine_transcript && !preflight_unavailable;

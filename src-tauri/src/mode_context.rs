@@ -145,8 +145,10 @@ pub fn format_cleanup_style_guidance_for_personality(personality: &Personality) 
     }
 }
 
+// `cleanup_enabled` here is the dictation's shortcut flag; modes only apply
+// through a shortcut with Clean up on.
 pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality> {
-    if !permissions::check_accessibility_permission() {
+    if !settings.cleanup_enabled || !permissions::check_accessibility_permission() {
         return None;
     }
 
