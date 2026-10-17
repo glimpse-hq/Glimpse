@@ -1164,7 +1164,7 @@ msgid "settings.stats.post.2"
 msgstr "{wpm} words a minute out loud. My hands have never been happier. @try_glimpse_app"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.add_shortcut"
 msgstr "+ Add shortcut"
 
@@ -1466,7 +1466,7 @@ msgid "transcriptions.time.any"
 msgstr "Any time"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.v2"
 msgstr "API key"
 
@@ -1646,6 +1646,11 @@ msgstr "Back to library"
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.background_visualizer"
 msgstr "Background audio visualizer"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.behavior"
+msgstr "Behavior"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1907,6 +1912,11 @@ msgid "onboarding.model.title"
 msgstr "Choose a model"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.choose_hint"
+msgstr "Choose a model to clean up dictation."
+
+#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.switch_model"
 msgstr "Choose a model with dictionary support to use these words."
@@ -1932,6 +1942,16 @@ msgid "onboarding.license_step.tile_agents_body"
 msgstr "Claude, ChatGPT and Cursor can search your transcripts."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.cleanup"
+msgstr "Clean up"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.with"
+msgstr "Clean up with"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.cleaning"
 msgstr "Cleaning..."
@@ -1939,11 +1959,6 @@ msgstr "Cleaning..."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.cleanup"
-msgstr "Cleanup"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup"
 msgstr "Cleanup"
 
 #. js-lingui-explicit-id
@@ -1960,11 +1975,6 @@ msgstr "Cleanup and your writing model are turned off."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
 msgstr "Cleanup comes with Glimpse Plus. Get it in"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.model_aria"
-msgstr "Cleanup model"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
@@ -2067,17 +2077,12 @@ msgid "native.menu.close_window"
 msgstr "Close Window"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud"
-msgstr "Cloud"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.provider"
 msgstr "Cloud"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.cloud.v2"
 msgstr "Cloud (API key)"
 
@@ -2557,7 +2562,7 @@ msgid "settings.local_api.model.currently_loaded"
 msgstr "currently loaded: {loadedModelLabel}"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.custom"
 msgstr "Custom"
 
@@ -3090,7 +3095,7 @@ msgid "personalization.modal.website.invalid"
 msgstr "Enter a valid domain like gmail.com"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.custom.description"
 msgstr "Enter your own endpoint URL"
 
@@ -3356,6 +3361,11 @@ msgid "personalization.modal.snippets.full_list"
 msgstr "Full snippet list"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.g1_not_installed"
+msgstr "G1 isn't installed on this Mac yet."
+
+#. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.tab.general"
 msgstr "General"
@@ -3581,11 +3591,6 @@ msgid "native.menu.hide_others"
 msgstr "Hide Others"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.hide_shortcuts"
-msgstr "Hide shortcuts"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
 msgstr "Hide speaker"
@@ -3596,7 +3601,7 @@ msgid "live.compact"
 msgstr "Hide transcript"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.hold"
 msgstr "Hold"
 
@@ -3631,7 +3636,7 @@ msgid "settings.about.data.hold_to_restart"
 msgstr "Hold to restart"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.hold_description"
 msgstr "hold to talk, release to stop"
 
@@ -3656,7 +3661,7 @@ msgid "faq.how_it_works.question"
 msgstr "How does Glimpse work?"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.endpoint.placeholder.v2"
 msgstr "https://api.example.com/v1"
 
@@ -3790,11 +3795,6 @@ msgstr "Installed"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_subtitle"
 msgstr "Installed at {cliInstallPath}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.language_model.g1.ready"
-msgstr "Installed on this Mac."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: cliInstallStatus.command
@@ -4069,7 +4069,7 @@ msgid "live.prefs"
 msgstr "Live view settings"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.endpoint.aria"
 msgstr "LLM Endpoint URL"
 
@@ -4094,11 +4094,6 @@ msgid "home.mode.local"
 msgstr "Local"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.local"
-msgstr "Local"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider.local"
 msgstr "Local"
@@ -4107,6 +4102,11 @@ msgstr "Local"
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.running"
 msgstr "Local API"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.group.server"
+msgstr "Local server"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4148,11 +4148,6 @@ msgstr "Mac and Windows"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.major_release"
 msgstr "Major Release"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.help_temporary"
-msgstr "Makes a shortcut temporary. It will not save audio, transcript, or history."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4262,7 +4257,6 @@ msgstr "Minimize"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/CleanupModelCard.tsx
-#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model"
 msgstr "Model"
 
@@ -4283,7 +4277,7 @@ msgstr "Model"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: providerPreset?.defaultModel || "none"
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.model.placeholder"
 msgstr "Model (default: {0})"
 
@@ -4731,14 +4725,14 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "Not installed"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.language_model.g1.not_installed"
-msgstr "Not installed."
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.not_running"
 msgstr "Not running"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.not_saved"
+msgstr "Not saved to Library"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -4822,6 +4816,11 @@ msgstr "On"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.group.this_mac"
+msgstr "On this Mac"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.on_device"
 msgstr "On-device"
 
@@ -4832,8 +4831,8 @@ msgstr "One payment. Dictation stays free either way."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.ai_writing.answer.v2"
-msgstr "Only if you set up a writing model under Settings → Providers. Shortcuts with Cleanup turned on, and Personalization, then send the relevant text directly to that provider. Your API key stays stored locally in Glimpse. Audio leaves your device only if you pick a cloud speech model in Settings → Models."
+msgid "faq.ai_writing.answer.v3"
+msgstr "Only if you choose a cloud model under Settings → General → Cleanup. Shortcuts with Clean up turned on then send their text, with any Personalization instructions, directly to that provider. Your API key stays stored locally in Glimpse. Audio leaves your device only if you pick a cloud speech model in Settings → Models."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4859,11 +4858,6 @@ msgstr "Open API server settings"
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.auto_launch"
 msgstr "Open at login"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.language.action"
-msgstr "Open General"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -4926,7 +4920,7 @@ msgid "live.prefs.open_on_start"
 msgstr "Open when recording starts"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.optional"
 msgstr "Optional"
 
@@ -5168,11 +5162,6 @@ msgid "pill.status.processing"
 msgstr "Processing..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider"
-msgstr "Provider"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider"
 msgstr "Provider"
@@ -5185,11 +5174,6 @@ msgstr "provider default"
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.tab.providers"
-msgstr "Providers"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.providers_link"
 msgstr "Providers"
 
 #. js-lingui-explicit-id
@@ -5430,7 +5414,7 @@ msgid "library.bookmark.remove"
 msgstr "Remove bookmark"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "Remove shortcut"
 
@@ -5495,7 +5479,7 @@ msgid "home.local_api.requests"
 msgstr "Requests served"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.required"
 msgstr "Required"
 
@@ -5696,6 +5680,11 @@ msgid "settings.local_api.status.running"
 msgstr "Running"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.g1_ready"
+msgstr "Runs on this Mac."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding_description"
 msgstr "Runs setup again"
@@ -5724,6 +5713,11 @@ msgstr "Save name"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.rename_save"
 msgstr "Save name"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.save_to_library"
+msgstr "Save to Library"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -5767,7 +5761,7 @@ msgid "onboarding.license_step.tile_raycast_body"
 msgstr "Search and paste past dictations."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.model.search"
 msgstr "Search available models..."
 
@@ -5837,7 +5831,7 @@ msgid "dictionary.search_or_add"
 msgstr "Search or add a word..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.search"
 msgstr "Search providers..."
 
@@ -5922,11 +5916,6 @@ msgid "settings.general.select_microphone"
 msgstr "Select microphone..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.select"
-msgstr "Select provider..."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider.select"
 msgstr "Select provider..."
@@ -5947,6 +5936,11 @@ msgid "onboarding.license_step.tile_cleanup_after"
 msgstr "Send it tomorrow."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.cleanup_tip"
+msgstr "Sends dictation from this shortcut through your cleanup model and writing modes. With text selected, speak an instruction to rewrite it."
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.services"
 msgstr "Services"
@@ -5955,16 +5949,6 @@ msgstr "Services"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud.set_up"
 msgstr "Set up"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_setup_prefix"
-msgstr "Set up a provider and API key in"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_description"
-msgstr "Set up in Providers"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5988,9 +5972,19 @@ msgid "settings.stats.share.open"
 msgstr "Share"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.shortcut"
+msgstr "Shortcut"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.shortcut.v2"
 msgstr "Shortcut"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.more"
+msgstr "Shortcut options"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6037,11 +6031,6 @@ msgstr "Show only this speaker"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.info"
 msgstr "Show personalization snippet examples"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.show_shortcuts"
-msgstr "Show shortcuts"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6119,7 +6108,7 @@ msgid "settings.app.text_size.small"
 msgstr "Small"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart"
 msgstr "Smart"
 
@@ -6430,12 +6419,12 @@ msgid "library.detail.tags.label"
 msgstr "Tag"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.toggle_description"
 msgstr "tap to start, tap to stop"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart_description"
 msgstr "tap to toggle, hold to talk"
 
@@ -6443,11 +6432,6 @@ msgstr "tap to toggle, hold to talk"
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.teal"
 msgstr "Teal"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.temporary"
-msgstr "Temporary"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6463,6 +6447,11 @@ msgstr "Text"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text_detail"
 msgstr "Text appears in the pill as you speak."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.not_saved_detail"
+msgstr "Text from this shortcut is pasted, but its audio and transcript aren't kept."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6662,11 +6651,6 @@ msgstr "Timestamps"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.language.body"
-msgstr "To clean up dictation with this model, tap the brush on a shortcut in General."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.body"
 msgstr "To transcribe with this provider, switch it on in Models."
 
@@ -6681,14 +6665,9 @@ msgid "transcriptions.time.today"
 msgstr "Today"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.toggle"
 msgstr "Toggle"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcut.toggle_aria"
-msgstr "Toggle {label} shortcut"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -6942,6 +6921,11 @@ msgid "settings.general.language_info.active_model"
 msgstr "Unsupported languages aren't available on your active model. Switch to a supported model to use them."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.paste_as_spoken"
+msgstr "Until then, shortcuts with Clean up type exactly what you said."
+
+#. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.up"
 msgstr "Up"
@@ -7037,24 +7021,9 @@ msgid "settings.models.automatic.uses"
 msgstr "Uses {modelLabel} for your language"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_ready_prefix"
-msgstr "Uses {providerLabel}. Change it in"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.description"
 msgstr "Uses the model for your language"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.help_writing"
-msgstr "Uses the writing model for that shortcut only. It tidies what you dictate, and rewrites selected text when you speak an instruction."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_custom_prefix"
-msgstr "Uses your own endpoint. Change it in"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -7203,11 +7172,6 @@ msgid "onboarding.license_step.tile_offline"
 msgstr "Works offline"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.writing_label"
-msgstr "Writing"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.writing_model_title"
 msgstr "Writing model"
@@ -7218,12 +7182,7 @@ msgid "native.provider.writing"
 msgstr "Writing model"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.title.v2"
-msgstr "Writing model"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.aria.v2"
 msgstr "Writing model API key"
 

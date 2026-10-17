@@ -1164,7 +1164,7 @@ msgid "settings.stats.post.2"
 msgstr "{wpm} كلمة في الدقيقة بصوت عالٍ. لم تكن يداي أسعد من هذا قط. @try_glimpse_app"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.add_shortcut"
 msgstr "+ إضافة اختصار"
 
@@ -1466,7 +1466,7 @@ msgid "transcriptions.time.any"
 msgstr "في أي وقت"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.v2"
 msgstr "مفتاح API"
 
@@ -1646,6 +1646,11 @@ msgstr "العودة إلى المكتبة"
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.background_visualizer"
 msgstr "مُرئيّات الصوت في الخلفية"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.behavior"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1907,6 +1912,11 @@ msgid "onboarding.model.title"
 msgstr "اختر نموذجًا"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.choose_hint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.switch_model"
 msgstr "اختر نموذجًا يدعم القاموس لاستخدام هذه الكلمات."
@@ -1932,6 +1942,16 @@ msgid "onboarding.license_step.tile_agents_body"
 msgstr "يمكن لـ Claude وChatGPT وCursor البحث في نصوصك المكتوبة."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.cleanup"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.with"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.cleaning"
 msgstr "جارٍ التنظيف..."
@@ -1940,11 +1960,6 @@ msgstr "جارٍ التنظيف..."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.cleanup"
 msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup"
-msgstr "تنظيف"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/TrialEndedScreen.tsx
@@ -1960,11 +1975,6 @@ msgstr "تم إيقاف التنقيح ونموذج الكتابة."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
 msgstr "ميزة التنقيح متاحة مع Glimpse Plus. يمكنك الحصول عليها من"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.model_aria"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
@@ -2067,17 +2077,12 @@ msgid "native.menu.close_window"
 msgstr "إغلاق النافذة"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.provider"
 msgstr "السحابة"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.cloud.v2"
 msgstr "سحابي (مفتاح API)"
 
@@ -2557,7 +2562,7 @@ msgid "settings.local_api.model.currently_loaded"
 msgstr "المحمّل حاليًا: {loadedModelLabel}"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.custom"
 msgstr "مخصص"
 
@@ -3090,7 +3095,7 @@ msgid "personalization.modal.website.invalid"
 msgstr "أدخل نطاقًا صالحًا مثل gmail.com"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.custom.description"
 msgstr "أدخل عنوان URL لنقطة النهاية الخاصة بك"
 
@@ -3356,6 +3361,11 @@ msgid "personalization.modal.snippets.full_list"
 msgstr "قائمة المقتطفات الكاملة"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.g1_not_installed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.tab.general"
 msgstr "عام"
@@ -3581,11 +3591,6 @@ msgid "native.menu.hide_others"
 msgstr "إخفاء الآخرين"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.hide_shortcuts"
-msgstr "إخفاء الاختصارات"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
 msgstr "إخفاء المتحدث"
@@ -3596,7 +3601,7 @@ msgid "live.compact"
 msgstr "إخفاء النص المكتوب"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.hold"
 msgstr "اضغط مع الاستمرار"
 
@@ -3631,7 +3636,7 @@ msgid "settings.about.data.hold_to_restart"
 msgstr "اضغط مطوّلاً لإعادة التشغيل"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.hold_description"
 msgstr "اضغط مع الاستمرار للتحدث، وأفلت للإيقاف"
 
@@ -3656,7 +3661,7 @@ msgid "faq.how_it_works.question"
 msgstr "كيف يعمل Glimpse؟"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.endpoint.placeholder.v2"
 msgstr "https://api.example.com/v1"
 
@@ -3790,11 +3795,6 @@ msgstr "مثبَّت"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_subtitle"
 msgstr "مثبَّت في {cliInstallPath}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.language_model.g1.ready"
-msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: cliInstallStatus.command
@@ -4069,7 +4069,7 @@ msgid "live.prefs"
 msgstr "إعدادات العرض المباشر"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.endpoint.aria"
 msgstr "عنوان URL لنقطة نهاية LLM"
 
@@ -4094,11 +4094,6 @@ msgid "home.mode.local"
 msgstr "محلي"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.local"
-msgstr "محلي"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider.local"
 msgstr "محلي"
@@ -4107,6 +4102,11 @@ msgstr "محلي"
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.running"
 msgstr "واجهة API المحلية"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.group.server"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4148,11 +4148,6 @@ msgstr "Mac وWindows"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.major_release"
 msgstr "إصدار رئيسي"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.help_temporary"
-msgstr "يجعل الاختصار مؤقتاً. لن يتم حفظ الصوت أو النص المُفرَّغ أو السجل."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4262,7 +4257,6 @@ msgstr "تصغير"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/CleanupModelCard.tsx
-#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model"
 msgstr "النموذج"
 
@@ -4283,7 +4277,7 @@ msgstr "النموذج"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: providerPreset?.defaultModel || "none"
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.model.placeholder"
 msgstr "النموذج (الافتراضي: {0})"
 
@@ -4731,14 +4725,14 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "غير مثبَّت"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.language_model.g1.not_installed"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.not_running"
 msgstr "غير قيد التشغيل"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.not_saved"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -4822,6 +4816,11 @@ msgstr "تشغيل"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.group.this_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.on_device"
 msgstr "على الجهاز"
 
@@ -4832,8 +4831,8 @@ msgstr "دفعة واحدة. يظل الإملاء مجانيًا في كل ال
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.ai_writing.answer.v2"
-msgstr "فقط إذا أعددت نموذج كتابة ضمن الإعدادات ← الموفرون. تُرسل الاختصارات التي تم تفعيل «التنظيف» فيها، والتخصيص، النص ذا الصلة مباشرةً إلى ذلك الموفر. يظل مفتاح API الخاص بك مخزنًا محليًا في Glimpse. لا يغادر الصوت جهازك إلا إذا اخترت نموذج كلام سحابيًا في الإعدادات ← النماذج."
+msgid "faq.ai_writing.answer.v3"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4859,11 +4858,6 @@ msgstr "فتح إعدادات خادم API"
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.auto_launch"
 msgstr "الفتح عند تسجيل الدخول"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.language.action"
-msgstr "فتح عام"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -4926,7 +4920,7 @@ msgid "live.prefs.open_on_start"
 msgstr "فتح عند بدء التسجيل"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.optional"
 msgstr "اختياري"
 
@@ -5168,11 +5162,6 @@ msgid "pill.status.processing"
 msgstr "جارٍ المعالجة..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider"
-msgstr "الموفّر"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider"
 msgstr "الخدمة"
@@ -5186,11 +5175,6 @@ msgstr "الإعداد الافتراضي للموفر"
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.tab.providers"
 msgstr "الموفِّرون"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.providers_link"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -5430,7 +5414,7 @@ msgid "library.bookmark.remove"
 msgstr "إزالة الإشارة المرجعية"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "إزالة الاختصار"
 
@@ -5495,7 +5479,7 @@ msgid "home.local_api.requests"
 msgstr "الطلبات المُعالَجة"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.required"
 msgstr "مطلوب"
 
@@ -5696,6 +5680,11 @@ msgid "settings.local_api.status.running"
 msgstr "قيد التشغيل"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.g1_ready"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding_description"
 msgstr "إعادة تشغيل معالج الإعداد"
@@ -5724,6 +5713,11 @@ msgstr "حفظ الاسم"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.rename_save"
 msgstr "حفظ الاسم"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.save_to_library"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -5767,7 +5761,7 @@ msgid "onboarding.license_step.tile_raycast_body"
 msgstr "ابحث عن الإملاءات السابقة والصقها."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.model.search"
 msgstr "البحث في النماذج المتاحة..."
 
@@ -5837,7 +5831,7 @@ msgid "dictionary.search_or_add"
 msgstr "البحث عن كلمة أو إضافتها..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.provider.search"
 msgstr "البحث في الموفرين..."
 
@@ -5922,11 +5916,6 @@ msgid "settings.general.select_microphone"
 msgstr "تحديد الميكروفون..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.select"
-msgstr "تحديد الموفر..."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider.select"
 msgstr "اختر موفِّرًا..."
@@ -5947,6 +5936,11 @@ msgid "onboarding.license_step.tile_cleanup_after"
 msgstr "أرسله غداً."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.cleanup_tip"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.services"
 msgstr "الخدمات"
@@ -5955,16 +5949,6 @@ msgstr "الخدمات"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud.set_up"
 msgstr "إعداد"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_setup_prefix"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_description"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5988,9 +5972,19 @@ msgid "settings.stats.share.open"
 msgstr "مشاركة"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.column.shortcut"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.shortcut.v2"
 msgstr "الاختصار"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.more"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6037,11 +6031,6 @@ msgstr "إظهار هذا المتحدث فقط"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.info"
 msgstr "عرض أمثلة مقتطفات التخصيص"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.show_shortcuts"
-msgstr "عرض الاختصارات"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6119,7 +6108,7 @@ msgid "settings.app.text_size.small"
 msgstr "صغير"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart"
 msgstr "ذكي"
 
@@ -6430,12 +6419,12 @@ msgid "library.detail.tags.label"
 msgstr "وسم"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.toggle_description"
 msgstr "انقر للبدء، انقر للإيقاف"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart_description"
 msgstr "انقر للتبديل، اضغط مطولاً للتحدث"
 
@@ -6443,11 +6432,6 @@ msgstr "انقر للتبديل، اضغط مطولاً للتحدث"
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.teal"
 msgstr "أزرق مخضر"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.temporary"
-msgstr "مؤقت"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6463,6 +6447,11 @@ msgstr "نص"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text_detail"
 msgstr "يظهر النص في الشريط أثناء كلامك."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.not_saved_detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6662,11 +6651,6 @@ msgstr "الطوابع الزمنية"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.language.body"
-msgstr "لتنظيف الإملاء باستخدام هذا النموذج، اضغط على الفرشاة في اختصار ضمن عام."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.body"
 msgstr "للنسخ باستخدام هذا الموفّر، قم بتشغيله في النماذج."
 
@@ -6681,14 +6665,9 @@ msgid "transcriptions.time.today"
 msgstr "اليوم"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
+#: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.toggle"
 msgstr "تبديل"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcut.toggle_aria"
-msgstr "تبديل اختصار {label}"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -6942,6 +6921,11 @@ msgid "settings.general.language_info.active_model"
 msgstr "اللغات غير المدعومة غير متاحة في نموذجك النشط. بدّل إلى نموذج يدعمها لاستخدامها."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CleanupModelCard.tsx
+msgid "settings.general.cleanup.paste_as_spoken"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.up"
 msgstr "أعلى"
@@ -7037,24 +7021,9 @@ msgid "settings.models.automatic.uses"
 msgstr "يستخدم {modelLabel} للغتك"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_ready_prefix"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.description"
 msgstr "يستخدم النموذج للغتك"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.help_writing"
-msgstr "يستخدم نموذج الكتابة لهذا الاختصار فقط. يُرتّب ما تمليه، ويُعيد صياغة النص المحدد عند نطق تعليمة."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/CleanupModelCard.tsx
-msgid "settings.general.cleanup.cloud_custom_prefix"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -7203,11 +7172,6 @@ msgid "onboarding.license_step.tile_offline"
 msgstr "يعمل بلا إنترنت"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.writing_label"
-msgstr "الكتابة"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.writing_model_title"
 msgstr "نموذج الكتابة"
@@ -7218,12 +7182,7 @@ msgid "native.provider.writing"
 msgstr "نموذج الكتابة"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.title.v2"
-msgstr "نموذج الكتابة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
+#: src/features/settings/components/CleanupModelCard.tsx
 msgid "settings.language_model.api_key.aria.v2"
 msgstr "مفتاح API لنموذج الكتابة"
 

@@ -111,9 +111,9 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
         message: "When does text leave my device?",
       }),
       answer: t({
-        id: "faq.ai_writing.answer.v2",
+        id: "faq.ai_writing.answer.v3",
         message:
-          "Only if you set up a writing model under Settings → Providers. Shortcuts with Cleanup turned on, and Personalization, then send the relevant text directly to that provider. Your API key stays stored locally in Glimpse. Audio leaves your device only if you pick a cloud speech model in Settings → Models.",
+          "Only if you choose a cloud model under Settings → General → Cleanup. Shortcuts with Clean up turned on then send their text, with any Personalization instructions, directly to that provider. Your API key stays stored locally in Glimpse. Audio leaves your device only if you pick a cloud speech model in Settings → Models.",
       }),
     },
     {

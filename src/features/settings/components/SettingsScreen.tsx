@@ -130,12 +130,6 @@ const SettingsScreen = ({
                 language={form.language}
                 onLanguageChange={form.setLanguage}
                 languages={form.languages}
-                smartEnabled={form.smartEnabled}
-                setSmartEnabled={form.setSmartEnabled}
-                holdEnabled={form.holdEnabled}
-                setHoldEnabled={form.setHoldEnabled}
-                toggleEnabled={form.toggleEnabled}
-                setToggleEnabled={form.setToggleEnabled}
                 shortcutBindings={form.shortcutBindings}
                 invalidShortcutDrafts={form.invalidShortcutDrafts}
                 captureActive={form.captureActive}
@@ -144,18 +138,23 @@ const SettingsScreen = ({
                 updateShortcutBinding={form.updateShortcutBinding}
                 addShortcutBinding={form.addShortcutBinding}
                 removeShortcutBinding={form.removeShortcutBinding}
+                moveShortcutBinding={form.moveShortcutBinding}
                 autoDictionaryEnabled={form.autoDictionaryEnabled}
                 autoDictionarySupported={form.autoDictionarySupported}
                 setAutoDictionaryEnabled={form.setAutoDictionaryEnabled}
-                aiFeaturesReady={form.aiFeaturesReady}
                 licenseGateActive={form.licenseGateActive}
                 activeLicense={form.activeLicense}
                 llmProvider={form.llmProvider}
                 setLlmProvider={form.setLlmProvider}
+                llmEndpoint={form.llmEndpoint}
                 setLlmEndpoint={form.setLlmEndpoint}
-                llmConfigReady={form.llmConfigReady}
+                llmApiKey={form.llmApiKey}
+                setLlmApiKey={form.setLlmApiKey}
+                llmModel={form.llmModel}
+                setLlmModel={form.setLlmModel}
+                availableModels={form.availableModels}
+                fetchAvailableModels={form.fetchAvailableModels}
                 onOpenAccountTab={() => onPaneChange("account")}
-                onOpenProvidersTab={() => onPaneChange("providers")}
               />
             )}
 
@@ -186,16 +185,6 @@ const SettingsScreen = ({
               <ProvidersTab
                 key="providers"
                 variants={paneVariants}
-                llmProvider={form.llmProvider}
-                setLlmProvider={form.setLlmProvider}
-                llmEndpoint={form.llmEndpoint}
-                setLlmEndpoint={form.setLlmEndpoint}
-                llmApiKey={form.llmApiKey}
-                setLlmApiKey={form.setLlmApiKey}
-                llmModel={form.llmModel}
-                setLlmModel={form.setLlmModel}
-                availableModels={form.availableModels}
-                fetchAvailableModels={form.fetchAvailableModels}
                 remoteSpeechProvider={form.remoteSpeechProvider}
                 setRemoteSpeechProvider={form.setRemoteSpeechProvider}
                 remoteSpeechEndpoint={form.remoteSpeechEndpoint}
@@ -207,7 +196,6 @@ const SettingsScreen = ({
                 availableSpeechModels={form.availableSpeechModels}
                 fetchAvailableSpeechModels={form.fetchAvailableSpeechModels}
                 onOpenModelsTab={() => onPaneChange("models")}
-                onOpenGeneralTab={() => onPaneChange("general")}
               />
             )}
 

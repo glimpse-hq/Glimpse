@@ -136,50 +136,51 @@ const defaultShortcutBindings = (): ShortcutBindings => ({
   smart: [
     { shortcut: "Control+Space", temporary: false, cleanup_enabled: false },
   ],
-  hold: [
-    {
-      shortcut: "Control+Shift+Space",
-      temporary: false,
-      cleanup_enabled: false,
-    },
-  ],
-  toggle: [
-    { shortcut: "Control+Alt+Space", temporary: false, cleanup_enabled: false },
-  ],
+  hold: [],
+  toggle: [],
 });
 
-const bindingsFromSettings = (settings: StoredSettings): ShortcutBindings => ({
-  smart:
-    settings.shortcut_bindings?.smart?.length > 0
-      ? settings.shortcut_bindings.smart
-      : [
-          {
-            shortcut: settings.smart_shortcut,
-            temporary: false,
-            cleanup_enabled: settings.cleanup_enabled ?? false,
-          },
-        ],
-  hold:
-    settings.shortcut_bindings?.hold?.length > 0
-      ? settings.shortcut_bindings.hold
-      : [
-          {
-            shortcut: settings.hold_shortcut,
-            temporary: false,
-            cleanup_enabled: settings.cleanup_enabled ?? false,
-          },
-        ],
-  toggle:
-    settings.shortcut_bindings?.toggle?.length > 0
-      ? settings.shortcut_bindings.toggle
-      : [
-          {
-            shortcut: settings.toggle_shortcut,
-            temporary: false,
-            cleanup_enabled: settings.cleanup_enabled ?? false,
-          },
-        ],
-});
+// The list shows only the shortcuts you have; a disabled mode has none.
+const bindingsFromSettings = (settings: StoredSettings): ShortcutBindings => {
+  const forMode = (
+    enabled: boolean,
+    bindings: ShortcutBinding[] | undefined,
+    legacyShortcut: string,
+  ): ShortcutBinding[] => {
+    if (!enabled) return [];
+    if (bindings && bindings.length > 0) return bindings;
+    return [
+      {
+        shortcut: legacyShortcut,
+        temporary: false,
+        cleanup_enabled: settings.cleanup_enabled ?? false,
+      },
+    ];
+  };
+  return {
+    smart: forMode(
+      settings.smart_enabled,
+      settings.shortcut_bindings?.smart,
+      settings.smart_shortcut,
+    ),
+    hold: forMode(
+      settings.hold_enabled,
+      settings.shortcut_bindings?.hold,
+      settings.hold_shortcut,
+    ),
+    toggle: forMode(
+      settings.toggle_enabled,
+      settings.shortcut_bindings?.toggle,
+      settings.toggle_shortcut,
+    ),
+  };
+};
+
+const hasShortcut = (bindings: ShortcutBinding[]) =>
+  bindings.some((binding) => binding.shortcut.trim() !== "");
+
+const bindingCount = (bindings: ShortcutBindings) =>
+  bindings.smart.length + bindings.hold.length + bindings.toggle.length;
 
 const withoutShortcutCleanup = (
   bindings: ShortcutBindings,
@@ -246,11 +247,8 @@ export function useSettingsForm({
   initialTab = "general",
 }: UseSettingsFormOptions) {
   const [smartShortcut, setSmartShortcut] = useState("Control+Space");
-  const [smartEnabled, setSmartEnabled] = useState(true);
   const [holdShortcut, setHoldShortcut] = useState("Control+Shift+Space");
-  const [holdEnabled, setHoldEnabled] = useState(false);
   const [toggleShortcut, setToggleShortcut] = useState("Control+Alt+Space");
-  const [toggleEnabled, setToggleEnabled] = useState(false);
   const [shortcutBindings, setShortcutBindings] = useState<ShortcutBindings>(
     defaultShortcutBindings,
   );
@@ -535,7 +533,6 @@ export function useSettingsForm({
   const setLlmApiKey = useCallback(
     (value: string) => {
       setModelDiscovery(resetModelDiscovery);
-      setLlmModel("");
       setLlmApiKeyRaw(value);
     },
     [setModelDiscovery],
@@ -573,11 +570,8 @@ export function useSettingsForm({
       persistedShortcutBindingsRef.current = hydratedBindings;
       clearInvalidShortcutDraft();
       setSmartShortcut(s.smart_shortcut);
-      setSmartEnabled(s.smart_enabled);
       setHoldShortcut(s.hold_shortcut);
-      setHoldEnabled(s.hold_enabled);
       setToggleShortcut(s.toggle_shortcut);
-      setToggleEnabled(s.toggle_enabled);
       shortcutBindingsRef.current = hydratedBindings;
       setShortcutBindings(hydratedBindings);
       setTranscriptionModeRaw(s.transcription_mode);
@@ -757,7 +751,9 @@ export function useSettingsForm({
             invalidShortcutDraftRef.current,
             persistedShortcutBindingsRef.current,
           );
-      const savedShortcutBindings = aiFeaturesReady
+      // Clean up stays on while a model is set up; only a missing license
+      // keeps it from being saved.
+      const savedShortcutBindings = licenseGateActive
         ? bindingsForSave
         : withoutShortcutCleanup(bindingsForSave);
 
@@ -784,15 +780,15 @@ export function useSettingsForm({
         smartShortcut:
           overrides.smartShortcut ??
           primaryShortcut(savedShortcutBindings, "smart", smartShortcut),
-        smartEnabled,
+        smartEnabled: hasShortcut(savedShortcutBindings.smart),
         holdShortcut:
           overrides.holdShortcut ??
           primaryShortcut(savedShortcutBindings, "hold", holdShortcut),
-        holdEnabled,
+        holdEnabled: hasShortcut(savedShortcutBindings.hold),
         toggleShortcut:
           overrides.toggleShortcut ??
           primaryShortcut(savedShortcutBindings, "toggle", toggleShortcut),
-        toggleEnabled,
+        toggleEnabled: hasShortcut(savedShortcutBindings.toggle),
         shortcutBindings: savedShortcutBindings,
         transcriptionMode,
         localModel: overrides.localModel ?? localModel,
@@ -834,11 +830,8 @@ export function useSettingsForm({
     [
       smartShortcut,
       shortcutBindings,
-      smartEnabled,
       holdShortcut,
-      holdEnabled,
       toggleShortcut,
-      toggleEnabled,
       transcriptionMode,
       localModel,
       activeLocalModel,
@@ -981,7 +974,7 @@ export function useSettingsForm({
       if (
         binding &&
         binding.shortcut.trim() === "" &&
-        current[target.mode].length > 1
+        bindingCount(current) > 1
       ) {
         const next = {
           ...current,
@@ -1044,15 +1037,6 @@ export function useSettingsForm({
     onError: (message) => showSettingsError(message, "general"),
     onCaptureInput: clearSettingsErrorIfNoInvalidDrafts,
   });
-
-  useEffect(() => {
-    if (aiFeaturesReady) return;
-    setShortcutBindings((current) => {
-      const next = withoutShortcutCleanup(current);
-      shortcutBindingsRef.current = next;
-      return next;
-    });
-  }, [aiFeaturesReady]);
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -1469,7 +1453,7 @@ export function useSettingsForm({
 
   const removeShortcutBinding = useCallback(
     (mode: ShortcutMode, index: number) => {
-      if (shortcutBindingsRef.current[mode].length <= 1) return;
+      if (bindingCount(shortcutBindingsRef.current) <= 1) return;
       discardInvalidShortcutDraft();
       const activeTarget = captureActiveRef.current;
       if (activeTarget?.mode === mode) {
@@ -1496,6 +1480,30 @@ export function useSettingsForm({
       });
     },
     [discardInvalidShortcutDraft, resetCaptureState, updateShortcutBindings],
+  );
+
+  const moveShortcutBinding = useCallback(
+    (from: ShortcutMode, index: number, to: ShortcutMode) => {
+      const current = shortcutBindingsRef.current;
+      const binding = current[from][index];
+      if (
+        from === to ||
+        !binding ||
+        current[to].length >= 3 ||
+        captureActiveRef.current
+      ) {
+        return;
+      }
+      discardInvalidShortcutDraft();
+      updateShortcutBindings((latest) => ({
+        ...latest,
+        [from]: latest[from].filter(
+          (_, bindingIndex) => bindingIndex !== index,
+        ),
+        [to]: [...latest[to], binding],
+      }));
+    },
+    [discardInvalidShortcutDraft, updateShortcutBindings],
   );
 
   const handleLocalModelChange = useCallback(
@@ -1949,12 +1957,6 @@ export function useSettingsForm({
 
     shortcutBindings,
     invalidShortcutDrafts,
-    smartEnabled,
-    setSmartEnabled,
-    holdEnabled,
-    setHoldEnabled,
-    toggleEnabled,
-    setToggleEnabled,
     localModel,
     setLocalModel: handleLocalModelChange,
     remoteSpeechEnabled,
@@ -1989,6 +1991,7 @@ export function useSettingsForm({
     updateShortcutBinding,
     addShortcutBinding,
     removeShortcutBinding,
+    moveShortcutBinding,
 
     llmProvider,
     setLlmProvider,
@@ -1998,8 +2001,6 @@ export function useSettingsForm({
     setLlmApiKey,
     llmModel,
     setLlmModel,
-    llmConfigReady,
-    aiFeaturesReady,
     licenseGateActive,
     activeLicense,
     availableModels,

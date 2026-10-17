@@ -1,27 +1,13 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
-import LanguageModelPanel from "../LanguageModelPanel";
 import SpeechModelPanel from "../SpeechModelPanel";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
-import ProviderGuide, {
-  CleanupShortcutIllustration,
-  CloudCardIllustration,
-} from "../ProviderGuide";
+import ProviderGuide, { CloudCardIllustration } from "../ProviderGuide";
 import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
-import type { LlmProvider, RemoteSpeechProvider } from "../../../../types";
+import type { RemoteSpeechProvider } from "../../../../types";
 
 type ProvidersTabProps = {
   variants: Variants;
-  llmProvider: LlmProvider;
-  setLlmProvider: (value: LlmProvider) => void;
-  llmEndpoint: string;
-  setLlmEndpoint: (value: string) => void;
-  llmApiKey: string;
-  setLlmApiKey: (value: string) => void;
-  llmModel: string;
-  setLlmModel: (value: string) => void;
-  availableModels: string[];
-  fetchAvailableModels: () => void;
   remoteSpeechProvider: RemoteSpeechProvider;
   setRemoteSpeechProvider: (value: RemoteSpeechProvider) => void;
   remoteSpeechEndpoint: string;
@@ -33,21 +19,10 @@ type ProvidersTabProps = {
   availableSpeechModels: string[];
   fetchAvailableSpeechModels: () => void;
   onOpenModelsTab: () => void;
-  onOpenGeneralTab: () => void;
 };
 
 const ProvidersTab = ({
   variants,
-  llmProvider,
-  setLlmProvider,
-  llmEndpoint,
-  setLlmEndpoint,
-  llmApiKey,
-  setLlmApiKey,
-  llmModel,
-  setLlmModel,
-  availableModels,
-  fetchAvailableModels,
   remoteSpeechProvider,
   setRemoteSpeechProvider,
   remoteSpeechEndpoint,
@@ -59,7 +34,6 @@ const ProvidersTab = ({
   availableSpeechModels,
   fetchAvailableSpeechModels,
   onOpenModelsTab,
-  onOpenGeneralTab,
 }: ProvidersTabProps) => {
   const { t } = useLingui();
   const speechPreset = getSpeechProviderPreset(remoteSpeechProvider);
@@ -75,16 +49,16 @@ const ProvidersTab = ({
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="space-y-5"
+      className="space-y-2"
     >
-      <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-3">
-        <div className="grid row-span-6 [grid-template-rows:subgrid]">
-          <SectionLabel>
-            {t({
-              id: "settings.providers.speech_label",
-              message: "Speech",
-            })}
-          </SectionLabel>
+      <SectionLabel>
+        {t({
+          id: "settings.providers.speech_label",
+          message: "Speech",
+        })}
+      </SectionLabel>
+      <div className="grid grid-cols-2 items-start gap-x-4">
+        <div className="grid">
           <SpeechModelPanel
             provider={remoteSpeechProvider}
             setProvider={setRemoteSpeechProvider}
@@ -97,56 +71,22 @@ const ProvidersTab = ({
             availableModels={availableSpeechModels}
             fetchAvailableModels={fetchAvailableSpeechModels}
           />
-          <ProviderGuide
-            body={t({
-              id: "settings.providers.guide.speech.body",
-              message:
-                "To transcribe with this provider, switch it on in Models.",
-            })}
-            actionLabel={t({
-              id: "settings.providers.guide.speech.action",
-              message: "Open Models",
-            })}
-            onAction={onOpenModelsTab}
-            illustration={
-              <CloudCardIllustration providerLabel={speechProviderLabel} />
-            }
-          />
         </div>
-
-        <div className="grid row-span-6 [grid-template-rows:subgrid]">
-          <SectionLabel>
-            {t({
-              id: "settings.providers.writing_label",
-              message: "Writing",
-            })}
-          </SectionLabel>
-          <LanguageModelPanel
-            llmProvider={llmProvider}
-            setLlmProvider={setLlmProvider}
-            llmEndpoint={llmEndpoint}
-            setLlmEndpoint={setLlmEndpoint}
-            llmApiKey={llmApiKey}
-            setLlmApiKey={setLlmApiKey}
-            llmModel={llmModel}
-            setLlmModel={setLlmModel}
-            availableModels={availableModels}
-            fetchAvailableModels={fetchAvailableModels}
-          />
-          <ProviderGuide
-            body={t({
-              id: "settings.providers.guide.language.body",
-              message:
-                "To clean up dictation with this model, tap the brush on a shortcut in General.",
-            })}
-            actionLabel={t({
-              id: "settings.providers.guide.language.action",
-              message: "Open General",
-            })}
-            onAction={onOpenGeneralTab}
-            illustration={<CleanupShortcutIllustration />}
-          />
-        </div>
+        <ProviderGuide
+          body={t({
+            id: "settings.providers.guide.speech.body",
+            message:
+              "To transcribe with this provider, switch it on in Models.",
+          })}
+          actionLabel={t({
+            id: "settings.providers.guide.speech.action",
+            message: "Open Models",
+          })}
+          onAction={onOpenModelsTab}
+          illustration={
+            <CloudCardIllustration providerLabel={speechProviderLabel} />
+          }
+        />
       </div>
     </motion.div>
   );

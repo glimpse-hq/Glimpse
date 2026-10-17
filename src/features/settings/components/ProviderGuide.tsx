@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import { Broom, Cloud, Ghost } from "@phosphor-icons/react";
+import { Cloud } from "@phosphor-icons/react";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
-import { detectAppPlatform } from "../../../platform/service";
 
 type ProviderGuideProps = {
   body: string;
@@ -43,20 +42,6 @@ export const CloudCardIllustration = ({
     </span>
     <span inert className="shrink-0">
       <ToggleSwitch size="xs" enabled onToggle={() => {}} ariaLabel="" />
-    </span>
-  </div>
-);
-
-export const CleanupShortcutIllustration = () => (
-  <div className="flex items-center gap-1.5 border-b border-border-secondary py-0.5 ui-text-kbd ui-color-secondary">
-    <span className="whitespace-nowrap">
-      {detectAppPlatform() === "macos" ? "⌥ Space" : "Ctrl Shift Space"}
-    </span>
-    <span className="flex h-5 w-5 items-center justify-center rounded-md border border-transparent ui-color-muted">
-      <Ghost size={13} />
-    </span>
-    <span className="flex h-5 w-5 items-center justify-center rounded-md border border-[var(--color-cloud-30)] bg-[var(--color-cloud-10)] text-[var(--color-cloud)]">
-      <Broom size={13} />
     </span>
   </div>
 );
