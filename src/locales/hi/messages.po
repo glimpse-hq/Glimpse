@@ -1573,11 +1573,6 @@ msgid "settings.app.auto_update"
 msgstr "स्वतः अपडेट"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.automatic"
-msgstr "स्वचालित"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.automatic"
 msgstr "स्वचालित"
@@ -1683,6 +1678,11 @@ msgstr "अंतर्निहित"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.built_in"
 msgstr "अंतर्निहित"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language.apple_description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1879,6 +1879,11 @@ msgid "dictionary.warning.switch_model"
 msgstr "इन शब्दों का उपयोग करने के लिए शब्दकोश समर्थन वाला मॉडल चुनें।"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ModelSectionParts.tsx
+msgid "settings.models.choose_automatically"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.mode.aria"
 msgstr "गतिविधि को चार्ट करने का तरीका चुनें"
@@ -1892,6 +1897,12 @@ msgstr "चुनें कि आपका राइटिंग मॉडल �
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.export_dialog_title"
 msgstr "डेटासेट सहेजने का स्थान चुनें"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.chosen_automatically"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3445,6 +3456,11 @@ msgid "settings.account.activate.placeholder"
 msgstr "GLIMPSE_…"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language.g1_description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.speak"
 msgstr "आगे बढ़ें और बोलें।"
@@ -3783,14 +3799,14 @@ msgid "model_picker.diarizer.description.v2"
 msgstr "लाइब्रेरी ट्रांसक्रिप्ट में कौन बोल रहा है, इसकी पहचान करता है।"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
 msgstr "भाषा"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.language"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4312,11 +4328,6 @@ msgid "record.name.title"
 msgstr "रिकॉर्डिंग को नाम दें"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.g1.locked"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle.v2"
 msgstr "इसके लिए ख़रीदा हुआ Glimpse Plus लाइसेंस चाहिए"
@@ -4726,9 +4737,9 @@ msgid "import.cat.auto_launch.on"
 msgstr "चालू"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.on_device"
-msgstr "डिवाइस पर"
+#: src/features/settings/components/ModelSectionParts.tsx
+msgid "settings.models.on_this_computer"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
@@ -4965,6 +4976,11 @@ msgstr "प्लेबैक सेटिंग्स"
 #: src/main.tsx
 msgid "crash.body"
 msgstr "कृपया ऐप को फिर से शुरू करें।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language.plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6836,16 +6852,6 @@ msgstr "लाइव संदर्भ भाषा मॉडल तक भे�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text_aria"
 msgstr "साफ़-सफ़ाई से पहले मूल ट्रांस्क्रिप्ट्स का उपयोग करें"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.automatic.uses"
-msgstr "आपकी भाषा के लिए {modelLabel} का उपयोग करता है"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.automatic.description"
-msgstr "आपकी भाषा के लिए मॉडल का उपयोग करता है"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

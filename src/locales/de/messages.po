@@ -1573,11 +1573,6 @@ msgid "settings.app.auto_update"
 msgstr "Automatisch aktualisieren"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.automatic"
-msgstr "Automatisch"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.automatic"
 msgstr "Automatisch"
@@ -1683,6 +1678,11 @@ msgstr "Integriert"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.built_in"
 msgstr "Integriert"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language.apple_description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1879,6 +1879,11 @@ msgid "dictionary.warning.switch_model"
 msgstr "Wählen Sie ein Modell mit Wörterbuchunterstützung, um diese Wörter zu verwenden."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ModelSectionParts.tsx
+msgid "settings.models.choose_automatically"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.mode.aria"
 msgstr "Wählen Sie, wie die Aktivität dargestellt wird"
@@ -1892,6 +1897,12 @@ msgstr "Lege fest, wie dein Schreibmodell in den einzelnen Apps und auf den einz
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.export_dialog_title"
 msgstr "Speicherort für den Datensatz auswählen"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.chosen_automatically"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3445,6 +3456,11 @@ msgid "settings.account.activate.placeholder"
 msgstr "GLIMPSE_…"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language.g1_description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.speak"
 msgstr "Sprich einfach los."
@@ -3783,14 +3799,14 @@ msgid "model_picker.diarizer.description.v2"
 msgstr "Kennzeichnet in Mediathekstranskripten, wer spricht."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
 msgstr "Sprache"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.language"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4312,11 +4328,6 @@ msgid "record.name.title"
 msgstr "Aufnahme benennen"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.g1.locked"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle.v2"
 msgstr "Erfordert eine gekaufte Glimpse-Plus-Lizenz"
@@ -4726,9 +4737,9 @@ msgid "import.cat.auto_launch.on"
 msgstr "Ein"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelList.tsx
-msgid "settings.language_model.provider.on_device"
-msgstr "Auf dem Gerät"
+#: src/features/settings/components/ModelSectionParts.tsx
+msgid "settings.models.on_this_computer"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
@@ -4965,6 +4976,11 @@ msgstr "Wiedergabeeinstellungen"
 #: src/main.tsx
 msgid "crash.body"
 msgstr "Bitte starte die App neu."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language.plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6836,16 +6852,6 @@ msgstr "Verwenden Sie Snippets, um dem Sprachmodell Live-Kontext zu übergeben, 
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text_aria"
 msgstr "Die ursprünglichen Transkripte vor der Bereinigung verwenden"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.automatic.uses"
-msgstr "Verwendet {modelLabel} für Ihre Sprache"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.automatic.description"
-msgstr "Verwendet das Modell für Ihre Sprache"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

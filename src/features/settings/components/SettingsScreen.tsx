@@ -137,7 +137,11 @@ const SettingsScreen = ({
                 licenseGateActive={form.licenseGateActive}
                 activeLicense={form.activeLicense}
                 llmProvider={form.llmProvider}
-                llmConfigReady={form.llmConfigReady}
+                llmAuto={form.llmAuto}
+                llmServiceProvider={form.llmServiceProvider}
+                llmEndpoint={form.llmEndpoint}
+                llmApiKey={form.llmApiKey}
+                llmModel={form.llmModel}
                 onOpenAccountTab={() => onPaneChange("account")}
                 onOpenModelsTab={() => onPaneChange("models")}
               />
@@ -173,7 +177,8 @@ const SettingsScreen = ({
                 setLlmModel={form.setLlmModel}
                 llmServiceProvider={form.llmServiceProvider}
                 setLlmServiceProvider={form.setLlmServiceProvider}
-                llmConfigReady={form.llmConfigReady}
+                llmAuto={form.llmAuto}
+                setLlmAuto={form.setLlmAuto}
                 activeLicense={form.activeLicense}
                 setLocalModel={form.setLocalModel}
                 handleDownload={form.handleDownload}

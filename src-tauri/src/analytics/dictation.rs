@@ -39,7 +39,7 @@ const LLM_PROVIDERS: &[&str] = &[
 /// The configured language model provider as a fixed id; anything not built
 /// in is "custom". Never the endpoint or the typed model name.
 pub fn llm_provider_kind(settings: &UserSettings) -> &'static str {
-    let provider = settings.llm_provider.trim();
+    let provider = crate::llm_cleanup::active_provider(settings);
     LLM_PROVIDERS
         .iter()
         .find(|id| **id == provider)

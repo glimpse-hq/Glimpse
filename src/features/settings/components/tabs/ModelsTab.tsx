@@ -7,10 +7,13 @@ import {
   Trash as Trash2,
 } from "@phosphor-icons/react";
 import ModelCapabilityIcon from "../../../../shared/ui/ModelCapabilityIcon";
-import ModelRow, { type ModelRowState } from "../ModelRow";
+import ModelRow from "../ModelRow";
 import SpeechProviderRow from "../SpeechProviderRow";
 import LanguageModelList from "../LanguageModelList";
-import SectionLabel from "../../../../shared/ui/SectionLabel";
+import {
+  ModelSectionHeading,
+  OnThisComputerHeading,
+} from "../ModelSectionParts";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
 import {
   deriveModelStats,
@@ -70,7 +73,8 @@ type ModelsTabProps = {
   setLlmModel: (value: string) => void;
   llmServiceProvider: string;
   setLlmServiceProvider: (value: string) => void;
-  llmConfigReady: boolean;
+  llmAuto: boolean;
+  setLlmAuto: (value: boolean) => void;
   activeLicense: boolean;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
@@ -82,6 +86,7 @@ const InstalledModelRow = ({
   model,
   active,
   fallback,
+  automatic,
   aneInstalled,
   shiftHeld,
   onUse,
@@ -90,6 +95,7 @@ const InstalledModelRow = ({
   model: ModelInfo;
   active: boolean;
   fallback: boolean;
+  automatic: boolean;
   aneInstalled: boolean;
   shiftHeld: boolean;
   onUse: () => void;
@@ -121,6 +127,13 @@ const InstalledModelRow = ({
   if (aneInstalled)
     facts.push(
       t({ id: "settings.models.installed.ane.v2", message: "Neural Engine" }),
+    );
+  if (active && automatic)
+    facts.push(
+      t({
+        id: "settings.models.chosen_automatically",
+        message: "Chosen automatically",
+      }),
     );
 
   return (
@@ -191,41 +204,6 @@ const InstalledModelRow = ({
   );
 };
 
-const AutomaticModelRow = ({
-  modelLabel,
-  progress,
-  state,
-}: {
-  modelLabel: string | null;
-  progress: DownloadEvent | undefined;
-  state: ModelRowState;
-}) => {
-  const { t } = useLingui();
-  const percent = Math.round(progress?.percent ?? 0);
-  return (
-    <ModelRow
-      title={t({ id: "settings.models.automatic", message: "Automatic" })}
-      facts={
-        state.kind !== "use" && modelLabel && progress?.status === "downloading"
-          ? t({
-              id: "settings.models.automatic.downloading",
-              message: `Downloading ${modelLabel} ${percent}%`,
-            })
-          : modelLabel
-            ? t({
-                id: "settings.models.automatic.uses",
-                message: `Uses ${modelLabel} for your language`,
-              })
-            : t({
-                id: "settings.models.automatic.description",
-                message: "Uses the model for your language",
-              })
-      }
-      state={state}
-    />
-  );
-};
-
 const ModelsTab = ({
   variants,
   modelCatalog,
@@ -254,7 +232,8 @@ const ModelsTab = ({
   setLlmModel,
   llmServiceProvider,
   setLlmServiceProvider,
-  llmConfigReady,
+  llmAuto,
+  setLlmAuto,
   activeLicense,
   setLocalModel,
   handleDownload,
@@ -275,19 +254,14 @@ const ModelsTab = ({
     localModel,
   );
 
-  const activeState: ModelRowState = {
-    kind: "active",
-    label: t({ id: "settings.models.card.active", message: "Active" }),
-  };
-  const fallbackState: ModelRowState = {
-    kind: "fallback",
-    label: t({ id: "settings.models.card.fallback", message: "Fallback" }),
-  };
-  // Automatic is its own setting; choosing it, or a model, is one selection.
-  const chooseAutomatic = () => {
-    if (remoteSpeechEnabled) setRemoteSpeechEnabled(false);
-    void setLocalModelAuto(true).catch((err) => showErrorToast(String(err)));
-  };
+  const recommendedProgress = recommendedKey
+    ? downloadState[recommendedKey]
+    : undefined;
+  const modelLabel = recommendedLabel;
+  const percent = Math.round(recommendedProgress?.percent ?? 0);
+  const setAutomatic = (on: boolean) =>
+    void setLocalModelAuto(on).catch((err) => showErrorToast(String(err)));
+  // Choosing a model by hand turns Automatic off.
   const chooseModel = async (key: string) => {
     if (automatic) {
       try {
@@ -340,26 +314,21 @@ const ModelsTab = ({
       ) : (
         // One grid for both sections, so the action columns line up.
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2">
-          <div className="col-span-3 mb-2 flex items-center gap-3">
-            <SectionLabel className="flex-1">
-              {t({ id: "settings.models.speech", message: "Speech" })}
-            </SectionLabel>
-            <button
-              type="button"
-              onClick={() => setBrowsing(true)}
-              className="group inline-flex shrink-0 items-center gap-1 ui-text-body-sm-strong ui-color-secondary transition-colors hover:text-content-primary"
-            >
-              {t({
-                id: "settings.models.browse_all",
-                message: "Browse all models",
-              })}
-              <ChevronRight
-                size={15}
-                className="transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </button>
-          </div>
+          <ModelSectionHeading
+            title={t({ id: "settings.models.speech", message: "Speech" })}
+            automatic={automatic}
+            onAutomaticChange={setAutomatic}
+            automaticNote={
+              automatic &&
+              modelLabel &&
+              recommendedProgress?.status === "downloading"
+                ? t({
+                    id: "settings.models.automatic.downloading",
+                    message: `Downloading ${modelLabel} ${percent}%`,
+                  })
+                : null
+            }
+          />
           <SpeechProviderRow
             enabled={remoteSpeechEnabled}
             setEnabled={setRemoteSpeechEnabled}
@@ -373,25 +342,31 @@ const ModelsTab = ({
             model={remoteSpeechModel}
             setModel={setRemoteSpeechModel}
           />
-          <div className="col-span-3 h-2" aria-hidden="true" />
-          <AutomaticModelRow
-            modelLabel={recommendedLabel}
-            progress={
-              recommendedKey ? downloadState[recommendedKey] : undefined
-            }
-            state={
-              automatic
-                ? remoteSpeechEnabled
-                  ? fallbackState
-                  : activeState
-                : { kind: "use", onUse: chooseAutomatic }
+          <OnThisComputerHeading
+            trailing={
+              <button
+                type="button"
+                onClick={() => setBrowsing(true)}
+                className="group inline-flex shrink-0 items-center gap-1 whitespace-nowrap ui-text-meta ui-color-secondary transition-colors hover:text-content-primary"
+              >
+                {t({
+                  id: "settings.models.browse_all",
+                  message: "Browse all models",
+                })}
+                <ChevronRight
+                  size={12}
+                  className="transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </button>
             }
           />
           {installedModels.map((model) => (
             <InstalledModelRow
               key={model.key}
               model={model}
-              active={!automatic && model.key === installedModel?.key}
+              active={model.key === installedModel?.key}
+              automatic={automatic}
               fallback={remoteSpeechEnabled}
               aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
               shiftHeld={shiftHeld}
@@ -400,9 +375,7 @@ const ModelsTab = ({
             />
           ))}
 
-          <SectionLabel className="col-span-3 mb-2 mt-5">
-            {t({ id: "settings.models.language", message: "Language" })}
-          </SectionLabel>
+          <div className="col-span-3 h-5" aria-hidden="true" />
           <LanguageModelList
             llmProvider={llmProvider}
             setLlmProvider={setLlmProvider}
@@ -414,7 +387,8 @@ const ModelsTab = ({
             setLlmModel={setLlmModel}
             llmServiceProvider={llmServiceProvider}
             setLlmServiceProvider={setLlmServiceProvider}
-            llmConfigReady={llmConfigReady}
+            llmAuto={llmAuto}
+            setLlmAuto={setLlmAuto}
             activeLicense={activeLicense}
           />
         </div>

@@ -133,6 +133,7 @@ const buildSettingsArgs = (
     llmApiKey: latest.llm_api_key ?? "",
     llmModel: latest.llm_model ?? "",
     llmServiceProvider: latest.llm_service_provider ?? "",
+    llmAuto: latest.llm_auto ?? true,
     autoDictionaryEnabled: false,
     mediaAction: "pause",
     autoUpdateEnabled: true,

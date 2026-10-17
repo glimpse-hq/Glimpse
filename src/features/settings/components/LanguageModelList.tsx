@@ -18,6 +18,11 @@ import ProviderSheet, {
   type ProviderDraft,
 } from "./ProviderSheet";
 import { useLanguageModelStatus } from "../useLanguageModelStatus";
+import {
+  ModelSectionHeading,
+  OnThisComputerHeading,
+} from "./ModelSectionParts";
+import { formatModelSize } from "../../../shared/lib/modelStats";
 
 type LanguageModelListProps = {
   llmProvider: LlmProvider;
@@ -30,9 +35,13 @@ type LanguageModelListProps = {
   setLlmModel: (value: string) => void;
   llmServiceProvider: string;
   setLlmServiceProvider: (value: string) => void;
-  llmConfigReady: boolean;
+  llmAuto: boolean;
+  setLlmAuto: (value: boolean) => void;
   activeLicense: boolean;
 };
+
+// The G1 download size, until G1 joins the model catalog.
+const G1_SIZE_MB = 580;
 
 const toChoice = (
   preset: LlmProviderPreset,
@@ -59,36 +68,45 @@ const LanguageModelList = ({
   setLlmModel,
   llmServiceProvider,
   setLlmServiceProvider,
-  llmConfigReady,
+  llmAuto,
+  setLlmAuto,
   activeLicense,
 }: LanguageModelListProps) => {
   const { t } = useLingui();
   const [sheetOpen, setSheetOpen] = useState(false);
   const { mutateAsync: fetchLlmModels } = useFetchLlmModels();
   const service = getProviderPreset(llmServiceProvider as LlmProvider);
-  const serviceReady = Boolean(
-    service &&
-    !service.onDevice &&
-    resolvedLlmEndpoint(service.id, llmEndpoint) &&
-    (!service.apiKeyRequired || llmApiKey.trim()) &&
-    llmModel.trim(),
-  );
-  const serviceActive = Boolean(service && llmProvider === service.id);
   const isServer =
     service !== undefined && LOCAL_PROVIDERS.some((p) => p.id === service.id);
-  const { appleAvailability, g1Installed, showG1 } = useLanguageModelStatus(
+  const {
+    activeProvider,
+    serviceReady,
+    ready,
+    appleAvailability,
+    g1Installed,
+    showG1,
+  } = useLanguageModelStatus({
     llmProvider,
-    llmConfigReady,
+    llmAuto,
+    llmServiceProvider,
+    llmEndpoint,
+    llmApiKey,
+    llmModel,
     activeLicense,
-  );
+  });
   const active: ModelRowState = {
     kind: "active",
     label: t({ id: "settings.models.card.active", message: "Active" }),
   };
-  const onDevice = t({
-    id: "settings.language_model.provider.on_device",
-    message: "On-device",
+  const chosenAutomatically = t({
+    id: "settings.models.chosen_automatically",
+    message: "Chosen automatically",
   });
+  const isActive = (id: string) => ready === true && activeProvider === id;
+  // A model chosen by hand that can't run says why; Automatic skips it.
+  const chosenButBlocked = (id: string) => !llmAuto && llmProvider === id;
+  const withNote = (id: string, facts: string) =>
+    llmAuto && isActive(id) ? `${facts}  ·  ${chosenAutomatically}` : facts;
 
   const choices = [
     ...LOCAL_PROVIDERS.filter((p) => !p.onDevice && p.id !== "custom").map(
@@ -108,15 +126,16 @@ const LanguageModelList = ({
     setSheetOpen(false);
     if (!draft.provider) return;
     setLlmServiceProvider(draft.provider);
-    setLlmProvider(draft.provider as LlmProvider);
     setLlmEndpoint(draft.endpoint);
     setLlmApiKey(draft.apiKey);
     setLlmModel(draft.model);
+    if (!llmAuto) setLlmProvider(draft.provider as LlmProvider);
   };
 
-  // Choosing a model keeps the server or cloud setup, so switching back is one
-  // click.
+  // Choosing a model by hand turns Automatic off and keeps the server or
+  // cloud setup, so switching back is one click.
   const select = (value: LlmProvider) => {
+    setLlmAuto(false);
     if (value !== llmProvider) setLlmProvider(value);
   };
 
@@ -142,15 +161,31 @@ const LanguageModelList = ({
               message: "Not supported",
             })
           : null;
-  const g1Selected = llmProvider === "bonsai";
-  const appleSelected = llmProvider === "apple";
+  const g1Facts = [
+    t({
+      id: "settings.models.language.g1_description",
+      message: "Glimpse's cleanup model",
+    }),
+    formatModelSize(G1_SIZE_MB),
+    t({ id: "settings.models.language.plus", message: "Plus" }),
+  ].join("  ·  ");
+  const appleFacts = t({
+    id: "settings.models.language.apple_description",
+    message: "Built into macOS",
+  });
+  const serviceId = service && !service.onDevice ? service.id : null;
 
   return (
     <>
+      <ModelSectionHeading
+        title={t({ id: "settings.models.language", message: "Language" })}
+        automatic={llmAuto}
+        onAutomaticChange={setLlmAuto}
+      />
       <ProviderCard
         kind={serviceReady ? (isServer ? "server" : "cloud") : "none"}
         title={
-          service && !service.onDevice
+          serviceId && service
             ? service.label
             : t({
                 id: "settings.models.provider.title",
@@ -159,28 +194,33 @@ const LanguageModelList = ({
         }
         facts={
           serviceReady && service
-            ? `${
-                isServer
-                  ? t({
-                      id: "settings.models.group.server",
-                      message: "Local server",
-                    })
-                  : t({
-                      id: "settings.models.location.cloud",
-                      message: "Cloud",
-                    })
-              }  ·  ${llmModel}`
+            ? withNote(
+                service.id,
+                `${
+                  isServer
+                    ? t({
+                        id: "settings.models.group.server",
+                        message: "Local server",
+                      })
+                    : t({
+                        id: "settings.models.location.cloud",
+                        message: "Cloud",
+                      })
+                }  ·  ${llmModel}`,
+              )
             : t({
                 id: "settings.models.status.not_set_up",
                 message: "Not set up",
               })
         }
-        factsWarning={serviceActive && !serviceReady}
+        factsWarning={
+          serviceId !== null && chosenButBlocked(serviceId) && !serviceReady
+        }
         state={
-          serviceActive && serviceReady
+          serviceId && isActive(serviceId)
             ? active
-            : serviceReady && service
-              ? { kind: "use", onUse: () => select(service.id) }
+            : serviceReady && serviceId
+              ? { kind: "use", onUse: () => select(serviceId as LlmProvider) }
               : { kind: "status", text: "" }
         }
         trailing={
@@ -190,23 +230,18 @@ const LanguageModelList = ({
           />
         }
       />
-      <div className="col-span-3 h-2" aria-hidden="true" />
+      <OnThisComputerHeading />
       {showG1 && (
         <ModelRow
           title="G1"
           facts={
-            g1Selected && g1Blocker
-              ? `${onDevice}  ·  ${g1Blocker}`
-              : !activeLicense
-                ? t({
-                    id: "settings.language_model.g1.locked",
-                    message: "Needs a purchased Glimpse Plus license",
-                  })
-                : onDevice
+            chosenButBlocked("bonsai") && g1Blocker
+              ? g1Blocker
+              : withNote("bonsai", g1Facts)
           }
-          factsWarning={g1Selected && Boolean(g1Blocker)}
+          factsWarning={chosenButBlocked("bonsai") && Boolean(g1Blocker)}
           state={
-            g1Selected && !g1Blocker && g1Installed
+            isActive("bonsai")
               ? active
               : g1Blocker
                 ? { kind: "status", text: g1Blocker }
@@ -220,19 +255,19 @@ const LanguageModelList = ({
         <ModelRow
           title="Apple Intelligence"
           facts={
-            appleSelected && appleAvailability === "not_enabled"
+            chosenButBlocked("apple") && appleAvailability === "not_enabled"
               ? t({
                   id: "settings.language_model.apple.not_enabled",
                   message:
                     "Turn on Apple Intelligence in System Settings to use this.",
                 })
-              : appleSelected && appleBlocker
-                ? `${onDevice}  ·  ${appleBlocker}`
-                : onDevice
+              : chosenButBlocked("apple") && appleBlocker
+                ? `${appleFacts}  ·  ${appleBlocker}`
+                : withNote("apple", appleFacts)
           }
-          factsWarning={appleSelected && Boolean(appleBlocker)}
+          factsWarning={chosenButBlocked("apple") && Boolean(appleBlocker)}
           state={
-            appleSelected && appleAvailability === "available"
+            isActive("apple")
               ? active
               : appleBlocker
                 ? { kind: "status", text: appleBlocker }

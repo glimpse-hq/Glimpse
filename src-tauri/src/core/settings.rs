@@ -45,6 +45,8 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_model: String,
     #[serde(default)]
     pub llm_service_provider: String,
+    #[serde(default)]
+    pub llm_auto: bool,
     pub auto_dictionary_enabled: bool,
     #[serde(default)]
     pub media_action: MediaAction,
@@ -189,11 +191,15 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("Unknown app language selection".into());
     }
 
-    if args.llm_enabled && args.llm_provider == "none" {
+    // On Automatic the provider is picked at dictation time from what is ready.
+    if args.llm_enabled && !args.llm_auto && args.llm_provider == "none" {
         return Err("LLM cannot be enabled when provider is None".into());
     }
 
-    if args.llm_enabled && !crate::llm_cleanup::is_on_device_provider(&args.llm_provider) {
+    if args.llm_enabled
+        && !args.llm_auto
+        && !crate::llm_cleanup::is_on_device_provider(&args.llm_provider)
+    {
         if args.llm_endpoint.trim().is_empty() {
             return Err("Language model endpoint cannot be empty".into());
         }
@@ -364,6 +370,7 @@ pub(crate) fn update_settings(
         next.llm_endpoint = args.llm_endpoint;
         next.llm_api_key = args.llm_api_key;
         next.llm_model = args.llm_model.trim().to_string();
+        next.llm_auto = args.llm_auto;
         next.llm_service_provider = crate::settings::llm_service_provider_for(
             args.llm_service_provider,
             &next.llm_provider,
@@ -481,6 +488,7 @@ mod tests {
             llm_api_key: String::new(),
             llm_model: String::new(),
             llm_service_provider: String::new(),
+            llm_auto: false,
             auto_dictionary_enabled: false,
             media_action: MediaAction::Pause,
             auto_update_enabled: true,

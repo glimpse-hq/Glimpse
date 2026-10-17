@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { getProviderPreset } from "../../shared/lib/llmProviders";
+import {
+  getProviderPreset,
+  resolvedLlmEndpoint,
+} from "../../shared/lib/llmProviders";
 import { detectAppPlatform } from "../../platform/service";
 import type { LlmProvider } from "../../types";
 
@@ -12,12 +15,28 @@ type G1Status = {
   installed: boolean;
 };
 
-// Whether the chosen language model can clean up dictation right now.
-export function useLanguageModelStatus(
-  llmProvider: LlmProvider,
-  llmConfigReady: boolean,
-  activeLicense: boolean,
-) {
+type LanguageSetup = {
+  llmProvider: LlmProvider;
+  llmAuto: boolean;
+  llmServiceProvider: string;
+  llmEndpoint: string;
+  llmApiKey: string;
+  llmModel: string;
+  activeLicense: boolean;
+};
+
+// Which language model cleans up right now, and whether it can. Automatic
+// follows `llm_cleanup::active_provider` in Rust: G1, then Apple
+// Intelligence, then the set-up server or cloud provider.
+export function useLanguageModelStatus({
+  llmProvider,
+  llmAuto,
+  llmServiceProvider,
+  llmEndpoint,
+  llmApiKey,
+  llmModel,
+  activeLicense,
+}: LanguageSetup) {
   const isMac = detectAppPlatform() === "macos";
   const [appleAvailability, setAppleAvailability] =
     useState<AppleLlmAvailability | null>(null);
@@ -54,19 +73,50 @@ export function useLanguageModelStatus(
     };
   }, [isMac, llmProvider]);
 
+  const service = getProviderPreset(llmServiceProvider as LlmProvider);
+  const serviceReady = Boolean(
+    service &&
+    !service.onDevice &&
+    resolvedLlmEndpoint(service.id, llmEndpoint) &&
+    (!service.apiKeyRequired || llmApiKey.trim()) &&
+    llmModel.trim(),
+  );
+  const g1Installed = g1Status?.installed ?? null;
+  const probing =
+    (isMac && g1Status === null) || (isMac && appleAvailability === null);
+  const activeProvider: LlmProvider | "none" | null = !llmAuto
+    ? llmProvider
+    : probing
+      ? null
+      : g1Installed
+        ? "bonsai"
+        : appleAvailability === "available"
+          ? "apple"
+          : serviceReady && service
+            ? service.id
+            : "none";
+
   // Null while an on-device probe is still answering.
   const ready: boolean | null =
-    llmProvider === "bonsai"
-      ? activeLicense && (g1Status === null ? null : g1Status.installed)
-      : llmProvider === "apple"
-        ? appleAvailability === null
-          ? null
-          : appleAvailability === "available"
-        : !getProviderPreset(llmProvider)?.onDevice && llmConfigReady;
+    activeProvider === null
+      ? null
+      : activeProvider === "bonsai"
+        ? activeLicense && (g1Status === null ? null : g1Status.installed)
+        : activeProvider === "apple"
+          ? appleAvailability === null
+            ? null
+            : appleAvailability === "available"
+          : activeProvider === "none"
+            ? false
+            : activeProvider === llmServiceProvider
+              ? serviceReady
+              : false;
 
   return {
+    activeProvider,
+    serviceReady,
     appleAvailability,
-    g1Installed: g1Status?.installed ?? null,
+    g1Installed,
     showG1: isMac && Boolean(g1Status?.supported),
     ready,
   };

@@ -46,6 +46,7 @@ const KEY_LLM_ENDPOINT: &str = "llm_endpoint";
 const KEY_LLM_API_KEY: &str = "llm_api_key";
 const KEY_LLM_MODEL: &str = "llm_model";
 const KEY_LLM_SERVICE_PROVIDER: &str = "llm_service_provider";
+const KEY_LLM_AUTO: &str = "llm_auto";
 const KEY_PERSONALITIES_NOTES_SEEDED: &str = "personalities_notes_seeded";
 const KEY_DICTIONARY: &str = "dictionary";
 const KEY_AUTO_DICTIONARY_ENABLED: &str = "auto_dictionary_enabled";
@@ -179,6 +180,10 @@ pub struct UserSettings {
     /// `llm_model` belong to. Kept while an on-device model is active.
     #[serde(default)]
     pub llm_service_provider: String,
+    /// Cleans up with the best available language model instead of
+    /// `llm_provider`; see `llm_cleanup::active_provider`.
+    #[serde(default = "default_true")]
+    pub llm_auto: bool,
     #[serde(default)]
     pub personalities_notes_seeded: bool,
     #[serde(default)]
@@ -472,6 +477,7 @@ impl Default for UserSettings {
             llm_api_key: String::new(),
             llm_model: String::new(),
             llm_service_provider: String::new(),
+            llm_auto: true,
             personalities_notes_seeded: false,
             dictionary: Vec::new(),
             auto_dictionary_enabled: false,
@@ -863,6 +869,7 @@ impl SettingsStore {
         let encrypted_local_api_key: String;
         let theme_mode_exists: bool;
         let local_model_auto: Option<bool>;
+        let llm_auto: Option<bool>;
         let unreadable_keys;
         {
             let conn = self.conn.lock();
@@ -926,6 +933,7 @@ impl SettingsStore {
             encrypted_llm_api_key = loader.value(KEY_LLM_API_KEY, String::new())?;
 
             settings.llm_model = loader.value(KEY_LLM_MODEL, settings.llm_model.clone())?;
+            llm_auto = loader.optional::<bool>(KEY_LLM_AUTO)?;
             settings.llm_service_provider = llm_service_provider_for(
                 loader.value(KEY_LLM_SERVICE_PROVIDER, String::new())?,
                 &settings.llm_provider,
@@ -1059,6 +1067,13 @@ impl SettingsStore {
         settings.local_model_auto = local_model_auto.unwrap_or_else(|| {
             should_persist = true;
             crate::speech::catalog::is_recommended(&settings)
+        });
+
+        // Settings from 1.3.6 and earlier keep the language model the user
+        // chose; only a fresh install starts on Automatic.
+        settings.llm_auto = llm_auto.unwrap_or_else(|| {
+            should_persist = true;
+            !settings.onboarding_completed
         });
 
         if matches!(settings.transcription_mode, TranscriptionMode::Cloud) {
@@ -1216,6 +1231,7 @@ impl SettingsStore {
                 KEY_LLM_SERVICE_PROVIDER,
                 json(&settings.llm_service_provider)?,
             ),
+            (KEY_LLM_AUTO, json(&settings.llm_auto)?),
             (
                 KEY_PERSONALITIES_NOTES_SEEDED,
                 json(&settings.personalities_notes_seeded)?,

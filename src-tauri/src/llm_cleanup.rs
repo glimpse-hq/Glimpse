@@ -169,12 +169,48 @@ pub async fn edit_transcription(
 pub const APPLE_PROVIDER: &str = "apple";
 pub const BONSAI_PROVIDER: &str = "bonsai";
 
+/// The provider that cleans up: the chosen one, or on Automatic the best one
+/// ready now. Both checks read cached state, so this is safe per dictation.
+pub fn active_provider(settings: &UserSettings) -> &str {
+    if !settings.llm_auto {
+        return settings.llm_provider.trim();
+    }
+    automatic_provider(settings, crate::g1::resolve().is_some(), apple_llm_ready)
+}
+
+// G1 is only installed with a purchased license, and checks it again when it
+// runs, so its installed state stands in for the license here.
+fn automatic_provider(
+    settings: &UserSettings,
+    g1_installed: bool,
+    apple_ready: impl Fn() -> bool,
+) -> &str {
+    if g1_installed {
+        BONSAI_PROVIDER
+    } else if apple_ready() {
+        APPLE_PROVIDER
+    } else if service_ready(settings) {
+        settings.llm_service_provider.trim()
+    } else {
+        "none"
+    }
+}
+
+fn service_ready(settings: &UserSettings) -> bool {
+    let provider = settings.llm_service_provider.trim();
+    !provider.is_empty()
+        && provider != "none"
+        && !is_on_device_provider(provider)
+        && !settings.llm_endpoint.trim().is_empty()
+        && configured_model(settings).is_some()
+}
+
 pub fn uses_apple_provider(settings: &UserSettings) -> bool {
-    settings.llm_provider.trim() == APPLE_PROVIDER
+    active_provider(settings) == APPLE_PROVIDER
 }
 
 pub fn uses_bonsai_provider(settings: &UserSettings) -> bool {
-    settings.llm_provider.trim() == BONSAI_PROVIDER
+    active_provider(settings) == BONSAI_PROVIDER
 }
 
 /// Built-in models with no endpoint, API key, or model name to configure.
@@ -193,15 +229,12 @@ pub fn is_llm_available(settings: &UserSettings) -> bool {
     if !settings.llm_enabled {
         return false;
     }
-    if uses_apple_provider(settings) {
-        return apple_llm_ready();
+    match active_provider(settings) {
+        APPLE_PROVIDER => apple_llm_ready(),
+        BONSAI_PROVIDER => crate::g1::resolve().is_some(),
+        "" | "none" => false,
+        _ => !settings.llm_endpoint.trim().is_empty() && configured_model(settings).is_some(),
     }
-    if uses_bonsai_provider(settings) {
-        return crate::g1::resolve().is_some();
-    }
-    settings.llm_provider != "none"
-        && !settings.llm_endpoint.trim().is_empty()
-        && configured_model(settings).is_some()
 }
 
 // Writing modes only apply through a shortcut with Clean up on; without it the
@@ -266,7 +299,7 @@ pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {
     } else if uses_bonsai_provider(settings) {
         crate::g1::resolve().map(|_| format!("{BONSAI_PROVIDER}:2b"))
     } else {
-        configured_model(settings).map(|model| format!("{}:{model}", settings.llm_provider.trim()))
+        configured_model(settings).map(|model| format!("{}:{model}", active_provider(settings)))
     }
 }
 
@@ -1267,7 +1300,7 @@ pub async fn run_preflight(client: Client, settings: UserSettings) {
         return;
     }
 
-    if is_on_device_provider(&settings.llm_provider) {
+    if is_on_device_provider(active_provider(&settings)) {
         // is_llm_available already probed on-device availability; no endpoint to ping.
         let mut state = preflight_state().lock();
         state.last_checked_at = Some(Instant::now());
@@ -1291,6 +1324,43 @@ pub async fn run_preflight(client: Client, settings: UserSettings) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn auto_settings(service: &str, endpoint: &str, model: &str) -> UserSettings {
+        UserSettings {
+            llm_auto: true,
+            llm_provider: "custom".to_string(),
+            llm_service_provider: service.to_string(),
+            llm_endpoint: endpoint.to_string(),
+            llm_model: model.to_string(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn automatic_prefers_g1_then_apple_then_a_set_up_service() {
+        let ready = auto_settings("openai", "https://api.openai.com/v1", "gpt-x");
+        assert_eq!(automatic_provider(&ready, true, || true), BONSAI_PROVIDER);
+        assert_eq!(automatic_provider(&ready, false, || true), APPLE_PROVIDER);
+        assert_eq!(automatic_provider(&ready, false, || false), "openai");
+    }
+
+    #[test]
+    fn automatic_skips_a_service_that_is_not_set_up() {
+        let no_endpoint = auto_settings("custom", "", "llama");
+        assert_eq!(automatic_provider(&no_endpoint, false, || false), "none");
+        let no_model = auto_settings("ollama", "http://localhost:11434/v1", "");
+        assert_eq!(automatic_provider(&no_model, false, || false), "none");
+        let nothing = auto_settings("", "", "");
+        assert_eq!(automatic_provider(&nothing, false, || false), "none");
+    }
+
+    #[test]
+    fn a_chosen_provider_is_used_as_is_without_automatic() {
+        let mut chosen = auto_settings("openai", "https://api.openai.com/v1", "gpt-x");
+        chosen.llm_auto = false;
+        chosen.llm_provider = "apple".to_string();
+        assert_eq!(active_provider(&chosen), "apple");
+    }
 
     #[test]
     fn strips_json_wrapper_from_response() {

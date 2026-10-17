@@ -274,6 +274,7 @@ export function useSettingsForm({
   const [llmApiKey, setLlmApiKey] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [llmServiceProvider, setLlmServiceProvider] = useState("");
+  const [llmAuto, setLlmAuto] = useState(false);
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaAction, setMediaAction] = useState<MediaAction>("off");
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
@@ -486,6 +487,7 @@ export function useSettingsForm({
       setLlmApiKey(s.llm_api_key ?? "");
       setLlmModel(s.llm_model ?? "");
       setLlmServiceProvider(s.llm_service_provider ?? "");
+      setLlmAuto(s.llm_auto ?? false);
       setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
       setMediaAction(s.media_action ?? "off");
       setAutoUpdateEnabled(s.auto_update_enabled ?? false);
@@ -619,7 +621,8 @@ export function useSettingsForm({
   );
   const autoDictionarySupported =
     remoteSpeechActive || localModelSupportsDictionary;
-  const aiFeaturesReady = licenseGateActive && llmConfigReady;
+  // On Automatic the backend picks a ready model at dictation time.
+  const aiFeaturesReady = licenseGateActive && (llmAuto || llmConfigReady);
 
   useEffect(() => {
     if (!isOpen || loading || !language) return;
@@ -705,6 +708,7 @@ export function useSettingsForm({
         llmApiKey,
         llmModel,
         llmServiceProvider,
+        llmAuto,
         autoDictionaryEnabled: autoDictionarySupported
           ? autoDictionaryEnabled
           : false,
@@ -750,6 +754,7 @@ export function useSettingsForm({
       llmApiKey,
       llmModel,
       llmServiceProvider,
+      llmAuto,
       autoDictionarySupported,
       autoDictionaryEnabled,
       mediaAction,
@@ -1814,6 +1819,8 @@ export function useSettingsForm({
     setLlmModel,
     llmServiceProvider,
     setLlmServiceProvider,
+    llmAuto,
+    setLlmAuto,
     llmConfigReady,
     licenseGateActive,
     activeLicense,

@@ -56,7 +56,11 @@ type GeneralTabProps = {
   licenseGateActive: boolean;
   activeLicense: boolean;
   llmProvider: LlmProvider;
-  llmConfigReady: boolean;
+  llmAuto: boolean;
+  llmServiceProvider: string;
+  llmEndpoint: string;
+  llmApiKey: string;
+  llmModel: string;
   onOpenAccountTab: () => void;
   onOpenModelsTab: () => void;
 };
@@ -84,16 +88,24 @@ const GeneralTab = ({
   licenseGateActive,
   activeLicense,
   llmProvider,
-  llmConfigReady,
+  llmAuto,
+  llmServiceProvider,
+  llmEndpoint,
+  llmApiKey,
+  llmModel,
   onOpenAccountTab,
   onOpenModelsTab,
 }: GeneralTabProps) => {
   const { t } = useLingui();
-  const languageModel = useLanguageModelStatus(
+  const languageModel = useLanguageModelStatus({
     llmProvider,
-    llmConfigReady,
+    llmAuto,
+    llmServiceProvider,
+    llmEndpoint,
+    llmApiKey,
+    llmModel,
     activeLicense,
-  );
+  });
   const cleanupWaitsForModel =
     licenseGateActive &&
     languageModel.ready === false &&
