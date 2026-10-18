@@ -109,6 +109,7 @@ pub async fn cleanup_transcription(
         !has_style_guidance,
     )
     .await?;
+    let result = restore_input_escapes(text, &result);
 
     if !cleanup_result_looks_safe(text, &result, has_style_guidance) {
         tracing::error!(
@@ -851,6 +852,27 @@ Return only the cleaned transcript."
             )
         }
     }
+}
+
+// Models sometimes echo the escapes build_user_content adds (`&amp;`,
+// `&amp;amp;`, or a broken `&;`). Undo them unless the speaker said them.
+fn restore_input_escapes(source: &str, output: &str) -> String {
+    let mut out = output.to_string();
+    if source.contains('&') && !source.contains("&amp;") {
+        while out.contains("&amp;") {
+            out = out.replace("&amp;", "&");
+        }
+        if !source.contains("&;") {
+            out = out.replace("&;", "&");
+        }
+    }
+    if source.contains('<') && !source.contains("&lt;") {
+        out = out.replace("&lt;", "<");
+    }
+    if source.contains('>') && !source.contains("&gt;") {
+        out = out.replace("&gt;", ">");
+    }
+    out
 }
 
 fn resolve_style_guidance(settings: &UserSettings, mode: Option<&Personality>) -> Option<String> {
