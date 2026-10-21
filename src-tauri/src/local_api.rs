@@ -19,6 +19,7 @@ const EVENT_LOCAL_API_LOG: &str = "local-api:log";
 const EVENT_LOCAL_API_STATUS: &str = "local-api:status";
 const LOCAL_API_READY_PREFIX: &str = "Local API listening on ";
 const TRANSCRIBE_REQUEST_LOG: &str = "POST /v1/audio/transcriptions";
+const TRANSCRIBED_LOG: &str = "Transcribed with ";
 const MAX_LOGS: usize = 200;
 
 #[derive(Debug, Clone, Serialize)]
@@ -202,7 +203,7 @@ impl LocalApiController {
             {
                 let _ = sender.send(Ok(()));
             }
-            if event.message.starts_with(TRANSCRIBE_REQUEST_LOG) {
+            if event.message.starts_with(TRANSCRIBED_LOG) {
                 controller.note_request(&sink_app);
             }
             if let Some(endpoint) = api_endpoint(&event.message) {

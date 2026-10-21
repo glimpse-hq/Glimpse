@@ -489,7 +489,7 @@ const LocalApiTab = ({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="flex min-h-[238px] flex-1 flex-col gap-2">
         <div className="flex items-center gap-3">
           <SectionLabel className="flex-1">
             {t({
@@ -549,7 +549,7 @@ const LocalApiTab = ({
           </div>
         </div>
 
-        <div className="h-[210px] overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {logs.length === 0 ? (
             <p className="ui-text-label ui-color-muted">
               {t({

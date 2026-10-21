@@ -1,3 +1,16 @@
+1.4.0
+
+### Improvements
+
+- The API server works through several files at once up to 20% faster, especially MP3, M4A and other formats that need converting first.
+
+### Fixes
+
+- The Local API in the sidebar no longer cuts off once it has served over 999 requests, and it shows its name when you hover it in the collapsed sidebar, like the other items.
+- The API log fills the window instead of stopping at a fixed height.
+- The API request count only counts transcriptions that succeeded.
+- The API server answers an unknown model name with a clear request error instead of a server error.
+
 1.3.6
 
 ### New Features

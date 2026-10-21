@@ -4,9 +4,9 @@ import {
   ArrowsDownUp as ArrowUpDown,
   Check,
   Copy,
-  GearSix as Settings2,
 } from "@phosphor-icons/react";
 import ActivityDots from "../../../shared/ui/ActivityDots";
+import SidebarTip from "../../../shared/ui/SidebarTip";
 import type { LocalApiStatus } from "../../../types";
 
 const SIDEBAR_TRANSITION =
@@ -49,16 +49,13 @@ const LocalApiSidebarStatus = ({
     id: "home.local_api.status_hint",
     message: "Your API server is running in the background.",
   });
-  const collapsedTitle = `${runningLabel}: ${statusHint} ${displayUrl} · ${requests} ${requestsLabel.toLowerCase()}. ${openSettingsLabel}.`;
-
   return (
     <div className="shrink-0">
       <button
         type="button"
         onClick={onOpenSettings}
-        title={collapsed ? collapsedTitle : openSettingsLabel}
         aria-label={`${runningLabel}. ${statusHint} ${openSettingsLabel}`}
-        className={`group flex w-full items-center rounded-lg h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 text-left text-content-muted hover:bg-[var(--surface-interactive)] hover:text-content-secondary ${
+        className={`group relative flex w-full items-center rounded-lg h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 text-left text-content-muted hover:bg-[var(--surface-interactive)] hover:text-content-secondary ${
           collapsed ? "gap-0" : "gap-3"
         }`}
       >
@@ -75,21 +72,15 @@ const LocalApiSidebarStatus = ({
           <span className="ui-text-nav-item ui-color-secondary group-hover:text-content-secondary">
             {runningLabel}
           </span>
-          <span className="flex shrink-0 items-center gap-1.5">
-            <span
-              title={requestsLabel}
-              className="flex items-center gap-1 text-[11px] tabular-nums ui-color-muted group-hover:text-content-secondary"
-            >
-              <ArrowUpDown size={11} aria-hidden="true" />
-              {requests}
-            </span>
-            <Settings2
-              size={13}
-              className="ui-color-disabled opacity-0 transition-opacity group-hover:opacity-100 group-hover:ui-color-muted"
-              aria-hidden="true"
-            />
+          <span
+            title={requestsLabel}
+            className="flex shrink-0 items-center gap-1 text-[11px] tabular-nums ui-color-muted group-hover:text-content-secondary"
+          >
+            <ArrowUpDown size={11} aria-hidden="true" />
+            {requests}
           </span>
         </div>
+        <SidebarTip label={runningLabel} show={collapsed} />
       </button>
 
       <div
