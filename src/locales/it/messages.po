@@ -867,6 +867,178 @@ msgstr ""
 #~ msgid "settings.models.language.plus"
 #~ msgstr ""
 
+#. placeholder {0}: model.supported_languages.length
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.supports.languages"
+#~ msgstr "{0, plural, one {# lingua} other {# lingue}}"
+
+#. placeholder {0}: formatModelSize(modelSizeMb(model, true))
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.download"
+#~ msgstr "Da scaricare: {0}"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.capability.neural_engine"
+#~ msgstr "Apple Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.automatic"
+#~ msgstr "Automatico"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.tier.built_in"
+#~ msgstr "Integrato"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.built_in"
+#~ msgstr "Integrato nel tuo Mac"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.cancel"
+#~ msgstr "Annulla"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.verifying"
+#~ msgstr "Verifica del modello"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.title"
+#~ msgstr "Scegli un modello"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.cleanup.detail"
+#~ msgstr "Pulizia e il tuo modello di scrittura sono disattivati."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.continue"
+#~ msgstr "Continua"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.supports.words"
+#~ msgstr "Parole personalizzate"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.line"
+#~ msgstr "La dettatura resta gratuita con qualsiasi modello. Ora queste funzioni richiedono Glimpse Plus:"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.ready"
+#~ msgstr "Scaricato"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.downloading"
+#~ msgstr "Download di {0}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.downloading_files"
+#~ msgstr "Download {percent}% ({fileIndex}/{fileCount})"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.downloading"
+#~ msgstr "Download del modello {percent}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.downloading_files"
+#~ msgstr "Download del modello {percent}% ({fileIndex}/{fileCount})"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.speakers"
+#~ msgstr "Download rilevamento parlante {speakerPercent}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.loading"
+#~ msgstr "Ricerca di un modello per il tuo dispositivo"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.continue_free"
+#~ msgstr "Continua a usare Glimpse gratis"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.caveat.less_accurate"
+#~ msgstr "Meno preciso della modalità automatica."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.supports.live"
+#~ msgstr "Testo in tempo reale mentre parli"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.failed"
+#~ msgstr "Download del modello non riuscito"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.unavailable"
+#~ msgstr "Elenco modelli non disponibile. Puoi aggiungerne uno in seguito nelle Impostazioni."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.ready"
+#~ msgstr "Modello pronto"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.empty"
+#~ msgstr "Nessun modello trovato. Puoi aggiungerne uno in seguito nelle Impostazioni."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.other"
+#~ msgstr "Altri modelli"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.recommended"
+#~ msgstr "Consigliato"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.record.detail"
+#~ msgstr "Registra le riunioni usando il microfono e l’audio del computer."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.see_all"
+#~ msgstr "Vedi tutti"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.library.detail"
+#~ msgstr "Trascrivi file audio e video."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.personalization.detail"
+#~ msgstr "Stili di scrittura per ogni app e sito web."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.library.kept"
+#~ msgstr "I tuoi {libraryItems} elementi sono conservati. Potrai riaprirli con Glimpse Plus."
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -907,12 +1079,6 @@ msgstr "{0, plural, one {# dettatura} other {# dettature}} · {1, plural, one {#
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.summary.file_count"
 msgstr "{0, plural, one {# file} other {# file}}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: model.supported_languages.length
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.supports.languages"
-msgstr "{0, plural, one {# lingua} other {# lingue}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.replacementsCount
@@ -982,12 +1148,6 @@ msgstr "{0, plural, one {Abbiamo trovato un'altra app di dettatura. Scegli cosa 
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.copy_name"
 msgstr "{0} copia"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: formatModelSize(modelSizeMb(model, true))
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.download"
-msgstr "Da scaricare: {0}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatDuration(minutesSaved(totalWords, totalDurationMs))
@@ -1436,7 +1596,6 @@ msgstr "Hai già acquistato una licenza?"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-#: src/features/license/components/TrialEndedScreen.tsx
 msgid "locked.enter_key"
 msgstr "Hai già acquistato una licenza? Inserisci la chiave"
 
@@ -1488,11 +1647,6 @@ msgstr "Aspetto"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
-msgstr "Apple Neural Engine"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.capability.neural_engine"
 msgstr "Apple Neural Engine"
 
 #. js-lingui-explicit-id
@@ -1576,11 +1730,6 @@ msgstr "Metti in pausa i contenuti multimediali automaticamente"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_update"
 msgstr "Aggiornamento automatico"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.automatic"
-msgstr "Automatico"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: choice.defaultModel
@@ -1680,24 +1829,19 @@ msgid "settings.models.installed.built_in"
 msgstr "Integrato"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.tier.built_in"
-msgstr "Integrato"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.language.apple_description"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.built_in"
-msgstr "Integrato nel tuo Mac"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Business"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.cancel"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1723,11 +1867,6 @@ msgstr "Annulla"
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.cancel"
-msgstr "Annulla"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.cancel"
 msgstr "Annulla"
 
 #. js-lingui-explicit-id
@@ -1849,11 +1988,6 @@ msgid "updates.checking"
 msgstr "Verifica aggiornamenti in corso..."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.verifying"
-msgstr "Verifica del modello"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.permission.checking"
 msgstr "Verifica autorizzazione"
@@ -1872,11 +2006,6 @@ msgstr "Scegli un modello"
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.general.cleanup.model_placeholder"
 msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.title"
-msgstr "Scegli un modello"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -1933,11 +2062,6 @@ msgstr "Pulizia in corso…"
 #: src/features/license/components/TrialEndedScreen.tsx
 msgid "trial_ended.cleanup.name"
 msgstr "Pulizia"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.cleanup.detail"
-msgstr "Pulizia e il tuo modello di scrittura sono disattivati."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2092,19 +2216,29 @@ msgid "settings.local_api.configuration"
 msgstr "Configurazione"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.continue"
-msgstr "Continua"
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.continue"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.continue"
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.continue"
 msgstr "Continua"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.continue"
 msgstr "Continua"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.continue_for_free"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2532,11 +2666,6 @@ msgid "model_capability.dictionary"
 msgstr "Parole personalizzate"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.supports.words"
-msgstr "Parole personalizzate"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/CustomerPortalLink.tsx
 msgid "license.customer_portal"
 msgstr "Portale clienti"
@@ -2795,11 +2924,6 @@ msgid "onboarding.license_step.line_free"
 msgstr "La dettatura rimane gratuita per sempre."
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.line"
-msgstr "La dettatura resta gratuita con qualsiasi modello. Ora queste funzioni richiedono Glimpse Plus:"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.dictations"
 msgstr "dettature"
@@ -2875,6 +2999,11 @@ msgid "model_picker.download"
 msgstr "Scarica"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.downloads.failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
 msgstr "Download non riuscito"
@@ -2895,11 +3024,6 @@ msgid "models.download_failed.damaged"
 msgstr "Il download è danneggiato"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.ready"
-msgstr "Scaricato"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.downloading"
 msgstr ""
@@ -2908,31 +3032,6 @@ msgstr ""
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.downloading"
 msgstr "Download {modelLabel} {percent}%"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.downloading"
-msgstr "Download di {0}%"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.downloading_files"
-msgstr "Download {percent}% ({fileIndex}/{fileCount})"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.downloading"
-msgstr "Download del modello {percent}%"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.downloading_files"
-msgstr "Download del modello {percent}% ({fileIndex}/{fileCount})"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.speakers"
-msgstr "Download rilevamento parlante {speakerPercent}%"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -2978,6 +3077,11 @@ msgstr "Modifica {entry}"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.edit_name"
 msgstr "Modifica nome modalità"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.edit.name"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3043,6 +3147,11 @@ msgstr "Inglese"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.invalid"
 msgstr "Inserisci un dominio valido come gmail.com"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.enter_key"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3226,11 +3335,6 @@ msgid "dictionary.replacements.find"
 msgstr "Cerca parola…"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.loading"
-msgstr "Ricerca di un modello per il tuo dispositivo"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_finish"
 msgstr "Termina registrazione…"
@@ -3309,6 +3413,11 @@ msgstr "Generali"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_free.v2"
 msgstr "Ottieni tutto con Glimpse Plus."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.get_plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3774,11 +3883,6 @@ msgid "live.prefs.on_top"
 msgstr "Mantieni in primo piano"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.continue_free"
-msgstr "Continua a usare Glimpse gratis"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.kept_warm"
 msgstr "mantenuto attivo in memoria per risposte rapide"
@@ -3817,6 +3921,11 @@ msgstr "Lingua"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.language"
 msgstr "Lingua"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.model.language"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -3882,11 +3991,6 @@ msgstr "Legacy"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.legacy"
 msgstr "Legacy"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.caveat.less_accurate"
-msgstr "Meno preciso della modalità automatica."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3982,11 +4086,6 @@ msgstr "In ascolto…"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text"
 msgstr "Live Text"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.supports.live"
-msgstr "Testo in tempo reale mentre parli"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -4213,24 +4312,9 @@ msgid "library.retranscribe.model"
 msgstr "Modello"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.failed"
-msgstr "Download del modello non riuscito"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.unavailable"
-msgstr "Elenco modelli non disponibile. Puoi aggiungerne uno in seguito nelle Impostazioni."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.model_not_installed"
 msgstr "Modello non installato."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.ready"
-msgstr "Modello pronto"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4260,6 +4344,11 @@ msgstr "Modelli"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.models_link"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.downloads.all_ready"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -4480,11 +4569,6 @@ msgid "library.retranscribe.no_models_installed"
 msgstr "Nessun modello disponibile. Scaricane uno o aggiungi un provider in Impostazioni > Modelli."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.empty"
-msgstr "Nessun modello trovato. Puoi aggiungerne uno in seguito nelle Impostazioni."
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.no_matches"
 msgstr "Nessun modello corrisponde."
@@ -4697,6 +4781,11 @@ msgid "import.empty"
 msgstr "Nessun elemento da importare da questa app."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.now_locked"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_switched_title"
 msgstr "Ora in uso: {model}"
@@ -4855,11 +4944,6 @@ msgstr "Arancione"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text"
 msgstr "Testo originale"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.other"
-msgstr "Altri modelli"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -5129,11 +5213,6 @@ msgid "model_capability.dictionary_detail"
 msgstr "Riconosce le parole dal tuo dizionario."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.recommended"
-msgstr "Consigliato"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.unverified"
 msgstr "Riconnettiti a Internet per verificare la tua licenza."
@@ -5162,11 +5241,6 @@ msgstr "Registra riunioni"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.record.line"
 msgstr "Registra le riunioni usando il microfono e l’audio del computer, con segnalibri ed etichette dei parlanti."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.record.detail"
-msgstr "Registra le riunioni usando il microfono e l’audio del computer."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5723,11 +5797,6 @@ msgid "dropdown.search_placeholder"
 msgstr "Cerca..."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.see_all"
-msgstr "Vedi tutti"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.see_options"
 msgstr "Vedi opzioni"
@@ -6016,6 +6085,16 @@ msgid "onboarding.license_step.tile_live_speaker"
 msgstr "Parlante 2:"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.downloads.speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.speakers.name"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speaker_model_upgraded"
 msgstr "Il rilevamento dei parlanti ora utilizza un nuovo modello che distingue le persone con maggiore precisione."
@@ -6028,6 +6107,11 @@ msgstr "Parlanti"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.speech"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.downloads.speech"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -6448,6 +6532,11 @@ msgid "settings.app.theme.label"
 msgstr "Tema"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.removed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_info"
 msgstr "Questa versione non include l'helper a riga di comando."
@@ -6571,11 +6660,6 @@ msgstr "Dataset di addestramento…"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.library.line"
 msgstr "Trascrivi file audio e video, assegna etichette ai parlanti ed esporta le trascrizioni."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.library.detail"
-msgstr "Trascrivi file audio e video."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -7009,11 +7093,6 @@ msgid "native.provider.writing"
 msgstr "Modello di scrittura"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.personalization.detail"
-msgstr "Stili di scrittura per ogni app e sito web."
-
-#. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.year"
 msgstr "Anno"
@@ -7042,11 +7121,6 @@ msgstr "Tutto pronto"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.up_to_date"
 msgstr "Tutto aggiornato"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.library.kept"
-msgstr "I tuoi {libraryItems} elementi sono conservati. Potrai riaprirli con Glimpse Plus."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx

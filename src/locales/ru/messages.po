@@ -867,6 +867,178 @@ msgstr ""
 #~ msgid "settings.models.language.plus"
 #~ msgstr ""
 
+#. placeholder {0}: model.supported_languages.length
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.supports.languages"
+#~ msgstr "{0, plural, one {# язык} other {# языков}}"
+
+#. placeholder {0}: formatModelSize(modelSizeMb(model, true))
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.download"
+#~ msgstr "{0} загрузка"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.capability.neural_engine"
+#~ msgstr "Apple Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.automatic"
+#~ msgstr "Автоматически"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.tier.built_in"
+#~ msgstr "Встроенный"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.built_in"
+#~ msgstr "Встроено в ваш Mac"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.cancel"
+#~ msgstr "Отмена"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.verifying"
+#~ msgstr "Проверка модели"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.title"
+#~ msgstr "Выбрать модель"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.cleanup.detail"
+#~ msgstr "Очистка и языковая модель отключены."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.continue"
+#~ msgstr "Продолжить"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.supports.words"
+#~ msgstr "Пользовательские слова"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.line"
+#~ msgstr "Диктовка остаётся бесплатной с любой моделью. Теперь для этих функций нужен Glimpse Plus:"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.ready"
+#~ msgstr "Загружено"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.downloading"
+#~ msgstr "Загрузка {0}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.status.downloading_files"
+#~ msgstr "Загрузка {percent}% ({fileIndex}/{fileCount})"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.downloading"
+#~ msgstr "Загрузка модели {percent}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.downloading_files"
+#~ msgstr "Загрузка модели {percent}% ({fileIndex}/{fileCount})"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.speakers"
+#~ msgstr "Загрузка определения говорящих {speakerPercent}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.loading"
+#~ msgstr "Поиск модели для вашего устройства"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.continue_free"
+#~ msgstr "Продолжить пользоваться Glimpse бесплатно"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.caveat.less_accurate"
+#~ msgstr "Менее точно, чем автоматический режим."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.supports.live"
+#~ msgstr "Текст в реальном времени во время речи"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.failed"
+#~ msgstr "Ошибка загрузки модели"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.unavailable"
+#~ msgstr "Список моделей недоступен. Вы сможете добавить модель позже в настройках."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+#~ msgid "onboarding.download_status.ready"
+#~ msgstr "Модель готова"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.empty"
+#~ msgstr "Модели не найдены. Вы можете добавить их позже в Настройках."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.other"
+#~ msgstr "Другие модели"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.recommended"
+#~ msgstr "Рекомендуемое"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.record.detail"
+#~ msgstr "Записывайте встречи с микрофона и системного аудио."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.option.see_all"
+#~ msgstr "Смотреть все"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.library.detail"
+#~ msgstr "Транскрибируйте аудио- и видеофайлы."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.personalization.detail"
+#~ msgstr "Стили письма для каждого приложения и сайта."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.library.kept"
+#~ msgstr "Ваши объекты ({libraryItems}) сохранены. Glimpse Plus снова откроет их."
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -907,12 +1079,6 @@ msgstr "{0, plural, one {# диктовка} other {# диктовок}} · {1, 
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.summary.file_count"
 msgstr "{0, plural, one {# файл} other {# файлов}}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: model.supported_languages.length
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.supports.languages"
-msgstr "{0, plural, one {# язык} other {# языков}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.replacementsCount
@@ -982,12 +1148,6 @@ msgstr "{0, plural, one {Найдено ещё одно приложение д�
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.copy_name"
 msgstr "{0} копия"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: formatModelSize(modelSizeMb(model, true))
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.download"
-msgstr "{0} загрузка"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatDuration(minutesSaved(totalWords, totalDurationMs))
@@ -1436,7 +1596,6 @@ msgstr "Уже приобрели?"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-#: src/features/license/components/TrialEndedScreen.tsx
 msgid "locked.enter_key"
 msgstr "Уже приобрели? Введите лицензионный ключ"
 
@@ -1488,11 +1647,6 @@ msgstr "Внешний вид"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
-msgstr "Apple Neural Engine"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.capability.neural_engine"
 msgstr "Apple Neural Engine"
 
 #. js-lingui-explicit-id
@@ -1576,11 +1730,6 @@ msgstr "Автоматически приостанавливать воспро
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_update"
 msgstr "Автообновление"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.automatic"
-msgstr "Автоматически"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: choice.defaultModel
@@ -1680,24 +1829,19 @@ msgid "settings.models.installed.built_in"
 msgstr "Встроенный"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.tier.built_in"
-msgstr "Встроенный"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.language.apple_description"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.built_in"
-msgstr "Встроено в ваш Mac"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Бизнес"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.cancel"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1724,11 +1868,6 @@ msgstr "Отмена"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.cancel"
 msgstr "Отменить"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.cancel"
-msgstr "Отмена"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -1849,11 +1988,6 @@ msgid "updates.checking"
 msgstr "Проверка обновлений..."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.verifying"
-msgstr "Проверка модели"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.permission.checking"
 msgstr "Проверка разрешения"
@@ -1872,11 +2006,6 @@ msgstr "Выбрать модель"
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.general.cleanup.model_placeholder"
 msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.title"
-msgstr "Выбрать модель"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -1933,11 +2062,6 @@ msgstr "Очистка..."
 #: src/features/license/components/TrialEndedScreen.tsx
 msgid "trial_ended.cleanup.name"
 msgstr "Очистка"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.cleanup.detail"
-msgstr "Очистка и языковая модель отключены."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2092,19 +2216,29 @@ msgid "settings.local_api.configuration"
 msgstr "Конфигурация"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.continue"
-msgstr "Продолжить"
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.continue"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.continue"
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.continue"
 msgstr "Продолжить"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.continue"
 msgstr "Продолжить"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.continue_for_free"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2532,11 +2666,6 @@ msgid "model_capability.dictionary"
 msgstr "Пользовательские слова"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.supports.words"
-msgstr "Пользовательские слова"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/CustomerPortalLink.tsx
 msgid "license.customer_portal"
 msgstr "Портал клиента"
@@ -2795,11 +2924,6 @@ msgid "onboarding.license_step.line_free"
 msgstr "Диктовка остаётся бесплатной навсегда."
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.line"
-msgstr "Диктовка остаётся бесплатной с любой моделью. Теперь для этих функций нужен Glimpse Plus:"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.dictations"
 msgstr "диктовок"
@@ -2875,6 +2999,11 @@ msgid "model_picker.download"
 msgstr "Загрузить"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.downloads.failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
 msgstr "Ошибка загрузки"
@@ -2895,11 +3024,6 @@ msgid "models.download_failed.damaged"
 msgstr "Загрузка повреждена"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.ready"
-msgstr "Загружено"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.downloading"
 msgstr ""
@@ -2908,31 +3032,6 @@ msgstr ""
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.downloading"
 msgstr "Загрузка {modelLabel} {percent}%"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.downloading"
-msgstr "Загрузка {0}%"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.status.downloading_files"
-msgstr "Загрузка {percent}% ({fileIndex}/{fileCount})"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.downloading"
-msgstr "Загрузка модели {percent}%"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.downloading_files"
-msgstr "Загрузка модели {percent}% ({fileIndex}/{fileCount})"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.speakers"
-msgstr "Загрузка определения говорящих {speakerPercent}%"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -2978,6 +3077,11 @@ msgstr "Изменить {entry}"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.edit_name"
 msgstr "Изменить название режима"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.edit.name"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3043,6 +3147,11 @@ msgstr "Английский"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.invalid"
 msgstr "Введите допустимый домен, например gmail.com"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.enter_key"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3226,11 +3335,6 @@ msgid "dictionary.replacements.find"
 msgstr "Найти слово…"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.loading"
-msgstr "Поиск модели для вашего устройства"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_finish"
 msgstr "Завершить запись…"
@@ -3309,6 +3413,11 @@ msgstr "Основные"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_free.v2"
 msgstr "Откройте все возможности с Glimpse Plus."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.get_plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3774,11 +3883,6 @@ msgid "live.prefs.on_top"
 msgstr "Поверх окон"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.continue_free"
-msgstr "Продолжить пользоваться Glimpse бесплатно"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.kept_warm"
 msgstr "хранится в памяти для быстрого отклика"
@@ -3817,6 +3921,11 @@ msgstr "Язык"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.language"
 msgstr "Язык"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.model.language"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -3882,11 +3991,6 @@ msgstr "Устаревший"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.legacy"
 msgstr "Устаревший"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.caveat.less_accurate"
-msgstr "Менее точно, чем автоматический режим."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3982,11 +4086,6 @@ msgstr "Слушаю…"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text"
 msgstr "Живой текст"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.supports.live"
-msgstr "Текст в реальном времени во время речи"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -4213,24 +4312,9 @@ msgid "library.retranscribe.model"
 msgstr "Модель"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.failed"
-msgstr "Ошибка загрузки модели"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.unavailable"
-msgstr "Список моделей недоступен. Вы сможете добавить модель позже в настройках."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.model_not_installed"
 msgstr "Модель не установлена."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.download_status.ready"
-msgstr "Модель готова"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4260,6 +4344,11 @@ msgstr "Модели"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.models_link"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.downloads.all_ready"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -4480,11 +4569,6 @@ msgid "library.retranscribe.no_models_installed"
 msgstr "Нет доступных моделей. Загрузите одну или добавьте провайдера в разделе Настройки > Модели."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.empty"
-msgstr "Модели не найдены. Вы можете добавить их позже в Настройках."
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.no_matches"
 msgstr "Модели не найдены."
@@ -4697,6 +4781,11 @@ msgid "import.empty"
 msgstr "Нечего переносить из этого приложения."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.now_locked"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_switched_title"
 msgstr "Сейчас используется {model}"
@@ -4855,11 +4944,6 @@ msgstr "Оранжевый"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text"
 msgstr "Исходный текст"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.other"
-msgstr "Другие модели"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -5129,11 +5213,6 @@ msgid "model_capability.dictionary_detail"
 msgstr "Распознаёт слова из вашего словаря."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.recommended"
-msgstr "Рекомендуемое"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.unverified"
 msgstr "Подключитесь к интернету для проверки лицензии."
@@ -5162,11 +5241,6 @@ msgstr "Записывать встречи"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.record.line"
 msgstr "Записывайте встречи с микрофона и системного аудио, добавляйте закладки и определяйте говорящих."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.record.detail"
-msgstr "Записывайте встречи с микрофона и системного аудио."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5723,11 +5797,6 @@ msgid "dropdown.search_placeholder"
 msgstr "Поиск..."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.option.see_all"
-msgstr "Смотреть все"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.see_options"
 msgstr "Смотреть параметры"
@@ -6016,6 +6085,16 @@ msgid "onboarding.license_step.tile_live_speaker"
 msgstr "Говорящий 2:"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.downloads.speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.speakers.name"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speaker_model_upgraded"
 msgstr "Определение говорящих теперь использует новую модель, которая точнее различает людей."
@@ -6028,6 +6107,11 @@ msgstr "Говорящие"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.speech"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.downloads.speech"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -6448,6 +6532,11 @@ msgid "settings.app.theme.label"
 msgstr "Тема"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.removed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_info"
 msgstr "В этой сборке отсутствует вспомогательный инструмент командной строки."
@@ -6571,11 +6660,6 @@ msgstr "Датасет для обучения…"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.library.line"
 msgstr "Транскрибируйте аудио- и видеофайлы, определяйте говорящих и экспортируйте транскрипции."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.library.detail"
-msgstr "Транскрибируйте аудио- и видеофайлы."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -7009,11 +7093,6 @@ msgid "native.provider.writing"
 msgstr "Языковая модель"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.personalization.detail"
-msgstr "Стили письма для каждого приложения и сайта."
-
-#. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.year"
 msgstr "Год"
@@ -7042,11 +7121,6 @@ msgstr "Всё готово"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.up_to_date"
 msgstr "У вас установлена последняя версия"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.library.kept"
-msgstr "Ваши объекты ({libraryItems}) сохранены. Glimpse Plus снова откроет их."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx

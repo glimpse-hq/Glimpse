@@ -1618,25 +1618,52 @@ fn open_checkout(
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct TrialEndedScreen {
-    library_items: u64,
+    // Models only paid features use that are on this computer.
+    installed_models: Vec<&'static str>,
 }
+
+// Models only paid features use, and what each is for. Continuing for free
+// removes them.
+const PAID_ONLY_MODELS: [(&str, &str); 2] = [
+    (speech::catalog::DIARIZER_MODEL, "speakers"),
+    (speech::catalog::G1_MANIFEST.id, "language"),
+];
 
 /// What the trial-ended screen shows, or None once it has been seen.
 #[tauri::command]
 fn get_trial_ended_screen(
+    app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<Option<TrialEndedScreen>, String> {
     let license_state = license::get_license_state(&state.settings_store)?;
     if !license::trial_ended_screen_due(&state.settings_store, &license_state) {
         return Ok(None);
     }
-    let library_items = state.storage().count_library_items().unwrap_or(0);
-    Ok(Some(TrialEndedScreen { library_items }))
+    let installed_models = PAID_ONLY_MODELS
+        .into_iter()
+        .filter(|(model, _)| {
+            speech::install::check_model_status(app.clone(), model.to_string())
+                .is_ok_and(|status| status.installed)
+        })
+        .map(|(_, kind)| kind)
+        .collect();
+    Ok(Some(TrialEndedScreen { installed_models }))
 }
 
 #[tauri::command]
-fn dismiss_trial_ended_screen(state: tauri::State<AppState>) -> Result<(), String> {
-    license::mark_trial_ended_screen_seen(&state.settings_store)
+async fn dismiss_trial_ended_screen(
+    app: AppHandle<AppRuntime>,
+    keep_free: bool,
+) -> Result<(), String> {
+    license::mark_trial_ended_screen_seen(&app.state::<AppState>().settings_store)?;
+    if keep_free {
+        for (model, _) in PAID_ONLY_MODELS {
+            if let Err(err) = speech::install::delete_model(app.clone(), model.to_string()).await {
+                tracing::warn!("[license] couldn't remove {model} after the trial: {err}");
+            }
+        }
+    }
+    Ok(())
 }
 
 #[derive(Serialize)]

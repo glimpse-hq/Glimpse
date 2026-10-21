@@ -1152,11 +1152,6 @@ impl StorageManager {
         crate::library::repo::delete_library_item(&conn, &self.library_root, id)
     }
 
-    pub fn count_library_items(&self) -> Result<u64> {
-        let conn = self.connection.lock();
-        crate::library::repo::count_library_items(&conn)
-    }
-
     pub fn get_library_tags(&self) -> Result<Vec<String>> {
         let conn = self.connection.lock();
         crate::library::repo::get_library_tags(&conn)

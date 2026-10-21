@@ -1,128 +1,158 @@
+import { useEffect, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "@phosphor-icons/react";
 import { downloadFailureLabel } from "../../shared/lib/modelStats";
 import type { DownloadEvent } from "../../types";
 
-// Follows the user through the steps after the model step, so the
-// download never has to block anything.
-export function ModelDownloadStatus({
-  state,
-  speakerState,
-  onRetry,
-}: {
+export type ModelDownload = {
+  key: string;
+  name: string;
   state: DownloadEvent | null;
-  speakerState: DownloadEvent | null;
   onRetry: () => void;
+};
+
+const READY_VISIBLE_MS = 2400;
+
+// Dots like the step indicator at the top, one per download: the running one
+// stretches and fills, finished ones fill in solid. The label below names the
+// running one and lines up with Back.
+export function ModelDownloadStatus({
+  downloads,
+}: {
+  downloads: ModelDownload[];
 }) {
-  const { t } = useLingui();
-  // The speaker model follows once the dictation model is done.
-  const speakerDownloading =
-    speakerState?.status === "downloading" &&
-    (!state || state.status === "complete");
-  const speakerPercent = Math.round(speakerState?.percent ?? 0);
-  const status = speakerDownloading
-    ? "speaker"
-    : (state?.status ?? (speakerState ? "complete" : undefined));
-  const visible =
-    status === "downloading" ||
-    status === "speaker" ||
-    status === "complete" ||
-    status === "error";
-  const percent = Math.round(state?.percent ?? 0);
-  const error = state?.status === "error" ? state : undefined;
-  const verifying = state && "verifying" in state && state.verifying;
-  const fileIndex = state && "fileIndex" in state ? state.fileIndex : undefined;
-  const fileCount = state && "fileCount" in state ? state.fileCount : undefined;
-  const showFiles = Boolean(fileIndex && fileCount && fileCount > 1);
+  const current =
+    downloads.find((download) => download.state?.status === "error") ??
+    downloads.find((download) => download.state?.status === "downloading") ??
+    downloads.find((download) => download.state?.status !== "complete");
+  const allReady = !current;
+  const labelDownload = current ?? downloads[downloads.length - 1];
+
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => {
+    if (!allReady) return;
+    const timer = window.setTimeout(() => setDismissed(true), READY_VISIBLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [allReady]);
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-6 flex h-5 justify-center">
-      <span className="sr-only" aria-live="polite">
-        {status === "complete"
-          ? t({
-              id: "onboarding.download_status.ready",
-              message: "Model ready",
-            })
-          : status === "error"
-            ? t({
-                id: "onboarding.download_status.failed",
-                message: "Model download failed",
-              })
-            : null}
-      </span>
-      <AnimatePresence initial={false} mode="wait">
-        {visible ? (
-          <motion.div
-            key={status}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="pointer-events-auto flex items-center gap-2 ui-text-meta text-content-muted"
-          >
-            {status === "speaker" ? (
-              <span className="tabular-nums">
-                {t({
-                  id: "onboarding.download_status.speakers",
-                  message: `Downloading speaker detection ${speakerPercent}%`,
-                })}
-              </span>
-            ) : status === "downloading" ? (
-              <span className="tabular-nums">
-                {verifying
-                  ? t({
-                      id: "onboarding.download_status.verifying",
-                      message: "Checking model",
-                    })
-                  : showFiles
-                    ? t({
-                        id: "onboarding.download_status.downloading_files",
-                        message: `Downloading model ${percent}% (${fileIndex}/${fileCount})`,
-                      })
-                    : t({
-                        id: "onboarding.download_status.downloading",
-                        message: `Downloading model ${percent}%`,
-                      })}
-              </span>
-            ) : status === "complete" ? (
-              <>
-                <Check
-                  size={12}
-                  weight="bold"
-                  className="text-local"
-                  aria-hidden="true"
-                />
-                {t({
-                  id: "onboarding.download_status.ready",
-                  message: "Model ready",
-                })}
-              </>
-            ) : (
-              <>
-                <span title={error?.message}>
-                  {error?.reason && error.reason !== "failed"
-                    ? downloadFailureLabel(error.reason)
-                    : t({
-                        id: "onboarding.download_status.failed",
-                        message: "Model download failed",
-                      })}
-                </span>
-                <button
-                  type="button"
-                  onClick={onRetry}
-                  className="text-content-secondary underline-offset-4 hover:underline"
-                >
-                  {t({
-                    id: "onboarding.download_status.retry",
-                    message: "Retry",
-                  })}
-                </button>
-              </>
-            )}
-          </motion.div>
-        ) : null}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: dismissed ? 0 : 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="pointer-events-none absolute right-6 bottom-6 flex max-w-[260px] flex-col items-end gap-2 ui-text-body-sm text-content-muted"
+    >
+      <div className="flex items-center gap-1.5" aria-hidden="true">
+        {downloads.map((download) => (
+          <DownloadDot
+            key={download.key}
+            state={download.state}
+            active={download.key === current?.key}
+          />
+        ))}
+      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={allReady ? "ready" : current.key}
+          role="status"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="flex h-5 min-w-0 items-center gap-2"
+        >
+          {labelDownload ? (
+            <DownloadLabel download={labelDownload} allReady={allReady} />
+          ) : null}
+        </motion.span>
       </AnimatePresence>
-    </div>
+    </motion.div>
+  );
+}
+
+function DownloadLabel({
+  download,
+  allReady,
+}: {
+  download: ModelDownload;
+  allReady: boolean;
+}) {
+  const { t } = useLingui();
+  const { state } = download;
+  const error = state?.status === "error" ? state : undefined;
+  const verifying =
+    state?.status === "downloading" && "verifying" in state && state.verifying;
+
+  return (
+    <>
+      <span className="min-w-0 truncate">
+        {allReady
+          ? t({ id: "onboarding.downloads.all_ready", message: "Models ready" })
+          : error
+            ? t({
+                id: "onboarding.downloads.failed",
+                message: "Download failed",
+              })
+            : download.name}
+      </span>
+      <span className="flex shrink-0 tabular-nums">
+        {allReady ? (
+          <Check size={13} weight="bold" aria-hidden="true" />
+        ) : error ? (
+          <button
+            type="button"
+            onClick={download.onRetry}
+            title={
+              error.reason && error.reason !== "failed"
+                ? downloadFailureLabel(error.reason)
+                : error.message
+            }
+            className="pointer-events-auto text-content-secondary underline-offset-4 hover:underline"
+          >
+            {t({ id: "onboarding.download_status.retry", message: "Retry" })}
+          </button>
+        ) : state?.status === "downloading" && !verifying ? (
+          `${Math.round(state.percent)}%`
+        ) : null}
+      </span>
+    </>
+  );
+}
+
+function DownloadDot({
+  state,
+  active,
+}: {
+  state: DownloadEvent | null;
+  active: boolean;
+}) {
+  const complete = state?.status === "complete";
+  const error = state?.status === "error";
+  const percent = state?.status === "downloading" ? state.percent : 0;
+
+  return (
+    <motion.span
+      className="relative block h-1.5 overflow-hidden rounded-full"
+      initial={false}
+      animate={{ width: active ? 20 : 6 }}
+      transition={{ duration: 0.25 }}
+    >
+      <span
+        className={`absolute inset-0 transition-colors duration-300 ${
+          complete
+            ? "bg-content-primary"
+            : error
+              ? "bg-error"
+              : "bg-content-primary opacity-25"
+        }`}
+      />
+      {active && !error ? (
+        <span
+          className="absolute inset-y-0 left-0 rounded-full bg-content-primary transition-[width] duration-300 ease-out"
+          style={{ width: `${percent}%` }}
+        />
+      ) : null}
+    </motion.span>
   );
 }

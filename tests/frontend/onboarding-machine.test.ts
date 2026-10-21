@@ -49,27 +49,16 @@ function walk(
 
 describe("onboarding steps", () => {
   test("permissions only appear where the platform needs them", () => {
-    expect(getSteps(mac)).toEqual([
-      "model",
-      "source",
-      "permissions",
-      "license",
-    ]);
-    expect(getSteps(windows)).toEqual(["model", "source", "license"]);
-    expect(getSteps(windows, true)).toEqual([
-      "import",
-      "model",
-      "source",
-      "license",
-    ]);
+    expect(getSteps(mac)).toEqual(["source", "permissions", "license"]);
+    expect(getSteps(windows)).toEqual(["source", "license"]);
+    expect(getSteps(windows, true)).toEqual(["import", "source", "license"]);
   });
 });
 
 describe("onboarding machine", () => {
   test("walks forward and back through every macOS step", () => {
     const actor = start(mac);
-    expect(walk(actor, "NEXT", 5)).toEqual([
-      "model",
+    expect(walk(actor, "NEXT", 4)).toEqual([
       "source",
       "permissions",
       "license",
@@ -79,31 +68,24 @@ describe("onboarding machine", () => {
       transitionDirection: 1,
       hasStepTransitioned: true,
     });
-    expect(walk(actor, "BACK", 5)).toEqual([
+    expect(walk(actor, "BACK", 3)).toEqual([
       "license",
       "permissions",
       "source",
-      "model",
-      "welcome",
     ]);
     expect(actor.getSnapshot().context.transitionDirection).toBe(-1);
   });
 
   test("skips permissions on Windows in both directions", () => {
     const actor = start(windows);
-    expect(walk(actor, "NEXT", 4)).toEqual([
-      "model",
-      "source",
-      "license",
-      "done",
-    ]);
+    expect(walk(actor, "NEXT", 3)).toEqual(["source", "license", "done"]);
     expect(walk(actor, "BACK", 2)).toEqual(["license", "source"]);
   });
 
   test("the import step only shows with importable apps", () => {
     const actor = start(windows);
     actor.send({ type: "SET_IMPORTABLE", apps: importable });
-    expect(walk(actor, "NEXT", 2)).toEqual(["import", "model"]);
+    expect(walk(actor, "NEXT", 2)).toEqual(["import", "source"]);
     expect(walk(actor, "BACK", 2)).toEqual(["import", "welcome"]);
   });
 
@@ -111,7 +93,7 @@ describe("onboarding machine", () => {
     const actor = start(windows);
     actor.send({ type: "START_PRACTICE" });
     expect(actor.getSnapshot().value).toBe("welcome");
-    walk(actor, "NEXT", 4);
+    walk(actor, "NEXT", 3);
     actor.send({ type: "START_PRACTICE" });
     expect(actor.getSnapshot().value).toBe("practice");
     actor.send({ type: "NEXT" });

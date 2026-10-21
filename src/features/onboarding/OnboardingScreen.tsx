@@ -19,7 +19,6 @@ import { checkAccessibilityPermission, getSettings } from "../settings/api";
 import {
   modelKeys,
   pickDefaultOnboardingModel,
-  useDiarizerInstalled,
   useDiarizerModel,
   useModelCatalog,
   useModelRecommendation,
@@ -30,12 +29,11 @@ import { getDefaultShortcuts, getOnboardingPlatform } from "./platform";
 import { useImportableApps } from "../import/queries";
 import { ImportStep } from "../import/components/ImportStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
-import { ModelStep } from "./steps/ModelStep";
 import { PermissionsStep } from "./steps/PermissionsStep";
 import { ReadyStep } from "./steps/ReadyStep";
 import { LicenseStep } from "./steps/LicenseStep";
 import { SourceStep, type OnboardingSource } from "./steps/SourceStep";
-import { ModelDownloadStatus } from "./ModelDownloadStatus";
+import { ModelDownloadStatus, type ModelDownload } from "./ModelDownloadStatus";
 import FirstDictationGuide from "./FirstDictationGuide";
 import { StepIndicator } from "./steps/shared";
 import {
@@ -225,7 +223,6 @@ export default function OnboardingScreen({
   const modelCatalogQuery = useModelCatalog();
   const diarizer = useDiarizerModel().data;
   const licensed = useLicenseGate();
-  const diarizerInstalled = useDiarizerInstalled();
   const recommendationQuery = useModelRecommendation();
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
@@ -261,10 +258,11 @@ export default function OnboardingScreen({
           [
             ...(modelCatalogQuery.data ?? []).map((model) => model.key),
             selectedModel,
+            diarizer?.key ?? "",
           ].filter(Boolean),
         ),
       ),
-    [modelCatalogQuery.data, selectedModel],
+    [modelCatalogQuery.data, selectedModel, diarizer],
   );
   const { statusByModel: modelStatus } = useModelStatuses(
     statusModelKeys,
@@ -394,9 +392,6 @@ export default function OnboardingScreen({
 
   const handleDownload = useCallback(
     async (modelKey: string, ane?: boolean) => {
-      void invoke("track_onboarding_step_viewed", {
-        step: "model_downloading",
-      }).catch(() => {});
       updateDownloadStatus(modelKey, {
         status: "downloading",
         percent: 0,
@@ -541,7 +536,6 @@ export default function OnboardingScreen({
     modelCatalogQuery.isLoading ||
     settingsQuery.isLoading ||
     recommendationQuery.isLoading;
-  const modelCatalogUnavailable = modelCatalogQuery.isError;
 
   const handleStartPractice = useCallback(async () => {
     if (
@@ -562,6 +556,10 @@ export default function OnboardingScreen({
     const resolvedLocalModel = selectedModel;
 
     send({ type: "COMPLETING" });
+    void invoke("track_onboarding_model_chosen", {
+      recommended: recommendedModel,
+      chosen: resolvedLocalModel,
+    }).catch(() => {});
 
     if (!resolvedLocalModel) {
       send({
@@ -611,6 +609,7 @@ export default function OnboardingScreen({
     ctx.microphoneDevice,
     ctx.smartShortcut,
     persistedSettings,
+    recommendedModel,
     selectedModel,
     send,
     settingsQuery.isError,
@@ -715,42 +714,46 @@ export default function OnboardingScreen({
     [goNext, source],
   );
 
-  const selectedModelState = displayStateByModel[selectedModel] ?? null;
-  const pastModelStep =
-    currentStep !== "welcome" &&
-    currentStep !== "import" &&
-    currentStep !== "model";
-  const speakerState = diarizer ? (downloadStatus[diarizer.key] ?? null) : null;
-  const showDownloadStatus =
-    pastModelStep &&
-    (Boolean(downloadStatus[selectedModel]) || Boolean(speakerState));
-
-  // Speaker detection downloads after the dictation model, so it never slows
-  // the first dictation, and only with a license or trial, since only
-  // licensed features use it. Setup's end retries it if this doesn't finish.
+  // The speech model starts at launch, so it's ready by the first dictation.
+  const speechDownloadStarted = useRef(false);
   useEffect(() => {
-    if (!licensed || !diarizer || diarizerInstalled || speakerState) return;
-    if (!pastModelStep || !selectedModelReady) return;
-    updateDownloadStatus(diarizer.key, {
-      status: "downloading",
-      percent: 0,
-      file: "",
-    });
-    void invoke("download_model", { model: diarizer.key, ane: false }).catch(
-      () => {},
-    );
+    if (speechDownloadStarted.current || isModelCatalogLoading) return;
+    const status = modelStatus[selectedModel];
+    if (!status) return;
+    speechDownloadStarted.current = true;
+    if (status.installed) return;
+    void invoke("track_onboarding_step_viewed", {
+      step: "model_downloading",
+    }).catch(() => {});
+    void handleDownload(selectedModel);
+  }, [handleDownload, isModelCatalogLoading, modelStatus, selectedModel]);
+
+  const speakerWanted = Boolean(
+    licensed && diarizer && modelStatus[diarizer.key]?.installed === false,
+  );
+  const speakerStarted = diarizer
+    ? Boolean(downloadStatus[diarizer.key])
+    : false;
+
+  // Speaker detection follows the speech model, so it never slows the first
+  // dictation, and only with a license or trial, since only licensed features
+  // use it. Setup's end retries it if this doesn't finish.
+  useEffect(() => {
+    if (!selectedModelReady || !diarizer || !speakerWanted || speakerStarted) {
+      return;
+    }
+    void handleDownload(diarizer.key, false);
   }, [
-    licensed,
-    diarizer,
-    diarizerInstalled,
-    speakerState,
-    pastModelStep,
     selectedModelReady,
-    updateDownloadStatus,
+    diarizer,
+    speakerWanted,
+    speakerStarted,
+    handleDownload,
   ]);
+
   const practiceModelState = selectedModelReady
     ? "ready"
-    : selectedModelState?.status === "error"
+    : displayStateByModel[selectedModel]?.status === "error"
       ? "failed"
       : "downloading";
 
@@ -778,40 +781,6 @@ export default function OnboardingScreen({
             startDisabled={importableAppsQuery.isLoading}
           />
         );
-      case "model":
-        return (
-          <ModelStep
-            key="model"
-            stepMotionProps={stepMotionProps}
-            selectedModel={selectedModelInfo}
-            catalog={modelCatalogQuery.data ?? []}
-            modelStatus={modelStatus}
-            displayStateByModel={displayStateByModel}
-            activeModelKey={selectedModel}
-            onUse={(key) => send({ type: "SELECT_MODEL", key })}
-            isLoading={isModelCatalogLoading}
-            unavailable={modelCatalogUnavailable}
-            displayState={
-              displayStateByModel[selectedModel] ?? {
-                status: "idle",
-                percent: 0,
-              }
-            }
-            selectedModelReady={selectedModelReady}
-            onDownload={handleDownload}
-            onDelete={handleDelete}
-            onCancelDownload={handleCancelDownload}
-            recommendedKey={recommendedModel}
-            userLanguages={recommendationQuery.data?.languages ?? []}
-            onNext={() => {
-              void invoke("track_onboarding_model_chosen", {
-                recommended: recommendedModel,
-                chosen: selectedModel,
-              }).catch(() => {});
-              goNext();
-            }}
-          />
-        );
       case "import":
         return (
           <ImportStep
@@ -819,7 +788,12 @@ export default function OnboardingScreen({
             stepMotionProps={stepMotionProps}
             apps={ctx.importableApps}
             onApplied={(result) => {
-              if (result.modelKey) {
+              if (result.modelKey && result.modelKey !== selectedModel) {
+                if (
+                  displayStateByModel[selectedModel]?.status === "downloading"
+                ) {
+                  void handleCancelDownload(selectedModel);
+                }
                 send({ type: "SELECT_MODEL", key: result.modelKey });
                 if (!modelStatus[result.modelKey]?.installed) {
                   void handleDownload(result.modelKey);
@@ -918,6 +892,29 @@ export default function OnboardingScreen({
     }
   };
 
+  // In download order. Speaker detection shows as waiting until the speech
+  // model is done.
+  const downloads: ModelDownload[] = [];
+  if (selectedModelInfo && downloadStatus[selectedModel]) {
+    downloads.push({
+      key: selectedModel,
+      name: t({ id: "onboarding.downloads.speech", message: "Speech model" }),
+      state: displayStateByModel[selectedModel] ?? null,
+      onRetry: () => void handleDownload(selectedModel),
+    });
+  }
+  if (diarizer && (speakerWanted || speakerStarted)) {
+    downloads.push({
+      key: diarizer.key,
+      name: t({
+        id: "onboarding.downloads.speakers",
+        message: "Speaker detection",
+      }),
+      state: downloadStatus[diarizer.key] ?? null,
+      onRetry: () => void handleDownload(diarizer.key, false),
+    });
+  }
+
   const showChrome =
     currentStep !== "welcome" &&
     currentStep !== "done" &&
@@ -963,12 +960,8 @@ export default function OnboardingScreen({
             </button>
           )}
 
-        {showDownloadStatus ? (
-          <ModelDownloadStatus
-            state={downloadStatus[selectedModel] ? selectedModelState : null}
-            speakerState={speakerState}
-            onRetry={() => void handleDownload(selectedModel)}
-          />
+        {currentStep !== "welcome" && downloads.length > 0 ? (
+          <ModelDownloadStatus downloads={downloads} />
         ) : null}
 
         <FAQModal
