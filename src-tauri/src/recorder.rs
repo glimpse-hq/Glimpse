@@ -572,6 +572,29 @@ impl RecorderCore {
         }
 
         let device = crate::audio::find_input_device(device_id.as_deref()).ok_or(NoInputDevice)?;
+        let selected_id = device.id().ok();
+        match self.open(device, pending_dir.clone(), monitor_only) {
+            // A selected microphone can still be listed but fail to open, like
+            // AirPods that just disconnected; the default input stands in.
+            Err(err) if device_id.is_some() => {
+                let Some(default) = crate::audio::find_input_device(None)
+                    .filter(|default| default.id().ok() != selected_id)
+                else {
+                    return Err(err);
+                };
+                tracing::warn!("Selected microphone failed to open, using the default: {err:#}");
+                self.open(default, pending_dir, monitor_only)
+            }
+            result => result,
+        }
+    }
+
+    fn open(
+        &mut self,
+        device: cpal::Device,
+        pending_dir: Option<PathBuf>,
+        monitor_only: bool,
+    ) -> Result<(DateTime<Local>, String)> {
         let device_name = device
             .description()
             .map(|desc| desc.name().to_string())
@@ -764,16 +787,18 @@ pub(crate) const MIN_RMS_ENERGY: f32 = 0.0002;
 const MIN_SPEECH_PERCENTAGE: f32 = 3.0;
 
 pub fn validate_recording(recording: &CompletedRecording) -> Result<(), RecordingRejectionReason> {
-    if recording.samples.is_empty() {
-        return Err(RecordingRejectionReason::EmptyBuffer);
-    }
-
+    // A tap usually ends before the microphone delivers anything, so it is
+    // short, not a silent microphone.
     let duration_ms = (recording.ended_at - recording.started_at).num_milliseconds();
     if duration_ms < MIN_RECORDING_DURATION_MS {
         return Err(RecordingRejectionReason::TooShort {
             duration_ms,
             min_ms: MIN_RECORDING_DURATION_MS,
         });
+    }
+
+    if recording.samples.is_empty() {
+        return Err(RecordingRejectionReason::EmptyBuffer);
     }
 
     let rms = calculate_rms_i16(&recording.samples);

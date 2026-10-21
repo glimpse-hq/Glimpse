@@ -187,7 +187,8 @@ fn watch_for_stall(
         while matches!(
             analytics::activity(),
             Activity::ModelLoading | Activity::Llm
-        ) {
+        ) || app.state::<AppState>().local_transcriber().is_loading()
+        {
             tokio::time::sleep(Duration::from_secs_f32(limit)).await;
             if finished.load(Ordering::Relaxed) {
                 return;

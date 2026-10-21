@@ -27,8 +27,7 @@ use super::types::{
     cancelled_error, is_cancelled_error, is_ffmpeg_error_message,
 };
 use crate::speech::{
-    VAD_MIN_SPEECH_PERCENT_CHUNK, VAD_MIN_SPEECH_PERCENT_FILE, WHISPER_CHUNK_OVERLAP_SECONDS,
-    WHISPER_CHUNK_SECONDS,
+    VAD_MIN_SPEECH_PERCENT_CHUNK, WHISPER_CHUNK_OVERLAP_SECONDS, WHISPER_CHUNK_SECONDS,
 };
 
 #[derive(Clone)]
@@ -1063,11 +1062,6 @@ fn transcribe_remote(
 
 fn transcribe_direct(run: &LocalRun, audio_path: &Path) -> Result<LibraryTranscriptionResult> {
     let (samples, sample_rate) = transcribe::load_audio_for_transcription(audio_path)?;
-    let speech_percent = speech_percentage(&samples, sample_rate);
-    if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
-        return Ok(LibraryTranscriptionResult::default());
-    }
-
     let result = run.state.local_transcriber().transcribe_with_segments(
         run.model,
         &samples,
@@ -1237,7 +1231,8 @@ impl ChunkedTrack {
         self.total_chunks = self
             .total_chunks
             .max(self.chunk_index + u32::from(remaining > 0));
-        if chunk_below_speech_gate(chunk, sample_rate) {
+        if matches!(strategy, ChunkStrategy::Whisper) && chunk_below_speech_gate(chunk, sample_rate)
+        {
             return Ok(Some(ChunkStep {
                 text: None,
                 segments: Vec::new(),

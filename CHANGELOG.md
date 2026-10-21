@@ -6,6 +6,10 @@
 
 ### Fixes
 
+- Imported files and recordings with speech in them no longer fail with "No speech detected" when you use Parakeet, Nemotron or Apple speech models.
+- A dictation no longer times out while your speech model is still loading, such as right after it finishes setting up for the Neural Engine.
+- A quick tap on your shortcut no longer warns that Glimpse got no sound from your microphone.
+- When your selected microphone can't be opened, like AirPods that just disconnected, Glimpse records with your default microphone instead of failing.
 - The Local API in the sidebar no longer cuts off once it has served over 999 requests, and it shows its name when you hover it in the collapsed sidebar, like the other items.
 - The API log fills the window instead of stopping at a fixed height.
 - The API request count only counts transcriptions that succeeded.
