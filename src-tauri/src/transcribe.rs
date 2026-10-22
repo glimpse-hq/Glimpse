@@ -967,6 +967,9 @@ async fn process_transcript_text(
                         settings.dictionary.clone(),
                         settings.auto_dictionary_ignored.clone(),
                         selected_model,
+                        llm_cleaned
+                            .then(|| llm_cleanup::resolved_model_label(settings))
+                            .flatten(),
                     );
                 }
             }
@@ -1234,6 +1237,7 @@ pub(crate) fn retry_transcription_async(
                         word_count: metadata.word_count,
                         audio_source: "microphone",
                         retry: true,
+                        llm_model: metadata.llm_model.as_deref().map(analytics::llm_model_id),
                         ..Default::default()
                     },
                 );
@@ -1307,6 +1311,7 @@ fn emit_transcription_complete_with_cleanup(
             asr_seconds: stats.asr_seconds,
             llm_seconds: stats.llm_seconds,
             llm_outcome: stats.llm_outcome,
+            llm_model: metadata.llm_model.as_deref().map(analytics::llm_model_id),
             insert_latency_seconds: stats.insert_latency_seconds,
             trigger: stats.trigger,
             action: stats.action,

@@ -101,6 +101,9 @@ pub struct TranscriptionEvent<'a> {
     /// (the on-device model can't take this transcript).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm_outcome: Option<&'a str>,
+    /// The language model id from `llm_model_id`, when cleaned.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub llm_model: Option<String>,
     /// Key release to text inserted.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_latency_seconds: Option<f32>,

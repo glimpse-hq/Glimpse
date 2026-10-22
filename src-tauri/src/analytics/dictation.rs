@@ -47,6 +47,18 @@ pub fn llm_provider_kind(settings: &UserSettings) -> &'static str {
         .unwrap_or("custom")
 }
 
+/// The language model a dictation was cleaned with, from its stored
+/// "provider:model" label: the local model's size, the provider as a fixed
+/// id, or "custom". Never a typed model name.
+pub fn llm_model_id(label: &str) -> String {
+    let (provider, model) = label.split_once(':').unwrap_or((label, ""));
+    match LLM_PROVIDERS.iter().find(|id| **id == provider) {
+        Some(&"bonsai") if matches!(model, "2b" | "4b") => format!("bonsai:{model}"),
+        Some(id) => (*id).to_string(),
+        None => "custom".to_string(),
+    }
+}
+
 /// "none", "builtin:<id>" for the shipped personalities, or "custom".
 pub fn personality_label(personality: Option<&Personality>) -> &'static str {
     let Some(personality) = personality else {
@@ -206,9 +218,24 @@ pub fn track_dictation_cancelled(
 
 /// Records how much of a pasted dictation you changed in the field shortly
 /// after: none, small (up to a tenth of the words), or large, plus the speech
-/// model. Only the bucket is sent, never the text.
-pub fn track_paste_edited(app: &tauri::AppHandle<AppRuntime>, edit: &str, model: &str) {
-    capture_event(app, "paste_edited", json!({ "edit": edit, "model": model }));
+/// model and the language model id if it was cleaned. Only the bucket is
+/// sent, never the text.
+pub fn track_paste_edited(
+    app: &tauri::AppHandle<AppRuntime>,
+    edit: &str,
+    model: &str,
+    llm_model: Option<&str>,
+) {
+    capture_event(
+        app,
+        "paste_edited",
+        json!({
+            "edit": edit,
+            "model": model,
+            "llm_cleaned": llm_model.is_some(),
+            "llm_model": llm_model.map(llm_model_id),
+        }),
+    );
 }
 
 /// Records that inserting a dictation failed, as `transcription_failed` with

@@ -39,6 +39,7 @@ pub(crate) fn start_after_paste(
     dictionary_entries: Vec<String>,
     ignored_entries: Vec<String>,
     model: String,
+    llm_model: Option<String>,
 ) {
     if inserted_text.trim().is_empty() {
         return;
@@ -62,7 +63,7 @@ pub(crate) fn start_after_paste(
         let report_edit = |value: &str, paste_seen: bool| {
             if paste_seen {
                 let edit = edit_bucket(&pre_paste.value, &inserted_text, value);
-                crate::analytics::track_paste_edited(&app, edit, &model);
+                crate::analytics::track_paste_edited(&app, edit, &model, llm_model.as_deref());
             }
         };
 

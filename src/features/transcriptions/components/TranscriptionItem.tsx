@@ -27,6 +27,9 @@ import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import TranscriptText from "../../../shared/ui/TranscriptText";
 import { showErrorToast } from "../../../shared/lib/errorToast";
 
+const MENU_ITEM =
+  "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none disabled:opacity-50";
+
 interface TranscriptionItemProps {
   record: TranscriptionRecord;
   onDelete: (id: string) => Promise<void>;
@@ -549,15 +552,15 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     id: "transcriptions.item.more_options",
                     message: "More options",
                   })}
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  transition={{ duration: 0.12 }}
-                  className="ui-surface-menu absolute right-0 top-full mt-1 z-[100] min-w-[200px] origin-top-right"
+                  initial={false}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.1 }}
+                  className="ui-surface-menu absolute right-0 top-full mt-1 z-[100] min-w-[200px] p-1"
                 >
                   {(speechModelLabel || modeLabel || llmModelLabel) && (
                     <>
-                      <div className="px-3 pt-2.5 pb-2 space-y-0.5">
+                      <div className="px-2 pt-1.5 pb-1 space-y-0.5">
                         <div className="ui-text-meta ui-color-disabled">
                           {dateStr} · {timeStr}
                         </div>
@@ -579,7 +582,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                           </div>
                         )}
                       </div>
-                      <div className="h-px bg-border-secondary mx-2" />
+                      <div className="mx-2 my-1 h-px bg-border-secondary" />
                     </>
                   )}
                   {selectionText.trim().length > 0 && (
@@ -588,7 +591,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         type="button"
                         role="menuitem"
                         onClick={handleCopySelection}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors"
+                        className={MENU_ITEM}
                       >
                         <Copy size={12} className="text-content-muted" />
                         <span>
@@ -598,7 +601,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                           })}
                         </span>
                       </button>
-                      <div className="h-px bg-border-secondary mx-2" />
+                      <div className="mx-2 my-1 h-px bg-border-secondary" />
                     </>
                   )}
                   {canRetryFromAudio && (
@@ -607,7 +610,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       role="menuitem"
                       onClick={handleRetry}
                       disabled={isRetrying}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
+                      className={MENU_ITEM}
                     >
                       <RotateCw size={12} className="ui-color-cloud" />
                       <span>
@@ -628,7 +631,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         role="menuitem"
                         onClick={handleRetryLlm}
                         disabled={isRetryingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
+                        className={MENU_ITEM}
                       >
                         <RotateCw size={12} className="text-local" />
                         <span>
@@ -656,7 +659,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         role="menuitem"
                         onClick={handleUndoLlm}
                         disabled={isUndoingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
+                        className={MENU_ITEM}
                       >
                         <Undo2 size={12} className="text-warning" />
                         <span>
@@ -679,14 +682,14 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       onUndoLlm &&
                       showLlmButtons &&
                       !isCloudModel)) && (
-                    <div className="h-px bg-border-secondary mx-2" />
+                    <div className="mx-2 my-1 h-px bg-border-secondary" />
                   )}
                   <button
                     type="button"
                     role="menuitem"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 focus-visible:bg-red-500/10 focus-visible:outline-none transition-colors disabled:opacity-50"
+                    className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 focus-visible:bg-red-500/10 focus-visible:outline-none disabled:opacity-50"
                   >
                     <Trash2 size={12} />
                     <span>
