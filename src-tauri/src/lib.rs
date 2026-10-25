@@ -436,6 +436,7 @@ pub fn run() {
             speech::remove_whisper_cpp_files(handle);
             speech::compile_pending_ane_encoders(handle);
             speech::upgrade_parakeet_encoder(handle);
+            speech::warm_ane_encoder(handle);
             speech::upgrade_whisper_decoder(handle);
             speech::replace_onnx_models(handle);
             {

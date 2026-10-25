@@ -397,6 +397,28 @@ pub(crate) fn compile_pending_ane_encoders(app: &AppHandle<AppRuntime>) {
     }
 }
 
+/// macOS can purge its compiled Neural Engine cache, and the next load recompiles
+/// the encoder for 30s or more. Loading at launch pays that before the first dictation.
+pub(crate) fn warm_ane_encoder(app: &AppHandle<AppRuntime>) {
+    let settings = app.state::<AppState>().current_settings();
+    let model = settings.local_model.as_str();
+    let (Ok(models_dir), Some(dir_name)) = (
+        install::model_cache_dir(app),
+        catalog::ane_encoder_dir(model),
+    ) else {
+        return;
+    };
+    // A pending first compile loads the encoder itself.
+    let compiling = ane_compile_marker(&models_dir, model).is_some_and(|marker| marker.is_file());
+    if compiling
+        || !models_dir.join(model).join(dir_name).exists()
+        || !install::check_model_installed_at(&models_dir, model)
+    {
+        return;
+    }
+    warm(app, &settings);
+}
+
 /// Sum of the file sizes an extraction manifest lists.
 fn unpacked_bytes(manifest: &Path) -> Option<u64> {
     let entries: Vec<serde_json::Value> =
