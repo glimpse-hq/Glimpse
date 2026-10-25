@@ -6,6 +6,7 @@
 - The screen at the end of your trial is simpler: it shows what's now locked and lets you get Glimpse Plus or continue for free in one click. Continuing for free removes the speaker detection and language models you no longer use.
 - The API server works through several files at once up to 20% faster, especially MP3, M4A and other formats that need converting first.
 - If a ANE model's cache has been deleted, on launch Glimpse will warm the model, quickly rebuilding the cache.
+- Long speaker turns in the Library are split into paragraphs, and clicking a paragraph plays the audio from there. The player sits lower and blends into the transcript.
 
 ### Fixes
 
@@ -18,6 +19,7 @@
 - The API request count only counts transcriptions that succeeded.
 - The API server answers an unknown model name with a clear request error instead of a server error.
 - Library transcripts with detected speakers always show as speaker paragraphs, instead of sometimes falling back to plain text.
+- Copying or exporting a transcript with detected speakers keeps the same order as the speaker view.
 
 1.3.6
 

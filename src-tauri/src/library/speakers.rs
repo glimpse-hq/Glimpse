@@ -187,6 +187,16 @@ pub(super) fn label_tracks<'a>(
     (!speakers.is_empty()).then_some(speakers)
 }
 
+/// The transcript as its segments read, since labeling sorts and splits them.
+pub(super) fn transcript_from_segments(segments: &[TranscriptSegment]) -> String {
+    segments
+        .iter()
+        .map(|segment| segment.text.trim())
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Maps voices holding under 5% of `voices` to the most common one.
 fn fold_minor_voices(voices: &[Option<u32>]) -> impl Fn(Option<u32>) -> Option<u32> {
     let mut counts: Vec<(u32, usize)> = Vec::new();

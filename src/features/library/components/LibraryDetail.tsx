@@ -100,9 +100,13 @@ type SpeakerTurn = {
   key: number;
   speaker: Speaker | null;
   text: string;
+  start_ms: number;
+  // A later paragraph of the same turn, shown without the speaker label.
+  continues: boolean;
 };
 
-// Consecutive segments by the same speaker merge into one turn.
+const PARAGRAPH_MIN_CHARS = 400;
+
 type RowMatch = { row: number; occurrence: number };
 
 const findRowMatches = (rows: string[], query: string): RowMatch[] => {
@@ -119,6 +123,7 @@ const findRowMatches = (rows: string[], query: string): RowMatch[] => {
   return matches;
 };
 
+// Same-speaker segments merge into one turn, split into paragraphs at long sentence ends.
 const buildSpeakerTurns = (
   segments: TranscriptSegment[],
   speakerById: Map<string, Speaker>,
@@ -130,10 +135,21 @@ const buildSpeakerTurns = (
     const id = segments[index].speaker_id;
     const speaker = (id && speakerById.get(id)) || null;
     const last = turns[turns.length - 1];
-    if (last && last.speaker === speaker) {
+    const sameSpeaker = !!last && last.speaker === speaker;
+    const continues =
+      sameSpeaker &&
+      last.text.length >= PARAGRAPH_MIN_CHARS &&
+      /[.!?…]["')\]]*$/.test(last.text);
+    if (sameSpeaker && !continues) {
       last.text += ` ${text}`;
     } else {
-      turns.push({ key: index, speaker, text });
+      turns.push({
+        key: index,
+        speaker,
+        text,
+        start_ms: segments[index].start_ms,
+        continues,
+      });
     }
   }
   return turns;
@@ -1243,7 +1259,9 @@ const LibraryDetail = ({
       copyTranscript(
         visibleTurns
           .map((turn) =>
-            turn.speaker ? `${turn.speaker.name}: ${turn.text}` : turn.text,
+            turn.speaker && !turn.continues
+              ? `${turn.speaker.name}: ${turn.text}`
+              : turn.text,
           )
           .join("\n\n"),
       );
@@ -1381,7 +1399,7 @@ const LibraryDetail = ({
     rediarizing ||
     (item.status.type === "transcribing" && !!item.status.detecting_speakers);
   // The placeholder shows progress itself until text arrives.
-  const footerStatus = transcribingPlaceholder
+  const transcriptStatus = transcribingPlaceholder
     ? null
     : rediarizing
       ? detectingSpeakersLabel
@@ -1967,7 +1985,7 @@ const LibraryDetail = ({
 
   return (
     <div className="flex h-full w-full min-h-0 flex-col">
-      <header className="-mt-5 shrink-0 border-b border-[var(--color-border-primary)] px-5 pt-1.5 pb-3">
+      <header className="-mt-5 shrink-0 px-5 pt-1.5 pb-3">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -2811,13 +2829,21 @@ const LibraryDetail = ({
         ) : (
           <div className="relative flex h-full w-full flex-col">
             <div
-              className="pointer-events-none absolute left-0 right-3 bottom-0 h-6 z-10"
+              className="pointer-events-none absolute left-0 right-3 bottom-0 h-10 z-10"
               style={{
                 background:
                   "linear-gradient(to top, var(--color-bg-tertiary), transparent)",
               }}
               aria-hidden="true"
             />
+            <div
+              aria-live="polite"
+              className={`pointer-events-none absolute inset-x-0 bottom-1 z-10 h-4 truncate text-center ui-text-meta tabular-nums ${
+                detectingSpeakers ? "text-local" : "text-content-disabled"
+              }`}
+            >
+              {transcriptStatus}
+            </div>
             {!showSegmentView && bookmarks.length > 0 && (
               <div
                 className={`${CONTENT_COLUMN} max-h-[152px] shrink-0 overflow-y-auto pt-2 pb-1 custom-scrollbar`}
@@ -2826,6 +2852,14 @@ const LibraryDetail = ({
               </div>
             )}
             <div className="relative flex-1 min-h-0">
+              <div
+                className="pointer-events-none absolute left-0 right-3 top-0 h-4 z-10"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, var(--color-bg-tertiary), transparent)",
+                }}
+                aria-hidden="true"
+              />
               {showSegmentView ? (
                 <Virtuoso
                   ref={segmentsVirtuosoRef}
@@ -2844,8 +2878,8 @@ const LibraryDetail = ({
                     entry: { segment: TranscriptSegment; index: number },
                   ) => `${entry.segment.start_ms}-${entry.index}`}
                   components={{
-                    Header: () => <div className="h-2" />,
-                    Footer: () => <div className="h-2" />,
+                    Header: () => <div className="h-4" />,
+                    Footer: () => <div className="h-10" />,
                   }}
                   itemContent={(idx, entry) => {
                     const segment = entry.segment;
@@ -2921,8 +2955,8 @@ const LibraryDetail = ({
                       `${item.id}-chunk-${index}`
                     }
                     components={{
-                      Header: () => <div className="h-2" />,
-                      Footer: () => <div className="h-2" />,
+                      Header: () => <div className="h-4" />,
+                      Footer: () => <div className="h-10" />,
                     }}
                     itemContent={(idx, chunk) => (
                       <div className={`${CONTENT_COLUMN} pb-2`}>
@@ -2960,13 +2994,17 @@ const LibraryDetail = ({
                     turn.key
                   }
                   components={{
-                    Header: () => <div className="h-2" />,
-                    Footer: () => <div className="h-4" />,
+                    Header: () => <div className="h-4" />,
+                    Footer: () => <div className="h-10" />,
                   }}
                   itemContent={(idx, turn) => (
-                    <div className={`${CONTENT_COLUMN} pb-4`}>
+                    <div
+                      className={`${CONTENT_COLUMN} ${
+                        visibleTurns[idx + 1]?.continues ? "pb-2.5" : "pb-4"
+                      }`}
+                    >
                       <div className="px-2">
-                        {turn.speaker && (
+                        {turn.speaker && !turn.continues && (
                           <div
                             onContextMenu={(event) =>
                               turn.speaker &&
@@ -2987,7 +3025,15 @@ const LibraryDetail = ({
                             </span>
                           </div>
                         )}
-                        <p className="select-text">
+                        <p
+                          className="select-text cursor-pointer transition-colors hover:text-content-primary"
+                          onClick={() => {
+                            // Selecting text shouldn't jump playback.
+                            if (window.getSelection()?.isCollapsed !== false) {
+                              handleTimestampClick(turn.start_ms);
+                            }
+                          }}
+                        >
                           {renderHighlightedText(
                             turn.text,
                             activeOccurrence(activeTurnMatch, idx),
@@ -3008,7 +3054,7 @@ const LibraryDetail = ({
                       key={normalizedSearchQuery}
                       ref={transcriptHighlightsRef}
                       aria-hidden="true"
-                      className="pointer-events-none col-start-1 row-start-1 whitespace-pre-wrap [overflow-wrap:break-word] px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body leading-relaxed text-transparent pt-2 pb-4"
+                      className="pointer-events-none col-start-1 row-start-1 whitespace-pre-wrap [overflow-wrap:break-word] px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body leading-relaxed text-transparent pt-4 pb-10"
                     >
                       {textMatchIndexes.map((start, idx) => {
                         const prevEnd =
@@ -3053,7 +3099,7 @@ const LibraryDetail = ({
                         id: "library.modal.transcript_placeholder",
                         message: "Transcript will appear here.",
                       })}
-                      className="col-start-1 row-start-1 w-full resize-none overflow-hidden bg-transparent px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 select-text pt-2 pb-4"
+                      className="col-start-1 row-start-1 w-full resize-none overflow-hidden bg-transparent px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 select-text pt-4 pb-10"
                     />
                   </div>
                 </div>
@@ -3063,7 +3109,7 @@ const LibraryDetail = ({
         )}
       </main>
 
-      <footer className="shrink-0 border-t border-[var(--color-border-primary)] px-5 pt-2.5 pb-1">
+      <footer className="-mb-6 shrink-0 px-5 pt-3 pb-5">
         <div className="flex items-center gap-3">
           <button
             onClick={handleTogglePlayback}
@@ -3286,14 +3332,6 @@ const LibraryDetail = ({
               )}
             </AnimatePresence>
           </div>
-        </div>
-        <div
-          aria-live="polite"
-          className={`h-4 truncate text-center ui-text-meta tabular-nums ${
-            detectingSpeakers ? "text-local" : "text-content-disabled"
-          }`}
-        >
-          {footerStatus}
         </div>
       </footer>
 

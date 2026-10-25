@@ -328,11 +328,15 @@ pub async fn rediarize_library_item(
             tracing::warn!("[library] speaker detection failed: {err}");
             err.to_string()
         })?;
+        let transcript =
+            (!item.transcript_edited && !item.llm_cleanup_enabled && !labeled.segments.is_empty())
+                .then(|| super::speakers::transcript_from_segments(&labeled.segments));
         // A transcription or a speaker edit made meanwhile must not be overwritten.
         storage
             .update_library_item_if(
                 &task_id,
                 LibraryItemPatch {
+                    transcript,
                     segments: Some(labeled.segments),
                     words: labeled.words,
                     speakers: Some(labeled.speakers),
@@ -341,6 +345,7 @@ pub async fn rediarize_library_item(
                 },
                 |current| {
                     matches!(current.status, LibraryItemStatus::Complete)
+                        && current.transcript == item.transcript
                         && current.segments == item.segments
                         && current.words == item.words
                         && current.speakers == item.speakers

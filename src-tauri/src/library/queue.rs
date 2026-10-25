@@ -638,6 +638,7 @@ fn transcribe_library_item(
             return Err(cancelled_error());
         }
         let identity = speakers::single_track_identity(item);
+        let relabels_segments = turns.is_some();
         if turns.is_some() || identity.is_some() {
             let mut labeled = speakers::label_tracks([Track {
                 result: &mut result,
@@ -654,6 +655,11 @@ fn transcribe_library_item(
                 labeled.as_mut(),
             );
             result.speakers = labeled;
+        }
+        if relabels_segments
+            && let Some(segments) = result.segments.as_deref().filter(|s| !s.is_empty())
+        {
+            result.transcript = speakers::transcript_from_segments(segments);
         }
         return Ok(result);
     };
@@ -873,12 +879,7 @@ fn merge_track_results(
             .collect::<Vec<_>>()
             .join("\n\n")
     } else {
-        segments
-            .iter()
-            .map(|segment| segment.text.trim())
-            .filter(|text| !text.is_empty())
-            .collect::<Vec<_>>()
-            .join(" ")
+        speakers::transcript_from_segments(&segments)
     };
 
     LibraryTranscriptionResult {
