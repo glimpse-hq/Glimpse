@@ -1130,15 +1130,7 @@ const LibraryDetail = ({
     [speakerTurns],
   );
   // Edits and AI cleanup change the transcript but not the segments, so those items keep the text box.
-  const transcriptEdited = useMemo(() => {
-    if (item.transcript_edited) return true;
-    const letters = (text: string) =>
-      text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
-    const segmentText = (item.segments ?? [])
-      .map((segment) => segment.text)
-      .join(" ");
-    return letters(item.transcript ?? "") !== letters(segmentText);
-  }, [item.transcript_edited, item.transcript, item.segments]);
+  const transcriptEdited = item.transcript_edited || item.llm_cleanup_enabled;
   const visibleTurns = useMemo(
     () =>
       hiddenSpeakers.size > 0
