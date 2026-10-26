@@ -1228,8 +1228,8 @@ msgstr "{daysDictated} giorni a lavorare parlando. @try_glimpse_app"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.faster_value"
-msgstr "{fasterPercent}% più veloce"
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% più veloce"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3716,8 +3716,8 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.speak_at"
-msgstr "Parlo a"
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "Parlo a"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4767,8 +4767,8 @@ msgstr "Non supportato da questo modello"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.note"
-msgstr "Nota"
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "Nota"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -5083,8 +5083,8 @@ msgstr "Pubblica"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.poster"
-msgstr "Poster"
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "Poster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -6211,6 +6211,7 @@ msgstr "Avvio in corso..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.title"
 msgstr "Statistiche"
 
@@ -6402,8 +6403,8 @@ msgstr "Dimensione testo"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.than_typing"
-msgstr "rispetto alla digitazione"
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "rispetto alla digitazione"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -7059,8 +7060,8 @@ msgstr "Windows non consente a Glimpse di rilevare la scorciatoia nelle app avvi
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.words"
-msgstr "parole"
+#~ msgid "settings.stats.card.words"
+#~ msgstr "parole"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7069,11 +7070,14 @@ msgstr "parole al minuto"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.wpm"
 msgstr "Parole al minuto"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
 #: src/features/license/components/MemberCard.tsx
+#: src/features/license/components/shareCard.ts
 msgid "member_card.label_words_spoken"
 msgstr "Parole pronunciate"
 
@@ -7094,8 +7098,8 @@ msgstr "Modello di scrittura"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.year"
-msgstr "Anno"
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "Anno"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts

@@ -1228,8 +1228,8 @@ msgstr "{daysDictated} dagen waarop ik al pratend mijn werk deed. @try_glimpse_a
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.faster_value"
-msgstr "{fasterPercent}% sneller"
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% sneller"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3716,8 +3716,8 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.speak_at"
-msgstr "Ik spreek met"
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "Ik spreek met"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4767,8 +4767,8 @@ msgstr "Niet ondersteund door dit model"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.note"
-msgstr "Opmerking"
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "Opmerking"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -5083,8 +5083,8 @@ msgstr "Plaatsen"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.poster"
-msgstr "Poster"
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "Poster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -6211,6 +6211,7 @@ msgstr "Starten..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.title"
 msgstr "Statistieken"
 
@@ -6402,8 +6403,8 @@ msgstr "Tekstgrootte"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.than_typing"
-msgstr "dan typen"
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "dan typen"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -7059,8 +7060,8 @@ msgstr "Windows laat Glimpse je sneltoets niet horen in apps die als beheerder w
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.words"
-msgstr "woorden"
+#~ msgid "settings.stats.card.words"
+#~ msgstr "woorden"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7069,11 +7070,14 @@ msgstr "woorden per minuut"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.wpm"
 msgstr "Woorden per minuut"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
 #: src/features/license/components/MemberCard.tsx
+#: src/features/license/components/shareCard.ts
 msgid "member_card.label_words_spoken"
 msgstr "Uitgesproken woorden"
 
@@ -7094,8 +7098,8 @@ msgstr "Schrijfmodel"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.year"
-msgstr "Jaar"
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "Jaar"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts

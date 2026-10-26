@@ -2,6 +2,7 @@
 
 ### Improvements
 
+- The sharing cards now have new designs.
 - Setting up Glimpse is quicker. It picks the best speech model for you and starts downloading it as soon as you open the app, so it's usually ready by your first dictation. You can follow the downloads in the corner while you finish setup.
 - The screen at the end of your trial is simpler: it shows what's now locked and lets you get Glimpse Plus or continue for free in one click. Continuing for free removes the speaker detection and language models you no longer use.
 - The API server works through several files at once up to 20% faster, especially MP3, M4A and other formats that need converting first.

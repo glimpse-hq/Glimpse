@@ -140,31 +140,11 @@ const DictationStatsPanel = () => {
     },
   ];
 
-  const stampFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(i18n.locale, {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-    [i18n.locale],
-  );
-
   const shareLabels = useMemo(
     () => ({
-      date: stampFormatter.format(today),
-      speakAt: t({ id: "settings.stats.card.speak_at", message: "I speak at" }),
       wordsAMinute: t({
         id: "settings.stats.card.words_a_minute",
         message: "words a minute",
-      }),
-      fasterValue: t({
-        id: "settings.stats.card.faster_value",
-        message: `${fasterPercent}% faster`,
-      }),
-      thanTyping: t({
-        id: "settings.stats.card.than_typing",
-        message: "than typing",
       }),
       fasterInline: t({
         id: "settings.stats.card.faster_inline",
@@ -181,26 +161,29 @@ const DictationStatsPanel = () => {
         id: "settings.stats.card.of_dictating",
         message: "of dictating this year",
       }),
-      words: t({ id: "settings.stats.card.words", message: "words" }),
+      words: t({
+        id: "member_card.label_words_spoken",
+        message: "Words spoken",
+      }),
       dictations: t({
         id: "settings.stats.card.dictations",
         message: "dictations",
       }),
       saved: t({ id: "settings.stats.card.saved", message: "saved" }),
     }),
-    [t, fasterPercent, daysDictated, stampFormatter, today],
+    [t, fasterPercent, daysDictated],
   );
 
   const shareData = useMemo(
     () => ({
       labels: shareLabels,
+      locale: i18n.locale,
       rtl: ["ar", "he", "fa", "ur"].includes(i18n.locale.split("-")[0]),
       words: formatCompact(totalWords),
       wpm,
       fasterPercent,
       timeSaved: formatDuration(minutesSaved(totalWords, totalDurationMs)),
       dictations: formatCompact(totalDictations),
-      daysDictated,
       grid,
       busiest,
     }),
@@ -210,7 +193,6 @@ const DictationStatsPanel = () => {
       fasterPercent,
       totalDurationMs,
       totalDictations,
-      daysDictated,
       grid,
       busiest,
       shareLabels,

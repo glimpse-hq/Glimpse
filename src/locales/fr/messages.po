@@ -1228,8 +1228,8 @@ msgstr "{daysDictated} jours à dicter mon travail. @try_glimpse_app"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.faster_value"
-msgstr "{fasterPercent}% plus rapide"
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% plus rapide"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3716,8 +3716,8 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.speak_at"
-msgstr "Je parle à"
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "Je parle à"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4767,8 +4767,8 @@ msgstr "Non pris en charge par ce modèle"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.note"
-msgstr "Note"
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "Note"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -5083,8 +5083,8 @@ msgstr "Publier"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.poster"
-msgstr "Affiche"
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "Affiche"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -6211,6 +6211,7 @@ msgstr "Démarrage…"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.title"
 msgstr "Statistiques"
 
@@ -6402,8 +6403,8 @@ msgstr "Taille du texte"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.than_typing"
-msgstr "qu'en tapant"
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "qu'en tapant"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -7059,8 +7060,8 @@ msgstr "Windows ne permet pas à Glimpse de détecter votre raccourci clavier da
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.words"
-msgstr "mots"
+#~ msgid "settings.stats.card.words"
+#~ msgstr "mots"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7069,11 +7070,14 @@ msgstr "mots par minute"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.wpm"
 msgstr "Mots par minute"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
 #: src/features/license/components/MemberCard.tsx
+#: src/features/license/components/shareCard.ts
 msgid "member_card.label_words_spoken"
 msgstr "Mots prononcés"
 
@@ -7094,8 +7098,8 @@ msgstr "Modèle d’écriture"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.year"
-msgstr "Année"
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "Année"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts

@@ -1228,8 +1228,8 @@ msgstr "{daysDictated} days of talking my way through work. @try_glimpse_app"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.faster_value"
-msgstr "{fasterPercent}% faster"
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% faster"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3716,8 +3716,8 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.speak_at"
-msgstr "I speak at"
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "I speak at"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4767,8 +4767,8 @@ msgstr "Not supported by this model"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.note"
-msgstr "Note"
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "Note"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -5083,8 +5083,8 @@ msgstr "Post"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.poster"
-msgstr "Poster"
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "Poster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -6211,6 +6211,7 @@ msgstr "Starting..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.title"
 msgstr "Statistics"
 
@@ -6402,8 +6403,8 @@ msgstr "Text size"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.than_typing"
-msgstr "than typing"
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "than typing"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -7059,8 +7060,8 @@ msgstr "Windows doesn't let Glimpse hear your shortcut in apps running as admini
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.words"
-msgstr "words"
+#~ msgid "settings.stats.card.words"
+#~ msgstr "words"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7069,11 +7070,14 @@ msgstr "words a minute"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.wpm"
 msgstr "Words a minute"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
 #: src/features/license/components/MemberCard.tsx
+#: src/features/license/components/shareCard.ts
 msgid "member_card.label_words_spoken"
 msgstr "Words spoken"
 
@@ -7094,8 +7098,8 @@ msgstr "Writing model"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.year"
-msgstr "Year"
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "Year"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts

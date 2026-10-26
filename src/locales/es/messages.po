@@ -1228,8 +1228,8 @@ msgstr "{daysDictated} días hablando para sacar el trabajo adelante. @try_glimp
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.faster_value"
-msgstr "{fasterPercent}% más rápido"
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% más rápido"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3716,8 +3716,8 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.speak_at"
-msgstr "Hablo a"
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "Hablo a"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4767,8 +4767,8 @@ msgstr "No compatible con este modelo"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.note"
-msgstr "Nota"
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "Nota"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -5083,8 +5083,8 @@ msgstr "Publicar"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.poster"
-msgstr "Póster"
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "Póster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -6211,6 +6211,7 @@ msgstr "Iniciando..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.title"
 msgstr "Estadísticas"
 
@@ -6402,8 +6403,8 @@ msgstr "Tamaño del texto"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.than_typing"
-msgstr "que escribir"
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "que escribir"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -7059,8 +7060,8 @@ msgstr "Windows no permite que Glimpse detecte tu atajo en aplicaciones que se e
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-msgid "settings.stats.card.words"
-msgstr "palabras"
+#~ msgid "settings.stats.card.words"
+#~ msgstr "palabras"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7069,11 +7070,14 @@ msgstr "palabras por minuto"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/shareCard.ts
 msgid "settings.stats.wpm"
 msgstr "Palabras por minuto"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
 #: src/features/license/components/MemberCard.tsx
+#: src/features/license/components/shareCard.ts
 msgid "member_card.label_words_spoken"
 msgstr "Palabras habladas"
 
@@ -7094,8 +7098,8 @@ msgstr "Modelo de escritura"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
-msgid "settings.stats.share.style.year"
-msgstr "Año"
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "Año"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
