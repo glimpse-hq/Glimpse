@@ -64,6 +64,9 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const { i18n, t } = useLingui();
   const { data: speechModels } = useSpeechModels();
   const { copied, copy } = useCopyToClipboard(2000);
+  const { copied: originalCopied, copy: copyOriginal } = useCopyToClipboard();
+  const { copied: instructionCopied, copy: copyInstruction } =
+    useCopyToClipboard();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancellingRetry, setIsCancellingRetry] = useState(false);
   const [startingCleanup, setStartingCleanup] = useState(false);
@@ -71,6 +74,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const [isUndoingLlm, setIsUndoingLlm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(initialOverflowing);
+  const [showEditDetails, setShowEditDetails] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectionText, setSelectionText] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
@@ -242,7 +246,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     day: "numeric",
   });
   const isError = record.status === "error";
-  const canRetryFromAudio = record.audio_available;
+  const isEdit = record.selected_text != null;
+  const canRetryFromAudio = record.audio_available && !isEdit;
   const errorMessage =
     record.error_message ||
     t({
@@ -313,6 +318,19 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               </>
             )}
             <span>{timeStr}</span>
+            {isEdit && (
+              <>
+                <span aria-hidden="true" className="opacity-60">
+                  ·
+                </span>
+                <span className="ui-color-secondary">
+                  {t({
+                    id: "transcriptions.item.edit_mode",
+                    message: "Edit mode",
+                  })}
+                </span>
+              </>
+            )}
             {isError && (
               <>
                 <span aria-hidden="true" className="opacity-60">
@@ -390,6 +408,140 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               >
                 <TranscriptText text={displayText || ""} />
               </div>
+              {isEdit && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditDetails(!showEditDetails)}
+                    aria-expanded={showEditDetails}
+                    className="flex items-center gap-1 mt-1 -ml-0.5 px-1 py-0.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors rounded"
+                  >
+                    {showEditDetails ? (
+                      <ChevronUp size={11} aria-hidden="true" />
+                    ) : (
+                      <ChevronDown size={11} aria-hidden="true" />
+                    )}
+                    {t({
+                      id: "transcriptions.item.edit_details",
+                      message: "Edit details",
+                    })}
+                  </button>
+                  {showEditDetails && (
+                    <>
+                      <div
+                        className="mt-2 h-px w-full bg-border-secondary [mask-image:linear-gradient(to_right,black_70%,transparent)]"
+                        aria-hidden="true"
+                      />
+                      <dl className="mt-2 space-y-2">
+                        <div>
+                          <dt className="flex items-center gap-1 ui-text-label-strong ui-color-secondary">
+                            {t({
+                              id: "transcriptions.item.original_text",
+                              message: "Original text",
+                            })}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void copyOriginal(record.selected_text ?? "")
+                              }
+                              className="inline-flex size-6 shrink-0 items-center justify-center rounded ui-color-muted hover:bg-surface-elevated hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cloud"
+                              title={
+                                originalCopied
+                                  ? t({
+                                      id: "transcriptions.item.copied",
+                                      message: "Copied",
+                                    })
+                                  : t({
+                                      id: "transcriptions.item.copy_original_text",
+                                      message: "Copy original text",
+                                    })
+                              }
+                              aria-label={
+                                originalCopied
+                                  ? t({
+                                      id: "transcriptions.item.copied",
+                                      message: "Copied",
+                                    })
+                                  : t({
+                                      id: "transcriptions.item.copy_original_text",
+                                      message: "Copy original text",
+                                    })
+                              }
+                            >
+                              {originalCopied ? (
+                                <Check
+                                  size={12}
+                                  className="text-success"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <Copy size={12} aria-hidden="true" />
+                              )}
+                            </button>
+                          </dt>
+                          <dd className="mt-1 ui-text-body-sm ui-color-muted select-text break-words">
+                            <TranscriptText text={record.selected_text ?? ""} />
+                          </dd>
+                        </div>
+                        {record.edit_instruction && (
+                          <div>
+                            <dt className="flex items-center gap-1 ui-text-label-strong ui-color-secondary">
+                              {t({
+                                id: "transcriptions.item.edit_instruction",
+                                message: "Spoken instruction",
+                              })}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void copyInstruction(
+                                    record.edit_instruction ?? "",
+                                  )
+                                }
+                                className="inline-flex size-6 shrink-0 items-center justify-center rounded ui-color-muted hover:bg-surface-elevated hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cloud"
+                                title={
+                                  instructionCopied
+                                    ? t({
+                                        id: "transcriptions.item.copied",
+                                        message: "Copied",
+                                      })
+                                    : t({
+                                        id: "transcriptions.item.copy_edit_instruction",
+                                        message: "Copy spoken instruction",
+                                      })
+                                }
+                                aria-label={
+                                  instructionCopied
+                                    ? t({
+                                        id: "transcriptions.item.copied",
+                                        message: "Copied",
+                                      })
+                                    : t({
+                                        id: "transcriptions.item.copy_edit_instruction",
+                                        message: "Copy spoken instruction",
+                                      })
+                                }
+                              >
+                                {instructionCopied ? (
+                                  <Check
+                                    size={12}
+                                    className="text-success"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <Copy size={12} aria-hidden="true" />
+                                )}
+                              </button>
+                            </dt>
+                            <dd className="mt-1 ui-text-body-sm ui-color-muted select-text break-words">
+                              <TranscriptText text={record.edit_instruction} />
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
+                    </>
+                  )}
+                </>
+              )}
               {(isOverflowing || isExpanded) && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
@@ -622,7 +774,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     </button>
                   )}
 
-                  {!isError &&
+                  {!isEdit &&
+                    !isError &&
                     onRetryLlm &&
                     showLlmButtons &&
                     !isCloudModel && (
@@ -648,7 +801,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       </button>
                     )}
 
-                  {!isError &&
+                  {!isEdit &&
+                    !isError &&
                     record.llm_cleaned &&
                     record.raw_text &&
                     onUndoLlm &&
@@ -672,11 +826,13 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     )}
 
                   {(canRetryFromAudio ||
-                    (!isError &&
+                    (!isEdit &&
+                      !isError &&
                       onRetryLlm &&
                       showLlmButtons &&
                       !isCloudModel) ||
-                    (!isError &&
+                    (!isEdit &&
+                      !isError &&
                       record.llm_cleaned &&
                       record.raw_text &&
                       onUndoLlm &&

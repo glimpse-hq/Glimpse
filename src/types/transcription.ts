@@ -8,6 +8,8 @@ export type TranscriptionRecord = {
   timestamp: string;
   text: string;
   raw_text?: string | null;
+  selected_text?: string | null;
+  edit_instruction?: string | null;
   audio_path: string;
   audio_available: boolean;
   status: "success" | "error";

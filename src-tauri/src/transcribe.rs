@@ -38,7 +38,7 @@ enum ProcessTranscriptOutcome {
 
 struct ProcessTranscriptInput<'a> {
     raw_transcript: String,
-    pending_selected_text: Option<String>,
+    pending_selected_text: Option<&'a str>,
     settings: &'a UserSettings,
     active_mode: Option<&'a Personality>,
     auto_paste: bool,
@@ -359,7 +359,7 @@ pub(crate) fn queue_transcription(
                     &http,
                     ProcessTranscriptInput {
                         raw_transcript: raw_transcript.clone(),
-                        pending_selected_text,
+                        pending_selected_text: pending_selected_text.as_deref(),
                         settings: &settings,
                         active_mode: active_mode.as_ref(),
                         auto_paste,
@@ -411,7 +411,7 @@ pub(crate) fn queue_transcription(
                     result.language.as_deref(),
                 )
                 .with_origin(origin, is_edit);
-                let metadata = build_transcription_metadata(TranscriptionMetadataInput {
+                let mut metadata = build_transcription_metadata(TranscriptionMetadataInput {
                     saved: &saved_for_task,
                     settings: &settings,
                     final_text: &processed.final_transcript,
@@ -420,6 +420,10 @@ pub(crate) fn queue_transcription(
                     mode: active_mode.as_ref(),
                     speech_model: result.speech_model,
                 });
+                metadata.edit_instruction = pending_selected_text
+                    .as_ref()
+                    .map(|_| raw_transcript.clone());
+                metadata.selected_text = pending_selected_text;
 
                 emit_transcription_complete_with_cleanup(
                     &app_handle,
@@ -821,7 +825,7 @@ async fn process_transcript_text(
         } else {
             crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
         }
-        let outcome = if let Some(ref selected) = pending_selected_text {
+        let outcome = if let Some(selected) = pending_selected_text {
             match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
                 Ok(edited) => (edited, true),
                 Err(err) => {
@@ -846,7 +850,7 @@ async fn process_transcript_text(
                         ),
                     );
                     llm_failure = Some(err);
-                    (selected.clone(), false)
+                    (selected.to_owned(), false)
                 }
             }
         } else {
@@ -1191,6 +1195,7 @@ pub(crate) fn retry_transcription_async(
                     synced: false,
                     mode_id: saved_mode_id.clone(),
                     mode_name: saved_mode_name.clone(),
+                    ..Default::default()
                 };
 
                 let raw_text = if llm_cleaned {
@@ -1748,6 +1753,7 @@ fn build_transcription_metadata(
         synced,
         mode_id: mode.map(|m| m.id.clone()),
         mode_name: mode.map(|m| m.name.clone()),
+        ..Default::default()
     }
 }
 
@@ -2278,7 +2284,7 @@ pub(crate) fn finalize_streaming_transcription(
             &http,
             ProcessTranscriptInput {
                 raw_transcript: raw_transcript.clone(),
-                pending_selected_text,
+                pending_selected_text: pending_selected_text.as_deref(),
                 settings: &settings,
                 active_mode: active_mode.as_ref(),
                 auto_paste,
@@ -2332,6 +2338,10 @@ pub(crate) fn finalize_streaming_transcription(
             synced: false,
             mode_id: active_mode.as_ref().map(|m| m.id.clone()),
             mode_name: active_mode.as_ref().map(|m| m.name.clone()),
+            edit_instruction: pending_selected_text
+                .as_ref()
+                .map(|_| raw_transcript.clone()),
+            selected_text: pending_selected_text,
         };
 
         crate::pill::collapse_expanded_pill(&app_handle);

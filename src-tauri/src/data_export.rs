@@ -663,6 +663,7 @@ mod tests {
                     synced: false,
                     mode_id: None,
                     mode_name: None,
+                    ..Default::default()
                 },
                 None,
                 None,

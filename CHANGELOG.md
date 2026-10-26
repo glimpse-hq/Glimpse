@@ -1,5 +1,9 @@
 1.4.0
 
+### New Features
+
+- Edit Mode entries in Home now show the original selected text and spoken instruction under Edit details.
+
 ### Improvements
 
 - The sharing cards now have new designs.

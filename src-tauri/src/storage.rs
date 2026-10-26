@@ -27,6 +27,10 @@ pub struct TranscriptionRecord {
     /// The raw transcription before LLM cleanup (if applicable)
     #[serde(default)]
     pub raw_text: Option<String>,
+    #[serde(default)]
+    pub selected_text: Option<String>,
+    #[serde(default)]
+    pub edit_instruction: Option<String>,
     pub audio_path: String,
     #[serde(default)]
     pub audio_available: bool,
@@ -125,6 +129,8 @@ pub struct StorageManager {
 
 #[derive(Debug, Clone)]
 pub struct TranscriptionMetadata {
+    pub selected_text: Option<String>,
+    pub edit_instruction: Option<String>,
     pub speech_model: String,
     pub llm_model: Option<String>,
     pub word_count: u32,
@@ -143,6 +149,8 @@ pub struct ImportedTranscription {
 impl Default for TranscriptionMetadata {
     fn default() -> Self {
         Self {
+            selected_text: None,
+            edit_instruction: None,
             speech_model: String::new(),
             llm_model: None,
             word_count: 0,
@@ -256,6 +264,8 @@ impl StorageManager {
             synced: metadata.synced,
             mode_id: metadata.mode_id,
             mode_name: metadata.mode_name,
+            selected_text: metadata.selected_text,
+            edit_instruction: metadata.edit_instruction,
         };
 
         let conn = self.connection.lock();
@@ -307,6 +317,8 @@ impl StorageManager {
                 status: TranscriptionStatus::Success,
                 error_message: None,
                 llm_cleaned: false,
+                selected_text: None,
+                edit_instruction: None,
                 speech_model: String::new(),
                 llm_model: None,
                 word_count: count_words(text),
@@ -443,7 +455,7 @@ impl StorageManager {
 
         let query = format!(
             "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction
              FROM transcriptions{where_clause}
              ORDER BY {order_clause}
              LIMIT ? OFFSET ?"
@@ -500,7 +512,7 @@ impl StorageManager {
             let conn = self.connection.lock();
             let mut stmt = conn.prepare(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction
                  FROM transcriptions
                  WHERE status = ?1 AND text <> ''
                  ORDER BY timestamp DESC, id DESC
@@ -540,7 +552,7 @@ impl StorageManager {
             let conn = self.connection.lock();
             let mut stmt = conn.prepare(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction
                  FROM transcriptions
                  WHERE status = ?1 AND text <> ''
                    AND (text LIKE ?2 ESCAPE '\\' OR raw_text LIKE ?2 ESCAPE '\\')
@@ -735,8 +747,8 @@ impl StorageManager {
                 audio_duration_seconds,
                 synced,
                 mode_id,
-                mode_name
-             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+                mode_name, selected_text, edit_instruction
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)",
             params![
                 record.id,
                 timestamp,
@@ -753,6 +765,8 @@ impl StorageManager {
                 if record.synced { 1 } else { 0 },
                 record.mode_id,
                 record.mode_name,
+                record.selected_text,
+                record.edit_instruction,
             ],
         )?;
         Ok(())
@@ -817,7 +831,7 @@ impl StorageManager {
         let mut record = conn
             .query_row(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction
                  FROM transcriptions WHERE id = ?1",
                 params![id],
                 Self::record_from_row,
@@ -889,6 +903,8 @@ impl StorageManager {
             timestamp,
             text: row.get("text")?,
             raw_text: row.get("raw_text")?,
+            selected_text: row.get("selected_text")?,
+            edit_instruction: row.get("edit_instruction")?,
             audio_path: row.get("audio_path")?,
             // Filled in by resolve_audio_availability after the query.
             audio_available: false,
@@ -1025,6 +1041,19 @@ impl StorageManager {
             "library_items",
             "previous_transcript",
             "ALTER TABLE library_items ADD COLUMN previous_transcript TEXT",
+        )?;
+
+        Self::ensure_column(
+            conn,
+            "transcriptions",
+            "selected_text",
+            "ALTER TABLE transcriptions ADD COLUMN selected_text TEXT",
+        )?;
+        Self::ensure_column(
+            conn,
+            "transcriptions",
+            "edit_instruction",
+            "ALTER TABLE transcriptions ADD COLUMN edit_instruction TEXT",
         )?;
 
         let stats_seeded: bool = conn.query_row(
