@@ -47,7 +47,7 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["f
 tracing-appender = "0.2"
 symphonia = { version = "0.6.1", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4", "mkv"] }
 hound = "3.5.1"
-parking_lot = "0.12"
+parking_lot = "0.13"
 crossbeam-channel = "0.5"
 rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
