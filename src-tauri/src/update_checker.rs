@@ -106,8 +106,6 @@ fn write_marker(app: &AppHandle<AppRuntime>, source: &str) -> bool {
 }
 
 /// Called on startup: if a marker file exists, the app was just updated.
-/// After an automatic update, sets a flag on AppState so a toast can be shown
-/// when the user opens the settings window.
 pub fn check_post_auto_update(app: &AppHandle<AppRuntime>) {
     if let Some(path) = marker_path(app)
         && path.is_file()
@@ -131,12 +129,6 @@ pub fn check_post_auto_update(app: &AppHandle<AppRuntime>) {
                     field("from_version").unwrap_or_default(),
                     source,
                 );
-                if source == "auto" {
-                    app.state::<AppState>().set_auto_update_completed();
-                    info!(
-                        "auto-update: detected post-restart marker, will show toast on next settings open"
-                    );
-                }
             }
             Err(err) => {
                 warn!(

@@ -1,3 +1,5 @@
+import { invoke } from "@tauri-apps/api/core";
+
 const FEED_URL = "https://tryglimpse.cc/blog.json";
 const CACHE_KEY = "glimpse_news_cache";
 const LAST_SEEN_KEY = "glimpse_news_last_seen";
@@ -161,4 +163,45 @@ export function setLastSeenId(id: string) {
   } catch {
     // storage unavailable; unread state just won't persist
   }
+}
+
+export type Announcement =
+  | { kind: "releaseNotes"; version: string; markdown: string }
+  | {
+      kind: "message";
+      id: string;
+      markdown: string;
+      button: string | null;
+      url: string | null;
+      checkout: "solo" | "plus" | null;
+      code: string | null;
+    };
+
+export async function getAnnouncement(): Promise<Announcement | null> {
+  return invoke<Announcement | null>("get_announcement");
+}
+
+export type AnnouncementMessage = Extract<Announcement, { kind: "message" }>;
+
+export async function listAnnouncements(): Promise<AnnouncementMessage[]> {
+  return invoke<AnnouncementMessage[]>("list_announcements");
+}
+
+// The first heading, else the first line of text.
+export function announcementTitle(markdown: string): string {
+  const heading = markdown.match(/^#{1,3}\s+(.+)$/m);
+  if (heading) return heading[1].trim();
+  const line = markdown
+    .split("\n")
+    .map((text) => text.trim())
+    .find((text) => text && !text.startsWith("!["));
+  return line ?? "";
+}
+
+export async function dismissAnnouncement(
+  announcement: Announcement,
+): Promise<void> {
+  return announcement.kind === "releaseNotes"
+    ? invoke("dismiss_release_notes")
+    : invoke("dismiss_announcement", { id: announcement.id });
 }

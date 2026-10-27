@@ -1,5 +1,6 @@
 mod accessibility_context;
 mod analytics;
+mod announcements;
 mod asks;
 mod assistive;
 mod audio;
@@ -529,6 +530,10 @@ pub fn run() {
             }
 
             update_checker::check_post_auto_update(handle);
+            announcements::note_launch(
+                &state.settings_store,
+                state.current_settings().onboarding_completed,
+            );
 
             analytics::set_crash_phase("background_tasks");
             if platform::is_store_build() {
@@ -588,6 +593,10 @@ pub fn run() {
             open_checkout,
             get_trial_ended_screen,
             dismiss_trial_ended_screen,
+            announcements::get_announcement,
+            announcements::list_announcements,
+            announcements::dismiss_release_notes,
+            announcements::dismiss_announcement,
             get_dictation_stats,
             auto_delete::preview_recording_prune,
             auto_delete::preview_transcription_prune,
@@ -874,7 +883,6 @@ pub struct AppState {
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     pub(crate) local_api: Arc<local_api::LocalApiController>,
     update_state: update_checker::SharedUpdateState,
-    auto_update_completed: AtomicBool,
     preflight_cancel: CancellationToken,
     preflight_started: AtomicBool,
     preflight_notify: Arc<Notify>,
@@ -959,7 +967,6 @@ impl AppState {
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
             local_api: Arc::new(local_api::LocalApiController::default()),
             update_state: update_checker::create_state(),
-            auto_update_completed: AtomicBool::new(false),
             preflight_cancel: CancellationToken::new(),
             preflight_started: AtomicBool::new(false),
             preflight_notify: Arc::new(Notify::new()),
@@ -1033,14 +1040,6 @@ impl AppState {
             && self.library_queue.lock().is_empty()
             && self.retry_tokens.lock().is_empty()
             && !self.recording.is_active()
-    }
-
-    pub fn set_auto_update_completed(&self) {
-        self.auto_update_completed.store(true, Ordering::SeqCst);
-    }
-
-    pub fn take_auto_update_completed(&self) -> bool {
-        self.auto_update_completed.swap(false, Ordering::SeqCst)
     }
 
     pub fn current_settings(&self) -> UserSettings {
@@ -1613,7 +1612,7 @@ fn open_checkout(
     code: Option<String>,
 ) -> Result<(), String> {
     let source = match source.as_str() {
-        "account" | "locked_view" | "trial_ended" | "activation" => source,
+        "account" | "locked_view" | "trial_ended" | "activation" | "announcement" => source,
         _ => "other".to_string(),
     };
     let url = license::checkout_url(&tier, &source, code.as_deref())?;

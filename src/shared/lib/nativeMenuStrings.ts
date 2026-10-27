@@ -93,10 +93,6 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.toast.dictionary_never", message: "Never" }),
   msg({ id: "native.toast.update_available", message: "Update available." }),
   msg({ id: "native.toast.update_action", message: "Update" }),
-  msg({
-    id: "native.toast.updated_to",
-    message: "Glimpse updated to v{version}.",
-  }),
   msg({ id: "native.provider.speech", message: "Speech provider" }),
   msg({ id: "native.provider.writing", message: "Writing model" }),
   msg({

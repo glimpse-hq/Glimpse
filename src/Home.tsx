@@ -51,6 +51,8 @@ import LibraryView from "./features/library/components/LibraryView";
 import RecordingView from "./features/recording/components/RecordingView";
 import LocalApiSidebarStatus from "./features/settings/components/LocalApiSidebarStatus";
 import NewsMenu from "./features/news/components/NewsMenu";
+import AnnouncementScreen from "./features/news/components/AnnouncementScreen";
+import { useAnnouncement } from "./features/news/queries";
 import AccountPill from "./features/license/components/AccountPill";
 import { getLocalApiStatus } from "./features/settings/models-api";
 import type { LocalApiStatus } from "./types";
@@ -590,6 +592,7 @@ const Home = ({ onReady }: HomeProps) => {
   const { data: trialEndedScreen } = useTrialEndedScreen(
     Boolean(licenseState && !licenseState.licenseGateActive),
   );
+  const { data: announcement } = useAnnouncement(licenseFetched);
   const returnIcon = {
     home: HomeIcon,
     dictionary: Book,
@@ -1243,6 +1246,12 @@ const Home = ({ onReady }: HomeProps) => {
               openAccountSettings();
             }}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {announcement && !trialEndedScreen && (
+          <AnnouncementScreen announcement={announcement} />
         )}
       </AnimatePresence>
 

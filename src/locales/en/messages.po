@@ -1105,6 +1105,11 @@ msgstr ""
 #~ msgstr "Language model"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.updated_to"
+#~ msgstr "Glimpse updated to v{version}."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -2308,6 +2313,11 @@ msgstr "Continue"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.continue"
+msgstr "Continue"
+
+#. js-lingui-explicit-id
+#: src/features/news/components/AnnouncementScreen.tsx
+msgid "announcement.continue"
 msgstr "Continue"
 
 #. js-lingui-explicit-id
@@ -3661,11 +3671,6 @@ msgstr "Glimpse Plus"
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.name.solo"
 msgstr "Glimpse Solo"
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.updated_to"
-msgstr "Glimpse updated to v{version}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -7134,6 +7139,11 @@ msgstr "What permissions does Glimpse need?"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.title"
 msgstr "What's New"
+
+#. js-lingui-explicit-id
+#: src/features/news/components/AnnouncementScreen.tsx
+msgid "announcement.release_notes.title"
+msgstr "What's new in Glimpse {version}"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

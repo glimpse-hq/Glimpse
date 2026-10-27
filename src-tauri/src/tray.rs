@@ -816,25 +816,6 @@ fn show_settings_window(
     }
     window.show()?;
     window.set_focus()?;
-
-    // Show a toast if the app just restarted via auto-update
-    if app.state::<AppState>().take_auto_update_completed() {
-        let current_version = env!("CARGO_PKG_VERSION");
-        crate::toast::emit_toast(
-            app,
-            crate::toast::Payload {
-                toast_type: "success".to_string(),
-                message: crate::toast::native_format(
-                    app,
-                    "native.toast.updated_to",
-                    &[("version", current_version)],
-                ),
-                auto_dismiss: Some(true),
-                duration: Some(5000),
-                ..Default::default()
-            },
-        );
-    }
     Ok(())
 }
 

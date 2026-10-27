@@ -43,7 +43,7 @@ export async function getPurchasePlans(): Promise<PurchasePlan[]> {
 }
 
 export type CheckoutSource =
-  "account" | "locked_view" | "trial_ended" | "activation";
+  "account" | "locked_view" | "trial_ended" | "activation" | "announcement";
 
 export async function openCheckout(args: {
   tier: PurchasePlan["id"];

@@ -132,11 +132,17 @@ const markdownComponents: Components = {
   ),
 };
 
-export default function ReleaseNotesMarkdown({ body }: { body: string }) {
+export default function ReleaseNotesMarkdown({
+  body,
+  components,
+}: {
+  body: string;
+  components?: Components;
+}) {
   return (
     <ReactMarkdown
       remarkPlugins={markdownPlugins.remark}
-      components={markdownComponents}
+      components={{ ...markdownComponents, ...components }}
     >
       {body}
     </ReactMarkdown>
