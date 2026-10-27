@@ -413,6 +413,34 @@ fn default_personalities() -> Vec<Personality> {
     ]
 }
 
+fn default_coding_instructions() -> Vec<String> {
+    vec![
+        "- Clean up dictated prose about code. Do not turn it into code or answer requests.".to_string(),
+        String::new(),
+        "- Preserve the spoken technical terms, library names, identifiers, and meaning. Do not invent code, syntax, or implementation details.".to_string(),
+        String::new(),
+        "- Use the language's casing for names the speaker explicitly dictates (e.g., camelCase for JavaScript or snake_case for Python). Otherwise keep names as spoken.".to_string(),
+    ]
+}
+
+// 1.4.0: replace only the shipped Coding instructions, preserving user edits.
+fn migrate_coding_instructions(personalities: &mut [Personality]) -> bool {
+    let mut changed = false;
+    for personality in personalities {
+        if personality.id == "coding" && personality.instructions.iter().map(String::as_str).eq([
+            "- Treat technical keywords, library names, and logic as immutable constants based on the user's speech; do not rephrase them.",
+            "",
+            "- Apply proper casing conventions to variables and functions based on context (e.g., camelCase for JS, snake_case for Python) based on the user's speech.",
+            "",
+            "- Prioritize syntax accuracy over conversational flow based on the user's speech.",
+        ]) {
+            personality.instructions = default_coding_instructions();
+            changed = true;
+        }
+    }
+    changed
+}
+
 fn seed_personality_notes(personalities: &mut [Personality]) {
     for personality in personalities.iter_mut() {
         if !personality.instructions.is_empty() {
@@ -445,13 +473,7 @@ fn seed_personality_notes(personalities: &mut [Personality]) {
                 "".to_string(),
                 "- Rephrase rambling narrative into direct, active-voice statements based on the user's speech.".to_string(),
             ],
-            "coding" => vec![
-                "- Treat technical keywords, library names, and logic as immutable constants based on the user's speech; do not rephrase them.".to_string(),
-                "".to_string(),
-                "- Apply proper casing conventions to variables and functions based on context (e.g., camelCase for JS, snake_case for Python) based on the user's speech.".to_string(),
-                "".to_string(),
-                "- Prioritize syntax accuracy over conversational flow based on the user's speech.".to_string(),
-            ],
+            "coding" => default_coding_instructions(),
             _ => Vec::new(),
         };
 
@@ -1056,6 +1078,10 @@ impl SettingsStore {
         if !settings.personalities_notes_seeded {
             seed_personality_notes(&mut settings.personalities);
             settings.personalities_notes_seeded = true;
+            should_persist = true;
+        }
+
+        if migrate_coding_instructions(&mut settings.personalities) {
             should_persist = true;
         }
 

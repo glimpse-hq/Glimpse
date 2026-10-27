@@ -8,6 +8,7 @@
 
 ### Improvements
 
+- Improved Coding mode to keep dictated prose about code as prose.
 - The sharing cards now have new designs.
 - Personalization has a cleaner layout, and editing a mode gives you more room for its instructions, apps and websites.
 - Setting up Glimpse is quicker. It picks the best speech model for you and starts downloading it as soon as you open the app, so it's usually ready by your first dictation. You can follow the downloads in the corner while you finish setup.
