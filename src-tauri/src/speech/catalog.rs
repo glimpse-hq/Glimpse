@@ -1124,7 +1124,7 @@ pub const G1_MANIFEST: LocalModelManifest = LocalModelManifest {
     id: "g1_2b",
     family: "g1",
     label: "Glimpse cleanup 2B",
-    description: "Cleans up dictation on this Mac.",
+    description: "Cleans up dictation on this computer.",
     tags: &[],
     category: MODEL_CATEGORY_CLEANUP,
     engine: LocalModelEngine::Transcribe,

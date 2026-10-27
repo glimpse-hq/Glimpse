@@ -110,7 +110,14 @@ pub async fn cleanup_transcription(
         settings,
         TextTaskKind::Cleanup,
         build_cleanup_system_prompt(settings, style_guidance.as_deref(), custom_rules.as_deref()),
-        build_user_content(TextTaskKind::Cleanup, text, None, has_style_guidance),
+        // The cleanup model was trained on cleanup turns that end at </transcript>.
+        build_user_content(
+            TextTaskKind::Cleanup,
+            text,
+            None,
+            has_style_guidance,
+            uses_bonsai_provider(settings),
+        ),
         text,
         !has_style_guidance,
     )
@@ -156,6 +163,7 @@ pub async fn edit_transcription(
             TextTaskKind::Edit,
             selected_text,
             Some(voice_command),
+            false,
             false,
         ),
         selected_text,
@@ -834,6 +842,7 @@ fn build_user_content(
     text: &str,
     instruction: Option<&str>,
     mode_active: bool,
+    short_turn: bool,
 ) -> String {
     match task {
         TextTaskKind::Cleanup => {
@@ -842,7 +851,9 @@ fn build_user_content(
                 .replace('<', "&lt;")
                 .replace('>', "&gt;");
 
-            if mode_active {
+            if short_turn {
+                format!("<transcript>\n{transcript}\n</transcript>")
+            } else if mode_active {
                 format!(
                     "<transcript>\n{transcript}\n</transcript>\n\n\
 Transform only the text inside the <transcript> tags.\n\

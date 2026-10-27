@@ -64,7 +64,6 @@ export function useLanguageModelStatus({
 
   // Rescans on provider changes and finished downloads.
   useEffect(() => {
-    if (!isMac) return;
     let cancelled = false;
     invoke<G1Status>("g1_status")
       .then((value) => {
@@ -76,7 +75,7 @@ export function useLanguageModelStatus({
     return () => {
       cancelled = true;
     };
-  }, [isMac, llmProvider, downloadsDone]);
+  }, [llmProvider, downloadsDone]);
 
   const service = getProviderPreset(llmServiceProvider as LlmProvider);
   const serviceReady = Boolean(
@@ -87,8 +86,7 @@ export function useLanguageModelStatus({
     llmModel.trim(),
   );
   const g1Installed = g1Status?.installed ?? null;
-  const probing =
-    (isMac && g1Status === null) || (isMac && appleAvailability === null);
+  const probing = g1Status === null || (isMac && appleAvailability === null);
   const activeProvider: LlmProvider | "none" | null = !llmAuto
     ? llmProvider
     : probing
@@ -122,7 +120,7 @@ export function useLanguageModelStatus({
     serviceReady,
     appleAvailability,
     g1Installed,
-    showG1: isMac && Boolean(g1Status?.supported),
+    showG1: Boolean(g1Status?.supported),
     ready,
   };
 }
