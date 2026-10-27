@@ -7,7 +7,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use glimpse_speech::api::{ApiConfig, ApiEvent, ApiEventSink};
+use glimpse_speech::api::{ApiConfig, ApiEvent, ApiEventKind, ApiEventSink, ApiRoute};
 use glimpse_speech::service::{SpeechConfig, SpeechService};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
@@ -17,9 +17,6 @@ use crate::AppRuntime;
 
 const EVENT_LOCAL_API_LOG: &str = "local-api:log";
 const EVENT_LOCAL_API_STATUS: &str = "local-api:status";
-const LOCAL_API_READY_PREFIX: &str = "Local API listening on ";
-const TRANSCRIBE_REQUEST_LOG: &str = "POST /v1/audio/transcriptions";
-const TRANSCRIBED_LOG: &str = "Transcribed with ";
 const MAX_LOGS: usize = 200;
 
 #[derive(Debug, Clone, Serialize)]
@@ -196,20 +193,21 @@ impl LocalApiController {
         let sink_app = app.clone();
         let ready_from_event = Arc::clone(&ready_signal);
         let event_sink: ApiEventSink = Arc::new(move |event: ApiEvent| {
-            if let Some(model_id) = event.model_id.as_deref() {
-                controller.set_loaded_model(&sink_app, model_id);
-            }
-            if event.level == "info"
-                && event.message.starts_with(LOCAL_API_READY_PREFIX)
-                && let Some(sender) = ready_from_event.lock().take()
-            {
-                let _ = sender.send(Ok(()));
-            }
-            if event.message.starts_with(TRANSCRIBED_LOG) {
-                controller.note_request(&sink_app);
-            }
-            if let Some(endpoint) = api_endpoint(&event.message) {
-                crate::analytics::track_integration_used(&sink_app, "api", endpoint);
+            match &event.kind {
+                ApiEventKind::Listening { .. } => {
+                    if let Some(sender) = ready_from_event.lock().take() {
+                        let _ = sender.send(Ok(()));
+                    }
+                }
+                ApiEventKind::Request { route } => {
+                    if let Some(endpoint) = api_endpoint(*route) {
+                        crate::analytics::track_integration_used(&sink_app, "api", endpoint);
+                    }
+                }
+                ApiEventKind::Transcribed { model_id } => {
+                    controller.note_transcription(&sink_app, model_id);
+                }
+                _ => {}
             }
             controller.push_log(&sink_app, event.level, event.message);
         });
@@ -315,12 +313,13 @@ impl LocalApiController {
         }
     }
 
-    fn note_request(&self, app: &AppHandle<AppRuntime>) {
+    fn note_transcription(&self, app: &AppHandle<AppRuntime>, model_id: &str) {
         let counted = {
             let mut state = self.inner.lock();
             match state.running.as_mut() {
                 Some(running) => {
                     running.requests_total += 1;
+                    running.loaded_model = Some(model_id.to_string());
                     true
                 }
                 None => false,
@@ -329,13 +328,6 @@ impl LocalApiController {
         if counted {
             self.emit_status(app);
         }
-    }
-
-    fn set_loaded_model(&self, app: &AppHandle<AppRuntime>, model_id: &str) {
-        if let Some(running) = self.inner.lock().running.as_mut() {
-            running.loaded_model = Some(model_id.to_string());
-        }
-        self.emit_status(app);
     }
 
     fn push_log(&self, app: &AppHandle<AppRuntime>, level: &str, message: String) {
@@ -365,18 +357,13 @@ impl LocalApiController {
     }
 }
 
-/// Maps glimpse-speech's per-request log line to its route, without the model id.
-fn api_endpoint(message: &str) -> Option<&'static str> {
-    if message.starts_with(TRANSCRIBE_REQUEST_LOG) {
-        Some("transcriptions")
-    } else if message.starts_with("GET /v1/models") {
-        Some("models.list")
-    } else if message.starts_with("POST /v1/models/") {
-        Some("models.install")
-    } else if message.starts_with("DELETE /v1/models/") {
-        Some("models.delete")
-    } else {
-        None
+fn api_endpoint(route: ApiRoute) -> Option<&'static str> {
+    match route {
+        ApiRoute::Transcriptions => Some("transcriptions"),
+        ApiRoute::ListModels => Some("models.list"),
+        ApiRoute::InstallModel => Some("models.install"),
+        ApiRoute::DeleteModel => Some("models.delete"),
+        _ => None,
     }
 }
 
