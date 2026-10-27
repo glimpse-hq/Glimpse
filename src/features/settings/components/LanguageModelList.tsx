@@ -8,8 +8,8 @@ import {
   resolvedLlmEndpoint,
   type LlmProviderPreset,
 } from "../../../shared/lib/llmProviders";
-import type { LlmProvider } from "../../../types";
-import { useFetchLlmModels } from "../models-queries";
+import type { DownloadEvent, LlmProvider } from "../../../types";
+import { useCleanupModel, useFetchLlmModels } from "../models-queries";
 import ModelRow, { type ModelRowState } from "./ModelRow";
 import ProviderCard from "./ProviderCard";
 import ProviderSheet, {
@@ -37,11 +37,10 @@ type LanguageModelListProps = {
   setLlmServiceProvider: (value: string) => void;
   llmAuto: boolean;
   setLlmAuto: (value: boolean) => void;
-  activeLicense: boolean;
+  licenseGateActive: boolean;
+  downloadState: Record<string, DownloadEvent>;
+  onDownload: (modelKey: string, ane?: boolean) => void;
 };
-
-// The G1 download size, until G1 joins the model catalog.
-const G1_SIZE_MB = 580;
 
 const toChoice = (
   preset: LlmProviderPreset,
@@ -70,9 +69,15 @@ const LanguageModelList = ({
   setLlmServiceProvider,
   llmAuto,
   setLlmAuto,
-  activeLicense,
+  licenseGateActive,
+  downloadState,
+  onDownload,
 }: LanguageModelListProps) => {
   const { t } = useLingui();
+  const cleanupModel = useCleanupModel().data;
+  const cleanupDownload = cleanupModel
+    ? downloadState[cleanupModel.key]
+    : undefined;
   const [sheetOpen, setSheetOpen] = useState(false);
   const { mutateAsync: fetchLlmModels } = useFetchLlmModels();
   const service = getProviderPreset(llmServiceProvider as LlmProvider);
@@ -92,7 +97,7 @@ const LanguageModelList = ({
     llmEndpoint,
     llmApiKey,
     llmModel,
-    activeLicense,
+    licenseGateActive,
   });
   const active: ModelRowState = {
     kind: "active",
@@ -139,13 +144,22 @@ const LanguageModelList = ({
     if (value !== llmProvider) setLlmProvider(value);
   };
 
-  const g1Blocker = !activeLicense
+  const g1Blocker = !licenseGateActive
     ? t({ id: "settings.models.status.locked", message: "Locked" })
     : g1Installed === false
-      ? t({
-          id: "settings.models.status.not_installed",
-          message: "Not installed",
-        })
+      ? cleanupDownload?.status === "downloading"
+        ? `${Math.round(cleanupDownload.percent)}%`
+        : t({
+            id: "settings.models.status.not_installed",
+            message: "Not installed",
+          })
+      : null;
+  const g1DownloadKey =
+    licenseGateActive &&
+    g1Installed === false &&
+    cleanupModel &&
+    cleanupDownload?.status !== "downloading"
+      ? cleanupModel.key
       : null;
   const appleBlocker =
     appleAvailability === "not_enabled"
@@ -166,7 +180,7 @@ const LanguageModelList = ({
       id: "settings.models.language.g1_description",
       message: "Glimpse's cleanup model",
     }),
-    formatModelSize(G1_SIZE_MB),
+    ...(cleanupModel ? [formatModelSize(cleanupModel.size_mb)] : []),
   ].join("  ·  ");
   const appleFacts = t({
     id: "settings.models.language.apple_description",
@@ -232,7 +246,7 @@ const LanguageModelList = ({
       <OnThisComputerHeading />
       {showG1 && (
         <ModelRow
-          title="G1"
+          title="Glimpse"
           facts={
             chosenButBlocked("bonsai") && g1Blocker
               ? g1Blocker
@@ -242,11 +256,20 @@ const LanguageModelList = ({
           state={
             isActive("bonsai")
               ? active
-              : g1Blocker
-                ? { kind: "status", text: g1Blocker }
-                : g1Installed === null
-                  ? { kind: "status", text: "" }
-                  : { kind: "use", onUse: () => select("bonsai") }
+              : g1DownloadKey
+                ? {
+                    kind: "use",
+                    label: t({
+                      id: "model_picker.download",
+                      message: "Download",
+                    }),
+                    onUse: () => onDownload(g1DownloadKey, false),
+                  }
+                : g1Blocker
+                  ? { kind: "status", text: g1Blocker }
+                  : g1Installed === null
+                    ? { kind: "status", text: "" }
+                    : { kind: "use", onUse: () => select("bonsai") }
           }
         />
       )}

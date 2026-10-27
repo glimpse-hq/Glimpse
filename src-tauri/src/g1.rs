@@ -16,12 +16,8 @@ use tauri::{AppHandle, Manager};
 
 use crate::AppRuntime;
 use crate::settings::SettingsStore;
-use crate::speech::catalog::G1_MANIFEST;
+use crate::speech::catalog::{G1_ADAPTER, G1_MANIFEST};
 
-// bonsai/train.py's export first, then a PEFT adapter (which reads
-// adapter_config.json next to it). Without either, the base model runs.
-const ADAPTER_FILES: [&str; 2] = ["adapter.safetensors", "adapter_model.safetensors"];
-const ADAPTER_CONFIG: &str = "adapter_config.json";
 // Frees the GPU state and cached prompt (about 235 MB); the next request
 // rebuilds them in a few tens of ms.
 const IDLE_AFTER_USE: Duration = Duration::from_secs(30);
@@ -46,13 +42,34 @@ struct Loaded {
 fn file_stamps(dir: &Path) -> Vec<Option<(u64, SystemTime)>> {
     bonsai::MODEL_FILES
         .iter()
-        .chain(&ADAPTER_FILES)
-        .chain(&[ADAPTER_CONFIG])
-        .map(|file| {
-            let meta = std::fs::metadata(dir.join(file)).ok()?;
+        .map(|file| dir.join(file))
+        .chain(adapter_path(dir))
+        .map(|path| {
+            let meta = std::fs::metadata(path).ok()?;
             Some((meta.len(), meta.modified().ok()?))
         })
         .collect()
+}
+
+fn is_adapter(name: &str) -> bool {
+    name.starts_with("adapter") && name.ends_with(".safetensors")
+}
+
+/// The catalog's adapter, or an older one until its update downloads.
+fn adapter_path(dir: &Path) -> Option<PathBuf> {
+    let current = dir.join(G1_ADAPTER);
+    if current.is_file() {
+        return Some(current);
+    }
+    std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(is_adapter)
+        })
 }
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
@@ -80,7 +97,7 @@ fn start(models_dir: PathBuf, store: Arc<SettingsStore>) {
     std::thread::spawn(refresh_installed);
 }
 
-fn supported() -> bool {
+pub fn supported() -> bool {
     bonsai::availability() == Availability::Available
 }
 
@@ -90,14 +107,83 @@ pub fn refresh_installed() -> bool {
     let Some(runtime) = RUNTIME.get() else {
         return false;
     };
+    let dir = runtime.models_dir.join(G1_MANIFEST.id);
     let installed = supported()
-        && bonsai::describe(&runtime.models_dir.join(G1_MANIFEST.id))
-            .is_ok_and(|info| info.size.label() == G1_MANIFEST.variant);
+        && bonsai::MODEL_FILES
+            .iter()
+            .all(|file| dir.join(file).is_file())
+        && adapter_path(&dir).is_some()
+        && bonsai::describe(&dir).is_ok_and(|info| info.size.label() == G1_MANIFEST.variant);
     runtime.installed.store(installed, Ordering::SeqCst);
     if !installed && let Some(old) = runtime.loaded.lock().take() {
         old.bonsai.release_idle();
     }
     installed
+}
+
+/// After a download: removes adapters the catalog no longer lists, and the
+/// prompt states saved with them, then rescans.
+pub fn finish_install() {
+    if let Some(runtime) = RUNTIME.get() {
+        remove_stale_files(&runtime.models_dir.join(G1_MANIFEST.id));
+    }
+    refresh_installed();
+}
+
+fn remove_stale_files(dir: &Path) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let mut removed = false;
+    for path in entries.flatten().map(|entry| entry.path()) {
+        let name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("");
+        let stale = is_adapter(name) && name != G1_ADAPTER;
+        if stale && std::fs::remove_file(&path).is_ok() {
+            tracing::info!("[G1] removed {name}");
+            removed = true;
+        }
+    }
+    if removed {
+        let _ = std::fs::remove_dir_all(dir.join("prefix-cache"));
+    }
+}
+
+/// A model missing files the catalog now lists (a new adapter, or a download
+/// cut short) gets them in the background. A model never downloaded stays that
+/// way.
+pub fn update_in_background(app: &AppHandle<AppRuntime>) {
+    let Some(runtime) = RUNTIME.get() else {
+        return;
+    };
+    if runtime.models_dir.join(G1_MANIFEST.id).is_dir() {
+        install_in_background(app);
+    }
+}
+
+/// Downloads whatever the model is missing, with a license or trial, since
+/// only licensed features use it.
+pub fn install_in_background(app: &AppHandle<AppRuntime>) {
+    let Some(runtime) = RUNTIME.get() else {
+        return;
+    };
+    if !supported()
+        || crate::speech::install::check_model_installed_at(&runtime.models_dir, G1_MANIFEST.id)
+        || !crate::license::license_gate_active(&runtime.store)
+    {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(err) =
+            crate::speech::install::download_model_now(app, G1_MANIFEST.id.into(), Some(false))
+                .await
+        {
+            tracing::warn!("[G1] download failed: {err}");
+        }
+    });
 }
 
 /// The model to run, if it is installed. Cheap, safe per dictation.
@@ -117,10 +203,13 @@ fn error(kind: BonsaiErrorKind, message: &str) -> BonsaiError {
 }
 
 fn runtime_for_use() -> Result<&'static Runtime, BonsaiError> {
-    let runtime = RUNTIME
-        .get()
-        .ok_or_else(|| error(BonsaiErrorKind::Unsupported, "G1 is not set up"))?;
-    crate::license::require_active_license(&runtime.store, "G1")
+    let runtime = RUNTIME.get().ok_or_else(|| {
+        error(
+            BonsaiErrorKind::Unsupported,
+            "The cleanup model is not set up",
+        )
+    })?;
+    crate::license::require_license_gate(&runtime.store, "on-device cleanup")
         .map_err(|message| error(BonsaiErrorKind::Unsupported, &message))?;
     Ok(runtime)
 }
@@ -138,16 +227,14 @@ fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiErr
     if let Some(old) = loaded.take() {
         old.bonsai.release_idle();
     }
-    let adapter = ADAPTER_FILES
-        .iter()
-        .map(|file| dir.join(file))
-        .find(|path| path.is_file());
+    let adapter = adapter_path(&dir)
+        .ok_or_else(|| error(BonsaiErrorKind::Load, "The cleanup model has no adapter"))?;
     let started = std::time::Instant::now();
-    let bonsai = Arc::new(Bonsai::load(&dir, adapter.as_deref())?);
+    let bonsai = Arc::new(Bonsai::load(&dir, Some(&adapter))?);
     tracing::info!(
-        "[G1] loaded {model} in {} ms (adapter: {})",
-        started.elapsed().as_millis(),
-        adapter.is_some()
+        "[G1] loaded {model} with {} in {} ms",
+        adapter.display(),
+        started.elapsed().as_millis()
     );
     *loaded = Some(Loaded {
         files,
@@ -170,7 +257,8 @@ fn release_when_idle(runtime: &'static Runtime, bonsai: Arc<Bonsai>, after: Dura
 /// Blocking.
 pub fn prewarm(system_prompt: &str) -> Result<(), BonsaiError> {
     let runtime = runtime_for_use()?;
-    let model = resolve().ok_or_else(|| error(BonsaiErrorKind::Load, "G1 is not installed"))?;
+    let model = resolve()
+        .ok_or_else(|| error(BonsaiErrorKind::Load, "The cleanup model is not installed"))?;
     let bonsai = load(runtime, model)?;
     runtime.uses.fetch_add(1, Ordering::SeqCst);
     let result = bonsai.prewarm(system_prompt);
@@ -242,8 +330,7 @@ mod tests {
         format!("rss {:.0} MB, footprint {footprint}", rss_kb / 1024.0)
     }
 
-    // G1_TEST_MODEL=<dir with model.safetensors, config.json, tokenizer.json>
-    // and optionally G1_TEST_ADAPTER=<dir with the adapter files>, then
+    // G1_TEST_MODEL=<dir with the Hugging Face files>, then
     // cargo test --manifest-path src-tauri/Cargo.toml g1::tests -- --ignored --nocapture
     #[test]
     #[ignore]
@@ -255,22 +342,11 @@ mod tests {
         let root = std::env::temp_dir().join(format!("g1-test-{}", std::process::id()));
         let dir = root.join("models").join(id);
         std::fs::create_dir_all(&dir).unwrap();
-        let mut files: Vec<PathBuf> = bonsai::MODEL_FILES.iter().map(|f| source.join(f)).collect();
-        if let Ok(adapter) = std::env::var("G1_TEST_ADAPTER") {
-            for file in [
-                "adapter.safetensors",
-                "adapter_model.safetensors",
-                "adapter_config.json",
-            ] {
-                let path = PathBuf::from(&adapter).join(file);
-                if path.is_file() {
-                    files.push(path);
-                }
-            }
+        for file in bonsai::MODEL_FILES {
+            std::os::unix::fs::symlink(source.join(file), dir.join(file)).unwrap();
         }
-        for file in files {
-            std::os::unix::fs::symlink(&file, dir.join(file.file_name().unwrap())).unwrap();
-        }
+        std::os::unix::fs::symlink(source.join("adapter.safetensors"), dir.join(G1_ADAPTER))
+            .unwrap();
         let store = Arc::new(SettingsStore::open(root.join("settings.db")).unwrap());
         start(root.join("models"), store);
         assert!(refresh_installed());

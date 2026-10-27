@@ -30,7 +30,7 @@ const LLM_PROVIDER_PRESETS: LlmProviderPreset[] = [
   },
   {
     id: "bonsai",
-    label: "G1",
+    label: "Glimpse",
     endpoint: "",
     defaultModel: "",
     apiKeyRequired: false,

@@ -128,9 +128,9 @@ Speech models are downloaded in-app from Hugging Face. The live list lives in **
 - **NVIDIA Nemotron 3 Diarization GGUF** (OpenMDW 1.1), speaker detection, via [Glimpse's conversion](https://huggingface.co/Glimpse-Dictation/Nemotron-3-Diarization-gguf) of [`nvidia/Nemotron-3-Diarization`](https://huggingface.co/nvidia/Nemotron-3-Diarization)
 - **Qwen3-ASR GGUF** (Apache-2.0), via [`handy-computer`](https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf)
 
-The on-device writing model:
+The on-device cleanup model:
 
-- **G1** (Apache-2.0), Glimpse's fine-tune of [Ternary Bonsai 2](https://huggingface.co/prism-ml) by PrismML (Apache-2.0), which is built from [Qwen3.5](https://huggingface.co/Qwen) by Alibaba Cloud (Apache-2.0). Its LICENSE and NOTICE.txt are installed with the model files.
+- **[Glimpse C1 2B](https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B)**, Glimpse's adapter (Glimpse C1 License: personal, non-commercial use) on [Ternary Bonsai 2](https://huggingface.co/prism-ml) by PrismML (Apache-2.0), which is built from [Qwen3.5](https://huggingface.co/Qwen) by Alibaba Cloud (Apache-2.0). Its LICENSE and NOTICE.txt are installed with the model files.
 
 ## License
 

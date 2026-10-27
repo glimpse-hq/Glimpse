@@ -429,6 +429,7 @@ pub fn run() {
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
             g1::init(handle);
+            g1::update_in_background(handle);
             #[cfg(target_os = "windows")]
             platform::windows::elevation::watch_foreground(handle.clone());
             speech::upgrade_retired_diarizers(handle);
@@ -1429,6 +1430,7 @@ fn complete_onboarding(
     if license::license_gate_active(&state.settings_store) {
         speech::install_diarizer_in_background(&app);
     }
+    g1::install_in_background(&app);
     Ok(())
 }
 

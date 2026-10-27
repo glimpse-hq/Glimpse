@@ -1100,6 +1100,11 @@ msgstr ""
 #~ msgstr "अभी तक कोई मोड नहीं"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.model.language"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -2129,6 +2134,16 @@ msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
 msgstr "क्लीनअप Glimpse Plus के साथ मिलता है। इसे यहाँ पाएँ:"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.downloads.cleanup"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.model.cleanup"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
 msgid "filter_menu.clear"
 msgstr "साफ़ करें"
@@ -3054,6 +3069,7 @@ msgid "shortcuts.key.down"
 msgstr "नीचे"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.download"
 msgstr "डाउनलोड"
@@ -3993,11 +4009,6 @@ msgstr "भाषा"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.language"
 msgstr "भाषा"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.model.language"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx

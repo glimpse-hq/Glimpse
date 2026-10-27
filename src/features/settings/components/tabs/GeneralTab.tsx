@@ -54,7 +54,6 @@ type GeneralTabProps = {
   autoDictionarySupported: boolean;
   setAutoDictionaryEnabled: (value: boolean) => void;
   licenseGateActive: boolean;
-  activeLicense: boolean;
   llmProvider: LlmProvider;
   llmAuto: boolean;
   llmServiceProvider: string;
@@ -86,7 +85,6 @@ const GeneralTab = ({
   autoDictionarySupported,
   setAutoDictionaryEnabled,
   licenseGateActive,
-  activeLicense,
   llmProvider,
   llmAuto,
   llmServiceProvider,
@@ -104,7 +102,7 @@ const GeneralTab = ({
     llmEndpoint,
     llmApiKey,
     llmModel,
-    activeLicense,
+    licenseGateActive,
   });
   const cleanupWaitsForModel =
     licenseGateActive &&

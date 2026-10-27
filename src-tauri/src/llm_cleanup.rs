@@ -185,7 +185,7 @@ pub fn active_provider(settings: &UserSettings) -> &str {
     automatic_provider(settings, crate::g1::resolve().is_some(), apple_llm_ready)
 }
 
-// G1 is only installed with a purchased license, and checks it again when it
+// G1 is only installed with a license or trial, and checks it again when it
 // runs, so its installed state stands in for the license here.
 fn automatic_provider(
     settings: &UserSettings,
@@ -636,8 +636,8 @@ async fn run_text_task(
         task.max_tokens()
     };
     if uses_bonsai_provider(settings) {
-        let model =
-            crate::g1::resolve().ok_or_else(|| remote_lib::config_error("G1 is not installed"))?;
+        let model = crate::g1::resolve()
+            .ok_or_else(|| remote_lib::config_error("The cleanup model is not installed"))?;
         let raw =
             run_bonsai_text_task(model, on_device_max_tokens, system_prompt, user_content).await?;
         return Ok(
@@ -753,11 +753,13 @@ async fn run_bonsai_text_task(
     });
     let generation = match tokio::time::timeout(CHAT_TIMEOUT, task).await {
         Ok(joined) => joined
-            .map_err(|err| remote_lib::transport_error(format!("G1 task failed: {err}")))?
+            .map_err(|err| {
+                remote_lib::transport_error(format!("Cleanup model task failed: {err}"))
+            })?
             .map_err(bonsai_error)?,
         Err(_) => {
             cancel.store(true, Ordering::Relaxed);
-            return Err(remote_lib::transport_error("G1 timed out"));
+            return Err(remote_lib::transport_error("The cleanup model timed out"));
         }
     };
     let stats = &generation.stats;
@@ -771,7 +773,7 @@ async fn run_bonsai_text_task(
     );
     // A stop short of the end-of-turn token can cut the text off mid-sentence.
     if generation.stop != StopReason::Eos {
-        let mut error = remote_lib::transport_error("G1 output may be cut off");
+        let mut error = remote_lib::transport_error("Cleanup model output may be cut off");
         error.code = Some(INPUT_UNSUITABLE_CODE.to_string());
         return Err(error);
     }
@@ -779,7 +781,7 @@ async fn run_bonsai_text_task(
 }
 
 fn bonsai_error(err: BonsaiError) -> RemoteError {
-    let mut error = remote_lib::transport_error(format!("G1 failed: {err}"));
+    let mut error = remote_lib::transport_error(format!("Cleanup model failed: {err}"));
     if err.kind == BonsaiErrorKind::ContextTooLarge {
         error.code = Some(INPUT_UNSUITABLE_CODE.to_string());
     }

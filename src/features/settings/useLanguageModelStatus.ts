@@ -5,6 +5,7 @@ import {
   resolvedLlmEndpoint,
 } from "../../shared/lib/llmProviders";
 import { detectAppPlatform } from "../../platform/service";
+import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import type { LlmProvider } from "../../types";
 
 export type AppleLlmAvailability =
@@ -22,7 +23,7 @@ type LanguageSetup = {
   llmEndpoint: string;
   llmApiKey: string;
   llmModel: string;
-  activeLicense: boolean;
+  licenseGateActive: boolean;
 };
 
 // Which language model cleans up right now, and whether it can. Automatic
@@ -35,12 +36,16 @@ export function useLanguageModelStatus({
   llmEndpoint,
   llmApiKey,
   llmModel,
-  activeLicense,
+  licenseGateActive,
 }: LanguageSetup) {
   const isMac = detectAppPlatform() === "macos";
   const [appleAvailability, setAppleAvailability] =
     useState<AppleLlmAvailability | null>(null);
   const [g1Status, setG1Status] = useState<G1Status | null>(null);
+  const [downloadsDone, setDownloadsDone] = useState(0);
+  useModelDownloadEvents({
+    onComplete: () => setDownloadsDone((count) => count + 1),
+  });
 
   useEffect(() => {
     if (!isMac) return;
@@ -57,7 +62,7 @@ export function useLanguageModelStatus({
     };
   }, [isMac]);
 
-  // Rescans on provider changes, so model files copied in meanwhile show up.
+  // Rescans on provider changes and finished downloads.
   useEffect(() => {
     if (!isMac) return;
     let cancelled = false;
@@ -71,7 +76,7 @@ export function useLanguageModelStatus({
     return () => {
       cancelled = true;
     };
-  }, [isMac, llmProvider]);
+  }, [isMac, llmProvider, downloadsDone]);
 
   const service = getProviderPreset(llmServiceProvider as LlmProvider);
   const serviceReady = Boolean(
@@ -101,7 +106,7 @@ export function useLanguageModelStatus({
     activeProvider === null
       ? null
       : activeProvider === "bonsai"
-        ? activeLicense && (g1Status === null ? null : g1Status.installed)
+        ? licenseGateActive && (g1Status === null ? null : g1Status.installed)
         : activeProvider === "apple"
           ? appleAvailability === null
             ? null

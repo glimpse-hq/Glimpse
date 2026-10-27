@@ -19,14 +19,23 @@ export const modelKeys = {
   recommendation: () => [...modelKeys.all, "recommendation"] as const,
 };
 
-// The speaker diarization model shares the catalog but never transcribes.
+// The speaker and cleanup models share the catalog but never transcribe. The
+// cleanup model is only listed where it runs.
 const DIARIZATION_CATEGORY = "diarization";
+const CLEANUP_CATEGORY = "cleanup";
 
 const selectTranscriptionModels = (models: ModelInfo[]) =>
-  models.filter((model) => model.category !== DIARIZATION_CATEGORY);
+  models.filter(
+    (model) =>
+      model.category !== DIARIZATION_CATEGORY &&
+      model.category !== CLEANUP_CATEGORY,
+  );
 
 const selectDiarizer = (models: ModelInfo[]) =>
   models.find((model) => model.category === DIARIZATION_CATEGORY) ?? null;
+
+const selectCleanupModel = (models: ModelInfo[]) =>
+  models.find((model) => model.category === CLEANUP_CATEGORY) ?? null;
 
 export function useModelCatalog(enabled: boolean = true) {
   return useQuery({
@@ -50,6 +59,15 @@ export function useDiarizerModel(enabled: boolean = true) {
     queryFn: modelsApi.listModels,
     enabled,
     select: selectDiarizer,
+  });
+}
+
+export function useCleanupModel(enabled: boolean = true) {
+  return useQuery({
+    queryKey: modelKeys.catalog(),
+    queryFn: modelsApi.listModels,
+    enabled,
+    select: selectCleanupModel,
   });
 }
 

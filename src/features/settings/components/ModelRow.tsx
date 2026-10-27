@@ -7,7 +7,7 @@ import { Check } from "@phosphor-icons/react";
 export type ModelRowState =
   | { kind: "active"; label: string }
   | { kind: "fallback"; label: string }
-  | { kind: "use"; onUse: () => void }
+  | { kind: "use"; onUse: () => void; label?: string }
   | { kind: "status"; text: string };
 
 export type ModelRowProps = {
@@ -70,7 +70,8 @@ const ModelRow = ({
             onClick={state.onUse}
             className={`${label} text-content-secondary transition-colors hover:text-content-primary`}
           >
-            {t({ id: "settings.models.installed.use", message: "Use" })}
+            {state.label ??
+              t({ id: "settings.models.installed.use", message: "Use" })}
           </button>
         ) : (
           <span className="whitespace-nowrap ui-text-meta text-content-muted">

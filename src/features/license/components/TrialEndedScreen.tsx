@@ -116,8 +116,8 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
   const modelNames = {
     speakers: speakerDetection,
     language: t({
-      id: "trial_ended.model.language",
-      message: "Language model",
+      id: "trial_ended.model.cleanup",
+      message: "Cleanup model",
     }),
   };
   const installedModels = summary.installedModels;
@@ -216,7 +216,7 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-6 backdrop-blur-xs"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-6 backdrop-blur-xs"
               onClick={() => setConfirmingFree(false)}
             >
               <motion.div
@@ -225,7 +225,7 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.96, opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                className="w-full max-w-[280px] rounded-2xl border border-border-primary bg-surface-tertiary p-5 text-center ui-shadow-modal-deep"
+                className="w-full max-w-[280px] rounded-3xl border border-border-primary bg-surface-tertiary px-4 pt-5 pb-4 text-center ui-shadow-modal-deep"
                 onClick={(event) => event.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
@@ -240,13 +240,13 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
                     message: "Continue for free?",
                   })}
                 </p>
-                <p className="mt-1.5 ui-text-meta text-content-muted">
+                <p className="mt-1.5 ui-text-body-sm text-content-muted">
                   {t({
                     id: "trial_ended.free_confirm.removed",
                     message: "These models will be removed:",
                   })}
                 </p>
-                <ul className="mt-2 ui-text-body-sm text-content-primary">
+                <ul className="mt-0.5 ui-text-body-sm text-content-secondary">
                   {installedModels.map((kind) => (
                     <li key={kind}>{modelNames[kind]}</li>
                   ))}
@@ -255,7 +255,8 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
                   <button
                     type="button"
                     onClick={() => setConfirmingFree(false)}
-                    className="h-9 rounded-lg bg-[var(--surface-interactive)] ui-text-body-sm text-content-primary transition-colors hover:bg-[var(--surface-interactive-strong)]"
+                    autoFocus
+                    className="ui-button-primary h-9 rounded-lg ui-text-body-sm"
                   >
                     {t({
                       id: "trial_ended.free_confirm.cancel",
@@ -268,7 +269,7 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
                       setConfirmingFree(false);
                       dismiss(true);
                     }}
-                    className="h-9 rounded-lg bg-error ui-text-body-sm font-medium text-white transition-opacity hover:opacity-90"
+                    className="h-9 rounded-lg bg-[var(--surface-interactive)] ui-text-body-sm font-medium text-error transition-colors hover:bg-[var(--surface-interactive-strong)]"
                   >
                     {t({
                       id: "trial_ended.free_confirm.continue",

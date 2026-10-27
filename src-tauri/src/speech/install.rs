@@ -266,6 +266,9 @@ fn map_status(
 pub fn list_models() -> Vec<ModelInfo> {
     let mut models = super::catalog::list_local_models();
     models.push(super::catalog::diarizer_model_info());
+    if crate::g1::supported() {
+        models.push(super::catalog::g1_model_info());
+    }
     models
 }
 
@@ -345,7 +348,7 @@ pub async fn download_model_now(
 ) -> Result<ModelStatus, String> {
     let state = app.state::<crate::AppState>();
     if super::catalog::g1_definition(&model).is_some() {
-        crate::license::require_active_license(&state.settings_store, "G1")?;
+        crate::license::require_license_gate(&state.settings_store, "on-device cleanup")?;
     }
     let manager =
         model_manager(&app).map_err(|err| download_failed(&app, &model, "resolve", err))?;
@@ -470,7 +473,7 @@ pub async fn download_model_now(
     } else if definition(&model).is_some() {
         super::warm_model(&app, status.id.clone());
     } else if super::catalog::g1_definition(&model).is_some() {
-        crate::g1::refresh_installed();
+        crate::g1::finish_install();
     }
 
     let settings = state.current_settings();

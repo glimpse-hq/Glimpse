@@ -204,7 +204,7 @@ export function ReadyStep({
             className="h-7 max-w-[16rem] shrink-0"
             buttonClassName="h-7 !rounded-md !border-0 !bg-transparent px-0 ui-text-body-sm-strong hover:!bg-transparent"
             valueClassName="text-content-primary text-right"
-            menuClassName="top-8"
+            menuClassName="top-8 !left-auto w-max min-w-full max-w-[20rem]"
             truncate
           />
         </Row>

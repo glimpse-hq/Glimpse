@@ -296,7 +296,7 @@ pub(crate) fn update_settings(
         && args.llm_provider == bonsai
         && !(previous.llm_enabled && previous.llm_provider == bonsai)
     {
-        crate::license::require_active_license(&state.settings_store, "G1")?;
+        crate::license::require_license_gate(&state.settings_store, "on-device cleanup")?;
     }
     let license_active = crate::license::license_gate_active(&state.settings_store);
     let active_license = crate::license::active_license_gate(&state.settings_store);

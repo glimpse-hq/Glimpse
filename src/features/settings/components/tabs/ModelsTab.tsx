@@ -75,7 +75,7 @@ type ModelsTabProps = {
   setLlmServiceProvider: (value: string) => void;
   llmAuto: boolean;
   setLlmAuto: (value: boolean) => void;
-  activeLicense: boolean;
+  licenseGateActive: boolean;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
   handleDelete: (modelKey: string) => void;
@@ -234,7 +234,7 @@ const ModelsTab = ({
   setLlmServiceProvider,
   llmAuto,
   setLlmAuto,
-  activeLicense,
+  licenseGateActive,
   setLocalModel,
   handleDownload,
   handleDelete,
@@ -389,7 +389,9 @@ const ModelsTab = ({
             setLlmServiceProvider={setLlmServiceProvider}
             llmAuto={llmAuto}
             setLlmAuto={setLlmAuto}
-            activeLicense={activeLicense}
+            licenseGateActive={licenseGateActive}
+            downloadState={downloadState}
+            onDownload={handleDownload}
           />
         </div>
       )}

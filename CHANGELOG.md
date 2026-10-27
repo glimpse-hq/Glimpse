@@ -2,6 +2,7 @@
 
 ### New Features
 
+- Glimpse has its own cleanup model that runs on your computer. It downloads during setup and works in your trial and with Glimpse Plus.
 - Edit the rules Glimpse uses to clean up your dictation in the new Global mode in Personalization, and restore the defaults at any time. App and website modes still take priority.
 - Edit Mode entries in Home now show the original selected text and spoken instruction under Edit details.
 
@@ -10,7 +11,7 @@
 - The sharing cards now have new designs.
 - Personalization has a cleaner layout, and editing a mode gives you more room for its instructions, apps and websites.
 - Setting up Glimpse is quicker. It picks the best speech model for you and starts downloading it as soon as you open the app, so it's usually ready by your first dictation. You can follow the downloads in the corner while you finish setup.
-- The screen at the end of your trial is simpler: it shows what's now locked and lets you get Glimpse Plus or continue for free in one click. Continuing for free removes the speaker detection and language models you no longer use.
+- The screen at the end of your trial is simpler: it shows what's now locked and lets you get Glimpse Plus or continue for free in one click. Continuing for free removes the speaker detection and cleanup models you no longer use.
 - The API server works through several files at once up to 20% faster, especially MP3, M4A and other formats that need converting first.
 - If a ANE model's cache has been deleted, on launch Glimpse will warm the model, quickly rebuilding the cache.
 - Long speaker turns in the Library are split into paragraphs, and clicking a paragraph plays the audio from there. The player sits lower and blends into the transcript.

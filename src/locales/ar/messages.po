@@ -1100,6 +1100,11 @@ msgstr ""
 #~ msgstr "لا توجد أوضاع بعد"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.model.language"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -2129,6 +2134,16 @@ msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
 msgstr "ميزة التنقيح متاحة مع Glimpse Plus. يمكنك الحصول عليها من"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.downloads.cleanup"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.model.cleanup"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
 msgid "filter_menu.clear"
 msgstr "مسح"
@@ -3054,6 +3069,7 @@ msgid "shortcuts.key.down"
 msgstr "أسفل"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.download"
 msgstr "تنزيل"
@@ -3993,11 +4009,6 @@ msgstr "اللغة"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.language"
 msgstr "اللغة"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.model.language"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx

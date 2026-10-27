@@ -19,6 +19,7 @@ import { checkAccessibilityPermission, getSettings } from "../settings/api";
 import {
   modelKeys,
   pickDefaultOnboardingModel,
+  useCleanupModel,
   useDiarizerModel,
   useModelCatalog,
   useModelRecommendation,
@@ -222,6 +223,7 @@ export default function OnboardingScreen({
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const diarizer = useDiarizerModel().data;
+  const cleanupModel = useCleanupModel().data;
   const licensed = useLicenseGate();
   const recommendationQuery = useModelRecommendation();
   const licenseQuery = useLicenseState();
@@ -259,10 +261,11 @@ export default function OnboardingScreen({
             ...(modelCatalogQuery.data ?? []).map((model) => model.key),
             selectedModel,
             diarizer?.key ?? "",
+            cleanupModel?.key ?? "",
           ].filter(Boolean),
         ),
       ),
-    [modelCatalogQuery.data, selectedModel, diarizer],
+    [modelCatalogQuery.data, selectedModel, diarizer, cleanupModel],
   );
   const { statusByModel: modelStatus } = useModelStatuses(
     statusModelKeys,
@@ -751,6 +754,40 @@ export default function OnboardingScreen({
     handleDownload,
   ]);
 
+  const cleanupWanted = Boolean(
+    licensed &&
+    cleanupModel &&
+    modelStatus[cleanupModel.key]?.installed === false,
+  );
+  const cleanupStarted = cleanupModel
+    ? Boolean(downloadStatus[cleanupModel.key])
+    : false;
+  const speakerStatus = diarizer ? downloadStatus[diarizer.key]?.status : null;
+  const speakerSettled =
+    !speakerWanted ||
+    (speakerStatus != null && speakerStatus !== "downloading");
+
+  // The cleanup model goes last, under the same rules as speaker detection.
+  useEffect(() => {
+    if (
+      !selectedModelReady ||
+      !speakerSettled ||
+      !cleanupModel ||
+      !cleanupWanted ||
+      cleanupStarted
+    ) {
+      return;
+    }
+    void handleDownload(cleanupModel.key, false);
+  }, [
+    selectedModelReady,
+    speakerSettled,
+    cleanupModel,
+    cleanupWanted,
+    cleanupStarted,
+    handleDownload,
+  ]);
+
   const practiceModelState = selectedModelReady
     ? "ready"
     : displayStateByModel[selectedModel]?.status === "error"
@@ -912,6 +949,17 @@ export default function OnboardingScreen({
       }),
       state: downloadStatus[diarizer.key] ?? null,
       onRetry: () => void handleDownload(diarizer.key, false),
+    });
+  }
+  if (cleanupModel && (cleanupWanted || cleanupStarted)) {
+    downloads.push({
+      key: cleanupModel.key,
+      name: t({
+        id: "onboarding.downloads.cleanup",
+        message: "Cleanup model",
+      }),
+      state: downloadStatus[cleanupModel.key] ?? null,
+      onRetry: () => void handleDownload(cleanupModel.key, false),
     });
   }
 

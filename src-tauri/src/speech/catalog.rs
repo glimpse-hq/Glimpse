@@ -18,9 +18,6 @@ pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_CLEANUP: &str = "cleanup";
 pub const DIARIZER_MODEL: &str = "nemotron3_diar_q8";
-// The G1 files are not on Hugging Face yet. Until they are, G1 is installed by
-// copying its files into the model's directory.
-const G1_PUBLISHED: bool = false;
 /// (directory, file) of speaker models earlier versions installed. Each keeps
 /// working until `DIARIZER_MODEL` is installed, and is then removed.
 pub const RETIRED_DIARIZERS: &[(&str, &str)] = &[(
@@ -34,7 +31,6 @@ pub fn is_legacy_category(category: &str) -> bool {
 
 pub fn is_downloadable(manifest: &LocalModelManifest) -> bool {
     !is_legacy_category(manifest.category)
-        && (manifest.category != MODEL_CATEGORY_CLEANUP || G1_PUBLISHED)
 }
 
 pub fn model_is_downloadable(key: &str) -> bool {
@@ -186,40 +182,68 @@ const QWEN3_ASR_0_6B_DECODER_FILE: CatalogFile = CatalogFile {
     sha256: Some("8a1bf11a571607b88ae53ae44c0e38b616c441fd64c53bce37fea9d403a9c489"),
 };
 
-// Hashes and sizes are filled in when the files are published.
-const fn g1_file(url: &'static str, path: &'static str) -> CatalogFile {
-    CatalogFile {
-        url,
-        path,
-        size_bytes: None,
-        sha256: None,
-    }
+// Pinned to a commit, so files pushed to the repo later never break a released
+// app's checksums.
+macro_rules! c1_file {
+    ($file:literal, $path:expr, $size_bytes:literal, $sha256:literal) => {
+        CatalogFile {
+            url: concat!(
+                "https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B/resolve/d424cc981fa7817f2d677533bd5fa01f625fa195/",
+                $file
+            ),
+            path: $path,
+            size_bytes: Some($size_bytes),
+            sha256: Some($sha256),
+        }
+    };
 }
 
+/// Named after its sha256, so a new adapter is a missing file, which installs
+/// that have the base model fetch at launch (`g1::update_in_background`).
+pub const G1_ADAPTER: &str = "adapter-23d65c13.safetensors";
+
 const G1_2B_FILES: &[CatalogFile] = &[
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/model.safetensors",
+    c1_file!(
         "model.safetensors",
+        "model.safetensors",
+        537_418_256,
+        "6e895ee5f7d2413cbf93252d2fe8c06a88c7f37fcbb033253ed1360378a29058"
     ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/config.json",
+    c1_file!(
         "config.json",
+        "config.json",
+        22_998,
+        "f8d80cb7fd148b8841e63051c337d2758b4bc16243c577d35eaab6779534b591"
     ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/tokenizer.json",
+    c1_file!(
         "tokenizer.json",
+        "tokenizer.json",
+        12_807_982,
+        "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
     ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/adapter.safetensors",
+    c1_file!(
         "adapter.safetensors",
+        G1_ADAPTER,
+        31_293_680,
+        "23d65c138d8f081c1a4eab20d3ca41fa7e67836c834a0c6b9234dc4432901484"
     ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/LICENSE",
+    c1_file!(
         "LICENSE",
+        "LICENSE",
+        10_174,
+        "69849221bfb90053de2134ef5e6d540287b4b98062326492f1f96f5da685524b"
     ),
-    g1_file(
-        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/NOTICE.txt",
+    c1_file!(
         "NOTICE.txt",
+        "NOTICE.txt",
+        409,
+        "316012fa6094c03c7b0600bec258bffb675a9261d86f37bc86e15763a1fabc99"
+    ),
+    c1_file!(
+        "LICENSE-C1.md",
+        "LICENSE-C1.md",
+        1_039,
+        "406ac09dedc41d692fcc94d52c32c29028fe2513d5d360e5dbb068cee4717e41"
     ),
 ];
 
@@ -1099,7 +1123,7 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
 pub const G1_MANIFEST: LocalModelManifest = LocalModelManifest {
     id: "g1_2b",
     family: "g1",
-    label: "G1 2B",
+    label: "Glimpse cleanup 2B",
     description: "Cleans up dictation on this Mac.",
     tags: &[],
     category: MODEL_CATEGORY_CLEANUP,
@@ -1467,6 +1491,10 @@ pub fn list_local_models() -> Vec<ModelInfo> {
 
 pub fn diarizer_model_info() -> ModelInfo {
     manifest_to_model_info(&DIARIZER_MANIFEST)
+}
+
+pub fn g1_model_info() -> ModelInfo {
+    manifest_to_model_info(&G1_MANIFEST)
 }
 
 pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<SpeechModel> {
