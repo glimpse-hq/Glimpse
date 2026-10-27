@@ -51,7 +51,6 @@ pub fn list_input_devices() -> Result<Vec<DeviceInfo>, String> {
         });
     }
 
-    // Sort: Default first, then alphabetical
     result.sort_by(|a, b| {
         if a.is_default && !b.is_default {
             std::cmp::Ordering::Less

@@ -149,6 +149,10 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.error.no_model_selected",
     message: "No transcription model selected",
   }),
+  msg({
+    id: "native.error.edit_needs_writing_model",
+    message: "Editing selected text needs a writing model",
+  }),
   msg({ id: "native.error.microphone", message: "Microphone error" }),
   msg({ id: "native.error.permission", message: "Permission denied" }),
   msg({

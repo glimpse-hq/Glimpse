@@ -76,6 +76,7 @@ fn dictionary_add(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
     let mut words = state.current_settings_unmasked().dictionary;
     words.extend(additions);
     let saved = crate::dictionary::set_dictionary(words, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "words": saved }))
 }
 
@@ -91,6 +92,7 @@ fn dictionary_remove(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value,
         .filter(|word| !lowered.contains(&word.to_lowercase()))
         .collect();
     let saved = crate::dictionary::set_dictionary(words, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "words": saved }))
 }
 
@@ -103,6 +105,7 @@ fn replacements_add(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, 
     replacements.retain(|r| !r.from.eq_ignore_ascii_case(&from));
     replacements.push(Replacement { from, to });
     let saved = crate::dictionary::set_replacements(replacements, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "replacements": saved }))
 }
 
@@ -117,6 +120,7 @@ fn replacements_remove(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Valu
         .filter(|r| !r.from.eq_ignore_ascii_case(&from))
         .collect();
     let saved = crate::dictionary::set_replacements(replacements, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "replacements": saved }))
 }
 
@@ -666,4 +670,10 @@ fn active_model(settings: &crate::settings::UserSettings) -> String {
     } else {
         settings.local_model.clone()
     }
+}
+
+// The CLI writes outside any window, so open windows need the change pushed.
+fn notify_settings_changed(app: &AppHandle<AppRuntime>) {
+    let state = app.state::<AppState>();
+    state.emit_settings_changed(app, &state.current_settings_unmasked());
 }

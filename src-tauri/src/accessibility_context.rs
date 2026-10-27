@@ -1,4 +1,7 @@
-use crate::permissions;
+// Caps how long one cross-process Accessibility query may block. Set on the
+// system-wide element, it applies to every element in the process.
+#[cfg(target_os = "macos")]
+pub(crate) const AX_MESSAGING_TIMEOUT_SECS: f32 = 2.0;
 
 pub struct ActiveContext {
     pub app_name: String,
@@ -8,16 +11,13 @@ pub struct ActiveContext {
 
 #[cfg(target_os = "macos")]
 mod macos {
-    use super::ActiveContext;
+    use super::{AX_MESSAGING_TIMEOUT_SECS, ActiveContext};
     use core_foundation::base::{CFType, TCFType};
     use core_foundation::string::CFString;
     use std::ffi::c_void;
 
     #[allow(non_camel_case_types)]
     type pid_t = i32;
-
-    // Cap how long any cross-process query may block the caller.
-    const AX_TIMEOUT_SECS: f32 = 2.0;
 
     #[link(name = "ApplicationServices", kind = "framework")]
     unsafe extern "C" {
@@ -69,7 +69,7 @@ mod macos {
             if system.is_null() {
                 return None;
             }
-            AXUIElementSetMessagingTimeout(system, AX_TIMEOUT_SECS);
+            AXUIElementSetMessagingTimeout(system, AX_MESSAGING_TIMEOUT_SECS);
             let focused = copy_attribute(system, "AXFocusedApplication");
             CFRelease(system);
             if focused.is_null() {
@@ -97,10 +97,10 @@ mod macos {
             if app_element.is_null() {
                 return None;
             } else {
-                AXUIElementSetMessagingTimeout(app_element, AX_TIMEOUT_SECS);
+                AXUIElementSetMessagingTimeout(app_element, AX_MESSAGING_TIMEOUT_SECS);
                 let window_element = copy_attribute(app_element, "AXFocusedWindow");
                 if !window_element.is_null() {
-                    AXUIElementSetMessagingTimeout(window_element, AX_TIMEOUT_SECS);
+                    AXUIElementSetMessagingTimeout(window_element, AX_MESSAGING_TIMEOUT_SECS);
                 }
                 let title = if window_element.is_null() {
                     String::new()
@@ -225,36 +225,3 @@ mod windows_context {
 
 #[cfg(target_os = "windows")]
 pub use windows_context::get_active_context;
-
-fn truncate_text(text: &str, max_len: usize) -> String {
-    text.chars().take(max_len).collect()
-}
-
-pub fn log_active_context() {
-    if !permissions::check_accessibility_permission() {
-        return;
-    }
-
-    let context = match get_active_context() {
-        Some(context) => context,
-        None => return,
-    };
-
-    let window_summary = if context.window_title.is_empty() {
-        "(none)".to_string()
-    } else {
-        truncate_text(&context.window_title, 120)
-    };
-    let url_summary = context
-        .url
-        .as_ref()
-        .map(|url| truncate_text(url, 160))
-        .unwrap_or_else(|| "(none)".to_string());
-
-    tracing::debug!(
-        "[Accessibility] Active app: {} | Window: {} | URL: {}",
-        context.app_name,
-        window_summary,
-        url_summary
-    );
-}

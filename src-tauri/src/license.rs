@@ -7,7 +7,8 @@ use chrono::{DateTime, Duration, Utc};
 use parking_lot::Mutex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
+use tauri_plugin_opener::OpenerExt;
 
 use crate::{
     AppRuntime,
@@ -1060,10 +1061,8 @@ fn license_api_bases() -> impl Iterator<Item = &'static str> {
 fn activation_label() -> &'static str {
     if cfg!(target_os = "macos") {
         "Glimpse for Mac"
-    } else if cfg!(target_os = "windows") {
-        "Glimpse for Windows"
     } else {
-        "Glimpse"
+        "Glimpse for Windows"
     }
 }
 
@@ -1098,7 +1097,7 @@ fn trial_lapsed(state: &LicenseState) -> bool {
 }
 
 /// The trial-ended screen shows once, after the trial runs out with no license.
-pub fn trial_ended_screen_due(store: &SettingsStore, state: &LicenseState) -> bool {
+fn trial_ended_screen_due(store: &SettingsStore, state: &LicenseState) -> bool {
     trial_lapsed(state)
         && read_optional_string(store, KEY_TRIAL_ENDED_SCREEN_SEEN)
             .ok()
@@ -1106,7 +1105,7 @@ pub fn trial_ended_screen_due(store: &SettingsStore, state: &LicenseState) -> bo
             .is_none()
 }
 
-pub fn mark_trial_ended_screen_seen(store: &SettingsStore) -> Result<(), String> {
+fn mark_trial_ended_screen_seen(store: &SettingsStore) -> Result<(), String> {
     write_string(store, KEY_TRIAL_ENDED_SCREEN_SEEN, "1")
 }
 
@@ -1175,7 +1174,7 @@ fn is_app_plan(id: &str) -> bool {
 
 /// The API's checkout link for a plan, which creates the Creem session and
 /// redirects to it. `code` is a discount code to apply.
-pub fn checkout_url(tier: &str, source: &str, code: Option<&str>) -> Result<String, String> {
+fn checkout_url(tier: &str, source: &str, code: Option<&str>) -> Result<String, String> {
     if !is_app_plan(tier) {
         return Err("Unknown plan.".to_string());
     }
@@ -1191,6 +1190,88 @@ pub fn checkout_url(tier: &str, source: &str, code: Option<&str>) -> Result<Stri
         url.query_pairs_mut().append_pair("code", code);
     }
     Ok(url.into())
+}
+
+#[tauri::command]
+pub fn open_checkout(
+    app: AppHandle<AppRuntime>,
+    tier: String,
+    source: String,
+    feature: Option<String>,
+    code: Option<String>,
+) -> Result<(), String> {
+    let source = match source.as_str() {
+        "account" | "locked_view" | "trial_ended" | "activation" | "announcement" => source,
+        _ => "other".to_string(),
+    };
+    let url = checkout_url(&tier, &source, code.as_deref())?;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|err| format!("Couldn't open checkout: {err}"))?;
+    crate::analytics::track_checkout_opened(
+        &app,
+        &tier,
+        &source,
+        feature.as_deref(),
+        code.is_some(),
+    );
+    Ok(())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrialEndedScreen {
+    // Models only paid features use that are on this computer.
+    installed_models: Vec<&'static str>,
+}
+
+// Models only paid features use, and what each is for. Continuing for free
+// removes them.
+const PAID_ONLY_MODELS: [(&str, &str); 2] = [
+    (crate::speech::catalog::DIARIZER_MODEL, "speakers"),
+    (
+        crate::speech::catalog::CLEANUP_MODEL_MANIFEST.id,
+        "language",
+    ),
+];
+
+/// What the trial-ended screen shows, or None once it has been seen.
+#[tauri::command]
+pub fn get_trial_ended_screen(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<crate::AppState>,
+) -> Result<Option<TrialEndedScreen>, String> {
+    let license_state = get_license_state(&state.settings_store)?;
+    if !trial_ended_screen_due(&state.settings_store, &license_state) {
+        return Ok(None);
+    }
+    let installed_models = PAID_ONLY_MODELS
+        .into_iter()
+        .filter(|(model, _)| {
+            crate::speech::install::check_model_status(app.clone(), model.to_string())
+                .is_ok_and(|status| status.installed)
+        })
+        .map(|(_, kind)| kind)
+        .collect();
+    Ok(Some(TrialEndedScreen { installed_models }))
+}
+
+#[tauri::command]
+pub async fn dismiss_trial_ended_screen(
+    app: AppHandle<AppRuntime>,
+    keep_free: bool,
+) -> Result<(), String> {
+    mark_trial_ended_screen_seen(&app.state::<crate::AppState>().settings_store)?;
+    if keep_free {
+        for (model, _) in PAID_ONLY_MODELS {
+            if let Err(err) =
+                crate::speech::install::delete_model(app.clone(), model.to_string()).await
+            {
+                tracing::warn!("[license] couldn't remove {model} after the trial: {err}");
+            }
+        }
+    }
+    Ok(())
 }
 
 fn write_string(store: &SettingsStore, key: &str, value: &str) -> Result<(), String> {

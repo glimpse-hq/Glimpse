@@ -65,9 +65,7 @@ fn sanitize_instructions(entries: &[String]) -> Vec<String> {
 
 fn sanitize_global_instructions(entries: &[String]) -> Vec<String> {
     let joined = entries.join("\n");
-    if joined.trim().is_empty()
-        || joined.trim() == crate::llm_cleanup::default_cleanup_rules().trim()
-    {
+    if joined.trim().is_empty() || joined.trim() == crate::llm_cleanup::CLEANUP_RULES {
         return Vec::new();
     }
     sanitize_instructions(entries)
@@ -124,9 +122,7 @@ pub fn sanitize_personalities(entries: &[Personality]) -> Vec<Personality> {
 
 #[tauri::command]
 pub fn get_default_cleanup_instructions() -> String {
-    crate::llm_cleanup::default_cleanup_rules()
-        .trim()
-        .to_string()
+    crate::llm_cleanup::CLEANUP_RULES.to_string()
 }
 
 #[tauri::command]

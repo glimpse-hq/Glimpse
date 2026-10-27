@@ -266,7 +266,8 @@ impl PendingWriter {
             .spawn(move || {
                 let mut cursor = 0usize;
                 let mut stopping = false;
-                loop {
+                let mut written = Ok(());
+                'write: loop {
                     let (chunk, has_more) = {
                         let buf = buffer.lock();
                         if cursor < buf.len() {
@@ -279,10 +280,16 @@ impl PendingWriter {
                         }
                     };
                     for sample in &chunk {
-                        let _ = writer.write_sample(*sample);
+                        written = writer.write_sample(*sample);
+                        if written.is_err() {
+                            break 'write;
+                        }
                     }
                     if !chunk.is_empty() {
-                        let _ = writer.flush();
+                        written = writer.flush();
+                        if written.is_err() {
+                            break;
+                        }
                     }
                     if has_more {
                         continue;
@@ -292,7 +299,9 @@ impl PendingWriter {
                     }
                     stopping = stop_requested(&stopped, PENDING_WRITE_INTERVAL);
                 }
-                let _ = writer.finalize();
+                if let Err(err) = written.and_then(|()| writer.finalize()) {
+                    tracing::error!("Crash recovery WAV write failed: {err}");
+                }
             })
             .map_err(|err| anyhow!("Failed to spawn pending writer thread: {err}"))?;
 

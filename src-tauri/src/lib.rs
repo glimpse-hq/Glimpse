@@ -591,9 +591,9 @@ pub fn run() {
             refresh_license,
             deactivate_license,
             get_purchase_plans,
-            open_checkout,
-            get_trial_ended_screen,
-            dismiss_trial_ended_screen,
+            license::open_checkout,
+            license::get_trial_ended_screen,
+            license::dismiss_trial_ended_screen,
             announcements::get_announcement,
             announcements::list_announcements,
             announcements::dismiss_release_notes,
@@ -1605,77 +1605,6 @@ async fn get_purchase_plans(
     Ok(license::purchase_plans(&state.http()).await)
 }
 
-#[tauri::command]
-fn open_checkout(
-    app: AppHandle<AppRuntime>,
-    tier: String,
-    source: String,
-    feature: Option<String>,
-    code: Option<String>,
-) -> Result<(), String> {
-    let source = match source.as_str() {
-        "account" | "locked_view" | "trial_ended" | "activation" | "announcement" => source,
-        _ => "other".to_string(),
-    };
-    let url = license::checkout_url(&tier, &source, code.as_deref())?;
-    app.opener()
-        .open_url(url, None::<&str>)
-        .map_err(|err| format!("Couldn't open checkout: {err}"))?;
-    analytics::track_checkout_opened(&app, &tier, &source, feature.as_deref(), code.is_some());
-    Ok(())
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TrialEndedScreen {
-    // Models only paid features use that are on this computer.
-    installed_models: Vec<&'static str>,
-}
-
-// Models only paid features use, and what each is for. Continuing for free
-// removes them.
-const PAID_ONLY_MODELS: [(&str, &str); 2] = [
-    (speech::catalog::DIARIZER_MODEL, "speakers"),
-    (speech::catalog::CLEANUP_MODEL_MANIFEST.id, "language"),
-];
-
-/// What the trial-ended screen shows, or None once it has been seen.
-#[tauri::command]
-fn get_trial_ended_screen(
-    app: AppHandle<AppRuntime>,
-    state: tauri::State<AppState>,
-) -> Result<Option<TrialEndedScreen>, String> {
-    let license_state = license::get_license_state(&state.settings_store)?;
-    if !license::trial_ended_screen_due(&state.settings_store, &license_state) {
-        return Ok(None);
-    }
-    let installed_models = PAID_ONLY_MODELS
-        .into_iter()
-        .filter(|(model, _)| {
-            speech::install::check_model_status(app.clone(), model.to_string())
-                .is_ok_and(|status| status.installed)
-        })
-        .map(|(_, kind)| kind)
-        .collect();
-    Ok(Some(TrialEndedScreen { installed_models }))
-}
-
-#[tauri::command]
-async fn dismiss_trial_ended_screen(
-    app: AppHandle<AppRuntime>,
-    keep_free: bool,
-) -> Result<(), String> {
-    license::mark_trial_ended_screen_seen(&app.state::<AppState>().settings_store)?;
-    if keep_free {
-        for (model, _) in PAID_ONLY_MODELS {
-            if let Err(err) = speech::install::delete_model(app.clone(), model.to_string()).await {
-                tracing::warn!("[license] couldn't remove {model} after the trial: {err}");
-            }
-        }
-    }
-    Ok(())
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DictationStats {
@@ -1716,52 +1645,68 @@ struct AppInfo {
 }
 
 #[tauri::command]
-fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
-    let version = env!("CARGO_PKG_VERSION").to_string();
-
+async fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
     let data_dir = app
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
     let data_dir_path = data_dir.display().to_string();
+    let models_dir = model_manager::model_cache_dir(&app).ok();
 
-    let recordings_bytes = calculate_dir_size(&data_dir.join("recordings")).unwrap_or(0);
-    let library_bytes = calculate_dir_size(&data_dir.join("library")).unwrap_or(0);
-
-    let databases_bytes = [
-        "transcriptions.db",
-        "transcriptions.db-wal",
-        "transcriptions.db-shm",
-    ]
-    .iter()
-    .map(|name| {
-        std::fs::metadata(data_dir.join(name))
-            .map(|m| m.len())
-            .unwrap_or(0)
-    })
-    .sum::<u64>();
-
-    let models_bytes = model_manager::model_cache_dir(&app)
-        .ok()
-        .map(|p| calculate_dir_size(&p).unwrap_or(0))
-        .unwrap_or(0);
-
-    let total_bytes = calculate_dir_size(&data_dir).unwrap_or(0);
+    // The walk covers recordings, the Library and models, which can be gigabytes.
+    let storage_breakdown =
+        async_runtime::spawn_blocking(move || storage_breakdown(&data_dir, models_dir))
+            .await
+            .map_err(|err| err.to_string())?;
 
     Ok(AppInfo {
-        version,
-        data_dir_size_bytes: total_bytes,
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        data_dir_size_bytes: storage_breakdown.total_bytes,
         data_dir_path,
-        storage_breakdown: StorageBreakdown {
-            recordings_bytes,
-            library_bytes,
-            databases_bytes,
-            models_bytes,
-            total_bytes,
-        },
+        storage_breakdown,
         store_build: platform::is_store_build(),
     })
+}
+
+fn storage_breakdown(data_dir: &std::path::Path, models_dir: Option<PathBuf>) -> StorageBreakdown {
+    let mut breakdown = StorageBreakdown {
+        recordings_bytes: 0,
+        library_bytes: 0,
+        databases_bytes: 0,
+        models_bytes: 0,
+        total_bytes: 0,
+    };
+    let Ok(entries) = std::fs::read_dir(data_dir) else {
+        return breakdown;
+    };
+    for entry in entries.flatten() {
+        let bytes = entry_size(&entry);
+        breakdown.total_bytes += bytes;
+        if models_dir.as_deref() == Some(entry.path().as_path()) {
+            breakdown.models_bytes = bytes;
+            continue;
+        }
+        match entry.file_name().to_str() {
+            Some("recordings") => breakdown.recordings_bytes = bytes,
+            Some("library") => breakdown.library_bytes = bytes,
+            Some("transcriptions.db" | "transcriptions.db-wal" | "transcriptions.db-shm") => {
+                breakdown.databases_bytes += bytes
+            }
+            _ => {}
+        }
+    }
+    breakdown
+}
+
+// Unreadable entries count as zero rather than failing the whole walk.
+fn entry_size(entry: &std::fs::DirEntry) -> u64 {
+    match entry.metadata() {
+        Ok(metadata) if metadata.is_dir() => std::fs::read_dir(entry.path())
+            .map(|entries| entries.flatten().map(|entry| entry_size(&entry)).sum())
+            .unwrap_or(0),
+        Ok(metadata) if metadata.is_file() => metadata.len(),
+        _ => 0,
+    }
 }
 
 #[tauri::command]
@@ -1871,33 +1816,6 @@ fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(),
     app.opener()
         .reveal_item_in_dir(&canonical_path)
         .map_err(|err| format!("Failed to open path: {err}"))
-}
-
-fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
-    let mut total_size = 0u64;
-
-    if !path.exists() {
-        return Ok(0);
-    }
-
-    if path.is_file() {
-        return Ok(path.metadata()?.len());
-    }
-
-    if path.is_dir() {
-        for entry in std::fs::read_dir(path)? {
-            let entry = entry?;
-            let metadata = entry.metadata()?;
-
-            if metadata.is_file() {
-                total_size += metadata.len();
-            } else if metadata.is_dir() {
-                total_size += calculate_dir_size(&entry.path())?;
-            }
-        }
-    }
-
-    Ok(total_size)
 }
 
 #[tauri::command]

@@ -7,9 +7,8 @@ export type ToastPayload = {
   message: string;
   autoDismiss?: boolean;
   duration?: number;
-  retryId?: string;
-  mode?: "local" | "cloud";
   action?: string;
+  actionArgs?: Record<string, unknown> | null;
   actionLabel?: string;
   secondaryAction?: string;
   secondaryActionLabel?: string;

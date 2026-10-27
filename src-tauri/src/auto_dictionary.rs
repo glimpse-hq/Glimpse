@@ -18,9 +18,7 @@ const START_GRACE: Duration = Duration::from_millis(500);
 const POLL_INTERVAL: Duration = Duration::from_millis(300);
 const IDLE_DEBOUNCE: Duration = Duration::from_secs(2);
 const HARD_CAP: Duration = Duration::from_secs(30);
-const MAX_CANDIDATE_LEN: usize = 160;
 const MAX_CHANGED_TOKENS: usize = 4;
-const MAX_DICTIONARY_ENTRIES: usize = 64;
 const MAX_IGNORED_SUGGESTIONS: usize = 128;
 
 static IGNORED_SUGGESTIONS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
@@ -45,7 +43,7 @@ pub(crate) fn start_after_paste(
         return;
     }
     let dictionary_entries = dictionary::sanitize_dictionary_entries(&dictionary_entries);
-    if dictionary_entries.len() >= MAX_DICTIONARY_ENTRIES {
+    if dictionary_entries.len() >= dictionary::MAX_DICTIONARY_ENTRIES {
         return;
     }
     hydrate_ignored_suggestions(&ignored_entries);
@@ -114,7 +112,7 @@ pub(crate) fn start_after_paste(
                             &[("word", &candidate)],
                         ),
                         auto_dismiss: Some(false),
-                        retry_id: Some(candidate.clone()),
+                        action_args: Some(serde_json::json!({ "suggestion": candidate })),
                         action: Some("accept_auto_dictionary_suggestion".to_string()),
                         action_label: Some(toast::native(&app, "native.toast.dictionary_add")),
                         secondary_action: Some("reject_auto_dictionary_suggestion".to_string()),
@@ -491,7 +489,7 @@ fn canonicalize_candidate(candidate: &str) -> Option<String> {
 
 fn is_valid_candidate(candidate: &str, tokens: &[Token], dictionary_entries: &[String]) -> bool {
     let trimmed = candidate.trim();
-    if trimmed.is_empty() || trimmed.chars().count() > MAX_CANDIDATE_LEN {
+    if trimmed.is_empty() || trimmed.chars().count() > dictionary::MAX_DICTIONARY_ENTRY_CHARS {
         return false;
     }
     if !trimmed.chars().all(is_allowed_candidate_char) {

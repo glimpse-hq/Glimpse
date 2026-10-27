@@ -1,18 +1,14 @@
 use anyhow::{Result, anyhow};
 
-#[cfg(not(target_os = "macos"))]
-use arboard::Clipboard;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 use arboard::Error as ClipboardError;
 #[cfg(target_os = "macos")]
 use arboard::{Clipboard, ImageData, SetExtApple};
 #[cfg(target_os = "windows")]
-use arboard::{ImageData, SetExtWindows};
+use arboard::{Clipboard, ImageData, SetExtWindows};
 #[cfg(target_os = "macos")]
 use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 use std::{thread, time::Duration};
 #[cfg(target_os = "windows")]
 use windows::Win32::UI::Input::KeyboardAndMouse::{
@@ -93,6 +89,7 @@ mod macos_ax {
             value: *mut *mut c_void,
         ) -> i32;
         fn AXUIElementGetPid(element: *mut c_void, pid: *mut i32) -> i32;
+        fn AXUIElementSetMessagingTimeout(element: *mut c_void, timeout: f32) -> i32;
         fn AXValueGetValue(value: *const c_void, ax_type: u32, value_ptr: *mut c_void) -> bool;
         fn AXIsProcessTrusted() -> u8;
     }
@@ -162,6 +159,10 @@ mod macos_ax {
             if system.is_null() {
                 return None;
             }
+            AXUIElementSetMessagingTimeout(
+                system,
+                crate::accessibility_context::AX_MESSAGING_TIMEOUT_SECS,
+            );
 
             let focused_attr = CFString::new("AXFocusedUIElement");
             let mut focused: *mut c_void = ptr::null_mut();
@@ -523,7 +524,6 @@ impl std::fmt::Display for ElevatedTarget {
 #[cfg(target_os = "windows")]
 impl std::error::Error for ElevatedTarget {}
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn paste_text(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
 
@@ -567,13 +567,11 @@ pub fn paste_text(text: &str) -> Result<()> {
     paste_result
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
     set_text_excluding_history(&mut clipboard, text.to_string())
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn set_text_excluding_history(clipboard: &mut Clipboard, text: String) -> Result<()> {
     clipboard
         .set()
@@ -583,7 +581,6 @@ fn set_text_excluding_history(clipboard: &mut Clipboard, text: String) -> Result
     Ok(())
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn should_restore_after_paste(clipboard: &mut Clipboard, inserted_text: &str) -> bool {
     match clipboard.get_text() {
         Ok(current) => return current == inserted_text || current.is_empty(),
@@ -604,7 +601,6 @@ fn should_restore_after_paste(clipboard: &mut Clipboard, inserted_text: &str) ->
             .is_err_and(|err| matches!(err, ClipboardError::ContentNotAvailable))
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn copy_selection_via_clipboard(settle: Duration) -> Option<String> {
     let mut clipboard = Clipboard::new().ok()?;
     let backup = ClipboardBackup::capture(&mut clipboard);
@@ -630,14 +626,12 @@ fn copy_selection_via_clipboard(settle: Duration) -> Option<String> {
     }
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 struct ClipboardBackup {
     text: Option<String>,
     html: Option<String>,
     image: Option<ImageData<'static>>,
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 impl ClipboardBackup {
     fn capture(clipboard: &mut Clipboard) -> Self {
         Self {
