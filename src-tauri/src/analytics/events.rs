@@ -446,8 +446,8 @@ pub fn track_setting_changed(
     );
 }
 
-/// Compares persisted settings and records changes to product-feature toggles
-/// and to the selected speech model.
+/// Compares persisted settings and records changes to product-feature toggles,
+/// the selected speech model, and the language model provider.
 pub fn track_settings_changes(
     app: &tauri::AppHandle<AppRuntime>,
     previous: &UserSettings,
@@ -490,6 +490,14 @@ pub fn track_settings_changes(
             from.as_str().unwrap_or_default(),
             to.as_str().unwrap_or_default(),
         );
+    }
+
+    let (from, to) = (
+        super::dictation::llm_provider_kind(previous),
+        super::dictation::llm_provider_kind(next),
+    );
+    if from != to {
+        capture_event(app, "llm_provider_changed", json!({ "from": from, "to": to }));
     }
 }
 

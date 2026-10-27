@@ -35,6 +35,16 @@ struct Runtime {
 struct Loaded {
     files: Vec<Option<(u64, SystemTime)>>,
     bonsai: Arc<Bonsai>,
+    adapter: String,
+}
+
+/// One cleanup request and how it ran, for analytics.
+pub struct Run {
+    pub generation: Generation,
+    /// The adapter's hash from its file name.
+    pub adapter: String,
+    /// "loaded" (read from disk first), "idle" (GPU state rebuilt), or "warm".
+    pub state: &'static str,
 }
 
 // Size and modification time of every file a load reads, so replaced model or
@@ -221,14 +231,18 @@ fn runtime_for_use() -> Result<&'static Runtime, BonsaiError> {
     Ok(runtime)
 }
 
-fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiError> {
+/// The model, its adapter's hash, and whether it was read from disk now.
+fn load(
+    runtime: &Runtime,
+    model: &'static str,
+) -> Result<(Arc<Bonsai>, String, bool), BonsaiError> {
     let dir = runtime.models_dir.join(model);
     let files = file_stamps(&dir);
     let mut loaded = runtime.loaded.lock();
     if let Some(current) = loaded.as_ref()
         && current.files == files
     {
-        return Ok(Arc::clone(&current.bonsai));
+        return Ok((Arc::clone(&current.bonsai), current.adapter.clone(), false));
     }
     // Idle timers can still hold the old model; free its GPU state now.
     if let Some(old) = loaded.take() {
@@ -243,11 +257,18 @@ fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiErr
         adapter.display(),
         started.elapsed().as_millis()
     );
+    let adapter = adapter
+        .file_name()
+        .and_then(|name| name.to_str())
+        .and_then(|name| name.strip_prefix("adapter-")?.strip_suffix(".safetensors"))
+        .unwrap_or("unhashed")
+        .to_string();
     *loaded = Some(Loaded {
         files,
         bonsai: Arc::clone(&bonsai),
+        adapter: adapter.clone(),
     });
-    Ok(bonsai)
+    Ok((bonsai, adapter, true))
 }
 
 fn release_when_idle(runtime: &'static Runtime, bonsai: Arc<Bonsai>, after: Duration) {
@@ -266,7 +287,7 @@ pub fn prewarm(system_prompt: &str) -> Result<(), BonsaiError> {
     let runtime = runtime_for_use()?;
     let model = resolve()
         .ok_or_else(|| error(BonsaiErrorKind::Load, "The cleanup model is not installed"))?;
-    let bonsai = load(runtime, model)?;
+    let (bonsai, _, _) = load(runtime, model)?;
     runtime.uses.fetch_add(1, Ordering::SeqCst);
     let result = bonsai.prewarm(system_prompt);
     release_when_idle(runtime, bonsai, IDLE_AFTER_PREWARM);
@@ -280,9 +301,16 @@ pub fn generate(
     user_text: &str,
     max_tokens: usize,
     cancel: &AtomicBool,
-) -> Result<Generation, BonsaiError> {
+) -> Result<Run, BonsaiError> {
     let runtime = runtime_for_use()?;
-    let bonsai = load(runtime, model)?;
+    let (bonsai, adapter, loaded_now) = load(runtime, model)?;
+    let state = if loaded_now {
+        "loaded"
+    } else if bonsai.is_idle() {
+        "idle"
+    } else {
+        "warm"
+    };
     runtime.uses.fetch_add(1, Ordering::SeqCst);
     let options = GenerateOptions {
         max_tokens,
@@ -290,7 +318,11 @@ pub fn generate(
     };
     let result = bonsai.generate(system_prompt, user_text, &options, Some(cancel));
     release_when_idle(runtime, bonsai, IDLE_AFTER_USE);
-    result
+    Ok(Run {
+        generation: result?,
+        adapter,
+        state,
+    })
 }
 
 #[derive(Debug, Serialize)]

@@ -1,8 +1,10 @@
 1.4.0
 
-### New Features
+## New Models
 
 - Glimpse has its own cleanup model that runs on your computer. It downloads during setup and works in your trial and with Glimpse Plus.
+
+### New Features
 - Edit the rules Glimpse uses to clean up your dictation in the new Global mode in Personalization, and restore the defaults at any time. App and website modes still take priority.
 - Edit Mode entries in Home now show the original selected text and spoken instruction under Edit details.
 - AI agents connected through `glimpse mcp` can follow a recording as it happens, getting what was said in short timestamped chunks whenever the speaker pauses, so they can take notes along with a lecture or meeting. The Record screen shows when an agent is following. They can also transcribe a file directly with word timings.
@@ -10,9 +12,9 @@
 - You can dismiss the warning that a recording source has made no sound yet.
 - Turn the microphone or system audio off and back on during a recording, from the Record screen or the live view. Turning the microphone off releases it.
 - `glimpse transcribe --json` now includes segment and word timings, the detected language and how long the transcription took.
+- Deleted something in the Library by mistake? Press Cmd+Z (Ctrl+Z on Windows) within a minute to bring it back.
 
 ### Improvements
-- Deleted something in the Library by mistake? Press Cmd+Z (Ctrl+Z on Windows) within a minute to bring it back.
 
 - Improved Coding mode to keep dictated prose about code as prose.
 - The sharing cards now have new designs.
@@ -27,9 +29,10 @@
 
 - Recordings with both your microphone and system audio no longer skip words when you play them back, and changing the playback speed stays smooth.
 - Fixed cleanup turning off when upgrading from the old shortcut settings.
+- The copy button on long Library and live transcripts responds right away.
 - Cancelling a dictation just as it finishes no longer pastes the text.
 - Pressing your shortcut again to cancel a dictation works sooner after you stop talking.
-- The copy button on long Library and live transcripts responds right away.
+- Fixed the microphone failing to start every time on some Windows PCs.
 - Imported files and recordings with speech in them no longer fail with "No speech detected" when you use Parakeet, Nemotron or Apple speech models.
 - A dictation no longer times out while your speech model is still loading, such as right after it finishes setting up for the Neural Engine.
 - A quick tap on your shortcut no longer warns that Glimpse got no sound from your microphone.

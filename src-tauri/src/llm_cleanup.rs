@@ -657,8 +657,15 @@ async fn run_text_task(
     if uses_bonsai_provider(settings) {
         let model = crate::cleanup_model::resolve()
             .ok_or_else(|| remote_lib::config_error("The cleanup model is not installed"))?;
-        let raw =
-            run_bonsai_text_task(model, on_device_max_tokens, system_prompt, user_content).await?;
+        let raw = run_bonsai_text_task(
+            model,
+            task,
+            on_device_max_tokens,
+            system_prompt,
+            user_content,
+            fallback_text.split_whitespace().count(),
+        )
+        .await?;
         return Ok(
             extract_plain_text(&raw, fallback_text).unwrap_or_else(|| fallback_text.to_string())
         );
@@ -752,13 +759,15 @@ async fn run_apple_text_task(
 
 async fn run_bonsai_text_task(
     model: &'static str,
+    task: TextTaskKind,
     max_tokens: u32,
     system_prompt: String,
     user_content: String,
+    input_words: usize,
 ) -> Result<String, RemoteError> {
     let started = Instant::now();
     let cancel = Arc::new(AtomicBool::new(false));
-    let task = tokio::task::spawn_blocking({
+    let generate = tokio::task::spawn_blocking({
         let cancel = Arc::clone(&cancel);
         move || {
             crate::cleanup_model::generate(
@@ -770,7 +779,7 @@ async fn run_bonsai_text_task(
             )
         }
     });
-    let generation = match tokio::time::timeout(CHAT_TIMEOUT, task).await {
+    let run = match tokio::time::timeout(CHAT_TIMEOUT, generate).await {
         Ok(joined) => joined
             .map_err(|err| {
                 remote_lib::transport_error(format!("Cleanup model task failed: {err}"))
@@ -781,6 +790,12 @@ async fn run_bonsai_text_task(
             return Err(remote_lib::transport_error("The cleanup model timed out"));
         }
     };
+    let task = match task {
+        TextTaskKind::Cleanup => "cleanup",
+        TextTaskKind::Edit => "edit",
+    };
+    crate::analytics::dictation::track_cleanup_model_run(task, model, &run, input_words);
+    let generation = run.generation;
     let stats = &generation.stats;
     tracing::info!(
         "[cleanup model] {model} responded in {} ms ({} prompt + {} cached tokens, {} generated, {:?})",

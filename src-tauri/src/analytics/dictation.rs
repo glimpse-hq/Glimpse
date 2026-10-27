@@ -288,3 +288,50 @@ pub fn track_auto_paste_failed(
     reason.into().insert_into(&mut props);
     capture_event(app, "transcription_failed", props);
 }
+
+/// Records one on-device cleanup model run: task, model, adapter hash,
+/// whether it finished, token counts, timings, and the output/input word
+/// ratio as a bucket. Never any text.
+pub fn track_cleanup_model_run(
+    task: &str,
+    model: &str,
+    run: &crate::cleanup_model::Run,
+    input_words: usize,
+) {
+    let Some(app) = app() else {
+        return;
+    };
+    let generation = &run.generation;
+    let stats = &generation.stats;
+    let output_words = generation
+        .text
+        .split_whitespace()
+        .filter(|word| !word.starts_with('<'))
+        .count();
+    let ratio = output_words as f32 / input_words.max(1) as f32;
+    let ratio_bucket = match ratio {
+        r if r < 0.5 => "under_0.5",
+        r if r < 0.8 => "0.5_0.8",
+        r if r <= 1.2 => "0.8_1.2",
+        r if r <= 2.0 => "1.2_2",
+        _ => "over_2",
+    };
+    capture_event(
+        app,
+        "cleanup_model_run",
+        json!({
+            "task": task,
+            "model": model,
+            "adapter": run.adapter,
+            "state": run.state,
+            "finished": generation.stop == glimpse_language::bonsai::StopReason::Eos,
+            "prompt_tokens": stats.prompt_tokens,
+            "cached_tokens": stats.cached_tokens,
+            "generated_tokens": stats.generated_tokens,
+            "prefill_ms": stats.prefill.as_millis() as u64,
+            "first_token_ms": stats.first_token.as_millis() as u64,
+            "write_ms": stats.decode.as_millis() as u64,
+            "ratio_bucket": ratio_bucket,
+        }),
+    );
+}
