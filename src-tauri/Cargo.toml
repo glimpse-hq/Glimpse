@@ -26,6 +26,10 @@ debug = "line-tables-only"
 split-debuginfo = "packed"
 strip = true
 
+# Stripped proc-macro dylibs fail to load on macOS 27 ("mis-aligned LINKEDIT").
+[profile.release.build-override]
+strip = false
+
 # Dependencies (decoders, resamplers, SQLite) are optimized in dev builds; app code stays debug.
 [profile.dev.package."*"]
 opt-level = 3
