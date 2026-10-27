@@ -1102,7 +1102,7 @@ fn discard_session(session: ActiveSession) {
         capture.stop();
         writer.discard();
     }
-    let _ = fs::remove_dir_all(&session.dir);
+    let _ = crate::platform::remove_dir_all_compat(&session.dir);
 }
 
 struct SinkParts {
@@ -1295,7 +1295,7 @@ fn save_session(
             live: output.live,
         },
     )?;
-    let _ = fs::remove_dir_all(&output.dir);
+    let _ = crate::platform::remove_dir_all_compat(&output.dir);
     crate::library::schedule_library_job(
         app,
         &state,
@@ -1338,7 +1338,7 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             .ok()
             .and_then(|bytes| serde_json::from_slice::<SessionManifest>(&bytes).ok());
         let Some(manifest) = manifest else {
-            let _ = fs::remove_dir_all(&dir);
+            let _ = crate::platform::remove_dir_all_compat(&dir);
             continue;
         };
         let readable = |name: &str| -> Option<(PathBuf, f32)> {
@@ -1357,7 +1357,7 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             .as_ref()
             .and_then(|_| readable(SYSTEM_FILE));
         if microphone.is_none() && system.is_none() {
-            let _ = fs::remove_dir_all(&dir);
+            let _ = crate::platform::remove_dir_all_compat(&dir);
             continue;
         }
         let duration_seconds = microphone

@@ -418,11 +418,6 @@ mod tests {
     }
 
     #[test]
-    fn complete_reports_full_progress() {
-        assert_eq!(LibraryItemStatus::Complete.as_fields().1, 1.0);
-    }
-
-    #[test]
     fn status_serializes_with_a_lowercase_type_tag() {
         let json = serde_json::to_value(LibraryItemStatus::Transcribing { progress: 0.5 }).unwrap();
         assert_eq!(

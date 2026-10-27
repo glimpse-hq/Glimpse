@@ -5,9 +5,7 @@ use std::path::{Path, PathBuf};
 use tauri::AppHandle;
 
 use crate::AppRuntime;
-use crate::personalization::icons::{
-    InstalledApp, app_icon_cache_dir, icon_cache_file_path, should_refresh_icon,
-};
+use crate::personalization::icons::{InstalledApp, app_icon_cache_dir, icon_cache_file_path};
 
 const WINDOWS_ICON_SIZE: i32 = 64;
 
@@ -51,7 +49,7 @@ fn collect_windows_shortcuts(
     apps: &mut Vec<InstalledApp>,
     seen: &mut HashSet<String>,
     icon_cache_dir: Option<&Path>,
-    pending_icon_warmup: &mut Vec<(PathBuf, String)>,
+    pending_icon_warmup: &mut Vec<PathBuf>,
 ) {
     let entries = match std::fs::read_dir(dir) {
         Ok(entries) => entries,
@@ -93,11 +91,11 @@ fn collect_windows_shortcuts(
                 let cached_path = icon_cache_file_path(&path, cache_dir);
                 if cached_path.exists() {
                     if shortcut_icon_cache_should_refresh(&path, &cached_path) {
-                        pending_icon_warmup.push((path.clone(), name.to_string()));
+                        pending_icon_warmup.push(path.clone());
                     }
                     Some(cached_path.to_string_lossy().to_string())
                 } else {
-                    pending_icon_warmup.push((path.clone(), name.to_string()));
+                    pending_icon_warmup.push(path.clone());
                     None
                 }
             });
@@ -442,6 +440,24 @@ fn shortcut_icon_source(shortcut_path: &Path) -> Option<(PathBuf, i32)> {
     resolve_shortcut_icon_source(shortcut_path)
 }
 
+fn should_refresh_icon(source: &Path, cached: &Path) -> bool {
+    if !cached.exists() {
+        return true;
+    }
+
+    let source_modified = std::fs::metadata(source)
+        .and_then(|meta| meta.modified())
+        .ok();
+    let cached_modified = std::fs::metadata(cached)
+        .and_then(|meta| meta.modified())
+        .ok();
+
+    match (source_modified, cached_modified) {
+        (Some(source_modified), Some(cached_modified)) => source_modified > cached_modified,
+        _ => true,
+    }
+}
+
 fn shortcut_icon_cache_should_refresh(shortcut_path: &Path, cached_icon: &Path) -> bool {
     let Some((source_path, _)) = shortcut_icon_source(shortcut_path) else {
         return true;
@@ -449,7 +465,7 @@ fn shortcut_icon_cache_should_refresh(shortcut_path: &Path, cached_icon: &Path) 
     should_refresh_icon(&source_path, cached_icon)
 }
 
-fn ensure_cached_icon(shortcut_path: &Path, _app_name: &str, cache_dir: &Path) -> Option<PathBuf> {
+fn ensure_cached_icon(shortcut_path: &Path, cache_dir: &Path) -> Option<PathBuf> {
     use windows::Win32::UI::WindowsAndMessaging::DestroyIcon;
 
     let cached_icon = icon_cache_file_path(shortcut_path, cache_dir);
@@ -466,14 +482,14 @@ fn ensure_cached_icon(shortcut_path: &Path, _app_name: &str, cache_dir: &Path) -
     wrote_icon.then_some(cached_icon)
 }
 
-fn warm_icon_cache_in_background(pending: Vec<(PathBuf, String)>, cache_dir: PathBuf) {
+fn warm_icon_cache_in_background(pending: Vec<PathBuf>, cache_dir: PathBuf) {
     if pending.is_empty() {
         return;
     }
 
     std::thread::spawn(move || {
-        for (shortcut_path, app_name) in pending {
-            let _ = ensure_cached_icon(&shortcut_path, &app_name, &cache_dir);
+        for shortcut_path in pending {
+            let _ = ensure_cached_icon(&shortcut_path, &cache_dir);
         }
     });
 }

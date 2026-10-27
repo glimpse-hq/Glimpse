@@ -573,11 +573,7 @@ fn default_speaker(id: &str) -> Option<Speaker> {
         SYSTEM_ID => Some(others),
         _ => {
             let number: u32 = id.strip_prefix(NUMBERED_PREFIX)?.parse().ok()?;
-            Some(Speaker {
-                id: id.to_string(),
-                name: format!("Speaker {number}"),
-                color: None,
-            })
+            Some(crate::library::numbered_speaker(SYSTEM_ID, number))
         }
     }
 }

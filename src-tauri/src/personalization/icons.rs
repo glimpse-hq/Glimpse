@@ -1,17 +1,18 @@
 use std::collections::HashSet;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
+use crate::analytics::crash::stable_hash;
 use crate::{AppRuntime, platform};
 
 const WEBSITE_ICON_USER_AGENT: &str =
     concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 const WEBSITE_ICON_MAX_BYTES: usize = 512 * 1024;
+const WEBSITE_ICON_MISS_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+const MAX_WEBSITE_ICONS: usize = 256;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledApp {
@@ -76,36 +77,41 @@ pub(crate) fn website_icon_cache_dir(app: &AppHandle<AppRuntime>) -> Option<Path
 }
 
 pub(crate) fn icon_cache_file_path(source_path: &Path, cache_dir: &Path) -> PathBuf {
-    let mut hasher = DefaultHasher::new();
-    #[cfg(target_os = "windows")]
-    "windows-target-icon-v4-png-crate".hash(&mut hasher);
-    source_path.to_string_lossy().hash(&mut hasher);
-    let key = hasher.finish();
-    cache_dir.join(format!("{key:016x}.png"))
+    let key = stable_hash(&source_path.to_string_lossy());
+    cache_dir.join(format!("{key}.png"))
 }
 
 fn website_icon_cache_file_path(site: &str, cache_dir: &Path) -> PathBuf {
-    let mut hasher = DefaultHasher::new();
-    site.hash(&mut hasher);
-    let key = hasher.finish();
-    cache_dir.join(format!("{key:016x}.ico"))
+    cache_dir.join(format!("{}.ico", stable_hash(site)))
 }
 
-pub(crate) fn should_refresh_icon(source: &Path, cached: &Path) -> bool {
-    if !cached.exists() {
-        return true;
-    }
+// Marks a site the icon service has no icon for.
+fn website_icon_miss_file_path(site: &str, cache_dir: &Path) -> PathBuf {
+    website_icon_cache_file_path(site, cache_dir).with_extension("miss")
+}
 
-    let source_modified = std::fs::metadata(source)
+fn is_recent_miss(path: &Path) -> bool {
+    std::fs::metadata(path)
         .and_then(|meta| meta.modified())
-        .ok();
-    let cached_modified = std::fs::metadata(cached)
-        .and_then(|meta| meta.modified())
-        .ok();
+        .ok()
+        .and_then(|modified| SystemTime::now().duration_since(modified).ok())
+        .is_some_and(|age| age < WEBSITE_ICON_MISS_TTL)
+}
 
-    match (source_modified, cached_modified) {
-        (Some(source_modified), Some(cached_modified)) => source_modified > cached_modified,
-        _ => true,
+/// Deletes cached icons with one of `extensions` that aren't in `keep`.
+fn prune_icon_cache(cache_dir: &Path, keep: &HashSet<PathBuf>, extensions: &[&str]) {
+    let Ok(entries) = std::fs::read_dir(cache_dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let cached = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| extensions.contains(&ext));
+        if cached && !keep.contains(&path) {
+            let _ = std::fs::remove_file(&path);
+        }
     }
 }
 
@@ -137,11 +143,13 @@ async fn fetch_and_cache_website_icon(
     let url = format!("https://icons.duckduckgo.com/ip3/{site}.ico");
     let response = client.get(&url).send().await.ok()?;
     if !response.status().is_success() {
+        let _ = std::fs::write(website_icon_miss_file_path(site, cache_dir), []);
         return None;
     }
 
     let bytes = response.bytes().await.ok()?;
     if bytes.is_empty() || bytes.len() > WEBSITE_ICON_MAX_BYTES {
+        let _ = std::fs::write(website_icon_miss_file_path(site, cache_dir), []);
         return None;
     }
 
@@ -172,23 +180,6 @@ fn warm_website_icon_cache_in_background(pending_sites: Vec<String>, cache_dir: 
     });
 }
 
-fn prune_orphan_website_icons(live_sites: &[String], cache_dir: &Path) {
-    let valid: HashSet<PathBuf> = live_sites
-        .iter()
-        .map(|site| website_icon_cache_file_path(site, cache_dir))
-        .collect();
-
-    let Ok(entries) = std::fs::read_dir(cache_dir) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|ext| ext.to_str()) == Some("ico") && !valid.contains(&path) {
-            let _ = std::fs::remove_file(&path);
-        }
-    }
-}
-
 #[tauri::command]
 pub fn list_website_icons(
     sites: Vec<String>,
@@ -208,7 +199,7 @@ pub fn list_website_icons(
     let Some(cache_dir) = website_icon_cache_dir(&app) else {
         return Ok(normalized
             .into_iter()
-            .take(256)
+            .take(MAX_WEBSITE_ICONS)
             .map(|site| WebsiteIcon {
                 site,
                 icon_path: None,
@@ -216,16 +207,27 @@ pub fn list_website_icons(
             .collect());
     };
 
-    prune_orphan_website_icons(&normalized, &cache_dir);
+    let keep: HashSet<PathBuf> = normalized
+        .iter()
+        .flat_map(|site| {
+            [
+                website_icon_cache_file_path(site, &cache_dir),
+                website_icon_miss_file_path(site, &cache_dir),
+            ]
+        })
+        .collect();
+    prune_icon_cache(&cache_dir, &keep, &["ico", "miss"]);
 
     let mut pending_sites = Vec::new();
-    let mut icons = Vec::with_capacity(normalized.len().min(256));
-    for site in normalized.into_iter().take(256) {
+    let mut icons = Vec::with_capacity(normalized.len().min(MAX_WEBSITE_ICONS));
+    for site in normalized.into_iter().take(MAX_WEBSITE_ICONS) {
         let cached = website_icon_cache_file_path(&site, &cache_dir);
         let icon_path = if cached.exists() {
             Some(cached.to_string_lossy().to_string())
         } else {
-            pending_sites.push(site.clone());
+            if !is_recent_miss(&website_icon_miss_file_path(&site, &cache_dir)) {
+                pending_sites.push(site.clone());
+            }
             None
         };
         icons.push(WebsiteIcon { site, icon_path });
@@ -238,12 +240,16 @@ pub fn list_website_icons(
 #[tauri::command]
 pub fn list_installed_apps(app: AppHandle<AppRuntime>) -> Result<Vec<InstalledApp>, String> {
     #[cfg(target_os = "macos")]
-    {
-        platform::macos::icons::list_installed_apps(&app)
-    }
-
+    let apps = platform::macos::icons::list_installed_apps(&app)?;
     #[cfg(target_os = "windows")]
-    {
-        platform::windows::icons::list_installed_apps(&app)
+    let apps = platform::windows::icons::list_installed_apps(&app)?;
+
+    if let Some(cache_dir) = app_icon_cache_dir(&app) {
+        let keep: HashSet<PathBuf> = apps
+            .iter()
+            .map(|installed| icon_cache_file_path(Path::new(&installed.path), &cache_dir))
+            .collect();
+        prune_icon_cache(&cache_dir, &keep, &["png"]);
     }
+    Ok(apps)
 }

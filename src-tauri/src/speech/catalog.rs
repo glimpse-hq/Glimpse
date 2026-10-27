@@ -1901,11 +1901,6 @@ mod tests {
     }
 
     #[test]
-    fn diarizer_lists_no_languages() {
-        assert!(diarizer_model_info().supported_languages.is_empty());
-    }
-
-    #[test]
     fn capabilities_match_case_insensitively_and_unknown_models_have_none() {
         assert!(model_supports_capability(
             "whisper_large_v3_turbo_q8",

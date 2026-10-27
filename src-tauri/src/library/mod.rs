@@ -1,5 +1,6 @@
 mod bleed;
 pub(crate) mod commands;
+mod export;
 mod processing;
 mod queue;
 pub(crate) mod repo;
@@ -9,12 +10,12 @@ mod types;
 pub(crate) use bleed::{BLEED_REACH_MS, remove_live_bleed};
 #[cfg(target_os = "macos")]
 pub(crate) use commands::handle_opened_paths;
+pub(crate) use export::{build_export_content, speaker_name};
 pub(crate) use processing::{
-    build_export_content, convert_segments_to_ms, convert_to_wav, create_recording_item,
-    read_wav_info, speaker_name,
+    convert_segments_to_ms, convert_to_wav, create_recording_item, read_wav_info,
 };
 pub(crate) use queue::{LibraryJob, LibraryJobKind, schedule_library_job};
-pub(crate) use speakers::{recording_speakers, voiced_segments};
+pub(crate) use speakers::{numbered_speaker, recording_speakers, voiced_segments};
 #[cfg(target_os = "macos")]
 pub use types::EVENT_LIBRARY_RENDERER_READY;
 pub(crate) use types::RecordingOutput;

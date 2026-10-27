@@ -15,6 +15,15 @@ use super::types::{
 const MICROPHONE_SPEAKER: &str = "you";
 const SYSTEM_SPEAKER: &str = "others";
 
+/// A detected speaker: id `{prefix}_{number}`, named "Speaker {number}".
+pub(crate) fn numbered_speaker(prefix: &str, number: impl std::fmt::Display) -> Speaker {
+    Speaker {
+        id: format!("{prefix}_{number}"),
+        name: format!("Speaker {number}"),
+        color: None,
+    }
+}
+
 /// The speakers a two-track recording starts with: microphone, then system audio.
 pub(crate) fn recording_speakers() -> [Speaker; 2] {
     [
@@ -156,12 +165,9 @@ pub(super) fn label_tracks<'a>(
         let ids: Vec<String> = voices
             .iter()
             .map(|_| {
-                let id = format!("{prefix}_{next_number}");
-                speakers.push(Speaker {
-                    id: id.clone(),
-                    name: format!("Speaker {next_number}"),
-                    color: None,
-                });
+                let speaker = numbered_speaker(prefix, next_number);
+                let id = speaker.id.clone();
+                speakers.push(speaker);
                 next_number += 1;
                 id
             })
@@ -656,13 +662,10 @@ pub(super) fn keep_speaker_names(
         .filter_map(|speaker| {
             let (name, color) = match defaults.iter().find(|default| default.id == speaker.id) {
                 Some(default) => (default.name.clone(), default.color.clone()),
-                None => (
-                    format!(
-                        "Speaker {}",
-                        speaker.id.rsplit('_').next().unwrap_or_default()
-                    ),
-                    None,
-                ),
+                None => {
+                    let (prefix, number) = speaker.id.rsplit_once('_').unwrap_or(("", &speaker.id));
+                    (numbered_speaker(prefix, number).name, None)
+                }
             };
             let named = speaker.name != name;
             (named || speaker.color != color).then_some((speaker, named))
@@ -766,5 +769,100 @@ fn from_system_track(speaker_id: Option<&str>) -> Option<bool> {
         Some(false)
     } else {
         None
+    }
+}
+
+pub(super) fn diarize_segments(
+    segments: &[glimpse_speech::remote::DiarizedSegment],
+) -> (Vec<TranscriptSegment>, Option<Vec<Speaker>>) {
+    let mut labels: Vec<String> = Vec::new();
+    for segment in segments {
+        if let Some(label) = segment.speaker.as_deref().map(str::trim)
+            && !label.is_empty()
+            && !labels.iter().any(|seen| seen == label)
+        {
+            labels.push(label.to_string());
+        }
+    }
+
+    let speakers: Vec<Speaker> = (1..=labels.len())
+        .map(|number| numbered_speaker("speaker", number))
+        .collect();
+
+    let converted = segments
+        .iter()
+        .map(|segment| {
+            let speaker_id = segment
+                .speaker
+                .as_deref()
+                .map(str::trim)
+                .filter(|label| !label.is_empty())
+                .and_then(|label| {
+                    labels
+                        .iter()
+                        .position(|seen| seen == label)
+                        .map(|index| speakers[index].id.clone())
+                });
+            TranscriptSegment {
+                start_ms: (segment.start * 1000.0).max(0.0) as u64,
+                end_ms: (segment.end * 1000.0).max(0.0) as u64,
+                text: segment.text.trim().to_string(),
+                speaker_id,
+            }
+        })
+        .collect();
+
+    (converted, (!speakers.is_empty()).then_some(speakers))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn diarized_labels_map_to_numbered_speakers_in_first_seen_order() {
+        let segments: Vec<glimpse_speech::remote::DiarizedSegment> =
+            serde_json::from_value(serde_json::json!([
+                { "start": 0.0, "end": 1.0, "text": " a ", "speaker": "B" },
+                { "start": 1.0, "end": 2.0, "text": "b", "speaker": " A " },
+                { "start": 2.0, "end": 3.0, "text": "c", "speaker": "B" },
+                { "start": 3.0, "end": 4.0, "text": "d", "speaker": "  " },
+                { "start": 4.0, "end": 5.0, "text": "e" }
+            ]))
+            .unwrap();
+        let (converted, speakers) = diarize_segments(&segments);
+        let speakers = speakers.unwrap();
+        assert_eq!(
+            speakers,
+            vec![
+                numbered_speaker("speaker", 1),
+                numbered_speaker("speaker", 2)
+            ]
+        );
+        let ids: Vec<_> = converted.iter().map(|s| s.speaker_id.as_deref()).collect();
+        assert_eq!(
+            ids,
+            vec![
+                Some("speaker_1"),
+                Some("speaker_2"),
+                Some("speaker_1"),
+                None,
+                None
+            ]
+        );
+        assert_eq!(converted[0].text, "a");
+        assert_eq!(converted[1].start_ms, 1_000);
+    }
+
+    #[test]
+    fn diarized_segments_without_labels_have_no_speakers() {
+        let segments: Vec<glimpse_speech::remote::DiarizedSegment> =
+            serde_json::from_value(serde_json::json!([
+                { "start": 0.0, "end": 1.0, "text": "a" }
+            ]))
+            .unwrap();
+        let (converted, speakers) = diarize_segments(&segments);
+        assert!(speakers.is_none());
+        assert_eq!(converted.len(), 1);
     }
 }

@@ -16,7 +16,7 @@ use crate::{
 use super::bleed::normalize;
 use super::processing::{
     WavChunks, WavInfo, compute_total_chunks, convert_library_item, convert_segments_to_ms,
-    diarize_segments, read_wav_info, wav_is_silent,
+    read_wav_info, wav_is_silent,
 };
 use super::speakers::{self, Track};
 use super::types::{
@@ -218,27 +218,20 @@ fn start_library_transcription_internal(
         Ok(Some(item)) => item,
         Ok(None) => {
             tracing::error!("Library item not found for transcription: {id}");
-            let _ = app.emit(
-                EVENT_LIBRARY_ERROR,
-                LibraryErrorPayload {
-                    id: id.clone(),
-                    message: "Library item not found".to_string(),
-                    cancelled: false,
-                },
+            fail_library_item(
+                app,
+                &storage,
+                &id,
+                "Library item not found".to_string(),
+                false,
             );
             release_library_slot(app, state, &id);
             return;
         }
         Err(err) => {
             tracing::error!("Failed to load library item {id}: {err}");
-            let _ = app.emit(
-                EVENT_LIBRARY_ERROR,
-                LibraryErrorPayload {
-                    id: id.clone(),
-                    message: format!("Failed to load library item: {err}"),
-                    cancelled: false,
-                },
-            );
+            let message = format!("Failed to load library item: {err}");
+            fail_library_item(app, &storage, &id, message, false);
             release_library_slot(app, state, &id);
             return;
         }
@@ -342,23 +335,8 @@ fn start_library_transcription_internal(
                         source.as_str(),
                     );
                     if !restore_previous_transcript(&app_handle, &storage, &item, false) {
-                        let _ = storage.update_library_item(
-                            &id,
-                            LibraryItemPatch {
-                                status: Some(LibraryItemStatus::Error {
-                                    message: "No speech detected".to_string(),
-                                }),
-                                ..Default::default()
-                            },
-                        );
-                        let _ = app_handle.emit(
-                            EVENT_LIBRARY_ERROR,
-                            LibraryErrorPayload {
-                                id: id.clone(),
-                                message: "No speech detected".to_string(),
-                                cancelled: false,
-                            },
-                        );
+                        let message = "No speech detected".to_string();
+                        fail_library_item(&app_handle, &storage, &id, message, false);
                     }
                 } else {
                     let speech_model = result
@@ -382,7 +360,7 @@ fn start_library_transcription_internal(
                             ..Default::default()
                         },
                     );
-                    let _ = storage.update_library_item(
+                    let saved = storage.update_library_item(
                         &id,
                         LibraryItemPatch {
                             status: Some(LibraryItemStatus::Complete),
@@ -396,11 +374,23 @@ fn start_library_transcription_internal(
                             ..Default::default()
                         },
                     );
-
-                    let _ = app_handle.emit(
-                        EVENT_LIBRARY_COMPLETE,
-                        LibraryCompletePayload { id: id.clone() },
-                    );
+                    match saved {
+                        Ok(_) => {
+                            let _ = app_handle.emit(
+                                EVENT_LIBRARY_COMPLETE,
+                                LibraryCompletePayload { id: id.clone() },
+                            );
+                        }
+                        Err(err) => {
+                            tracing::error!(
+                                "Failed to save transcript of library item {id}: {err}"
+                            );
+                            if !restore_previous_transcript(&app_handle, &storage, &item, false) {
+                                let message = format!("Failed to save transcript: {err}");
+                                fail_library_item(&app_handle, &storage, &id, message, false);
+                            }
+                        }
+                    }
                 }
             }
             Ok(Err(err)) => {
@@ -418,28 +408,7 @@ fn start_library_transcription_internal(
                     );
                 }
                 if !restore_previous_transcript(&app_handle, &storage, &item, cancelled) {
-                    let status = if cancelled {
-                        LibraryItemStatus::Cancelled
-                    } else {
-                        LibraryItemStatus::Error {
-                            message: message.clone(),
-                        }
-                    };
-                    let _ = storage.update_library_item(
-                        &id,
-                        LibraryItemPatch {
-                            status: Some(status),
-                            ..Default::default()
-                        },
-                    );
-                    let _ = app_handle.emit(
-                        EVENT_LIBRARY_ERROR,
-                        LibraryErrorPayload {
-                            id: id.clone(),
-                            cancelled,
-                            message,
-                        },
-                    );
+                    fail_library_item(&app_handle, &storage, &id, message, cancelled);
                 }
             }
             Err(err) => {
@@ -454,23 +423,7 @@ fn start_library_transcription_internal(
                     source.as_str(),
                 );
                 if !restore_previous_transcript(&app_handle, &storage, &item, false) {
-                    let _ = storage.update_library_item(
-                        &id,
-                        LibraryItemPatch {
-                            status: Some(LibraryItemStatus::Error {
-                                message: message.clone(),
-                            }),
-                            ..Default::default()
-                        },
-                    );
-                    let _ = app_handle.emit(
-                        EVENT_LIBRARY_ERROR,
-                        LibraryErrorPayload {
-                            id: id.clone(),
-                            cancelled: false,
-                            message,
-                        },
-                    );
+                    fail_library_item(&app_handle, &storage, &id, message, false);
                 }
             }
         }
@@ -485,15 +438,8 @@ fn handle_library_job_error(
     id: &str,
     err: anyhow::Error,
 ) {
-    let cancelled = is_cancelled_error(&err);
     let message = err.to_string();
-    let status = if cancelled {
-        LibraryItemStatus::Cancelled
-    } else {
-        LibraryItemStatus::Error {
-            message: message.clone(),
-        }
-    };
+    // Only imports run FFmpeg.
     if is_ffmpeg_error_message(&message) && state.should_show_ffmpeg_toast() {
         toast::show_with_action(
             app,
@@ -504,22 +450,40 @@ fn handle_library_job_error(
             "FFmpeg Help",
         );
     }
-    let _ = state.storage().update_library_item(
-        id,
-        LibraryItemPatch {
-            status: Some(status),
-            ..Default::default()
-        },
-    );
+    fail_library_item(app, &state.storage(), id, message, is_cancelled_error(&err));
+    release_library_slot(app, state, id);
+}
+
+/// Saves a failed or cancelled status and tells the Library.
+pub(crate) fn fail_library_item(
+    app: &AppHandle<AppRuntime>,
+    storage: &StorageManager,
+    id: &str,
+    message: String,
+    cancelled: bool,
+) {
+    let status = if cancelled {
+        LibraryItemStatus::Cancelled
+    } else {
+        LibraryItemStatus::Error {
+            message: message.clone(),
+        }
+    };
+    let patch = LibraryItemPatch {
+        status: Some(status),
+        ..Default::default()
+    };
+    if let Err(err) = storage.update_library_item(id, patch) {
+        tracing::error!("Failed to save status of library item {id}: {err}");
+    }
     let _ = app.emit(
         EVENT_LIBRARY_ERROR,
         LibraryErrorPayload {
             id: id.to_string(),
-            cancelled,
             message,
+            cancelled,
         },
     );
-    release_library_slot(app, state, id);
 }
 
 fn library_transcription_mode(model: &str) -> &'static str {
@@ -1041,7 +1005,7 @@ fn transcribe_remote(
             );
             let (segments, speakers) = match success.diarized_segments.as_deref() {
                 Some(segs) => {
-                    let (converted, speakers) = diarize_segments(segs);
+                    let (converted, speakers) = speakers::diarize_segments(segs);
                     (Some(converted), speakers)
                 }
                 None => (result.segments.as_deref().map(convert_segments_to_ms), None),

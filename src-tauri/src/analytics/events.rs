@@ -497,7 +497,11 @@ pub fn track_settings_changes(
         super::dictation::llm_provider_kind(next),
     );
     if from != to {
-        capture_event(app, "llm_provider_changed", json!({ "from": from, "to": to }));
+        capture_event(
+            app,
+            "llm_provider_changed",
+            json!({ "from": from, "to": to }),
+        );
     }
 }
 

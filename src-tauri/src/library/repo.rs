@@ -7,6 +7,8 @@ use crate::library::{
     LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, PreviousTranscript,
 };
 
+const ACTIVE_STATUSES: &str = "('pending', 'importing', 'transcribing')";
+
 const LIBRARY_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
     error_message, transcript, segments, words, duration_seconds, file_size_bytes, original_format, \
     created_at, transcribed_at, tags, llm_cleanup_enabled, speech_model, show_timestamps, \
@@ -124,8 +126,10 @@ pub(crate) fn get_library_items_page(
 /// Marks an active item as cancelling; false when it already has another status.
 pub(crate) fn mark_library_item_cancelling(conn: &Connection, id: &str) -> Result<bool> {
     let changed = conn.execute(
-        "UPDATE library_items SET status = 'cancelling', progress = 0
-         WHERE id = ?1 AND status IN ('pending', 'importing', 'transcribing')",
+        &format!(
+            "UPDATE library_items SET status = 'cancelling', progress = 0
+         WHERE id = ?1 AND status IN {ACTIVE_STATUSES}"
+        ),
         params![id],
     )?;
     Ok(changed > 0)
@@ -507,6 +511,21 @@ pub(crate) fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
     (text_terms, tag_terms)
 }
 
+const TAG_CLAUSE: &str = "tags LIKE ? ESCAPE '\\'";
+
+fn escape_like(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
+// Tags are stored as a JSON array, so match the tag's quoted JSON form.
+fn tag_like_pattern(tag: &str) -> String {
+    let quoted = serde_json::to_string(tag).unwrap_or_default();
+    format!("%{}%", escape_like(&quoted))
+}
+
 fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut clauses: Vec<String> = vec!["deleted = 0".to_string()];
     let mut params: Vec<Box<dyn ToSql>> = Vec::new();
@@ -518,19 +537,15 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
 
         // Each word matches independently, so word order and gaps don't matter.
         for term in text_terms {
-            let escaped = term
-                .replace('\\', "\\\\")
-                .replace('%', "\\%")
-                .replace('_', "\\_");
-            let like = format!("%{escaped}%");
+            let like = format!("%{}%", escape_like(&term));
             clauses.push("(name LIKE ? ESCAPE '\\' OR transcript LIKE ? ESCAPE '\\')".to_string());
             params.push(Box::new(like.clone()));
             params.push(Box::new(like));
         }
 
         for tag in tag_terms {
-            clauses.push("tags LIKE ?".to_string());
-            params.push(Box::new(format!("%\"{}\"%", tag)));
+            clauses.push(TAG_CLAUSE.to_string());
+            params.push(Box::new(tag_like_pattern(&tag)));
         }
     }
 
@@ -538,7 +553,7 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         let trimmed = status.trim();
         if !trimmed.is_empty() {
             if trimmed == "active" {
-                clauses.push("status IN ('pending', 'importing', 'transcribing')".to_string());
+                clauses.push(format!("status IN {ACTIVE_STATUSES}"));
             } else {
                 clauses.push("status = ?".to_string());
                 params.push(Box::new(trimmed.to_string()));
@@ -549,8 +564,8 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
     if let Some(tag) = filter.tag.as_ref()
         && !tag.trim().is_empty()
     {
-        clauses.push("tags LIKE ?".to_string());
-        params.push(Box::new(format!("%\"{}\"%", tag.trim())));
+        clauses.push(TAG_CLAUSE.to_string());
+        params.push(Box::new(tag_like_pattern(tag.trim())));
     }
 
     if let Some(cutoff) = filter.since_days.and_then(|days| {

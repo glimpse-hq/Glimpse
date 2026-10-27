@@ -10,17 +10,17 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::library::{LibraryJob, LibraryJobKind};
 use crate::{AppRuntime, AppState};
 
+use super::export::build_export_content;
 use super::processing::{
-    build_export_content, create_item_from_path, library_root, probe_media_duration_ms,
-    stored_original_path,
+    create_item_from_path, library_root, probe_media_duration_ms, stored_original_path,
 };
-use super::queue::schedule_library_job;
+use super::queue::{fail_library_item, schedule_library_job};
 #[cfg(target_os = "macos")]
 use super::types::EVENT_LIBRARY_OPEN_IMPORT;
 use super::types::{
-    EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR, EVENT_LIBRARY_RESTORED, ExportFormat, JobSource,
-    LibraryCompletePayload, LibraryErrorPayload, LibraryFilter, LibraryImportOptions, LibraryItem,
-    LibraryItemPatch, LibraryItemStatus, LibraryItemsPage,
+    EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_RESTORED, ExportFormat, JobSource,
+    LibraryCompletePayload, LibraryFilter, LibraryImportOptions, LibraryItem, LibraryItemPatch,
+    LibraryItemStatus, LibraryItemsPage, cancelled_error,
 };
 
 #[cfg(target_os = "macos")]
@@ -186,15 +186,7 @@ pub async fn delete_library_item(
             // The item stays; a job it lost from the queue shows as cancelled, like
             // the Cancel button, unless a retry has queued it again meanwhile.
             if was_queued && !state.library_job_pending(&id) {
-                set_library_status(&storage, &id, LibraryItemStatus::Cancelled);
-                let _ = app.emit(
-                    EVENT_LIBRARY_ERROR,
-                    LibraryErrorPayload {
-                        id: id.clone(),
-                        message: "Transcription cancelled".to_string(),
-                        cancelled: true,
-                    },
-                );
+                fail_library_item(&app, &storage, &id, cancelled_error().to_string(), true);
             }
             return Err(format!("Failed to delete library item: {err}"));
         }
@@ -341,14 +333,12 @@ pub fn cancel_library_transcription(
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     if state.remove_library_job(&id) {
-        set_library_status(&state.storage(), &id, LibraryItemStatus::Cancelled);
-        let _ = app.emit(
-            EVENT_LIBRARY_ERROR,
-            LibraryErrorPayload {
-                id,
-                message: "Transcription cancelled".to_string(),
-                cancelled: true,
-            },
+        fail_library_item(
+            &app,
+            &state.storage(),
+            &id,
+            cancelled_error().to_string(),
+            true,
         );
         return Ok(());
     }
@@ -384,15 +374,7 @@ pub fn retry_library_transcription(
     let job = match build_retry_job(&item) {
         Ok(job) => job,
         Err(message) => {
-            set_library_item_error(&storage, &id, &message);
-            let _ = app.emit(
-                EVENT_LIBRARY_ERROR,
-                LibraryErrorPayload {
-                    id,
-                    message: message.clone(),
-                    cancelled: false,
-                },
-            );
+            fail_library_item(&app, &storage, &id, message.clone(), false);
             return Err(message);
         }
     };
@@ -599,15 +581,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                     );
                     continue;
                 }
-                set_library_status(&storage, &item.id, LibraryItemStatus::Cancelled);
-                let _ = app.emit(
-                    EVENT_LIBRARY_ERROR,
-                    LibraryErrorPayload {
-                        id: item.id.clone(),
-                        message: "Transcription cancelled".to_string(),
-                        cancelled: true,
-                    },
-                );
+                fail_library_item(app, &storage, &item.id, cancelled_error().to_string(), true);
             }
             LibraryItemStatus::Pending
             | LibraryItemStatus::Importing { .. }
@@ -645,7 +619,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                             },
                         );
                     }
-                    None => set_library_item_error(&storage, &item.id, &message),
+                    None => fail_library_item(app, &storage, &item.id, message, false),
                 },
             },
             _ => {}
@@ -798,20 +772,6 @@ fn find_recoverable_source_path(item: &LibraryItem) -> Option<PathBuf> {
 
 fn missing_original_file_message() -> String {
     "Original file not found. Re-import the file to try again.".to_string()
-}
-
-fn set_library_item_error(
-    storage: &std::sync::Arc<crate::storage::StorageManager>,
-    id: &str,
-    message: &str,
-) {
-    set_library_status(
-        storage,
-        id,
-        LibraryItemStatus::Error {
-            message: message.to_string(),
-        },
-    );
 }
 
 fn set_library_status(
