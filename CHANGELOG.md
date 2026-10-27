@@ -43,6 +43,16 @@
 - The API server answers an unknown model name with a clear request error instead of a server error.
 - Library transcripts with detected speakers always show as speaker paragraphs, instead of sometimes falling back to plain text.
 - Copying or exporting a transcript with detected speakers keeps the same order as the speaker view.
+- With cleanup on, text pastes sooner, especially when the app you're dictating into is slow to respond.
+- If saving a finished Library transcription fails, Glimpse keeps your previous transcript and shows an error instead of reporting success.
+- Running setup again from Settings no longer resets your shortcuts, cleanup, Auto Dictionary and auto-update settings.
+- Going back during setup while recording a shortcut no longer leaves your dictation shortcuts unresponsive.
+- Using Edit mode without a writing model now says so, instead of "Transcription failed".
+- Apps whose icon only lives in their asset catalog, like Shottr, now show their icon in Personalization on Mac.
+- Filtering the Library by a tag no longer also matches tags that differ only by an underscore or percent sign.
+- Words and replacements added with `glimpse dictionary` and `glimpse replacements` show up in open windows right away.
+- You can clear the API server's port field and type a new one without it snapping back.
+- The Microsoft Store version cleans up the working files of failed imports and finished recordings.
 
 1.3.6
 
