@@ -1040,6 +1040,66 @@ msgstr ""
 #~ msgstr "تم الاحتفاظ بعناصر المكتبة وعددها {libraryItems}. يتيح Glimpse Plus فتحها مجددًا."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% أسرع"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions"
+#~ msgstr "تعليمات مخصصة"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.disable_mode"
+#~ msgstr "تعطيل الوضع"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.enable_mode"
+#~ msgstr "تفعيل الوضع"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "أتحدث بسرعة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "ملاحظة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "ملصق"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.save_name"
+#~ msgstr "حفظ الاسم"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "من الكتابة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.words"
+#~ msgstr "كلمات"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "السنة"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.empty.title"
+#~ msgstr "لا توجد أوضاع بعد"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -1225,11 +1285,6 @@ msgstr "{daysDictated} أيام تحدثت فيها بدلًا من الكتاب
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.9"
 msgstr "{daysDictated} يومًا أنجزت فيها عملي بالكلام. @try_glimpse_app"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.faster_value"
-#~ msgstr "{fasterPercent}% أسرع"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1565,6 +1620,11 @@ msgid "library.filter.all"
 msgstr "الكل"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.global.targets"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.all_posts"
 msgstr "كل المنشورات"
@@ -1839,11 +1899,6 @@ msgid "member_card.tier_business"
 msgstr "الأعمال"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.free_confirm.cancel"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.cancel"
 msgstr "إلغاء"
@@ -1868,6 +1923,11 @@ msgstr "إلغاء"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.cancel"
 msgstr "إلغاء"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.cancel"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -2216,11 +2276,6 @@ msgid "settings.local_api.configuration"
 msgstr "الإعداد"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.free_confirm.continue"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue"
 msgstr "متابعة"
@@ -2229,6 +2284,11 @@ msgstr "متابعة"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.continue"
 msgstr "متابعة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.continue"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/TrialEndedScreen.tsx
@@ -2364,8 +2424,18 @@ msgstr "نسخ الرسالة"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copy_original_text"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_selection"
 msgstr "نسخ التحديد"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copy_edit_instruction"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -2654,11 +2724,6 @@ msgstr "مخصص"
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.speech_model.provider.custom"
 msgstr "مخصص"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions"
-msgstr "تعليمات مخصصة"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
@@ -2959,11 +3024,6 @@ msgid "personalization.mode.disable"
 msgstr "تعطيل"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.disable_mode"
-msgstr "تعطيل الوضع"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.not_saved.v2"
 msgstr ""
@@ -2999,11 +3059,6 @@ msgid "model_picker.download"
 msgstr "تنزيل"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.downloads.failed"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
 msgstr "فشل التنزيل"
@@ -3012,6 +3067,11 @@ msgstr "فشل التنزيل"
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.failed"
 msgstr "فشل التنزيل"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.downloads.failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3074,19 +3134,30 @@ msgid "dictionary.edit_entry"
 msgstr "تعديل {entry}"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.edit_name"
-msgstr "تعديل اسم الوضع"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_details"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.edit.name"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_mode"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.modal.edit_name"
+msgstr "تعديل اسم الوضع"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit"
 msgstr "حرِّر بصوتك"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.edit.name"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
@@ -3117,11 +3188,6 @@ msgstr "تفعيل"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.enable"
 msgstr "تفعيل في الإعدادات"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.enable_mode"
-msgstr "تفعيل الوضع"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3415,11 +3481,6 @@ msgid "onboarding.license_step.title_free.v2"
 msgstr "احصل على كل الميزات مع Glimpse Plus."
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.get_plus"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v2"
 msgstr "احصل على Glimpse Plus"
@@ -3428,6 +3489,11 @@ msgstr "احصل على Glimpse Plus"
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.buy.plus"
 msgstr "احصل على Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.get_plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3575,6 +3641,12 @@ msgid "settings.models.language.g1_description"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.global.name"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.speak"
 msgstr "تفضّل بالكلام."
@@ -3716,11 +3788,6 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.speak_at"
-#~ msgstr "أتحدث بسرعة"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "أتحدث بسرعة {wpm} كلمة في الدقيقة. اتضح أن الكلام يتفوق على الكتابة. مُملى باستخدام @try_glimpse_app"
 
@@ -3851,6 +3918,11 @@ msgstr "يثبِّت أمر {0} لاستخدامه في Terminal والنصوص 
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.instantly"
 msgstr "فوراً"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.instructions"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -4575,11 +4647,6 @@ msgstr "لا توجد نماذج مطابقة."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.empty.title"
-msgstr "لا توجد أوضاع بعد"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_notes"
 msgstr "لا توجد ملاحظات بعد"
 
@@ -4766,11 +4833,6 @@ msgid "library.retranscribe.timestamps_unsupported"
 msgstr "غير مدعوم من قِبَل هذا النموذج"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.note"
-#~ msgstr "ملاحظة"
-
-#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.empty"
 msgstr "لا جديد في الوقت الحالي."
@@ -4941,6 +5003,11 @@ msgid "speaker_color.orange"
 msgstr "برتقالي"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.original_text"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text"
 msgstr "النص الأصلي"
@@ -5080,11 +5147,6 @@ msgstr "المنفذ"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.post"
 msgstr "نشر"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.poster"
-#~ msgstr "ملصق"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5500,6 +5562,11 @@ msgid "settings.local_api.restart_required"
 msgstr "أعد التشغيل لتطبيق التغييرات"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.restore_default"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.restore_original"
 msgstr "استعادة النص الأصلي"
@@ -5654,11 +5721,6 @@ msgstr "S"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.save"
 msgstr "حفظ"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.save_name"
-msgstr "حفظ الاسم"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6140,6 +6202,11 @@ msgid "onboarding.license_step.tile_offline_body"
 msgstr "يبقى الكلام على هذا الكمبيوتر."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_instruction"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.format_csv"
 msgstr "جدول بيانات (CSV)"
@@ -6400,11 +6467,6 @@ msgstr "حجم النص"
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size"
 msgstr "حجم النص"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.than_typing"
-#~ msgstr "من الكتابة"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6924,6 +6986,12 @@ msgid "settings.models.installed.use"
 msgstr "استخدام"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: personality.name
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.mode.toggle"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_subtitle"
 msgstr "استخدام Glimpse من الطرفية أو البرامج النصية"
@@ -7060,11 +7128,6 @@ msgstr "لا يسمح Windows لـ Glimpse بالتقاط اختصارك في ا
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.words"
-#~ msgstr "كلمات"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "كلمة في الدقيقة"
 
@@ -7095,11 +7158,6 @@ msgstr "نموذج الكتابة"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.writing"
 msgstr "نموذج الكتابة"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.year"
-#~ msgstr "السنة"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -7250,33 +7308,3 @@ msgstr "ستظهر كلماتك هنا…"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.zoom"
 msgstr "تكبير/تصغير"
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_details"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_mode"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.original_text"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_instruction"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copy_original_text"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copy_edit_instruction"
-msgstr ""

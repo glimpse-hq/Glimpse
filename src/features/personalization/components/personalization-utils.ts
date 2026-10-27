@@ -9,6 +9,7 @@ export type WebsiteIcon = {
   icon_path?: string | null;
 };
 
+export const GLOBAL_MODE_ID = "global";
 export const MAX_INSTRUCTIONS_CHARS = 3000;
 
 export const normalizeEntry = (value: string) => value.trim();

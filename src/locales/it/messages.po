@@ -1040,6 +1040,66 @@ msgstr ""
 #~ msgstr "I tuoi {libraryItems} elementi sono conservati. Potrai riaprirli con Glimpse Plus."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% più veloce"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions"
+#~ msgstr "Istruzioni personalizzate"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.disable_mode"
+#~ msgstr "Disabilita modalità"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.enable_mode"
+#~ msgstr "Attiva modalità"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "Parlo a"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "Nota"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "Poster"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.save_name"
+#~ msgstr "Salva nome"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "rispetto alla digitazione"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.words"
+#~ msgstr "parole"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "Anno"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.empty.title"
+#~ msgstr "Nessuna modalità ancora"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse trasforma la mia voce in testo.»"
@@ -1225,11 +1285,6 @@ msgstr "{daysDictated} giorni a parlare invece di digitare nell'ultimo anno, {0}
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.9"
 msgstr "{daysDictated} giorni a lavorare parlando. @try_glimpse_app"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.faster_value"
-#~ msgstr "{fasterPercent}% più veloce"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1565,6 +1620,11 @@ msgid "library.filter.all"
 msgstr "Tutti"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.global.targets"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.all_posts"
 msgstr "Tutti i post"
@@ -1839,11 +1899,6 @@ msgid "member_card.tier_business"
 msgstr "Business"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.free_confirm.cancel"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.cancel"
 msgstr "Annulla"
@@ -1868,6 +1923,11 @@ msgstr "Annulla"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.cancel"
 msgstr "Annulla"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.cancel"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -2216,11 +2276,6 @@ msgid "settings.local_api.configuration"
 msgstr "Configurazione"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.free_confirm.continue"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue"
 msgstr "Continua"
@@ -2229,6 +2284,11 @@ msgstr "Continua"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.continue"
 msgstr "Continua"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.continue"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/TrialEndedScreen.tsx
@@ -2364,8 +2424,18 @@ msgstr "Copia messaggio"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copy_original_text"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_selection"
 msgstr "Copia selezione"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copy_edit_instruction"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -2654,11 +2724,6 @@ msgstr "Personalizzato"
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.speech_model.provider.custom"
 msgstr "Personalizzato"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions"
-msgstr "Istruzioni personalizzate"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
@@ -2959,11 +3024,6 @@ msgid "personalization.mode.disable"
 msgstr "Disabilita"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.disable_mode"
-msgstr "Disabilita modalità"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.not_saved.v2"
 msgstr ""
@@ -2999,11 +3059,6 @@ msgid "model_picker.download"
 msgstr "Scarica"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.downloads.failed"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
 msgstr "Download non riuscito"
@@ -3012,6 +3067,11 @@ msgstr "Download non riuscito"
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.failed"
 msgstr "Download non riuscito"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.downloads.failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3074,19 +3134,30 @@ msgid "dictionary.edit_entry"
 msgstr "Modifica {entry}"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.edit_name"
-msgstr "Modifica nome modalità"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_details"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.edit.name"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_mode"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.modal.edit_name"
+msgstr "Modifica nome modalità"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit"
 msgstr "Modifica con la tua voce"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.edit.name"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
@@ -3117,11 +3188,6 @@ msgstr "Abilita"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.enable"
 msgstr "Attiva in Impostazioni"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.enable_mode"
-msgstr "Attiva modalità"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3415,11 +3481,6 @@ msgid "onboarding.license_step.title_free.v2"
 msgstr "Ottieni tutto con Glimpse Plus."
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.get_plus"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v2"
 msgstr "Acquista Glimpse Plus"
@@ -3428,6 +3489,11 @@ msgstr "Acquista Glimpse Plus"
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.buy.plus"
 msgstr "Acquista Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.get_plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3575,6 +3641,12 @@ msgid "settings.models.language.g1_description"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.global.name"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.speak"
 msgstr "Parla pure."
@@ -3716,11 +3788,6 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.speak_at"
-#~ msgstr "Parlo a"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "Parlo a {wpm} parole al minuto. Parlare batte la digitazione. Dettato con @try_glimpse_app"
 
@@ -3851,6 +3918,11 @@ msgstr "Installa il comando {0} per Terminale, script e strumenti di automazione
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.instantly"
 msgstr "Immediatamente"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.instructions"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -4575,11 +4647,6 @@ msgstr "Nessun modello corrisponde."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.empty.title"
-msgstr "Nessuna modalità ancora"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_notes"
 msgstr "Nessuna nota ancora"
 
@@ -4766,11 +4833,6 @@ msgid "library.retranscribe.timestamps_unsupported"
 msgstr "Non supportato da questo modello"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.note"
-#~ msgstr "Nota"
-
-#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.empty"
 msgstr "Nessuna novità al momento."
@@ -4941,6 +5003,11 @@ msgid "speaker_color.orange"
 msgstr "Arancione"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.original_text"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text"
 msgstr "Testo originale"
@@ -5080,11 +5147,6 @@ msgstr "Porta"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.post"
 msgstr "Pubblica"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.poster"
-#~ msgstr "Poster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5500,6 +5562,11 @@ msgid "settings.local_api.restart_required"
 msgstr "Riavvia per applicare le modifiche"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.restore_default"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.restore_original"
 msgstr "Ripristina trascrizione originale"
@@ -5654,11 +5721,6 @@ msgstr "S"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.save"
 msgstr "Salva"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.save_name"
-msgstr "Salva nome"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6140,6 +6202,11 @@ msgid "onboarding.license_step.tile_offline_body"
 msgstr "Il parlato rimane su questo computer."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_instruction"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.format_csv"
 msgstr "Foglio di calcolo (CSV)"
@@ -6400,11 +6467,6 @@ msgstr "Dimensione del testo"
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size"
 msgstr "Dimensione testo"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.than_typing"
-#~ msgstr "rispetto alla digitazione"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6924,6 +6986,12 @@ msgid "settings.models.installed.use"
 msgstr "Usa"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: personality.name
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.mode.toggle"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_subtitle"
 msgstr "Usa Glimpse da Terminale o script"
@@ -7060,11 +7128,6 @@ msgstr "Windows non consente a Glimpse di rilevare la scorciatoia nelle app avvi
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.words"
-#~ msgstr "parole"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "parole al minuto"
 
@@ -7095,11 +7158,6 @@ msgstr "Modello di scrittura"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.writing"
 msgstr "Modello di scrittura"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.year"
-#~ msgstr "Anno"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -7250,33 +7308,3 @@ msgstr "Le tue parole appariranno qui…"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.zoom"
 msgstr "Zoom"
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_details"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_mode"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.original_text"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_instruction"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copy_original_text"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copy_edit_instruction"
-msgstr ""

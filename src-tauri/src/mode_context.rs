@@ -1,5 +1,5 @@
 use crate::personalization_snippets::extract_host;
-use crate::settings::{Personality, UserSettings};
+use crate::settings::{GLOBAL_PERSONALITY_ID, Personality, UserSettings};
 use crate::{
     accessibility_context, permissions,
     personalization_snippets::{SnippetContext, expand_personalization_snippets},
@@ -104,7 +104,7 @@ pub fn format_active_cleanup_style_guidance(settings: &UserSettings) -> Option<S
     let modes: Vec<ModeContextMode> = settings
         .personalities
         .iter()
-        .filter(|mode| mode.enabled)
+        .filter(|mode| mode.enabled && mode.id != GLOBAL_PERSONALITY_ID)
         .filter(|mode| mode_matches(mode, &context))
         .map(|mode| ModeContextMode {
             name: mode.name.clone(),
@@ -157,7 +157,7 @@ pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality
     settings
         .personalities
         .iter()
-        .filter(|mode| mode.enabled)
+        .filter(|mode| mode.enabled && mode.id != GLOBAL_PERSONALITY_ID)
         .find(|mode| mode_matches(mode, &context))
         .cloned()
 }

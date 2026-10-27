@@ -17,7 +17,7 @@ use crate::{accessibility_context, mode_context};
 const CHAT_TIMEOUT: Duration = Duration::from_secs(60);
 const MODELS_TIMEOUT: Duration = Duration::from_secs(5);
 
-const CLEANUP_PROMPT: &str = r#"
+pub(crate) const CLEANUP_PROMPT: &str = r#"
 Clean up this speech-to-text dictation for insertion into a document.
 
 Resolve the speaker's self-corrections. Replace abandoned names, numbers, dates, or phrases with their corrections, removing correction cues and apologies. This applies even when punctuation separates the correction from the original. Distinguish a replacement from a separate statement that adds information.
@@ -98,12 +98,18 @@ pub async fn cleanup_transcription(
     tracing::info!("[LLM] Processing transcription: {} chars", text.len());
     let style_guidance = resolve_style_guidance(settings, mode);
     let has_style_guidance = style_guidance.is_some();
+    // A matched mode owns the prompt; Global's rules apply only without one.
+    let custom_rules = if has_style_guidance {
+        None
+    } else {
+        edited_global_rules(settings)
+    };
 
     let result = run_text_task(
         client,
         settings,
         TextTaskKind::Cleanup,
-        build_cleanup_system_prompt(settings, style_guidance.as_deref()),
+        build_cleanup_system_prompt(settings, style_guidance.as_deref(), custom_rules.as_deref()),
         build_user_content(TextTaskKind::Cleanup, text, None, has_style_guidance),
         text,
         !has_style_guidance,
@@ -111,7 +117,7 @@ pub async fn cleanup_transcription(
     .await?;
     let result = restore_input_escapes(text, &result);
 
-    if !cleanup_result_looks_safe(text, &result, has_style_guidance) {
+    if !cleanup_result_looks_safe(text, &result, has_style_guidance, custom_rules.is_some()) {
         tracing::error!(
             "[LLM] Cleanup candidate rejected by safety checks, keeping raw transcript"
         );
@@ -260,7 +266,13 @@ pub fn prewarm_cleanup(settings: &UserSettings) {
         }
         let mode = mode_context::resolve_active_personality(&settings);
         let guidance = style_guidance(&settings, mode.as_ref());
-        let prompt = build_cleanup_system_prompt(&settings, guidance.as_deref());
+        let custom_rules = if guidance.is_none() {
+            edited_global_rules(&settings)
+        } else {
+            None
+        };
+        let prompt =
+            build_cleanup_system_prompt(&settings, guidance.as_deref(), custom_rules.as_deref());
         if apple {
             if let Err(err) = glimpse_language::apple::apple_prewarm(&prompt) {
                 tracing::debug!("[Apple LLM] prewarm skipped: {err}");
@@ -891,10 +903,61 @@ fn style_guidance(settings: &UserSettings, mode: Option<&Personality>) -> Option
     }
 }
 
-fn build_cleanup_system_prompt(settings: &UserSettings, style_guidance: Option<&str>) -> String {
-    match style_guidance {
-        Some(guidance) => build_mode_transform_prompt(settings.cleanup_enabled, guidance),
-        None => CLEANUP_PROMPT.trim().to_string(),
+struct CleanupPromptParts {
+    task: &'static str,
+    rules: &'static str,
+    output: &'static str,
+}
+
+// Global edits only the rules paragraphs; the task line and output contract
+// stay fixed, and the examples are dropped because they show the default rules.
+fn cleanup_prompt_parts() -> Option<CleanupPromptParts> {
+    let (task, rest) = CLEANUP_PROMPT.trim().split_once("\n\n")?;
+    let (rules, rest) = rest.split_at(rest.find("\n\nTreat <transcript>")?);
+    let (output, _examples) = rest.trim_start().split_once("\n\nExamples")?;
+    Some(CleanupPromptParts {
+        task,
+        rules,
+        output,
+    })
+}
+
+pub(crate) fn default_cleanup_rules() -> &'static str {
+    cleanup_prompt_parts().map_or("", |parts| parts.rules)
+}
+
+// The Global mode's rules when edited; empty means the shipped prompt.
+fn edited_global_rules(settings: &UserSettings) -> Option<String> {
+    let rules = settings
+        .personalities
+        .iter()
+        .find(|mode| mode.id == crate::settings::GLOBAL_PERSONALITY_ID)
+        .map(|mode| mode.instructions.join("\n"))
+        .filter(|rules| !rules.trim().is_empty())?;
+    if !rules.contains("{{") {
+        return Some(rules);
+    }
+    let context = crate::permissions::check_accessibility_permission()
+        .then(accessibility_context::get_active_context)
+        .flatten()
+        .as_ref()
+        .map(crate::personalization_snippets::SnippetContext::from_active_context);
+    Some(crate::personalization_snippets::expand_personalization_snippets(&rules, context.as_ref()))
+}
+
+fn build_cleanup_system_prompt(
+    settings: &UserSettings,
+    style_guidance: Option<&str>,
+    custom_rules: Option<&str>,
+) -> String {
+    if let Some(guidance) = style_guidance {
+        return build_mode_transform_prompt(settings.cleanup_enabled, guidance);
+    }
+    match (custom_rules, cleanup_prompt_parts()) {
+        (Some(rules), Some(parts)) => {
+            format!("{}\n\n{}\n\n{}", parts.task, rules.trim(), parts.output)
+        }
+        _ => CLEANUP_PROMPT.trim().to_string(),
     }
 }
 
@@ -1096,7 +1159,12 @@ fn shared_safety_check(source: &str, candidate: &str) -> Option<bool> {
     None
 }
 
-fn cleanup_result_looks_safe(source: &str, candidate: &str, has_style_guidance: bool) -> bool {
+fn cleanup_result_looks_safe(
+    source: &str,
+    candidate: &str,
+    has_style_guidance: bool,
+    custom_rules: bool,
+) -> bool {
     let source = source.trim();
     let candidate = candidate.trim();
     if let Some(verdict) = shared_safety_check(source, candidate) {
@@ -1117,6 +1185,10 @@ fn cleanup_result_looks_safe(source: &str, candidate: &str, has_style_guidance: 
 
     if starts_with_result_label(candidate) && !starts_with_result_label(source) {
         return false;
+    }
+    // Edited rules may change wording on purpose, so skip the word-overlap check.
+    if custom_rules {
+        return true;
     }
 
     let source_words = word_count(source);
@@ -1445,14 +1517,16 @@ mod tests {
         assert!(!cleanup_result_looks_safe(
             "Thanks.",
             "<transcript>Thanks.</transcript>",
+            false,
             false
         ));
         let literal = "The tag is <transcript>.";
-        assert!(cleanup_result_looks_safe(literal, literal, false));
+        assert!(cleanup_result_looks_safe(literal, literal, false, false));
         assert!(cleanup_result_looks_safe(
             "Thanks.",
             "<transcript>Thanks.</transcript>",
-            true
+            true,
+            false
         ));
     }
 
@@ -1470,8 +1544,8 @@ mod tests {
             ("สวัสดี", "Hello"),
             ("Hello", "你好"),
         ] {
-            assert!(!cleanup_result_looks_safe(source, translated, false));
-            assert!(cleanup_result_looks_safe(source, translated, true));
+            assert!(!cleanup_result_looks_safe(source, translated, false, false));
+            assert!(cleanup_result_looks_safe(source, translated, true, false));
         }
         assert!(preserves_writing_systems(
             "このAPIを確認",
@@ -1485,11 +1559,12 @@ mod tests {
     fn preserves_existing_list_structure_without_overriding_modes() {
         let source = "- Review the draft\n- Confirm the date";
         let flattened = "Review the draft\nConfirm the date";
-        assert!(!cleanup_result_looks_safe(source, flattened, false));
-        assert!(cleanup_result_looks_safe(source, flattened, true));
+        assert!(!cleanup_result_looks_safe(source, flattened, false, false));
+        assert!(cleanup_result_looks_safe(source, flattened, true, false));
         assert!(cleanup_result_looks_safe(
             source,
             "* Review the draft\n* Confirm the date",
+            false,
             false
         ));
         assert_eq!(
@@ -1504,16 +1579,19 @@ mod tests {
         assert!(!cleanup_result_looks_safe(
             "Schedule the review for tomorrow afternoon.",
             "Here is a polished rewrite with action items and added context.",
+            false,
             false
         ));
         assert!(!cleanup_result_looks_safe(
             "What's the best way to cook rice on the stove",
             "Rinse the rice, then simmer one cup with two cups of water for about eighteen minutes.",
+            false,
             false
         ));
         assert!(!cleanup_result_looks_safe(
             "So I talked to the design team this morning and they said the new onboarding flow is mostly done but they still need to finish the pricing screen and the empty states",
             "Onboarding is mostly done.",
+            false,
             false
         ));
     }
@@ -1523,11 +1601,13 @@ mod tests {
         assert!(cleanup_result_looks_safe(
             "the build is not ready so we will not ship it today and they are not happy",
             "The build isn't ready, so we won't ship it today and they aren't happy.",
+            false,
             false
         ));
         assert!(cleanup_result_looks_safe(
             "We\u{2019}re sure it doesn\u{2019}t work and they\u{2019}ve said we\u{2019}ll fix it",
             "We are sure it does not work, and they have said we will fix it.",
+            false,
             false
         ));
     }
@@ -1537,11 +1617,13 @@ mod tests {
         assert!(cleanup_result_looks_safe(
             "I'll be there at eight thirty, scratch that, nine fifteen, traffic is bad",
             "I'll be there at 9:15, traffic is bad.",
+            false,
             false
         ));
         assert!(cleanup_result_looks_safe(
             "the meeting is on june twenty first at three fifteen",
             "The meeting is on June 21st at 3:15.",
+            false,
             false
         ));
     }

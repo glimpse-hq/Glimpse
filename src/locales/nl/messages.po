@@ -1040,6 +1040,66 @@ msgstr ""
 #~ msgstr "Je {libraryItems} items blijven bewaard. Met Glimpse Plus kun je ze weer openen."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.faster_value"
+#~ msgstr "{fasterPercent}% sneller"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions"
+#~ msgstr "Aangepaste instructies"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.disable_mode"
+#~ msgstr "Modus uitschakelen"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.enable_mode"
+#~ msgstr "Modus inschakelen"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.speak_at"
+#~ msgstr "Ik spreek met"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.note"
+#~ msgstr "Opmerking"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.poster"
+#~ msgstr "Poster"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.save_name"
+#~ msgstr "Naam opslaan"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.than_typing"
+#~ msgstr "dan typen"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/DictationStatsPanel.tsx
+#~ msgid "settings.stats.card.words"
+#~ msgstr "woorden"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+#~ msgid "settings.stats.share.style.year"
+#~ msgstr "Jaar"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.empty.title"
+#~ msgstr "Nog geen modi"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -1225,11 +1285,6 @@ msgstr "{daysDictated} dagen praten in plaats van typen in het afgelopen jaar, {
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.9"
 msgstr "{daysDictated} dagen waarop ik al pratend mijn werk deed. @try_glimpse_app"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.faster_value"
-#~ msgstr "{fasterPercent}% sneller"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1565,6 +1620,11 @@ msgid "library.filter.all"
 msgstr "Alles"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.global.targets"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.all_posts"
 msgstr "Alle berichten"
@@ -1839,11 +1899,6 @@ msgid "member_card.tier_business"
 msgstr "Business"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.free_confirm.cancel"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.cancel"
 msgstr "Annuleren"
@@ -1868,6 +1923,11 @@ msgstr "Annuleer"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.cancel"
 msgstr "Annuleren"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.cancel"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -2216,11 +2276,6 @@ msgid "settings.local_api.configuration"
 msgstr "Configuratie"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.free_confirm.continue"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue"
 msgstr "Ga door"
@@ -2229,6 +2284,11 @@ msgstr "Ga door"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.continue"
 msgstr "Doorgaan"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.free_confirm.continue"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/TrialEndedScreen.tsx
@@ -2364,8 +2424,18 @@ msgstr "Bericht kopiëren"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copy_original_text"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_selection"
 msgstr "Selectie kopiëren"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copy_edit_instruction"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -2654,11 +2724,6 @@ msgstr "Aangepast"
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.speech_model.provider.custom"
 msgstr "Aangepast"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions"
-msgstr "Aangepaste instructies"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
@@ -2959,11 +3024,6 @@ msgid "personalization.mode.disable"
 msgstr "Uitschakelen"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.disable_mode"
-msgstr "Modus uitschakelen"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.not_saved.v2"
 msgstr ""
@@ -2999,11 +3059,6 @@ msgid "model_picker.download"
 msgstr "Downloaden"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/ModelDownloadStatus.tsx
-msgid "onboarding.downloads.failed"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
 msgstr "Download mislukt"
@@ -3012,6 +3067,11 @@ msgstr "Download mislukt"
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.failed"
 msgstr "Downloaden mislukt"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.downloads.failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3074,19 +3134,30 @@ msgid "dictionary.edit_entry"
 msgstr "{entry} bewerken"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.edit_name"
-msgstr "Modusnaam bewerken"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_details"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.edit.name"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_mode"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.modal.edit_name"
+msgstr "Modusnaam bewerken"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit"
 msgstr "Bewerk met je stem"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.edit.name"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
@@ -3117,11 +3188,6 @@ msgstr "Inschakelen"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.enable"
 msgstr "Inschakelen in Instellingen"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.enable_mode"
-msgstr "Modus inschakelen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3415,11 +3481,6 @@ msgid "onboarding.license_step.title_free.v2"
 msgstr "Krijg toegang tot alles met Glimpse Plus."
 
 #. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.get_plus"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v2"
 msgstr "Koop Glimpse Plus"
@@ -3428,6 +3489,11 @@ msgstr "Koop Glimpse Plus"
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.buy.plus"
 msgstr "Koop Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.get_plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3575,6 +3641,12 @@ msgid "settings.models.language.g1_description"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.global.name"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.speak"
 msgstr "Ga je gang en spreek."
@@ -3716,11 +3788,6 @@ msgstr "https://api.example.com/v1"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.speak_at"
-#~ msgstr "Ik spreek met"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "Ik spreek met {wpm} woorden per minuut. Blijkt dat praten sneller gaat dan typen. Gedicteerd met @try_glimpse_app"
 
@@ -3851,6 +3918,11 @@ msgstr "Installeert de opdracht {0} voor Terminal, scripts en automatiseringstoo
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.instantly"
 msgstr "Direct"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.instructions"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -4575,11 +4647,6 @@ msgstr "Geen overeenkomende modellen."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.empty.title"
-msgstr "Nog geen modi"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_notes"
 msgstr "Nog geen notities"
 
@@ -4766,11 +4833,6 @@ msgid "library.retranscribe.timestamps_unsupported"
 msgstr "Niet ondersteund door dit model"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.note"
-#~ msgstr "Opmerking"
-
-#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.empty"
 msgstr "Momenteel niets nieuws."
@@ -4941,6 +5003,11 @@ msgid "speaker_color.orange"
 msgstr "Oranje"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.original_text"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text"
 msgstr "Oorspronkelijke tekst"
@@ -5080,11 +5147,6 @@ msgstr "Poort"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.post"
 msgstr "Plaatsen"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.poster"
-#~ msgstr "Poster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5500,6 +5562,11 @@ msgid "settings.local_api.restart_required"
 msgstr "Herstart om wijzigingen toe te passen"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.restore_default"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.restore_original"
 msgstr "Oorspronkelijke transcript herstellen"
@@ -5654,11 +5721,6 @@ msgstr "S"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.save"
 msgstr "Bewaar"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.save_name"
-msgstr "Naam opslaan"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6140,6 +6202,11 @@ msgid "onboarding.license_step.tile_offline_body"
 msgstr "Spraak blijft op deze computer."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.edit_instruction"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.format_csv"
 msgstr "Rekenblad (CSV)"
@@ -6400,11 +6467,6 @@ msgstr "Tekstgrootte"
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size"
 msgstr "Tekstgrootte"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.than_typing"
-#~ msgstr "dan typen"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6924,6 +6986,12 @@ msgid "settings.models.installed.use"
 msgstr "Gebruik"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: personality.name
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.mode.toggle"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_subtitle"
 msgstr "Glimpse gebruiken via Terminal of scripts"
@@ -7060,11 +7128,6 @@ msgstr "Windows laat Glimpse je sneltoets niet horen in apps die als beheerder w
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
-#~ msgid "settings.stats.card.words"
-#~ msgstr "woorden"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "woorden per minuut"
 
@@ -7095,11 +7158,6 @@ msgstr "Schrijfmodel"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.writing"
 msgstr "Schrijfmodel"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/shareCard.ts
-#~ msgid "settings.stats.share.style.year"
-#~ msgstr "Jaar"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -7250,33 +7308,3 @@ msgstr "Je woorden verschijnen hier…"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.zoom"
 msgstr "Zoom"
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_details"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_mode"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.original_text"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.edit_instruction"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copy_original_text"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copy_edit_instruction"
-msgstr ""

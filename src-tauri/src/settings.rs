@@ -348,8 +348,23 @@ fn default_apps_for(personality_id: &str) -> Vec<String> {
     )
 }
 
+pub(crate) const GLOBAL_PERSONALITY_ID: &str = "global";
+
+pub(crate) fn default_global_personality() -> Personality {
+    Personality {
+        id: GLOBAL_PERSONALITY_ID.to_string(),
+        name: "Global".to_string(),
+        enabled: true,
+        apps: Vec::new(),
+        websites: Vec::new(),
+        // Empty means the shipped cleanup prompt, so prompt updates still reach it.
+        instructions: Vec::new(),
+    }
+}
+
 fn default_personalities() -> Vec<Personality> {
     vec![
+        default_global_personality(),
         Personality {
             id: "messaging".to_string(),
             name: "Messaging".to_string(),

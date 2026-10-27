@@ -591,6 +591,7 @@ pub fn run() {
             dictionary::set_replacements,
             auto_dictionary::accept_auto_dictionary_suggestion,
             auto_dictionary::reject_auto_dictionary_suggestion,
+            personalization::get_default_cleanup_instructions,
             personalization::get_personalities,
             personalization::set_personalities,
             personalization::icons::list_installed_apps,
