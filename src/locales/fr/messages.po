@@ -1110,6 +1110,11 @@ msgstr ""
 #~ msgstr "Glimpse a été mis à jour vers la version {version}."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.delete_error.trash_failed"
+#~ msgstr "Impossible de déplacer le fichier audio vers la Corbeille, rien n'a été supprimé."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -2605,9 +2610,9 @@ msgid "settings.error.load_failed"
 msgstr "Impossible de charger les réglages."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.delete_error.trash_failed"
-msgstr "Impossible de déplacer le fichier audio vers la Corbeille, rien n'a été supprimé."
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.library_trash_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

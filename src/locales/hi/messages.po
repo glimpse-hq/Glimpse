@@ -1110,6 +1110,11 @@ msgstr ""
 #~ msgstr "Glimpse v{version} पर अपडेट हो गया।"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.delete_error.trash_failed"
+#~ msgstr "ऑडियो को ट्रैश या रीसायकल बिन में नहीं ले जाया जा सका, इसलिए कुछ भी हटाया नहीं गया।"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -2605,9 +2610,9 @@ msgid "settings.error.load_failed"
 msgstr "सेटिंग्ज़ लोड नहीं की जा सकीं।"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.delete_error.trash_failed"
-msgstr "ऑडियो को ट्रैश या रीसायकल बिन में नहीं ले जाया जा सका, इसलिए कुछ भी हटाया नहीं गया।"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.library_trash_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

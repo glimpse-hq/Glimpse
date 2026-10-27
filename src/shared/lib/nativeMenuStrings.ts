@@ -256,6 +256,11 @@ export const NATIVE_MENU_STRINGS = [
     message: "Transcription no longer available",
   }),
   msg({ id: "native.toast.copy_empty", message: "Transcription is empty" }),
+  msg({
+    id: "native.toast.library_trash_failed",
+    message:
+      "Couldn't move the audio to the Trash or Recycle Bin, so the item is back in your Library.",
+  }),
 
   msg({
     id: "native.toast.export_done",

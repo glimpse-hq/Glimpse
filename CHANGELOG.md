@@ -12,6 +12,7 @@
 - `glimpse transcribe --json` now includes segment and word timings, the detected language and how long the transcription took.
 
 ### Improvements
+- Deleted something in the Library by mistake? Press Cmd+Z (Ctrl+Z on Windows) within a minute to bring it back.
 
 - Improved Coding mode to keep dictated prose about code as prose.
 - The sharing cards now have new designs.

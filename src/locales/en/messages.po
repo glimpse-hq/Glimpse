@@ -1110,6 +1110,11 @@ msgstr ""
 #~ msgstr "Glimpse updated to v{version}."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.delete_error.trash_failed"
+#~ msgstr "Couldn't move the audio to the Trash or Recycle Bin, so nothing was deleted."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -2605,9 +2610,9 @@ msgid "settings.error.load_failed"
 msgstr "Couldn't load settings."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.delete_error.trash_failed"
-msgstr "Couldn't move the audio to the Trash or Recycle Bin, so nothing was deleted."
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.library_trash_failed"
+msgstr "Couldn't move the audio to the Trash or Recycle Bin, so the item is back in your Library."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

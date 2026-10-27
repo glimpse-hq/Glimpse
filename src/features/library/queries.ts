@@ -196,6 +196,14 @@ export function useLibraryItems(
       else unlisteners.push(fn);
     });
 
+    listen("library:item_restored", () => {
+      if (cancelled) return;
+      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlisteners.push(fn);
+    });
+
     listen<LibraryImportProgressPayload>("library:import_progress", (event) => {
       if (cancelled) return;
       const { id, progress } = event.payload;
@@ -297,6 +305,17 @@ export function useDeleteLibraryItem() {
     mutationFn: libraryApi.deleteLibraryItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    },
+  });
+}
+
+export function useRestoreDeletedLibraryItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: libraryApi.restoreDeletedLibraryItem,
+    onSuccess: (id) => {
+      if (id) queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },
   });
 }

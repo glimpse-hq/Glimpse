@@ -1110,6 +1110,11 @@ msgstr ""
 #~ msgstr "Glimpse обновлён до версии {version}."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.delete_error.trash_failed"
+#~ msgstr "Не удалось переместить аудио в корзину, поэтому ничего не было удалено."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -2605,9 +2610,9 @@ msgid "settings.error.load_failed"
 msgstr "Не удалось загрузить настройки."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.delete_error.trash_failed"
-msgstr "Не удалось переместить аудио в корзину, поэтому ничего не было удалено."
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.library_trash_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

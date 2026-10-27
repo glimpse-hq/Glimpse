@@ -138,7 +138,7 @@ pub(crate) fn get_recoverable_library_items(
     let mut stmt = conn.prepare(&format!(
         "SELECT {LIBRARY_COLUMNS}
          FROM library_items
-         WHERE status IN ('pending', 'importing', 'transcribing', 'cancelling')
+         WHERE status IN ('pending', 'importing', 'transcribing', 'cancelling') AND deleted = 0
          ORDER BY created_at ASC"
     ))?;
 
@@ -244,20 +244,46 @@ pub(crate) fn get_previous_transcript(
     }))
 }
 
-pub(crate) fn delete_library_item(
+/// Hides an item until it is restored or purged; false when it was not listed.
+pub(crate) fn delete_library_item(conn: &Connection, id: &str) -> Result<bool> {
+    let changed = conn.execute(
+        "UPDATE library_items SET deleted = 1 WHERE id = ?1 AND deleted = 0",
+        params![id],
+    )?;
+    Ok(changed > 0)
+}
+
+pub(crate) fn restore_library_item(conn: &Connection, id: &str) -> Result<bool> {
+    let changed = conn.execute(
+        "UPDATE library_items SET deleted = 0 WHERE id = ?1 AND deleted = 1",
+        params![id],
+    )?;
+    Ok(changed > 0)
+}
+
+pub(crate) fn get_deleted_library_items(
     conn: &Connection,
     root: &Path,
-    id: &str,
-) -> Result<Option<String>> {
-    let item = get_library_item(conn, root, id)?;
-    if item.is_some() {
-        conn.execute("DELETE FROM library_items WHERE id = ?1", params![id])?;
-    }
-    Ok(item.map(|value| value.audio_path))
+) -> Result<Vec<LibraryItem>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {LIBRARY_COLUMNS} FROM library_items WHERE deleted = 1"
+    ))?;
+    let items = stmt
+        .query_map([], |row| library_item_from_row(root, row))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(items)
+}
+
+pub(crate) fn purge_library_item(conn: &Connection, id: &str) -> Result<()> {
+    conn.execute(
+        "DELETE FROM library_items WHERE id = ?1 AND deleted = 1",
+        params![id],
+    )?;
+    Ok(())
 }
 
 pub(crate) fn get_library_tags(conn: &Connection) -> Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT tags FROM library_items")?;
+    let mut stmt = conn.prepare("SELECT tags FROM library_items WHERE deleted = 0")?;
     let mut rows = stmt.query([])?;
     let mut set = std::collections::BTreeSet::new();
     while let Some(row) = rows.next()? {
@@ -279,7 +305,7 @@ pub(crate) fn get_library_item(
     id: &str,
 ) -> Result<Option<LibraryItem>> {
     conn.query_row(
-        &format!("SELECT {LIBRARY_COLUMNS} FROM library_items WHERE id = ?1"),
+        &format!("SELECT {LIBRARY_COLUMNS} FROM library_items WHERE id = ?1 AND deleted = 0"),
         params![id],
         |row| library_item_from_row(root, row),
     )
@@ -482,7 +508,7 @@ pub(crate) fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
 }
 
 fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>) {
-    let mut clauses: Vec<String> = Vec::new();
+    let mut clauses: Vec<String> = vec!["deleted = 0".to_string()];
     let mut params: Vec<Box<dyn ToSql>> = Vec::new();
 
     if let Some(search) = filter.search.as_ref()
@@ -535,9 +561,5 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         params.push(Box::new(cutoff.to_rfc3339()));
     }
 
-    if clauses.is_empty() {
-        ("".to_string(), params)
-    } else {
-        (format!("WHERE {}", clauses.join(" AND ")), params)
-    }
+    (format!("WHERE {}", clauses.join(" AND ")), params)
 }

@@ -463,6 +463,7 @@ pub fn run() {
             }
             analytics::set_crash_phase("services");
             integrations::start_control_server(handle.clone());
+            library::commands::purge_deleted_library_items(handle);
             library::commands::recover_interrupted_library_items(handle);
             recording::recover_interrupted_sessions(handle);
             register_deep_link_handlers(app);
@@ -633,6 +634,7 @@ pub fn run() {
             library::commands::get_library_item,
             library::commands::update_library_item,
             library::commands::delete_library_item,
+            library::commands::restore_deleted_library_item,
             library::commands::cancel_library_transcription,
             library::commands::retry_library_transcription,
             library::commands::rediarize_library_item,

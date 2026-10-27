@@ -214,16 +214,6 @@ export const formatDeleteErrorMessage = (rawMessage: string) => {
     );
   }
 
-  if (lower.includes("move the audio to the trash")) {
-    return i18n._(
-      msg({
-        id: "library.delete_error.trash_failed",
-        message:
-          "Couldn't move the audio to the Trash or Recycle Bin, so nothing was deleted.",
-      }),
-    );
-  }
-
   return i18n._(
     msg({
       id: "library.delete_error.default_fallback",

@@ -36,6 +36,7 @@ import {
   useCreateLibraryItem,
   useUpdateLibraryItem,
   useDeleteLibraryItem,
+  useRestoreDeletedLibraryItem,
   useCancelLibraryTranscription,
   useRediarizeLibraryItem,
   useRetryLibraryTranscription,
@@ -92,6 +93,7 @@ const LibraryView = ({
   };
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [restoredId, setRestoredId] = useState<string | null>(null);
   const [retranscribeItem, setRetranscribeItem] = useState<LibraryItem | null>(
     null,
   );
@@ -180,7 +182,9 @@ const LibraryView = ({
 
   const createItemMutation = useCreateLibraryItem();
   const { mutateAsync: updateItem } = useUpdateLibraryItem();
-  const { mutateAsync: deleteItem } = useDeleteLibraryItem();
+  const { mutateAsync: deleteItem, isPending: deletePending } =
+    useDeleteLibraryItem();
+  const { mutate: restoreDeleted } = useRestoreDeletedLibraryItem();
   const { mutateAsync: cancelItem } = useCancelLibraryTranscription();
   const { mutateAsync: retryItem } = useRetryLibraryTranscription();
   const rediarizeMutation = useRediarizeLibraryItem();
@@ -226,6 +230,52 @@ const LibraryView = ({
     },
     [updateItemWithTags, retryItem],
   );
+  useEffect(() => {
+    // A delete still waiting on its job would be skipped over.
+    if (!isActive || selectedItemId || pendingDeleteId || deletePending) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        !(event.metaKey || event.ctrlKey) ||
+        event.shiftKey ||
+        event.repeat ||
+        event.key.toLowerCase() !== "z"
+      )
+        return;
+      // Text fields keep their own undo.
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.isContentEditable ||
+        target?.closest("input, textarea, select")
+      )
+        return;
+      event.preventDefault();
+      restoreDeleted(undefined, {
+        onSuccess: (id) => {
+          if (!id) return;
+          invalidateTags();
+          setSearchQuery("");
+          setStatusFilter("all");
+          setRestoredId(id);
+        },
+        onError: (err) => console.error("Failed to restore library item:", err),
+      });
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isActive,
+    selectedItemId,
+    pendingDeleteId,
+    deletePending,
+    restoreDeleted,
+    invalidateTags,
+  ]);
+  useEffect(() => {
+    if (!restoredId) return;
+    document
+      .querySelector(`[data-library-item="${CSS.escape(restoredId)}"]`)
+      ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [restoredId, items]);
   const closeDeleteDialog = useCallback(() => setPendingDeleteId(null), []);
   const closeRetranscribe = useCallback(() => setRetranscribeItem(null), []);
 
@@ -667,8 +717,23 @@ const LibraryView = ({
                     <div
                       key={item.id || `library-item-${index}`}
                       role="listitem"
-                      className="min-w-0"
+                      data-library-item={item.id}
+                      className="relative min-w-0"
                     >
+                      {item.id === restoredId && (
+                        <motion.div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-0 z-30 rounded-[var(--radius-lg)] bg-[var(--color-cloud-20)]"
+                          initial={{ opacity: 1 }}
+                          animate={{ opacity: 0 }}
+                          transition={{
+                            duration: 1.2,
+                            delay: 0.4,
+                            ease: "easeOut",
+                          }}
+                          onAnimationComplete={() => setRestoredId(null)}
+                        />
+                      )}
                       <LibraryCard
                         item={item}
                         layout={layout}

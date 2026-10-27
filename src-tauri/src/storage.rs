@@ -1042,6 +1042,12 @@ impl StorageManager {
             "previous_transcript",
             "ALTER TABLE library_items ADD COLUMN previous_transcript TEXT",
         )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "deleted",
+            "ALTER TABLE library_items ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0",
+        )?;
 
         Self::ensure_column(
             conn,
@@ -1176,9 +1182,24 @@ impl StorageManager {
         crate::library::repo::get_previous_transcript(&conn, id)
     }
 
-    pub fn delete_library_item(&self, id: &str) -> Result<Option<String>> {
+    pub fn delete_library_item(&self, id: &str) -> Result<bool> {
         let conn = self.connection.lock();
-        crate::library::repo::delete_library_item(&conn, &self.library_root, id)
+        crate::library::repo::delete_library_item(&conn, id)
+    }
+
+    pub fn restore_library_item(&self, id: &str) -> Result<bool> {
+        let conn = self.connection.lock();
+        crate::library::repo::restore_library_item(&conn, id)
+    }
+
+    pub fn get_deleted_library_items(&self) -> Result<Vec<LibraryItem>> {
+        let conn = self.connection.lock();
+        crate::library::repo::get_deleted_library_items(&conn, &self.library_root)
+    }
+
+    pub fn purge_library_item(&self, id: &str) -> Result<()> {
+        let conn = self.connection.lock();
+        crate::library::repo::purge_library_item(&conn, id)
     }
 
     pub fn get_library_tags(&self) -> Result<Vec<String>> {

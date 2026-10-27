@@ -1110,6 +1110,11 @@ msgstr ""
 #~ msgstr "تم تحديث Glimpse إلى الإصدار v{version}."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.delete_error.trash_failed"
+#~ msgstr "تعذّر نقل الصوت إلى سلة المهملات أو Recycle Bin، لذا لم يُحذف أي شيء."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -2605,9 +2610,9 @@ msgid "settings.error.load_failed"
 msgstr "تعذّر تحميل الإعدادات."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.delete_error.trash_failed"
-msgstr "تعذّر نقل الصوت إلى سلة المهملات أو Recycle Bin، لذا لم يُحذف أي شيء."
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.library_trash_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

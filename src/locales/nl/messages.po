@@ -1110,6 +1110,11 @@ msgstr ""
 #~ msgstr "Glimpse is bijgewerkt naar v{version}."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.delete_error.trash_failed"
+#~ msgstr "De audio kon niet naar de prullenmand of Prullenbak worden verplaatst, dus er is niets verwijderd."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -2605,9 +2610,9 @@ msgid "settings.error.load_failed"
 msgstr "Instellingen konden niet worden geladen."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.delete_error.trash_failed"
-msgstr "De audio kon niet naar de prullenmand of Prullenbak worden verplaatst, dus er is niets verwijderd."
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.library_trash_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

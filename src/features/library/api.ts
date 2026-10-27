@@ -42,6 +42,10 @@ export async function deleteLibraryItem(id: string): Promise<void> {
   await invoke("delete_library_item", { id });
 }
 
+export async function restoreDeletedLibraryItem(): Promise<string | null> {
+  return invoke<string | null>("restore_deleted_library_item");
+}
+
 export async function cancelLibraryTranscription(id: string): Promise<void> {
   await invoke("cancel_library_transcription", { id });
 }

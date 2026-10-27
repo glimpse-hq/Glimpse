@@ -1110,6 +1110,11 @@ msgstr ""
 #~ msgstr "Glimpse se actualizó a v{version}."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.delete_error.trash_failed"
+#~ msgstr "No se pudo mover el audio a la Papelera o a la Papelera de reciclaje, por lo que no se eliminó nada."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -2605,9 +2610,9 @@ msgid "settings.error.load_failed"
 msgstr "No se pudo cargar la configuración."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.delete_error.trash_failed"
-msgstr "No se pudo mover el audio a la Papelera o a la Papelera de reciclaje, por lo que no se eliminó nada."
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.library_trash_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
