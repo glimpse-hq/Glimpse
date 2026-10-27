@@ -90,3 +90,12 @@ pub(crate) fn find_input_device(selected: Option<&str>) -> Option<cpal::Device> 
         })
         .or_else(|| host.default_input_device())
 }
+
+/// The default input as a specific device. On Windows, cpal otherwise opens
+/// the default through a virtual device that follows default changes.
+#[cfg(windows)]
+pub(crate) fn direct_default_input() -> Option<cpal::Device> {
+    let host = cpal::default_host();
+    let id = host.default_input_device()?.id().ok()?;
+    host.device_by_id(&id)
+}

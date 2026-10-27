@@ -573,20 +573,39 @@ impl RecorderCore {
 
         let device = crate::audio::find_input_device(device_id.as_deref()).ok_or(NoInputDevice)?;
         let selected_id = device.id().ok();
-        match self.open(device, pending_dir.clone(), monitor_only) {
+        let result = match self.open(device, pending_dir.clone(), monitor_only) {
             // A selected microphone can still be listed but fail to open, like
             // AirPods that just disconnected; the default input stands in.
             Err(err) if device_id.is_some() => {
-                let Some(default) = crate::audio::find_input_device(None)
+                match crate::audio::find_input_device(None)
                     .filter(|default| default.id().ok() != selected_id)
-                else {
-                    return Err(err);
-                };
-                tracing::warn!("Selected microphone failed to open, using the default: {err:#}");
-                self.open(default, pending_dir, monitor_only)
+                {
+                    Some(default) => {
+                        tracing::warn!(
+                            "Selected microphone failed to open, using the default: {err:#}"
+                        );
+                        self.open(default, pending_dir.clone(), monitor_only)
+                    }
+                    None => Err(err),
+                }
             }
             result => result,
+        };
+        // Activating the default through its virtual device can fail on some
+        // Windows machines while the same microphone opens directly.
+        #[cfg(windows)]
+        if let Err(err) = &result
+            && let Some(direct) = crate::audio::direct_default_input()
+        {
+            tracing::warn!("Default microphone failed to open, opening it directly: {err:#}");
+            match self.open(direct, pending_dir, monitor_only) {
+                Ok(opened) => return Ok(opened),
+                Err(direct_err) => {
+                    tracing::warn!("Direct microphone open failed too: {direct_err:#}");
+                }
+            }
         }
+        result
     }
 
     fn open(
