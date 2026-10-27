@@ -25,7 +25,6 @@ import {
   CaretDown as ChevronDown,
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
-  Copy,
   DotsThreeVertical,
   Export,
   GearSix,
@@ -69,7 +68,7 @@ import {
 import { useInstalledApps } from "../../personalization/queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
-import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
+import CopyButton from "../../../shared/ui/CopyButton";
 import HoverTip from "../../../shared/ui/HoverTip";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import type {
@@ -88,6 +87,8 @@ const MAX_SPEAKERS = 16;
 const FOLLOW_PLAYBACK_KEY = "glimpse.library.follow_playback";
 // Scrollers span the window so the scrollbar sits at its edge; content stays in this column.
 const CONTENT_COLUMN = "mx-auto w-full max-w-3xl px-5";
+const COPY_BUTTON =
+  "flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40";
 const EXPORT_FORMATS: Array<{ value: ExportFormat; needsSegments?: boolean }> =
   [
     { value: "txt" },
@@ -353,8 +354,6 @@ const LibraryDetail = ({
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const closeDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
-  const { copied: copyConfirmed, copy: copyTranscript } =
-    useCopyToClipboard(1400);
   const [audioDuration, setAudioDuration] = useState(
     item.duration_seconds || 0,
   );
@@ -1223,21 +1222,16 @@ const LibraryDetail = ({
     });
   };
 
-  const handleCopy = () => {
-    if (showSpeakerText) {
-      copyTranscript(
-        visibleTurns
+  const copyText = () =>
+    showSpeakerText
+      ? visibleTurns
           .map((turn) =>
             turn.speaker && !turn.continues
               ? `${turn.speaker.name}: ${turn.text}`
               : turn.text,
           )
-          .join("\n\n"),
-      );
-      return;
-    }
-    if (transcriptDraft.trim()) copyTranscript(transcriptDraft);
-  };
+          .join("\n\n")
+      : transcriptDraft;
 
   const handleTogglePlayback = useCallback(() => {
     const audio = audioRef.current;
@@ -2112,19 +2106,16 @@ const LibraryDetail = ({
                 <Search size={14} aria-hidden="true" />
               </button>
 
-              <button
-                onClick={handleCopy}
+              <CopyButton
+                getText={copyText}
+                iconSize={14}
+                resetMs={1400}
                 disabled={!showSpeakerText && !transcriptDraft.trim()}
                 aria-label={t({ id: "library.modal.copy", message: "Copy" })}
                 title={t({ id: "library.modal.copy", message: "Copy" })}
-                className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40 ${
-                  copyConfirmed
-                    ? "ui-color-success"
-                    : "text-content-muted hover:text-content-primary"
-                }`}
-              >
-                {copyConfirmed ? <Check size={14} /> : <Copy size={14} />}
-              </button>
+                className={`${COPY_BUTTON} text-content-muted hover:text-content-primary`}
+                copiedClassName={`${COPY_BUTTON} ui-color-success`}
+              />
 
               <div className="relative" ref={exportMenuRef}>
                 <button

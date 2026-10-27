@@ -14,9 +14,7 @@ import {
   BookmarkSimple,
   CaretDown,
   CaretUp,
-  Check,
   CircleNotch,
-  Copy,
   DotsSix,
   GearSix,
   Microphone,
@@ -39,7 +37,7 @@ import { formatTimestamp } from "../../library/components/library-utils";
 import SpeakerContextMenu from "../../library/components/SpeakerContextMenu";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
-import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
+import CopyButton from "../../../shared/ui/CopyButton";
 import { getExpandedTextSegments } from "../../../shared/lib/wordReveal";
 import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
@@ -344,7 +342,6 @@ const LiveView = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [following, setFollowing] = useState(true);
   const [focusBookmarkId, setFocusBookmarkId] = useState<string | null>(null);
-  const { copied, copy } = useCopyToClipboard();
   const [compact, setCompact] = useState(false);
   const [speakerMenu, setSpeakerMenu] = useState<{
     id: string;
@@ -601,16 +598,14 @@ const LiveView = () => {
       .catch(failWith(bookmarkFailedMessage));
   };
 
-  const handleCopy = () => {
-    const text = turns
+  const copyText = () =>
+    turns
       .map((turn) => {
         const name = speakerById.get(turn.speakerId)?.name ?? turn.speakerId;
         const words = turn.segments.map((segment) => segment.text).join(" ");
         return `${name}: ${words}`;
       })
       .join("\n\n");
-    void copy(text);
-  };
 
   const handleStop = () => {
     recordingApi.finishFromLiveView().catch(
@@ -863,18 +858,16 @@ const LiveView = () => {
               </div>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={handleCopy}
+                <CopyButton
+                  getText={copyText}
+                  iconSize={15}
                   disabled={turns.length === 0}
                   aria-label={t({
                     id: "live.copy",
                     message: "Copy transcript",
                   })}
                   className={iconButton}
-                >
-                  {copied ? <Check size={15} /> : <Copy size={15} />}
-                </button>
+                />
                 <button
                   type="button"
                   onClick={() => setMenuOpen((open) => !open)}
