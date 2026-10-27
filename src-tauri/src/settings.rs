@@ -1063,6 +1063,21 @@ impl SettingsStore {
             should_persist = true;
         }
 
+        // 1.4.0: cleanup moved from one setting to each shortcut.
+        if settings.cleanup_enabled {
+            for binding in settings
+                .shortcut_bindings
+                .smart
+                .iter_mut()
+                .chain(settings.shortcut_bindings.hold.iter_mut())
+                .chain(settings.shortcut_bindings.toggle.iter_mut())
+            {
+                binding.cleanup_enabled = true;
+            }
+            settings.cleanup_enabled = false;
+            should_persist = true;
+        }
+
         sync_legacy_shortcuts_from_bindings(&mut settings);
 
         if migrate_proxy_speech_endpoint(&mut settings) {

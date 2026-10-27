@@ -951,6 +951,13 @@ async fn process_transcript_text(
                     match_insertion_capitalization(&transcript_to_paste, &snapshot.value)
                 })
                 .unwrap_or(transcript_to_paste);
+            if token_for_paste
+                .as_ref()
+                .is_some_and(|token| token.is_cancelled())
+                || app_for_paste.state::<AppState>().is_cancelled()
+            {
+                return None;
+            }
             let result = assistive::paste_text(&text);
             Some((result, pre_paste_snapshot, text))
         })

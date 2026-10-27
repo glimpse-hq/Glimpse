@@ -17,6 +17,8 @@
 
 ### Fixes
 
+- Fixed cleanup turning off when upgrading from the old shortcut settings.
+- Cancelling a dictation just as it finishes no longer pastes the text.
 - Pressing your shortcut again to cancel a dictation works sooner after you stop talking.
 - Imported files and recordings with speech in them no longer fail with "No speech detected" when you use Parakeet, Nemotron or Apple speech models.
 - A dictation no longer times out while your speech model is still loading, such as right after it finishes setting up for the Neural Engine.
