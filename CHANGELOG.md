@@ -8,6 +8,7 @@
 - AI agents connected through `glimpse mcp` can follow a recording as it happens, getting what was said in short timestamped chunks whenever the speaker pauses, so they can take notes along with a lecture or meeting. The Record screen shows when an agent is following. They can also transcribe a file directly with word timings.
 - Opening the live view during a recording now shows what was said before you opened it.
 - You can dismiss the warning that a recording source has made no sound yet.
+- Turn the microphone or system audio off and back on during a recording, from the Record screen or the live view. Turning the microphone off releases it.
 - `glimpse transcribe --json` now includes segment and word timings, the detected language and how long the transcription took.
 
 ### Improvements

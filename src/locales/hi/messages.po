@@ -2498,6 +2498,12 @@ msgid "library.view.import_dialog_error"
 msgstr "आयात संवाद खोला नहीं जा सका।"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.source_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 #: src/features/transcriptions/queries.ts
 msgid "transcriptions.cleanup_retry_failed"
@@ -4324,6 +4330,7 @@ msgid "settings.general.microphone"
 msgstr "माइक्रोफ़ोन"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.microphone"
 msgstr "माइक्रोफ़ोन"
@@ -6404,6 +6411,7 @@ msgid "settings.app.language.system"
 msgstr "सिस्टम"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_audio"
 msgstr "सिस्टम ऑडियो"

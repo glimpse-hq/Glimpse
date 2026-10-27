@@ -632,6 +632,7 @@ pub fn run() {
             recording::get_last_recording_sources,
             recording::start_recording_session,
             recording::pause_recording_session,
+            recording::set_recording_source_off,
             recording::resume_recording_session,
             recording::add_recording_bookmark,
             recording::finish_recording_session,

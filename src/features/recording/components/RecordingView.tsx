@@ -27,6 +27,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import * as recordingApi from "../api";
+import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { useRecordingSession } from "../useRecordingSession";
 import { useSilenceWarning } from "../useSilenceWarning";
 import { readLivePrefs } from "../livePrefs";
@@ -645,6 +646,22 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     message: "Couldn't save the bookmark.",
   });
 
+  const handleToggleSource = async (source: recordingApi.RecordingSource) => {
+    const off =
+      source === "microphone" ? state.microphone_off : state.system_audio_off;
+    try {
+      applyState(await recordingApi.setRecordingSourceOff(source, !off));
+    } catch (err) {
+      console.error("Failed to turn a recording source on or off:", err);
+      showErrorToast(
+        t({
+          id: "record.source_failed",
+          message: "Couldn't change what's being recorded.",
+        }),
+      );
+    }
+  };
+
   const handleTogglePause = async () => {
     try {
       applyState(
@@ -1119,7 +1136,23 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           <div className="flex min-w-0 flex-1 items-center justify-end">
             {active ? (
               microphoneOn ? (
-                <LevelMeter level={paused ? 0 : state.levels.microphone} />
+                <div className="flex items-center gap-3">
+                  {state.microphone_off ? (
+                    <span className="ui-text-body-sm text-content-secondary">
+                      {offLabel}
+                    </span>
+                  ) : (
+                    <LevelMeter level={paused ? 0 : state.levels.microphone} />
+                  )}
+                  <ToggleSwitch
+                    enabled={!state.microphone_off}
+                    onToggle={() => void handleToggleSource("microphone")}
+                    ariaLabel={t({
+                      id: "record.setup.microphone",
+                      message: "Microphone",
+                    })}
+                  />
+                </div>
               ) : (
                 <span className="ui-text-body-sm text-content-secondary">
                   {offLabel}
@@ -1158,7 +1191,25 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
               </span>
             ) : active ? (
               systemOn ? (
-                <LevelMeter level={paused ? 0 : state.levels.system_audio} />
+                <div className="flex items-center gap-3">
+                  {state.system_audio_off ? (
+                    <span className="ui-text-body-sm text-content-secondary">
+                      {offLabel}
+                    </span>
+                  ) : (
+                    <LevelMeter
+                      level={paused ? 0 : state.levels.system_audio}
+                    />
+                  )}
+                  <ToggleSwitch
+                    enabled={!state.system_audio_off}
+                    onToggle={() => void handleToggleSource("system_audio")}
+                    ariaLabel={t({
+                      id: "record.setup.system_audio",
+                      message: "System Audio",
+                    })}
+                  />
+                </div>
               ) : (
                 <span className="ui-text-body-sm text-content-secondary">
                   {offLabel}

@@ -20,9 +20,11 @@ import {
   DotsSix,
   GearSix,
   Microphone,
+  MicrophoneSlash,
   Pause,
   Play,
   SpeakerHigh,
+  SpeakerSlash,
   Stop,
   Warning,
   X,
@@ -138,21 +140,26 @@ const RevealText = ({
   );
 };
 
+// A source in the recording toggles on and off when clicked.
 const SourceLevel = ({
   icon,
   level,
   on,
+  off,
+  label,
+  onToggle,
 }: {
   icon: ReactNode;
   level: number;
   on: boolean;
+  off: boolean;
+  label: string;
+  onToggle: () => void;
 }) => {
-  const lit = on ? Math.min(METER_BARS, Math.round(level * METER_BARS)) : 0;
-  return (
-    <div
-      className={`flex w-12 items-center gap-1.5 text-content-muted ${on ? "" : "opacity-35"}`}
-      aria-hidden="true"
-    >
+  const lit =
+    on && !off ? Math.min(METER_BARS, Math.round(level * METER_BARS)) : 0;
+  const content = (
+    <>
       {icon}
       <span className="flex h-3 items-end gap-[2px]">
         {Array.from({ length: METER_BARS }, (_, index) => (
@@ -166,7 +173,28 @@ const SourceLevel = ({
           />
         ))}
       </span>
-    </div>
+    </>
+  );
+  if (!on) {
+    return (
+      <div
+        className="flex w-12 items-center gap-1.5 text-content-muted opacity-35"
+        aria-hidden="true"
+      >
+        {content}
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={label}
+      aria-pressed={!off}
+      className={`-mx-1.5 -my-1 flex w-15 items-center gap-1.5 rounded-md px-1.5 py-1 text-content-muted transition-colors hover:bg-surface-interactive hover:text-content-primary ${off ? "opacity-35" : ""}`}
+    >
+      {content}
+    </button>
   );
 };
 
@@ -524,6 +552,19 @@ const LiveView = () => {
     id: "library.detail.speakers_failed",
     message: "Couldn't save the speakers.",
   });
+
+  const handleToggleSource = (source: recordingApi.RecordingSource) => {
+    const off =
+      source === "microphone" ? state.microphone_off : state.system_audio_off;
+    recordingApi.setRecordingSourceOff(source, !off).catch(
+      failWith(
+        t({
+          id: "record.source_failed",
+          message: "Couldn't change what's being recorded.",
+        }),
+      ),
+    );
+  };
 
   const handleTogglePause = () => {
     (paused
@@ -966,18 +1007,42 @@ const LiveView = () => {
 
           <footer className="flex h-16 shrink-0 items-center gap-3 px-4">
             <SourceLevel
-              icon={<Microphone size={12} />}
+              icon={
+                state.microphone_off ? (
+                  <MicrophoneSlash size={12} />
+                ) : (
+                  <Microphone size={12} />
+                )
+              }
               level={paused ? 0 : state.levels.microphone}
               on={microphoneOn}
+              off={state.microphone_off}
+              label={t({
+                id: "record.setup.microphone",
+                message: "Microphone",
+              })}
+              onToggle={() => handleToggleSource("microphone")}
             />
             <div className="flex flex-1 items-center justify-center gap-3">
               {renderControls(false)}
             </div>
             <div className="flex w-12 justify-end">
               <SourceLevel
-                icon={<SpeakerHigh size={12} />}
+                icon={
+                  state.system_audio_off ? (
+                    <SpeakerSlash size={12} />
+                  ) : (
+                    <SpeakerHigh size={12} />
+                  )
+                }
                 level={paused ? 0 : state.levels.system_audio}
                 on={systemOn}
+                off={state.system_audio_off}
+                label={t({
+                  id: "record.setup.system_audio",
+                  message: "System Audio",
+                })}
+                onToggle={() => handleToggleSource("system_audio")}
               />
             </div>
           </footer>

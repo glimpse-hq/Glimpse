@@ -30,6 +30,7 @@ function useCurrentWarning(state: RecordingSessionState) {
   const systemApps = state.sources.system_audio ?? [];
   if (
     state.sources.system_audio &&
+    !state.system_audio_off &&
     system_audio !== "heard" &&
     elapsed >= SILENT_SYSTEM_MS
   ) {
@@ -43,7 +44,7 @@ function useCurrentWarning(state: RecordingSessionState) {
   const microphoneSilent =
     (microphone === "none" && elapsed >= MUTED_MICROPHONE_MS) ||
     (microphone === "quiet" && elapsed >= QUIET_MICROPHONE_MS);
-  if (state.sources.microphone && microphoneSilent) {
+  if (state.sources.microphone && !state.microphone_off && microphoneSilent) {
     return t({
       id: "live.silent.microphone",
       message: "No sound from the microphone yet.",
