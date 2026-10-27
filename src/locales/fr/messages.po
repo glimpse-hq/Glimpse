@@ -1115,6 +1115,36 @@ msgstr ""
 #~ msgstr "Impossible de déplacer le fichier audio vers la Corbeille, rien n'a été supprimé."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.placeholder"
+#~ msgstr "GLIMPSE_…"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.mode.local"
+#~ msgstr "Mode local"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retry_failed"
+#~ msgstr "La nouvelle tentative a échoué. Veuillez réessayer."
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retry_transcription"
+#~ msgstr "Réessayer la transcription"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retrying"
+#~ msgstr "Nouvelle tentative en cours…"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.about.version_mode"
+#~ msgstr "v{version} • {mode}"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -1549,8 +1579,7 @@ msgid "native.toast.dictionary_suggest"
 msgstr "Ajouter « {word} » au dictionnaire ?"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-#: src/features/recording/components/RecordingView.tsx
+#: src/features/recording/components/BookmarkNoteInput.tsx
 msgid "record.bookmark.note"
 msgstr "Ajouter une note"
 
@@ -3217,6 +3246,11 @@ msgid "settings.models.provider.edit"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.edit_needs_writing_model"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.feedback.email"
 msgstr "E-mail"
@@ -3676,11 +3710,6 @@ msgstr "Glimpse Plus"
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.name.solo"
 msgstr "Glimpse Solo"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.placeholder"
-msgstr "GLIMPSE_…"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4240,11 +4269,6 @@ msgstr "Chargement des versions"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.loading_more"
 msgstr "Chargement…"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.mode.local"
-msgstr "Mode local"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
@@ -5691,23 +5715,8 @@ msgid "transcriptions.item.retry_cleanup"
 msgstr "Réessayer le nettoyage"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retry_failed"
-msgstr "La nouvelle tentative a échoué. Veuillez réessayer."
-
-#. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retry_transcription"
-msgstr "Réessayer la transcription"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.retrying"
-msgstr "Nouvelle tentative en cours…"
-
-#. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retrying"
 msgstr "Nouvelle tentative en cours…"
 
 #. js-lingui-explicit-id
@@ -7054,11 +7063,6 @@ msgstr "Utiliser les transcriptions originales avant nettoyage"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.fallback_local"
 msgstr "Votre modèle local est utilisé à la place."
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.about.version_mode"
-msgstr "v{version} • {mode}"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

@@ -1115,6 +1115,36 @@ msgstr ""
 #~ msgstr "ऑडियो को ट्रैश या रीसायकल बिन में नहीं ले जाया जा सका, इसलिए कुछ भी हटाया नहीं गया।"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.placeholder"
+#~ msgstr "GLIMPSE_…"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.mode.local"
+#~ msgstr "स्थानीय"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retry_failed"
+#~ msgstr "रीट्राई विफल रहा। कृपया फिर से प्रयास करें।"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retry_transcription"
+#~ msgstr "लिप्यंतरण दोबारा चलाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retrying"
+#~ msgstr "पुन: प्रयास किया जा रहा है..."
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.about.version_mode"
+#~ msgstr "v{version} • {mode}"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -1549,8 +1579,7 @@ msgid "native.toast.dictionary_suggest"
 msgstr "\"{word}\" को शब्दकोश में जोड़ें?"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-#: src/features/recording/components/RecordingView.tsx
+#: src/features/recording/components/BookmarkNoteInput.tsx
 msgid "record.bookmark.note"
 msgstr "नोट जोड़ें"
 
@@ -3217,6 +3246,11 @@ msgid "settings.models.provider.edit"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.edit_needs_writing_model"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.feedback.email"
 msgstr "ईमेल"
@@ -3676,11 +3710,6 @@ msgstr "Glimpse Plus"
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.name.solo"
 msgstr "Glimpse Solo"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.placeholder"
-msgstr "GLIMPSE_…"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4240,11 +4269,6 @@ msgstr "रिलीज़ लोड हो रही हैं"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.loading_more"
 msgstr "लोड हो रहा है..."
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.mode.local"
-msgstr "स्थानीय"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
@@ -5691,23 +5715,8 @@ msgid "transcriptions.item.retry_cleanup"
 msgstr "सफाई दोबारा चलाएँ"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retry_failed"
-msgstr "रीट्राई विफल रहा। कृपया फिर से प्रयास करें।"
-
-#. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retry_transcription"
-msgstr "लिप्यंतरण दोबारा चलाएँ"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.retrying"
-msgstr "पुन: प्रयास किया जा रहा है..."
-
-#. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retrying"
 msgstr "पुन: प्रयास किया जा रहा है..."
 
 #. js-lingui-explicit-id
@@ -7054,11 +7063,6 @@ msgstr "साफ़-सफ़ाई से पहले मूल ट्रा�
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.fallback_local"
 msgstr "इसके बजाय आपका स्थानीय मॉडल इस्तेमाल हो रहा है।"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.about.version_mode"
-msgstr "v{version} • {mode}"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

@@ -14,7 +14,6 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
 import { shortcutDisplayParts } from "../../shared/lib/shortcuts";
 import type {
   PillStatePayload,
@@ -26,6 +25,7 @@ import {
   OnboardingStep,
   PRIMARY_BUTTON_CLASS,
   ShortcutKeys,
+  useSetupShortcutCapture,
   type StepMotionProps,
 } from "./steps/shared";
 
@@ -60,8 +60,6 @@ export default function FirstDictationGuide({
   const [completedDictation, setCompletedDictation] = useState(false);
   const [dictationFailed, setDictationFailed] = useState(false);
   const [practiceText, setPracticeText] = useState("");
-  const [capturing, setCapturing] = useState(false);
-  const [preview, setPreview] = useState("");
   const [holding, setHolding] = useState(false);
   const [pillStatus, setPillStatus] = useState<PillStatus>("idle");
   const isListening = holding || pillStatus === "listening";
@@ -73,14 +71,6 @@ export default function FirstDictationGuide({
   useEffect(() => {
     if (!modelPending) setDictationFailed(false);
   }, [modelPending]);
-
-  const stopCapture = useCallback(async () => {
-    await invoke("set_shortcut_capture_active", { active: false }).catch(
-      () => {},
-    );
-    setCapturing(false);
-    setPreview("");
-  }, []);
 
   const stopHold = useCallback(() => {
     if (!holdingRef.current) return;
@@ -96,12 +86,8 @@ export default function FirstDictationGuide({
     [onSetShortcut],
   );
 
-  useShortcutCapture({
-    active: capturing,
-    onCancel: stopCapture,
-    onPreviewChange: setPreview,
-    onShortcutCaptured: handleShortcutCaptured,
-  });
+  const { capturing, preview, startCapture, stopCapture } =
+    useSetupShortcutCapture(handleShortcutCaptured);
 
   useEffect(() => {
     const unlistenPromises = [
@@ -144,14 +130,6 @@ export default function FirstDictationGuide({
       });
     };
   }, []);
-
-  const startCapture = () => {
-    setPreview("");
-    setCapturing(true);
-    void invoke("set_shortcut_capture_active", { active: true }).catch(() => {
-      setCapturing(false);
-    });
-  };
 
   const startHold = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (

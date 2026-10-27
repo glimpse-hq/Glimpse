@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy } from "@phosphor-icons/react";
@@ -14,21 +14,6 @@ import type { PurchaseSource } from "../../license/purchaseConfig";
 import { useSettingsForm } from "../useSettingsForm";
 import { SETTINGS_PANE_LABELS, type SettingsPane } from "../settingsPanes";
 
-type LegacyTab =
-  "general" | "account" | "models" | "local-api" | "about" | "app";
-
-const paneForLegacyTab: Record<LegacyTab, SettingsPane> = {
-  account: "account",
-  general: "general",
-  app: "app",
-  about: "about",
-  models: "models",
-  "local-api": "api",
-};
-
-const legacyTabFor = (pane: SettingsPane): LegacyTab =>
-  pane === "api" ? "local-api" : pane;
-
 interface SettingsScreenProps {
   active: boolean;
   pane: SettingsPane;
@@ -38,12 +23,6 @@ interface SettingsScreenProps {
   focusLicenseKey?: boolean;
   onLicenseKeyFocused?: () => void;
 }
-
-const paneVariants = {
-  hidden: { opacity: 1, x: 0 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0 } },
-  exit: { opacity: 1, x: 0, transition: { duration: 0 } },
-};
 
 const SettingsScreen = ({
   active,
@@ -60,22 +39,8 @@ const SettingsScreen = ({
     setApiLicenseKeyFocus(false);
     onLicenseKeyFocused?.();
   }, [onLicenseKeyFocused]);
-  const form = useSettingsForm({
-    isOpen: true,
-    active,
-    onClose,
-    initialTab: legacyTabFor(pane),
-  });
-  const { activeLicense, setActiveTab } = form;
-  const localApiLocked = !activeLicense;
-
-  useEffect(() => {
-    setActiveTab(legacyTabFor(pane));
-  }, [pane, setActiveTab]);
-
-  const handleOpenTab = (tab: LegacyTab) => {
-    onPaneChange(paneForLegacyTab[tab]);
-  };
+  const form = useSettingsForm({ pane, active, onClose });
+  const localApiLocked = !form.activeLicense;
 
   return (
     <div className="settings-typescale flex flex-1 flex-col min-h-0">
@@ -91,7 +56,7 @@ const SettingsScreen = ({
           <SettingsErrorBanner
             error={form.error}
             sourceTab={form.errorSourceTab}
-            onOpenTab={handleOpenTab}
+            onOpenPane={onPaneChange}
           />
         </div>
       </div>
@@ -101,11 +66,10 @@ const SettingsScreen = ({
         style={{ scrollbarGutter: "stable" }}
       >
         {form.loading ? null : (
-          <AnimatePresence mode="wait">
+          <>
             {pane === "account" && (
               <AccountTab
                 key="account"
-                variants={paneVariants}
                 source={accountSource}
                 focusLicenseKey={focusLicenseKey || apiLicenseKeyFocus}
                 onLicenseKeyFocused={handleLicenseKeyFocused}
@@ -115,7 +79,6 @@ const SettingsScreen = ({
             {pane === "general" && (
               <GeneralTab
                 key="general"
-                variants={paneVariants}
                 inputDevices={form.inputDevices}
                 microphoneDevice={form.microphoneDevice}
                 onMicrophoneDeviceChange={form.setMicrophoneDevice}
@@ -149,7 +112,6 @@ const SettingsScreen = ({
             {pane === "models" && (
               <ModelsTab
                 key="models"
-                variants={paneVariants}
                 modelCatalog={form.modelCatalog}
                 diarizerModel={form.diarizerModel}
                 modelStatus={form.modelStatus}
@@ -189,13 +151,18 @@ const SettingsScreen = ({
             {pane === "app" && (
               <AppTab
                 key="app"
-                variants={paneVariants}
                 active={active}
                 micPermission={form.micPermission}
                 accessibilityPermission={form.accessibilityPermission}
                 inputMonitoringPermission={form.inputMonitoringPermission}
                 onRequestMicrophonePermission={
                   form.handleRequestMicrophonePermission
+                }
+                onRequestAccessibilityPermission={
+                  form.handleRequestAccessibilityPermission
+                }
+                onRequestInputMonitoringPermission={
+                  form.handleRequestInputMonitoringPermission
                 }
                 textSizeMode={form.textSizeMode}
                 onTextSizeModeChange={form.setTextSizeMode}
@@ -225,7 +192,6 @@ const SettingsScreen = ({
             {pane === "about" && (
               <AboutTab
                 key="about"
-                variants={paneVariants}
                 active={active}
                 appInfo={form.appInfo}
                 appInfoFailed={form.appInfoFailed}
@@ -252,7 +218,6 @@ const SettingsScreen = ({
             {pane === "api" && !localApiLocked && (
               <LocalApiTab
                 key="api"
-                variants={paneVariants}
                 modelCatalog={form.modelCatalog}
                 modelStatus={form.modelStatus}
                 apiKey={form.localApiKey}
@@ -276,7 +241,7 @@ const SettingsScreen = ({
                 onClearLogs={form.handleClearLocalApiLogs}
               />
             )}
-          </AnimatePresence>
+          </>
         )}
       </div>
     </div>
@@ -286,11 +251,11 @@ const SettingsScreen = ({
 const SettingsErrorBanner = ({
   error,
   sourceTab,
-  onOpenTab,
+  onOpenPane,
 }: {
   error: string | null;
-  sourceTab: Exclude<LegacyTab, "account"> | null;
-  onOpenTab: (tab: LegacyTab) => void;
+  sourceTab: Exclude<SettingsPane, "account"> | null;
+  onOpenPane: (pane: SettingsPane) => void;
 }) => {
   const { t } = useLingui();
   const { copied, copy } = useCopyToClipboard(1500);
@@ -317,7 +282,7 @@ const SettingsErrorBanner = ({
                 : ""
             }`}
             onClick={() => {
-              if (sourceTab) onOpenTab(sourceTab);
+              if (sourceTab) onOpenPane(sourceTab);
             }}
           >
             <p className="break-words [overflow-wrap:anywhere] ui-text-meta ui-color-error leading-snug">
@@ -326,7 +291,7 @@ const SettingsErrorBanner = ({
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onOpenTab(sourceTab);
+                    onOpenPane(sourceTab);
                   }}
                   className="text-left"
                 >

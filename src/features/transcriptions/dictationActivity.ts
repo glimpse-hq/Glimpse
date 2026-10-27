@@ -11,7 +11,7 @@ export const ACTIVITY_ROWS = 7;
 
 export type ActivityMode = "daily" | "weekly" | "cumulative";
 
-export const ASSUMED_TYPING_WPM = 40;
+const ASSUMED_TYPING_WPM = 40;
 
 export async function getDictationActivity(
   startMs: number,

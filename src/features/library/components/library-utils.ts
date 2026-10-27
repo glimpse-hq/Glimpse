@@ -1,6 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { i18n } from "../../../i18n";
-import type { AudioSources } from "../../../types";
+import type { AudioSources, LibraryItemStatus } from "../../../types";
 
 export const SUPPORTED_EXTENSIONS = [
   "wav",
@@ -162,6 +162,13 @@ export const formatImportErrorMessage = (rawMessage: string) => {
     }),
   );
 };
+
+// Queued or running, so it can be cancelled.
+export const isLibraryItemBusy = (status: LibraryItemStatus) =>
+  status.type === "transcribing" ||
+  status.type === "cancelling" ||
+  status.type === "pending" ||
+  status.type === "importing";
 
 export const formatDeleteErrorMessage = (rawMessage: string) => {
   const message = rawMessage.trim();

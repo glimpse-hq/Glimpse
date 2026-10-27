@@ -29,6 +29,7 @@ import {
 import * as recordingApi from "../api";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { useRecordingSession } from "../useRecordingSession";
+import BookmarkNoteInput from "./BookmarkNoteInput";
 import { useSilenceWarning } from "../useSilenceWarning";
 import { readLivePrefs } from "../livePrefs";
 import { useInputDevices, useSettings } from "../../settings/queries";
@@ -273,11 +274,6 @@ const BookmarkNoteRow = ({
   onRemove: () => void;
 }) => {
   const { t } = useLingui();
-  const [draft, setDraft] = useState(bookmark.label ?? "");
-  const commit = () => {
-    const value = draft.trim();
-    if (value !== (bookmark.label ?? "")) onCommit(value);
-  };
   return (
     <li className="group/bookmark flex h-9 items-center gap-3">
       <span className="flex w-4 shrink-0 justify-center">
@@ -291,19 +287,11 @@ const BookmarkNoteRow = ({
       <span className="w-14 shrink-0 ui-text-body-sm tabular-nums text-content-muted">
         {formatTimestamp(bookmark.at_ms)}
       </span>
-      <input
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === "Escape") {
-            event.preventDefault();
-            event.currentTarget.blur();
-          }
-        }}
-        placeholder={t({ id: "record.bookmark.note", message: "Add a note" })}
-        className="min-w-0 flex-1 bg-transparent ui-text-body-sm text-content-primary outline-hidden placeholder:text-content-disabled"
+      <BookmarkNoteInput
+        bookmark={bookmark}
         autoFocus={autoFocus}
+        onCommit={onCommit}
+        className="min-w-0 flex-1 bg-transparent ui-text-body-sm text-content-primary outline-hidden placeholder:text-content-disabled"
       />
       <button
         type="button"

@@ -10,6 +10,7 @@ export type WebsiteIcon = {
 };
 
 export const GLOBAL_MODE_ID = "global";
+// Mirrors INSTRUCTION_CHAR_LIMIT in src-tauri/src/personalization.rs.
 export const MAX_INSTRUCTIONS_CHARS = 3000;
 
 export const normalizeEntry = (value: string) => value.trim();
@@ -59,15 +60,7 @@ export const isValidDomain = (value: string) => {
   });
 };
 
-export const createId = () => {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
-    return crypto.randomUUID();
-  }
-  return `mode-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
+export const createId = () => crypto.randomUUID();
 
 export const getInitials = (value: string) => {
   const parts = value.split(/\s+/).filter(Boolean);

@@ -3,7 +3,6 @@ import { useLingui } from "@lingui/react/macro";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { motion, type Variants } from "framer-motion";
 import { Check, Info, Microphone as Mic, Square } from "@phosphor-icons/react";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
@@ -20,13 +19,8 @@ type InvalidShortcutDrafts = Partial<
   Record<ShortcutMode, Record<number, string>>
 >;
 type MicrophoneTestStatus = "idle" | "starting" | "listening" | "error";
-type MicrophoneTestLevels = {
-  left: number;
-  right: number;
-};
 
 type GeneralTabProps = {
-  variants: Variants;
   inputDevices: DeviceInfo[];
   microphoneDevice: string | null;
   onMicrophoneDeviceChange: (deviceId: string | null) => void;
@@ -65,7 +59,6 @@ type GeneralTabProps = {
 };
 
 const GeneralTab = ({
-  variants,
   inputDevices,
   microphoneDevice,
   onMicrophoneDeviceChange,
@@ -117,7 +110,7 @@ const GeneralTab = ({
   const {
     activeDeviceLabel,
     error: microphoneTestError,
-    levels: microphoneTestLevels,
+    level: microphoneTestLevel,
     reset: resetMicrophoneTest,
     start: startMicrophoneTest,
     status: microphoneTestStatus,
@@ -149,14 +142,7 @@ const GeneralTab = ({
   };
 
   return (
-    <motion.div
-      key="general"
-      variants={variants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <div
         className={`grid grid-cols-2 gap-3${deviceRowElevated ? " relative z-dropdown-open" : ""}`}
       >
@@ -209,7 +195,7 @@ const GeneralTab = ({
             microphoneTestStatus === "error" ? (
               <MicrophoneTestSlot
                 status={microphoneTestStatus}
-                levels={microphoneTestLevels}
+                level={microphoneTestLevel}
                 label={
                   activeDeviceLabel ??
                   getSelectedMicrophoneName(inputDevices, microphoneDevice) ??
@@ -420,7 +406,7 @@ const GeneralTab = ({
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -430,18 +416,17 @@ const MICROPHONE_TEST_DOT_GAP = 2;
 const MICROPHONE_TEST_DOT_WIDTH =
   MICROPHONE_TEST_DOT_COLS * MICROPHONE_TEST_DOT_SIZE +
   (MICROPHONE_TEST_DOT_COLS - 1) * MICROPHONE_TEST_DOT_GAP;
-const EMPTY_MICROPHONE_TEST_LEVELS = { left: 0, right: 0 };
 
 type MicrophoneTestSlotProps = {
   status: MicrophoneTestStatus;
-  levels: MicrophoneTestLevels;
+  level: number;
   label: string;
   error: string | null;
 };
 
 const MicrophoneTestSlot = ({
   status,
-  levels,
+  level,
   label,
   error,
 }: MicrophoneTestSlotProps) => {
@@ -472,16 +457,17 @@ const MicrophoneTestSlot = ({
       >
         {label}
       </span>
-      <MicrophoneLevelMeter levels={levels} />
+      <MicrophoneLevelMeter level={level} />
     </div>
   );
 };
 
 type MicrophoneLevelMeterProps = {
-  levels: MicrophoneTestLevels;
+  level: number;
 };
 
-const MicrophoneLevelMeter = ({ levels }: MicrophoneLevelMeterProps) => (
+// The test level is mono; both rows show it.
+const MicrophoneLevelMeter = ({ level }: MicrophoneLevelMeterProps) => (
   <div
     className="ml-auto grid shrink-0 place-items-center overflow-hidden"
     style={{
@@ -490,9 +476,9 @@ const MicrophoneLevelMeter = ({ levels }: MicrophoneLevelMeterProps) => (
       width: MICROPHONE_TEST_DOT_WIDTH,
     }}
   >
-    {[levels.left, levels.right].flatMap((level, row) =>
+    {[level, level].flatMap((rowLevel, row) =>
       Array.from({ length: MICROPHONE_TEST_DOT_COLS }, (_, col) => {
-        const active = col < levelToDotCount(level);
+        const active = col < levelToDotCount(rowLevel);
         return (
           <div
             key={`${row}-${col}`}
@@ -537,28 +523,24 @@ const getSelectedMicrophoneName = (
 const useMicrophoneTest = (microphoneDevice: string | null) => {
   const { t } = useLingui();
   const [status, setStatus] = useState<MicrophoneTestStatus>("idle");
-  const [levels, setLevels] = useState<MicrophoneTestLevels>(
-    EMPTY_MICROPHONE_TEST_LEVELS,
-  );
+  const [level, setLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [activeDeviceLabel, setActiveDeviceLabel] = useState<string | null>(
     null,
   );
   const unlistenRef = useRef<(() => void) | null>(null);
-  const smoothedLevelsRef = useRef<MicrophoneTestLevels>(
-    EMPTY_MICROPHONE_TEST_LEVELS,
-  );
+  const smoothedLevelRef = useRef(0);
   const runIdRef = useRef(0);
 
   const releaseResources = useCallback(() => {
     unlistenRef.current?.();
     unlistenRef.current = null;
-    void invoke("stop_microphone_test");
+    invoke("stop_microphone_test").catch(() => {});
   }, []);
 
   const clearMeterState = useCallback(() => {
-    smoothedLevelsRef.current = EMPTY_MICROPHONE_TEST_LEVELS;
-    setLevels(EMPTY_MICROPHONE_TEST_LEVELS);
+    smoothedLevelRef.current = 0;
+    setLevel(0);
     setActiveDeviceLabel(null);
   }, []);
 
@@ -582,11 +564,11 @@ const useMicrophoneTest = (microphoneDevice: string | null) => {
       const unlistenLevel = await listen<number>(
         "microphone-test:level",
         (event) => {
-          smoothedLevelsRef.current = smoothMicrophoneLevels(
-            smoothedLevelsRef.current,
-            { left: event.payload, right: event.payload },
+          smoothedLevelRef.current = smoothMicrophoneLevel(
+            smoothedLevelRef.current,
+            event.payload,
           );
-          setLevels(smoothedLevelsRef.current);
+          setLevel(smoothedLevelRef.current);
         },
       );
       // The backend ended the test: dictation started or the window closed.
@@ -632,20 +614,12 @@ const useMicrophoneTest = (microphoneDevice: string | null) => {
   return {
     activeDeviceLabel,
     error,
-    levels,
+    level,
     reset,
     start,
     status,
   };
 };
-
-const smoothMicrophoneLevels = (
-  previous: MicrophoneTestLevels,
-  target: MicrophoneTestLevels,
-) => ({
-  left: smoothMicrophoneLevel(previous.left, target.left),
-  right: smoothMicrophoneLevel(previous.right, target.right),
-});
 
 const smoothMicrophoneLevel = (previous: number, target: number) => {
   const factor = target > previous ? 0.78 : 0.32;

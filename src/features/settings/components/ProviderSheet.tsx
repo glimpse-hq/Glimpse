@@ -6,12 +6,6 @@ import { Check } from "@phosphor-icons/react";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import ApiKeyField from "../../../shared/ui/ApiKeyField";
 import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
-import {
-  applyModelDiscoveryFailure,
-  applyModelDiscoverySuccess,
-  beginModelDiscovery,
-  EMPTY_MODEL_DISCOVERY_STATE,
-} from "../modelDiscovery";
 
 export type ProviderChoice = {
   id: string;
@@ -90,8 +84,9 @@ const ProviderSheet = ({
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, true, onCancel);
   const [draft, setDraft] = useState<ProviderDraft>(initial);
-  const [discovery, setDiscovery] = useState(EMPTY_MODEL_DISCOVERY_STATE);
-  const discoveryRef = useRef(EMPTY_MODEL_DISCOVERY_STATE);
+  const [discoveredModels, setDiscoveredModels] = useState<string[]>([]);
+  // Only the latest model request may update the list.
+  const discoverySeqRef = useRef(0);
   const [modelStatus, setModelStatus] = useState<
     "idle" | "loading" | "empty" | "failed"
   >("idle");
@@ -122,17 +117,10 @@ const ProviderSheet = ({
     },
   ];
 
-  const updateDiscovery = (next: typeof discovery) => {
-    discoveryRef.current = next;
-    setDiscovery(next);
-  };
-
   const pick = (next: ProviderChoice) => {
     if (next.id === draft.provider) return;
-    updateDiscovery({
-      requestSeq: discoveryRef.current.requestSeq + 1,
-      models: [],
-    });
+    discoverySeqRef.current += 1;
+    setDiscoveredModels([]);
     setModelStatus("idle");
     setDraft((current) => ({
       ...current,
@@ -144,30 +132,22 @@ const ProviderSheet = ({
 
   const discover = async () => {
     if (!choice?.canDiscoverModels) return;
-    const begun = beginModelDiscovery(discoveryRef.current);
-    updateDiscovery(begun.state);
+    const seq = ++discoverySeqRef.current;
     setModelStatus("loading");
-    const current = () => discoveryRef.current.requestSeq === begun.requestSeq;
     try {
       const models = await fetchModels(draft.endpoint, draft.apiKey);
-      updateDiscovery(
-        applyModelDiscoverySuccess(
-          discoveryRef.current,
-          begun.requestSeq,
-          models,
-        ),
-      );
-      if (current()) setModelStatus(models.length > 0 ? "idle" : "empty");
+      if (seq !== discoverySeqRef.current) return;
+      setDiscoveredModels(models);
+      setModelStatus(models.length > 0 ? "idle" : "empty");
     } catch {
-      updateDiscovery(
-        applyModelDiscoveryFailure(discoveryRef.current, begun.requestSeq),
-      );
-      if (current()) setModelStatus("failed");
+      if (seq !== discoverySeqRef.current) return;
+      setDiscoveredModels([]);
+      setModelStatus("failed");
     }
   };
 
   const models = Array.from(
-    new Set(discovery.models.map((model) => model.trim()).filter(Boolean)),
+    new Set(discoveredModels.map((model) => model.trim()).filter(Boolean)),
   );
   const modelOptions = [
     ...(automaticModel && choice

@@ -60,6 +60,7 @@ import {
   sanitizeFileName,
   shouldShowImportProgress,
   formatLibraryName,
+  isLibraryItemBusy,
 } from "./library-utils";
 import {
   resolveSpeechModelLabel,
@@ -82,6 +83,7 @@ import type {
 } from "../../../types";
 import { SPEAKER_COLORS, withSpeakerColors } from "../speakerColors";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { startDragStep } from "../../settings/dragStep";
 
 const MAX_SPEAKERS = 16;
 const FOLLOW_PLAYBACK_KEY = "glimpse.library.follow_playback";
@@ -464,11 +466,7 @@ const LibraryDetail = ({
     [item.speakers],
   );
   const canAddSpeaker = speakers.length < MAX_SPEAKERS;
-  const isBusy =
-    item.status.type === "transcribing" ||
-    item.status.type === "cancelling" ||
-    item.status.type === "pending" ||
-    item.status.type === "importing";
+  const isBusy = isLibraryItemBusy(item.status);
   const detectingSpeakersLabel = t({
     id: "library.modal.detecting_speakers",
     message: "Detecting speakers",
@@ -711,40 +709,13 @@ const LibraryDetail = ({
       event:
         React.MouseEvent<HTMLSpanElement> | React.TouchEvent<HTMLSpanElement>,
     ) => {
-      event.preventDefault();
-      const startX =
-        "touches" in event ? event.touches[0].clientX : event.clientX;
       const startIndex = PLAYBACK_RATES.indexOf(playbackRateRef.current);
-      const initialIndex =
-        startIndex === -1 ? PLAYBACK_RATES.indexOf(1) : startIndex;
-
-      const handleMove = (e: MouseEvent | TouchEvent) => {
-        const currentX =
-          "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-        const diffX = currentX - startX;
-        const steps = Math.round(diffX / 15);
-
-        const nextIndex = Math.min(
-          PLAYBACK_RATES.length - 1,
-          Math.max(0, initialIndex + steps),
-        );
-
-        if (PLAYBACK_RATES[nextIndex] !== playbackRateRef.current) {
-          setPlaybackRateValue(PLAYBACK_RATES[nextIndex]);
-        }
-      };
-
-      const handleEnd = () => {
-        window.removeEventListener("mousemove", handleMove);
-        window.removeEventListener("mouseup", handleEnd);
-        window.removeEventListener("touchmove", handleMove);
-        window.removeEventListener("touchend", handleEnd);
-      };
-
-      window.addEventListener("mousemove", handleMove);
-      window.addEventListener("mouseup", handleEnd);
-      window.addEventListener("touchmove", handleMove, { passive: false });
-      window.addEventListener("touchend", handleEnd);
+      startDragStep(
+        event,
+        startIndex === -1 ? PLAYBACK_RATES.indexOf(1) : startIndex,
+        PLAYBACK_RATES.length,
+        (index) => setPlaybackRateValue(PLAYBACK_RATES[index]),
+      );
     },
     [setPlaybackRateValue],
   );

@@ -8,6 +8,7 @@ import {
 import ActivityDots from "../../../shared/ui/ActivityDots";
 import SidebarTip from "../../../shared/ui/SidebarTip";
 import type { LocalApiStatus } from "../../../types";
+import { LOCAL_API_LOOPBACK_HOST, localApiReachableHost } from "../localApi";
 
 const SIDEBAR_TRANSITION =
   "transition-[width,opacity,max-height] duration-200 ease-out";
@@ -24,9 +25,10 @@ const LocalApiSidebarStatus = ({
   const { t } = useLingui();
   const { copied, copy } = useCopyToClipboard(1200);
 
-  const boundHost = status.host || "127.0.0.1";
-  const host =
-    boundHost === "0.0.0.0" ? (status.lan_ip ?? boundHost) : boundHost;
+  const host = localApiReachableHost(
+    status.host || LOCAL_API_LOOPBACK_HOST,
+    status.lan_ip,
+  );
   const baseUrl = `http://${host}:${status.port}/v1`;
   const displayUrl = `${host}:${status.port}/v1`;
   const requests = status.requests_total ?? 0;

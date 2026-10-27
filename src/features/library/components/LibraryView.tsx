@@ -58,7 +58,10 @@ import type {
   LibraryItem,
   LibraryItemPatch,
 } from "../../../types";
-import { showErrorToast } from "../../../shared/lib/errorToast";
+import {
+  showErrorToast,
+  showWarningToast,
+} from "../../../shared/lib/errorToast";
 
 type LibraryViewProps = {
   pendingImportPaths: string[] | null;
@@ -841,16 +844,15 @@ const LibraryView = ({
               );
 
               if (unsupported.length > 0) {
-                invoke("debug_show_toast", {
-                  toastType: "warning",
-                  message: t({
+                showWarningToast(
+                  t({
                     id: "library.view.unsupported_files_skipped",
                     message: plural(unsupported.length, {
                       one: "Skipped # file in an unsupported format.",
                       other: "Skipped # files in an unsupported format.",
                     }),
                   }),
-                }).catch(() => {});
+                );
               }
 
               for (const path of supported) {

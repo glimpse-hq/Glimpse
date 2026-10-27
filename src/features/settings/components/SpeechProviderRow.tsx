@@ -4,8 +4,8 @@ import { AnimatePresence } from "framer-motion";
 import {
   CLOUD_SPEECH_PROVIDERS,
   getSpeechProviderPreset,
+  isRemoteSpeechConfigured,
   LOCAL_SPEECH_PROVIDERS,
-  resolvedSpeechEndpoint,
   resolvedSpeechModel,
   supportsSpeechProviderModelDiscovery,
   type SpeechProviderPreset,
@@ -173,17 +173,16 @@ const SpeechProviderRow = ({
                 message: `Automatic (${choice.defaultModel})`,
               })
             }
-            isValid={(draft) => {
-              const id = draft.provider as RemoteSpeechProvider | null;
-              const choice = id ? getSpeechProviderPreset(id) : undefined;
-              return Boolean(
-                id &&
-                choice &&
-                resolvedSpeechEndpoint(id, draft.endpoint) &&
-                resolvedSpeechModel(id, draft.model) !== undefined &&
-                (!choice.apiKeyRequired || draft.apiKey.trim()),
-              );
-            }}
+            isValid={(draft) =>
+              draft.provider !== null &&
+              isRemoteSpeechConfigured({
+                enabled: true,
+                provider: draft.provider as RemoteSpeechProvider,
+                endpoint: draft.endpoint,
+                model: draft.model,
+                apiKey: draft.apiKey,
+              })
+            }
             fetchModels={(nextEndpoint, nextApiKey) =>
               fetchSpeechModels({ endpoint: nextEndpoint, apiKey: nextApiKey })
             }

@@ -22,9 +22,8 @@ import {
   WifiSlash,
 } from "@phosphor-icons/react";
 import type { ActivationError, LicenseState } from "../../license/api";
+import { LICENSE_KEY_PLACEHOLDER } from "../../license/licenseKeyShape";
 import { useActivationErrorText } from "../../license/useActivationErrorText";
-import { detectAppPlatform } from "../../../platform/service";
-import { getDefaultShortcuts } from "../platform";
 import { shortcutDisplayParts } from "../../../shared/lib/shortcuts";
 import {
   Chip,
@@ -36,10 +35,9 @@ import {
   type StepMotionProps,
 } from "./shared";
 
-const PLATFORM = detectAppPlatform();
-
 interface LicenseStepProps {
   stepMotionProps: StepMotionProps;
+  smartShortcut: string;
   licenseState: LicenseState | null;
   opening: boolean;
   openError: string | null;
@@ -52,6 +50,7 @@ interface LicenseStepProps {
 
 export function LicenseStep({
   stepMotionProps,
+  smartShortcut,
   licenseState,
   opening,
   openError,
@@ -191,15 +190,15 @@ export function LicenseStep({
           </div>
         </div>
 
-        <FeatureMarquee />
+        <FeatureMarquee smartShortcut={smartShortcut} />
       </div>
     </OnboardingStep>
   );
 }
 
-function FeatureMarquee() {
+function FeatureMarquee({ smartShortcut }: { smartShortcut: string }) {
   const { t } = useLingui();
-  const shortcut = shortcutDisplayParts(getDefaultShortcuts(PLATFORM).smart);
+  const shortcut = shortcutDisplayParts(smartShortcut);
   const searchShortcut = shortcutDisplayParts("CommandOrControl+F");
   const freeTag = t({
     id: "onboarding.license_step.tag_free",
@@ -583,7 +582,7 @@ function KeyField({
         autoFocus
         value={licenseKey}
         onChange={(event) => setLicenseKey(event.target.value)}
-        placeholder="GLIMPSE_…"
+        placeholder={LICENSE_KEY_PLACEHOLDER}
         aria-label={t({
           id: "onboarding.license.input_aria",
           message: "License key",

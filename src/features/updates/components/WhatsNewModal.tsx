@@ -10,6 +10,8 @@ import {
   WarningCircle as AlertCircle,
 } from "@phosphor-icons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { GITHUB_URL } from "../../../shared/lib/links";
+import { getGithubReleases } from "../api";
 
 interface WhatsNewModalProps {
   isOpen: boolean;
@@ -23,8 +25,6 @@ interface ReleaseInfo {
   htmlUrl: string;
 }
 
-const GITHUB_REPO = "glimpse-hq/Glimpse";
-const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 const MAX_RELEASES = 15;
 
 const loadReleaseNotes = () => import("./ReleaseNotesMarkdown");
@@ -58,26 +58,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${GITHUB_API_URL}?per_page=${MAX_RELEASES}`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/vnd.github.v3+json",
-            "User-Agent": "Glimpse-App",
-          },
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`);
-      }
-      const data = (await response.json()) as Array<{
-        tag_name: string;
-        body: string;
-        published_at: string;
-        html_url: string;
-        prerelease: boolean;
-      }>;
+      const data = await getGithubReleases(MAX_RELEASES);
 
       setReleases(
         data
@@ -168,9 +149,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                 </h2>
                 <button
                   onClick={() => {
-                    openUrl(
-                      "https://github.com/glimpse-hq/Glimpse/releases",
-                    ).catch((err) => {
+                    openUrl(`${GITHUB_URL}/releases`).catch((err) => {
                       console.error("Failed to open releases:", err);
                     });
                   }}

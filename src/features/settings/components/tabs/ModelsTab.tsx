@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useLingui } from "@lingui/react/macro";
-import { motion, type Variants } from "framer-motion";
 import {
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
@@ -46,7 +45,6 @@ import type {
 } from "../../../../types";
 
 type ModelsTabProps = {
-  variants: Variants;
   modelCatalog: ModelInfo[];
   diarizerModel: ModelInfo | null;
   modelStatus: Record<string, ModelStatus>;
@@ -203,7 +201,6 @@ const InstalledModelRow = ({
 };
 
 const ModelsTab = ({
-  variants,
   modelCatalog,
   diarizerModel,
   modelStatus,
@@ -277,14 +274,7 @@ const ModelsTab = ({
   );
 
   return (
-    <motion.div
-      key="models"
-      variants={variants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="flex min-h-0 flex-1 flex-col"
-    >
+    <div className="flex min-h-0 flex-1 flex-col">
       {browsing ? (
         <>
           <button
@@ -393,7 +383,7 @@ const ModelsTab = ({
           />
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

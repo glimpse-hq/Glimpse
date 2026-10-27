@@ -4,6 +4,7 @@ import ReactMarkdown, { type Components, type Options } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkGithub from "remark-github";
 import remarkBreaks from "remark-breaks";
+import { GITHUB_REPO } from "../../../shared/lib/links";
 
 const isSafeHttpUrl = (value: string): boolean => {
   try {
@@ -19,7 +20,7 @@ const markdownPlugins: {
 } = {
   remark: [
     remarkGfm,
-    [remarkGithub, { repository: "glimpse-hq/Glimpse", mentionStrong: false }],
+    [remarkGithub, { repository: GITHUB_REPO, mentionStrong: false }],
     remarkBreaks,
   ],
 };

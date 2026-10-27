@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DownloadSimple as Download,
@@ -13,13 +12,12 @@ import {
   CircleNotch as Loader2,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
-import WhatsNewModal from "./WhatsNewModal";
 import DotMatrix from "../../../shared/ui/DotMatrix";
+import { useTauriEvent } from "../../../shared/hooks/useTauriEvent";
 import { updateKeys, useUpdateStatus } from "../queries";
 
 interface UpdateCheckerProps {
-  autoCheck?: boolean;
-  onOpenWhatsNew?: () => void;
+  onOpenWhatsNew: () => void;
   // undefined while app info is loading; true on Microsoft Store installs
   storeBuild?: boolean;
 }
@@ -50,7 +48,6 @@ const formatError = (err: unknown): string => {
 };
 
 export function UpdateChecker({
-  autoCheck = true,
   onOpenWhatsNew,
   storeBuild,
 }: UpdateCheckerProps) {
@@ -64,21 +61,22 @@ export function UpdateChecker({
   const [error, setError] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [installed, setInstalled] = useState(false);
-  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const availableVersion =
     installed || !updateStatus?.available ? null : updateStatus.version;
 
   useEffect(() => {
     const pendingVersion = localStorage.getItem(PENDING_RESTART_KEY);
     if (!pendingVersion) return;
-    getVersion().then((currentVersion) => {
-      if (pendingVersion === currentVersion) {
-        // Update was already applied - clear stale key
-        localStorage.removeItem(PENDING_RESTART_KEY);
-      } else {
-        setInstalled(true);
-      }
-    });
+    getVersion()
+      .then((currentVersion) => {
+        if (pendingVersion === currentVersion) {
+          // Update was already applied - clear stale key
+          localStorage.removeItem(PENDING_RESTART_KEY);
+        } else {
+          setInstalled(true);
+        }
+      })
+      .catch((err) => console.error("Failed to read the app version:", err));
   }, []);
 
   const checkForUpdates = useCallback(async () => {
@@ -97,67 +95,38 @@ export function UpdateChecker({
     }
   }, [queryClient]);
   // Not "up to date" until a first check has said so.
-  const awaitingCheck = storeBuild === undefined || (autoCheck && !checked);
+  const awaitingCheck = storeBuild === undefined || !checked;
 
+  // Wait until storeBuild resolves to false; store installs never check.
   useEffect(() => {
-    let cancelled = false;
-    let unlistenCheck: UnlistenFn | undefined;
+    if (storeBuild === false) void checkForUpdates();
+  }, [checkForUpdates, storeBuild]);
 
-    // Wait until storeBuild resolves to false; store installs never check.
-    if (storeBuild !== false) return;
+  useTauriEvent("updater:check", () => void checkForUpdates(), {
+    enabled: storeBuild === false,
+  });
 
-    if (autoCheck) {
-      void checkForUpdates();
-    }
+  useTauriEvent<UpdateDownloadProgressPayload>(
+    "update:download-progress",
+    (payload) => {
+      if (!payload) return;
 
-    listen("updater:check", () => {
-      void checkForUpdates();
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenCheck = fn;
-    });
+      if (typeof payload.progress === "number") {
+        setProgress(Math.max(0, Math.min(100, Math.round(payload.progress))));
+        return;
+      }
 
-    return () => {
-      cancelled = true;
-      unlistenCheck?.();
-    };
-  }, [autoCheck, checkForUpdates, storeBuild]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let unlistenProgress: UnlistenFn | undefined;
-
-    listen<UpdateDownloadProgressPayload>(
-      "update:download-progress",
-      (event) => {
-        const payload = event.payload;
-        if (!payload) return;
-
-        if (typeof payload.progress === "number") {
-          setProgress(Math.max(0, Math.min(100, Math.round(payload.progress))));
-          return;
-        }
-
-        const total = payload.total;
-        if (typeof total === "number" && total > 0) {
-          setProgress(
-            Math.max(
-              0,
-              Math.min(100, Math.round((payload.downloaded / total) * 100)),
-            ),
-          );
-        }
-      },
-    ).then((fn) => {
-      if (cancelled) fn();
-      else unlistenProgress = fn;
-    });
-
-    return () => {
-      cancelled = true;
-      unlistenProgress?.();
-    };
-  }, []);
+      const total = payload.total;
+      if (typeof total === "number" && total > 0) {
+        setProgress(
+          Math.max(
+            0,
+            Math.min(100, Math.round((payload.downloaded / total) * 100)),
+          ),
+        );
+      }
+    },
+  );
 
   const handleDownloadAndInstall = async () => {
     setDownloading(true);
@@ -192,38 +161,24 @@ export function UpdateChecker({
 
   if (storeBuild) {
     return (
-      <>
-        <div className={`${UPDATE_BOX_CLASS} bg-surface-surface`}>
-          <CheckCircle size={16} className="text-content-disabled shrink-0" />
-          <p className="flex-1 ui-text-body-sm ui-color-primary">
-            {t({
-              id: "updates.store_managed",
-              message: "Updates come from the Microsoft Store",
-            })}
-          </p>
-          <button
-            onClick={() => {
-              if (onOpenWhatsNew) {
-                onOpenWhatsNew();
-              } else {
-                setWhatsNewOpen(true);
-              }
-            }}
-            className="ui-text-label ui-color-muted hover:text-content-secondary underline underline-offset-2 transition-colors shrink-0"
-          >
-            {t({
-              id: "updates.whats_new",
-              message: "What's new?",
-            })}
-          </button>
-        </div>
-        {!onOpenWhatsNew && (
-          <WhatsNewModal
-            isOpen={whatsNewOpen}
-            onClose={() => setWhatsNewOpen(false)}
-          />
-        )}
-      </>
+      <div className={`${UPDATE_BOX_CLASS} bg-surface-surface`}>
+        <CheckCircle size={16} className="text-content-disabled shrink-0" />
+        <p className="flex-1 ui-text-body-sm ui-color-primary">
+          {t({
+            id: "updates.store_managed",
+            message: "Updates come from the Microsoft Store",
+          })}
+        </p>
+        <button
+          onClick={onOpenWhatsNew}
+          className="ui-text-label ui-color-muted hover:text-content-secondary underline underline-offset-2 transition-colors shrink-0"
+        >
+          {t({
+            id: "updates.whats_new",
+            message: "What's new?",
+          })}
+        </button>
+      </div>
     );
   }
 
@@ -390,70 +345,56 @@ export function UpdateChecker({
   }
 
   return (
-    <>
-      <div className={`${UPDATE_BOX_CLASS} bg-surface-surface`}>
-        {checking || awaitingCheck ? (
-          <>
-            <Loader2
-              size={16}
-              className="text-content-muted animate-spin shrink-0"
-            />
-            <p className="flex-1 ui-text-body-sm ui-color-muted">
-              {t({
-                id: "updates.checking",
-                message: "Checking for updates...",
-              })}
-            </p>
-          </>
-        ) : (
-          <>
-            <CheckCircle size={16} className="text-content-disabled shrink-0" />
-            <p className="flex-1 ui-text-body-sm ui-color-primary">
-              {t({
-                id: "updates.up_to_date",
-                message: "You're up to date",
-              })}
-            </p>
-          </>
-        )}
-        <button
-          onClick={() => {
-            if (onOpenWhatsNew) {
-              onOpenWhatsNew();
-            } else {
-              setWhatsNewOpen(true);
-            }
-          }}
-          className="ui-text-label ui-color-muted hover:text-content-secondary underline underline-offset-2 transition-colors shrink-0"
-        >
-          {t({
-            id: "updates.whats_new",
-            message: "What's new?",
-          })}
-        </button>
-        <motion.button
-          onClick={() => checkForUpdates()}
-          disabled={checking}
-          className="p-1.5 rounded-md text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-          whileTap={{ scale: 0.95 }}
-          title={t({
-            id: "updates.check_title",
-            message: "Check for updates",
-          })}
-          aria-label={t({
-            id: "updates.check_aria",
-            message: "Check for updates",
-          })}
-        >
-          <RefreshCw size={14} />
-        </motion.button>
-      </div>
-      {!onOpenWhatsNew && (
-        <WhatsNewModal
-          isOpen={whatsNewOpen}
-          onClose={() => setWhatsNewOpen(false)}
-        />
+    <div className={`${UPDATE_BOX_CLASS} bg-surface-surface`}>
+      {checking || awaitingCheck ? (
+        <>
+          <Loader2
+            size={16}
+            className="text-content-muted animate-spin shrink-0"
+          />
+          <p className="flex-1 ui-text-body-sm ui-color-muted">
+            {t({
+              id: "updates.checking",
+              message: "Checking for updates...",
+            })}
+          </p>
+        </>
+      ) : (
+        <>
+          <CheckCircle size={16} className="text-content-disabled shrink-0" />
+          <p className="flex-1 ui-text-body-sm ui-color-primary">
+            {t({
+              id: "updates.up_to_date",
+              message: "You're up to date",
+            })}
+          </p>
+        </>
       )}
-    </>
+      <button
+        onClick={onOpenWhatsNew}
+        className="ui-text-label ui-color-muted hover:text-content-secondary underline underline-offset-2 transition-colors shrink-0"
+      >
+        {t({
+          id: "updates.whats_new",
+          message: "What's new?",
+        })}
+      </button>
+      <motion.button
+        onClick={() => checkForUpdates()}
+        disabled={checking}
+        className="p-1.5 rounded-md text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+        whileTap={{ scale: 0.95 }}
+        title={t({
+          id: "updates.check_title",
+          message: "Check for updates",
+        })}
+        aria-label={t({
+          id: "updates.check_aria",
+          message: "Check for updates",
+        })}
+      >
+        <RefreshCw size={14} />
+      </motion.button>
+    </div>
   );
 }

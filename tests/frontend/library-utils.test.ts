@@ -129,11 +129,6 @@ describe("library error messages", () => {
     expect(formatDeleteErrorMessage("Failed to delete library files")).toBe(
       "Couldn't delete the library files. Check permissions and try again.",
     );
-    expect(
-      formatDeleteErrorMessage("Couldn't move the audio to the Trash"),
-    ).toBe(
-      "Couldn't move the audio to the Trash or Recycle Bin, so nothing was deleted.",
-    );
   });
 
   test("offers FFmpeg help only for decode and FFmpeg errors", () => {

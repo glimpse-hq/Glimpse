@@ -29,6 +29,7 @@ import {
 } from "@phosphor-icons/react";
 import * as recordingApi from "../api";
 import { useRecordingSession } from "../useRecordingSession";
+import BookmarkNoteInput from "./BookmarkNoteInput";
 import { useSilenceWarning } from "../useSilenceWarning";
 import { useLiveTranscript } from "../useLiveTranscript";
 import { useLivePrefs, type LivePrefs, type LiveTextSize } from "../livePrefs";
@@ -205,12 +206,6 @@ const BookmarkRow = ({
   autoFocus: boolean;
   onCommit: (label: string) => void;
 }) => {
-  const { t } = useLingui();
-  const [draft, setDraft] = useState(bookmark.label ?? "");
-  const commit = () => {
-    const value = draft.trim();
-    if (value !== (bookmark.label ?? "")) onCommit(value);
-  };
   return (
     <li className="flex h-8 items-center gap-2">
       <span className="flex w-2 shrink-0 justify-center">
@@ -221,18 +216,10 @@ const BookmarkRow = ({
           aria-hidden="true"
         />
       </span>
-      <input
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === "Escape") {
-            event.preventDefault();
-            event.currentTarget.blur();
-          }
-        }}
-        placeholder={t({ id: "record.bookmark.note", message: "Add a note" })}
+      <BookmarkNoteInput
+        bookmark={bookmark}
         autoFocus={autoFocus}
+        onCommit={onCommit}
         className="min-w-0 flex-1 bg-transparent ui-text-label text-content-secondary outline-hidden placeholder:text-content-disabled focus:text-content-primary"
       />
       <span className="shrink-0 ui-text-label tabular-nums text-content-muted">

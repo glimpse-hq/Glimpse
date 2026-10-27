@@ -5,7 +5,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUpRight,
   Check,
@@ -25,9 +25,8 @@ import {
   type DatasetExportOptions,
 } from "../../data-api";
 
-const CLI_WIKI_URL = "https://github.com/glimpse-hq/Glimpse/wiki/CLI";
-const REPORT_ISSUE_URL = "https://github.com/glimpse-hq/Glimpse/issues/new";
-const SUPPORT_EMAIL = "hello@tryglimpse.cc";
+const CLI_WIKI_URL = `${GITHUB_URL}/wiki/CLI`;
+const REPORT_ISSUE_URL = `${GITHUB_URL}/issues/new`;
 
 const SUPPORT_ACTION_CLASS =
   "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-border-primary bg-surface-surface outline-hidden transition-[transform,border-color,background-color] duration-100 ease-out hover:border-[var(--color-accent-30)] hover:bg-[var(--color-accent-10)] active:translate-y-[2px] focus-visible:ring-2 focus-visible:ring-border-hover";
@@ -48,6 +47,7 @@ import { useInstallCli, useRemoveCli } from "../../models-queries";
 import { detectAppPlatform } from "../../../../platform/service";
 import { formatBytes } from "../../../../shared/lib/format";
 import type { AppInfo, CliInstallStatus } from "../../../../types";
+import { GITHUB_URL, SUPPORT_EMAIL } from "../../../../shared/lib/links";
 
 const InlineHoldButton = ({
   onConfirm,
@@ -173,7 +173,6 @@ const InlineHoldButton = ({
 };
 
 type AboutTabProps = {
-  variants: Variants;
   active: boolean;
   appInfo: AppInfo | null;
   appInfoFailed: boolean;
@@ -184,7 +183,6 @@ type AboutTabProps = {
 };
 
 const AboutTab = ({
-  variants,
   active,
   appInfo,
   appInfoFailed,
@@ -463,14 +461,7 @@ const AboutTab = ({
   };
 
   return (
-    <motion.div
-      key="about"
-      variants={variants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="space-y-5"
-    >
+    <div className="space-y-5">
       <header>
         <h2 className="ui-text-title-lg font-medium ui-color-primary">
           {t({
@@ -1061,7 +1052,7 @@ const AboutTab = ({
           />
         </>
       )}
-    </motion.div>
+    </div>
   );
 };
 

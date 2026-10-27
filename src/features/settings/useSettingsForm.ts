@@ -15,8 +15,8 @@ import {
 } from "../../shared/lib/llmProviders";
 import {
   getSpeechProviderPreset,
+  isRemoteSpeechConfigured,
   resolvedSpeechEndpoint,
-  resolvedSpeechModel,
 } from "../../shared/lib/speechProviders";
 import {
   parseTextSizeMode,
@@ -42,7 +42,12 @@ import {
   useInputDevices,
   useSettings,
 } from "./queries";
+import * as settingsApi from "./api";
 import * as modelsApi from "./models-api";
+import { MAX_PER_MODE } from "./components/ShortcutList";
+import { LOCAL_API_DEFAULT_PORT, LOCAL_API_LOOPBACK_HOST } from "./localApi";
+import { isLlmProviderReady } from "./useLanguageModelStatus";
+import type { SettingsPane } from "./settingsPanes";
 import {
   modelKeys,
   resolveLocalFallbackModel,
@@ -66,26 +71,19 @@ import type {
   AppLocaleSetting,
   LocalApiLogEntry,
   LocalApiStatus,
-  ModelStatus,
   RemoteSpeechProvider,
-  UpdateSettingsResult,
 } from "../../types";
 
-type ActiveTab =
-  "general" | "models" | "local-api" | "about" | "account" | "app";
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureTarget = { mode: ShortcutMode; index: number } | null;
 type ShortcutTarget = { mode: ShortcutMode; index: number };
-type ShortcutOverrides = Partial<
-  Record<"smartShortcut" | "holdShortcut" | "toggleShortcut", string>
->;
-type SettingsErrorSourceTab = Exclude<ActiveTab, "account">;
+type SettingsErrorSourceTab = Exclude<SettingsPane, "account">;
 type InvalidShortcutDrafts = Partial<
   Record<ShortcutMode, Record<number, string>>
 >;
 type InvalidShortcutDraft = { target: ShortcutTarget; message: string } | null;
 
-type SaveSettingsOverrides = ShortcutOverrides & {
+type SaveSettingsOverrides = {
   localModel?: string;
   remoteSpeechEnabled?: boolean;
   localApiModel?: string;
@@ -218,17 +216,15 @@ const sanitizeInvalidShortcutDraft = (
 };
 
 interface UseSettingsFormOptions {
-  isOpen: boolean;
+  pane: SettingsPane;
   active: boolean;
   onClose: () => void;
-  initialTab?: ActiveTab;
 }
 
 export function useSettingsForm({
-  isOpen,
+  pane,
   active,
   onClose,
-  initialTab = "general",
 }: UseSettingsFormOptions) {
   const [smartShortcut, setSmartShortcut] = useState("Control+Space");
   const [holdShortcut, setHoldShortcut] = useState("Control+Shift+Space");
@@ -252,7 +248,7 @@ export function useSettingsForm({
   const [remoteSpeechProvider, setRemoteSpeechProvider] =
     useState<RemoteSpeechProvider>("openai");
   const [remoteSpeechEndpoint, setRemoteSpeechEndpoint] = useState(
-    "https://api.openai.com/v1",
+    () => getSpeechProviderPreset("openai")?.endpoint ?? "",
   );
   const [remoteSpeechApiKey, setRemoteSpeechApiKey] = useState("");
   const [remoteSpeechModel, setRemoteSpeechModel] = useState("auto");
@@ -268,7 +264,6 @@ export function useSettingsForm({
   const [captureActive, setCaptureActive] = useState<CaptureTarget>(null);
   const [capturePreview, setCapturePreview] = useState<string>("");
   const captureActiveRef = useRef<CaptureTarget>(null);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("general");
   const [llmProvider, setLlmProvider] = useState<LlmProvider>("none");
   const [llmEndpoint, setLlmEndpoint] = useState("");
   const [llmApiKey, setLlmApiKey] = useState("");
@@ -286,9 +281,9 @@ export function useSettingsForm({
     useState<RecordingPrunePolicy>("never");
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
   const [localApiKey, setLocalApiKey] = useState("");
-  const [localApiPort, setLocalApiPort] = useState(11435);
+  const [localApiPort, setLocalApiPort] = useState(LOCAL_API_DEFAULT_PORT);
   const [localApiModel, setLocalApiModel] = useState("auto");
-  const [localApiHost, setLocalApiHost] = useState("127.0.0.1");
+  const [localApiHost, setLocalApiHost] = useState(LOCAL_API_LOOPBACK_HOST);
   const [localApiStartOnLaunch, setLocalApiStartOnLaunch] = useState(false);
   const [localApiCors, setLocalApiCors] = useState(false);
   const [localApiStatus, setLocalApiStatus] = useState<LocalApiStatus | null>(
@@ -333,21 +328,21 @@ export function useSettingsForm({
     [],
   );
   const queryClient = useQueryClient();
-  const settingsQuery = useSettings(undefined, isOpen);
+  const settingsQuery = useSettings();
   const licenseStateQuery = useLicenseState();
   const licenseGateActive = useLicenseGate();
   const activeLicense = licenseStateQuery.data?.status === "active";
-  const appInfoQuery = useAppInfo(isOpen);
-  const inputDevicesQuery = useInputDevices(isOpen);
+  const appInfoQuery = useAppInfo();
+  const inputDevicesQuery = useInputDevices();
   // Settings stays mounted, and only macOS reports device changes, so a mic
   // plugged in on Windows would otherwise not show up until restart.
   const refetchInputDevices = inputDevicesQuery.refetch;
   useEffect(() => {
     if (active) void refetchInputDevices();
   }, [active, refetchInputDevices]);
-  const modelCatalogQuery = useModelCatalog(isOpen);
-  const diarizerModel = useDiarizerModel(isOpen).data ?? null;
-  const cliInstallQuery = useCliInstallStatus(isOpen);
+  const modelCatalogQuery = useModelCatalog();
+  const diarizerModel = useDiarizerModel().data ?? null;
+  const cliInstallQuery = useCliInstallStatus();
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
   const cliInstallStatus = cliInstallQuery.data ?? null;
@@ -367,19 +362,18 @@ export function useSettingsForm({
   );
   const modelStatusesQuery = useModelStatuses(
     modelKeysForStatus,
-    isOpen && modelKeysForStatus.length > 0,
+    modelKeysForStatus.length > 0,
   );
   const modelStatus = modelStatusesQuery.statusByModel;
   const appInfo = appInfoQuery.data ?? null;
   const appInfoFailed = appInfoQuery.isError;
   const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
   const loading =
-    isOpen &&
-    (settingsQuery.isLoading ||
-      modelCatalogQuery.isLoading ||
-      inputDevicesQuery.isLoading ||
-      appInfoQuery.isLoading ||
-      licenseStateQuery.isLoading);
+    settingsQuery.isLoading ||
+    modelCatalogQuery.isLoading ||
+    inputDevicesQuery.isLoading ||
+    appInfoQuery.isLoading ||
+    licenseStateQuery.isLoading;
 
   const clearSettingsError = useCallback(() => {
     setError(null);
@@ -395,14 +389,12 @@ export function useSettingsForm({
   const showSettingsError = useCallback(
     (
       message: string,
-      sourceTab: SettingsErrorSourceTab = activeTab === "account"
-        ? "general"
-        : activeTab,
+      sourceTab: SettingsErrorSourceTab = pane === "account" ? "general" : pane,
     ) => {
       setError(message);
       setErrorSourceTab(sourceTab);
     },
-    [activeTab],
+    [pane],
   );
 
   const setInvalidShortcutDraft = useCallback(
@@ -471,40 +463,36 @@ export function useSettingsForm({
       setShortcutBindings(hydratedBindings);
       setTranscriptionModeRaw(s.transcription_mode);
       setLocalModel(s.local_model);
-      setRemoteSpeechEnabled(s.remote_speech_enabled ?? false);
-      setRemoteSpeechProvider(s.remote_speech_provider ?? "openai");
-      setRemoteSpeechEndpoint(
-        s.remote_speech_endpoint ?? "https://api.openai.com/v1",
-      );
-      setRemoteSpeechApiKey(s.remote_speech_api_key ?? "");
-      setRemoteSpeechModel(s.remote_speech_model ?? "auto");
+      setRemoteSpeechEnabled(s.remote_speech_enabled);
+      setRemoteSpeechProvider(s.remote_speech_provider);
+      setRemoteSpeechEndpoint(s.remote_speech_endpoint);
+      setRemoteSpeechApiKey(s.remote_speech_api_key);
+      setRemoteSpeechModel(s.remote_speech_model);
       setMicrophoneDevice(s.microphone_device);
       setLanguage(s.language);
-      setAppLocale(s.app_locale ?? "system");
+      setAppLocale(s.app_locale);
 
-      setLlmProvider(s.llm_provider ?? "none");
-      setLlmEndpoint(s.llm_endpoint ?? "");
-      setLlmApiKey(s.llm_api_key ?? "");
-      setLlmModel(s.llm_model ?? "");
-      setLlmServiceProvider(s.llm_service_provider ?? "");
-      setLlmAuto(s.llm_auto ?? false);
-      setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
-      setMediaAction(s.media_action ?? "off");
-      setAutoUpdateEnabled(s.auto_update_enabled ?? false);
-      setAutoLaunchEnabledState(s.auto_launch_enabled ?? false);
-      setStartInBackground(
-        (s.auto_launch_enabled ?? false) && (s.start_in_background ?? false),
-      );
-      setAutoDeleteTarget(s.auto_delete_target ?? "transcripts");
-      setAutoDeleteDuration(s.auto_delete_duration ?? "never");
-      setAnalyticsEnabled(s.analytics_enabled ?? true);
-      setLocalApiKey(s.local_api_key ?? "");
-      setLocalApiPort(s.local_api_port ?? 11435);
-      setLocalApiModel(s.local_api_model ?? "auto");
-      setLocalApiHost(s.local_api_host ?? "127.0.0.1");
-      setLocalApiStartOnLaunch(s.local_api_start_on_launch ?? false);
-      setLocalApiCors(s.local_api_cors ?? false);
-      setThemeModeRaw(s.theme_mode ?? "system");
+      setLlmProvider(s.llm_provider);
+      setLlmEndpoint(s.llm_endpoint);
+      setLlmApiKey(s.llm_api_key);
+      setLlmModel(s.llm_model);
+      setLlmServiceProvider(s.llm_service_provider);
+      setLlmAuto(s.llm_auto);
+      setAutoDictionaryEnabled(s.auto_dictionary_enabled);
+      setMediaAction(s.media_action);
+      setAutoUpdateEnabled(s.auto_update_enabled);
+      setAutoLaunchEnabledState(s.auto_launch_enabled);
+      setStartInBackground(s.auto_launch_enabled && s.start_in_background);
+      setAutoDeleteTarget(s.auto_delete_target);
+      setAutoDeleteDuration(s.auto_delete_duration);
+      setAnalyticsEnabled(s.analytics_enabled);
+      setLocalApiKey(s.local_api_key);
+      setLocalApiPort(s.local_api_port);
+      setLocalApiModel(s.local_api_model);
+      setLocalApiHost(s.local_api_host);
+      setLocalApiStartOnLaunch(s.local_api_start_on_launch);
+      setLocalApiCors(s.local_api_cors);
+      setThemeModeRaw(s.theme_mode);
     },
     [clearInvalidShortcutDraft],
   );
@@ -565,27 +553,21 @@ export function useSettingsForm({
       message: "Choose a compatible model to enable these.",
     }),
   );
-  const llmProviderPreset = useMemo(
-    () => getProviderPreset(llmProvider),
-    [llmProvider],
-  );
-  const remoteSpeechProviderPreset = useMemo(
-    () => getSpeechProviderPreset(remoteSpeechProvider),
-    [remoteSpeechProvider],
-  );
-  const llmConfigReady = Boolean(
-    llmProviderPreset &&
-    (llmProviderPreset.onDevice ||
-      (resolvedLlmEndpoint(llmProvider, llmEndpoint) &&
-        (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
-        llmModel.trim())),
-  );
-  const remoteSpeechConfigReady = Boolean(
-    remoteSpeechProviderPreset &&
-    resolvedSpeechEndpoint(remoteSpeechProvider, remoteSpeechEndpoint) &&
-    resolvedSpeechModel(remoteSpeechProvider, remoteSpeechModel) &&
-    (!remoteSpeechProviderPreset.apiKeyRequired || remoteSpeechApiKey.trim()),
-  );
+  const llmConfigReady =
+    Boolean(getProviderPreset(llmProvider)?.onDevice) ||
+    isLlmProviderReady({
+      provider: llmProvider,
+      endpoint: llmEndpoint,
+      apiKey: llmApiKey,
+      model: llmModel,
+    });
+  const remoteSpeechConfigReady = isRemoteSpeechConfigured({
+    enabled: true,
+    provider: remoteSpeechProvider,
+    endpoint: remoteSpeechEndpoint,
+    model: remoteSpeechModel,
+    apiKey: remoteSpeechApiKey,
+  });
   const remoteSpeechActive = remoteSpeechEnabled && remoteSpeechConfigReady;
   const allTranscriptionLanguages = useMemo(
     () => collectAllTranscriptionLanguages(modelCatalog),
@@ -625,7 +607,7 @@ export function useSettingsForm({
   const aiFeaturesReady = licenseGateActive && (llmAuto || llmConfigReady);
 
   useEffect(() => {
-    if (!isOpen || loading || !language) return;
+    if (loading || !language) return;
     if (
       !remoteSpeechActive &&
       activeLocalModel &&
@@ -633,10 +615,10 @@ export function useSettingsForm({
     ) {
       setLanguage("");
     }
-  }, [activeLocalModel, isOpen, language, loading, remoteSpeechActive]);
+  }, [activeLocalModel, language, loading, remoteSpeechActive]);
 
   const buildSettingsArgs = useCallback(
-    (overrides: SaveSettingsOverrides = {}) => {
+    (overrides: SaveSettingsOverrides = {}): settingsApi.UpdateSettingsArgs => {
       const rawShortcutBindings =
         overrides.shortcutBindings ?? shortcutBindings;
       const shouldTryDraftShortcut =
@@ -675,17 +657,23 @@ export function useSettingsForm({
           : language);
 
       return {
-        smartShortcut:
-          overrides.smartShortcut ??
-          primaryShortcut(savedShortcutBindings, "smart", smartShortcut),
+        smartShortcut: primaryShortcut(
+          savedShortcutBindings,
+          "smart",
+          smartShortcut,
+        ),
         smartEnabled: hasShortcut(savedShortcutBindings.smart),
-        holdShortcut:
-          overrides.holdShortcut ??
-          primaryShortcut(savedShortcutBindings, "hold", holdShortcut),
+        holdShortcut: primaryShortcut(
+          savedShortcutBindings,
+          "hold",
+          holdShortcut,
+        ),
         holdEnabled: hasShortcut(savedShortcutBindings.hold),
-        toggleShortcut:
-          overrides.toggleShortcut ??
-          primaryShortcut(savedShortcutBindings, "toggle", toggleShortcut),
+        toggleShortcut: primaryShortcut(
+          savedShortcutBindings,
+          "toggle",
+          toggleShortcut,
+        ),
         toggleEnabled: hasShortcut(savedShortcutBindings.toggle),
         shortcutBindings: savedShortcutBindings,
         transcriptionMode,
@@ -741,7 +729,6 @@ export function useSettingsForm({
       remoteSpeechEndpoint,
       remoteSpeechApiKey,
       remoteSpeechModel,
-      remoteSpeechConfigReady,
       microphoneDevice,
       language,
       appLocale,
@@ -790,7 +777,7 @@ export function useSettingsForm({
           };
           try {
             const { shortcut_error: shortcutError } =
-              await invoke<UpdateSettingsResult>("update_settings", { args });
+              await settingsApi.updateSettings(args);
             persistedShortcutBindingsRef.current = args.shortcutBindings;
             if (shortcutError) {
               if (overrides?.shortcutDraftTarget) {
@@ -899,6 +886,29 @@ export function useSettingsForm({
     );
   }, [flushPendingSettingsSave]);
 
+  const updateShortcutBindings = useCallback(
+    (
+      updater: (current: ShortcutBindings) => ShortcutBindings,
+      shortcutDraftTarget?: ShortcutTarget,
+    ) => {
+      clearPendingSettingsSave();
+      const next = updater(shortcutBindingsRef.current);
+      shortcutBindingsRef.current = next;
+      setShortcutBindings(next);
+      setSmartShortcut(primaryShortcut(next, "smart", smartShortcut));
+      setHoldShortcut(primaryShortcut(next, "hold", holdShortcut));
+      setToggleShortcut(primaryShortcut(next, "toggle", toggleShortcut));
+      void saveSettingsNow({ shortcutBindings: next, shortcutDraftTarget });
+    },
+    [
+      clearPendingSettingsSave,
+      holdShortcut,
+      saveSettingsNow,
+      smartShortcut,
+      toggleShortcut,
+    ],
+  );
+
   const { resetCaptureState } = useShortcutCapture({
     active: captureActive !== null,
     onCancel: finalizeCapture,
@@ -909,42 +919,24 @@ export function useSettingsForm({
       clearPendingSettingsSave();
       const target = captureActiveRef.current;
       if (target) {
-        setShortcutBindings((current) => {
-          const next = {
+        captureActiveRef.current = null;
+        updateShortcutBindings(
+          (current) => ({
             ...current,
             [target.mode]: current[target.mode].map((binding, index) =>
               index === target.index
                 ? { ...binding, shortcut: combo }
                 : binding,
             ),
-          };
-          shortcutBindingsRef.current = next;
-          const primary = primaryShortcut(next, target.mode, combo);
-          if (target.mode === "smart") setSmartShortcut(primary);
-          if (target.mode === "hold") setHoldShortcut(primary);
-          if (target.mode === "toggle") setToggleShortcut(primary);
-          void saveSettingsNow({
-            shortcutBindings: next,
-            shortcutDraftTarget: target,
-            smartShortcut: primaryShortcut(next, "smart", smartShortcut),
-            holdShortcut: primaryShortcut(next, "hold", holdShortcut),
-            toggleShortcut: primaryShortcut(next, "toggle", toggleShortcut),
-          });
-          return next;
-        });
-        captureActiveRef.current = null;
+          }),
+          target,
+        );
       }
       clearSettingsErrorIfNoInvalidDrafts();
     },
     onError: (message) => showSettingsError(message, "general"),
     onCaptureInput: clearSettingsErrorIfNoInvalidDrafts,
   });
-
-  useEffect(() => {
-    if (isOpen && initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [isOpen, initialTab]);
 
   useEffect(() => {
     if (active) return;
@@ -996,7 +988,7 @@ export function useSettingsForm({
   }, [platformCapabilities]);
 
   useEffect(() => {
-    if (activeTab !== "app" || !isOpen) return;
+    if (pane !== "app") return;
 
     let cancelled = false;
     let unlistenFocus: UnlistenFn | null = null;
@@ -1039,36 +1031,24 @@ export function useSettingsForm({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       unlistenFocus?.();
     };
-  }, [activeTab, isOpen, refreshPermissionState]);
+  }, [pane, refreshPermissionState]);
 
   const handleRequestMicrophonePermission = useCallback(async () => {
-    try {
-      await invoke("request_microphone_permission");
-    } catch {
-      // Fall through to the settings fallback below.
-    }
+    await settingsApi.requestMicrophonePermission();
+    await refreshPermissionState();
+  }, [refreshPermissionState]);
 
-    try {
-      const granted = await invoke<boolean>("check_microphone_permission");
-      setMicPermission(granted);
-      if (!granted) {
-        await invoke("open_microphone_settings");
-      }
-    } catch {
-      setMicPermission(false);
-      try {
-        await invoke("open_microphone_settings");
-      } catch {
-        // ignore
-      }
-    } finally {
-      void refreshPermissionState();
-    }
+  const handleRequestAccessibilityPermission = useCallback(async () => {
+    await settingsApi.requestAccessibilityPermission();
+    await refreshPermissionState();
+  }, [refreshPermissionState]);
+
+  const handleRequestInputMonitoringPermission = useCallback(async () => {
+    await settingsApi.requestInputMonitoringPermission();
+    await refreshPermissionState();
   }, [refreshPermissionState]);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     if (settingsQuery.error) {
       console.error("Failed to load settings:", settingsQuery.error);
       showSettingsError(
@@ -1092,7 +1072,6 @@ export function useSettingsForm({
     hydrateFromSettings(settingsQuery.data);
   }, [
     hydrateFromSettings,
-    isOpen,
     rebaseMenuSettings,
     settingsQuery.data,
     settingsQuery.error,
@@ -1100,7 +1079,6 @@ export function useSettingsForm({
   ]);
 
   useEffect(() => {
-    if (!isOpen) return;
     let cancelled = false;
     let unlistenLog: UnlistenFn | null = null;
     let unlistenStatus: UnlistenFn | null = null;
@@ -1143,7 +1121,7 @@ export function useSettingsForm({
       unlistenLog?.();
       unlistenStatus?.();
     };
-  }, [isOpen]);
+  }, []);
 
   const invalidateModelStatus = useCallback(
     (modelKey: string) => {
@@ -1155,17 +1133,16 @@ export function useSettingsForm({
   );
 
   useEffect(() => {
-    if (!isOpen || modelCatalog.length === 0) return;
+    if (modelCatalog.length === 0) return;
 
     setLocalModel((current) =>
       modelCatalog.some((model) => model.key === current)
         ? current
         : (modelCatalog.find((model) => model.downloadable)?.key ?? ""),
     );
-  }, [isOpen, modelCatalog]);
+  }, [modelCatalog]);
 
   useModelDownloadEvents({
-    enabled: isOpen,
     onProgress: (payload) => {
       setDownloadState((prev) => ({
         ...prev,
@@ -1292,31 +1269,6 @@ export function useSettingsForm({
     ],
   );
 
-  const updateShortcutBindings = useCallback(
-    (updater: (current: ShortcutBindings) => ShortcutBindings) => {
-      clearPendingSettingsSave();
-      const next = updater(shortcutBindingsRef.current);
-      shortcutBindingsRef.current = next;
-      setShortcutBindings(next);
-      setSmartShortcut(primaryShortcut(next, "smart", smartShortcut));
-      setHoldShortcut(primaryShortcut(next, "hold", holdShortcut));
-      setToggleShortcut(primaryShortcut(next, "toggle", toggleShortcut));
-      void saveSettingsNow({
-        shortcutBindings: next,
-        smartShortcut: primaryShortcut(next, "smart", smartShortcut),
-        holdShortcut: primaryShortcut(next, "hold", holdShortcut),
-        toggleShortcut: primaryShortcut(next, "toggle", toggleShortcut),
-      });
-    },
-    [
-      clearPendingSettingsSave,
-      holdShortcut,
-      saveSettingsNow,
-      smartShortcut,
-      toggleShortcut,
-    ],
-  );
-
   const updateShortcutBinding = useCallback(
     (mode: ShortcutMode, index: number, patch: Partial<ShortcutBinding>) => {
       if (patch.shortcut !== undefined) {
@@ -1337,7 +1289,7 @@ export function useSettingsForm({
       clearPendingSettingsSave();
       discardInvalidShortcutDraft();
       const current = shortcutBindingsRef.current;
-      if (current[mode].length >= 3) return;
+      if (current[mode].length >= MAX_PER_MODE) return;
       const nextIndex = current[mode].length;
       const next = {
         ...current,
@@ -1391,7 +1343,7 @@ export function useSettingsForm({
       if (
         from === to ||
         !binding ||
-        current[to].length >= 3 ||
+        current[to].length >= MAX_PER_MODE ||
         captureActiveRef.current
       ) {
         return;
@@ -1424,13 +1376,7 @@ export function useSettingsForm({
         remoteSpeechEnabled: false,
       });
     },
-    [
-      clearPendingSettingsSave,
-      language,
-      modelCatalog,
-      remoteSpeechActive,
-      saveSettingsNow,
-    ],
+    [clearPendingSettingsSave, language, modelCatalog, saveSettingsNow],
   );
 
   const handleRemoteSpeechEnabledChange = useCallback(
@@ -1517,10 +1463,7 @@ export function useSettingsForm({
         },
       }));
       try {
-        const status = await invoke<ModelStatus>("download_model", {
-          model: modelKey,
-          ane,
-        });
+        const status = await modelsApi.downloadModel(modelKey, ane);
         queryClient.setQueryData(modelKeys.status(modelKey), status);
         void queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
       } catch (err) {
@@ -1547,9 +1490,7 @@ export function useSettingsForm({
   const handleDelete = useCallback(
     async (modelKey: string) => {
       try {
-        const status = await invoke<ModelStatus>("delete_model", {
-          model: modelKey,
-        });
+        const status = await modelsApi.deleteModel(modelKey);
         queryClient.setQueryData(modelKeys.status(modelKey), status);
         setDownloadState((prev) => ({
           ...prev,
@@ -1629,7 +1570,7 @@ export function useSettingsForm({
   const handleCancelDownload = useCallback(
     async (modelKey: string) => {
       try {
-        await invoke("cancel_download", { model: modelKey });
+        await modelsApi.cancelDownload(modelKey);
         setDownloadState((prev) => ({
           ...prev,
           [modelKey]: {
@@ -1665,7 +1606,7 @@ export function useSettingsForm({
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
-        "local-api",
+        "api",
       );
     } finally {
       setLocalApiBusy(false);
@@ -1694,7 +1635,7 @@ export function useSettingsForm({
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
-        "local-api",
+        "api",
       );
     } finally {
       setLocalApiBusy(false);
@@ -1735,7 +1676,7 @@ export function useSettingsForm({
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
-        "local-api",
+        "api",
       );
     } finally {
       setLocalApiBusy(false);
@@ -1758,13 +1699,12 @@ export function useSettingsForm({
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
-        "local-api",
+        "api",
       );
     }
   }, [showSettingsError]);
 
   return {
-    setActiveTab,
     loading,
     error,
     errorSourceTab,
@@ -1867,6 +1807,8 @@ export function useSettingsForm({
     accessibilityPermission,
     inputMonitoringPermission,
     handleRequestMicrophonePermission,
+    handleRequestAccessibilityPermission,
+    handleRequestInputMonitoringPermission,
     textSizeMode,
     setTextSizeMode,
     themeMode,

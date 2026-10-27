@@ -1115,6 +1115,36 @@ msgstr ""
 #~ msgstr "تعذّر نقل الصوت إلى سلة المهملات أو Recycle Bin، لذا لم يُحذف أي شيء."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.placeholder"
+#~ msgstr "GLIMPSE_…"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.mode.local"
+#~ msgstr "محلي"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retry_failed"
+#~ msgstr "فشلت إعادة المحاولة. يرجى المحاولة مجددًا."
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retry_transcription"
+#~ msgstr "إعادة محاولة النسخ"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.retrying"
+#~ msgstr "جارٍ إعادة المحاولة..."
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.about.version_mode"
+#~ msgstr "v{version} • {mode}"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -1549,8 +1579,7 @@ msgid "native.toast.dictionary_suggest"
 msgstr "هل تريد إضافة «{word}» إلى القاموس؟"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-#: src/features/recording/components/RecordingView.tsx
+#: src/features/recording/components/BookmarkNoteInput.tsx
 msgid "record.bookmark.note"
 msgstr "إضافة ملاحظة"
 
@@ -3217,6 +3246,11 @@ msgid "settings.models.provider.edit"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.edit_needs_writing_model"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.feedback.email"
 msgstr "البريد الإلكتروني"
@@ -3676,11 +3710,6 @@ msgstr "Glimpse Plus"
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.name.solo"
 msgstr "Glimpse Solo"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.placeholder"
-msgstr "GLIMPSE_…"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4240,11 +4269,6 @@ msgstr "جارٍ تحميل الإصدارات"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.loading_more"
 msgstr "جارٍ التحميل..."
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.mode.local"
-msgstr "محلي"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
@@ -5691,23 +5715,8 @@ msgid "transcriptions.item.retry_cleanup"
 msgstr "إعادة محاولة التنظيف"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retry_failed"
-msgstr "فشلت إعادة المحاولة. يرجى المحاولة مجددًا."
-
-#. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retry_transcription"
-msgstr "إعادة محاولة النسخ"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.retrying"
-msgstr "جارٍ إعادة المحاولة..."
-
-#. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.retrying"
 msgstr "جارٍ إعادة المحاولة..."
 
 #. js-lingui-explicit-id
@@ -7054,11 +7063,6 @@ msgstr "استخدام النصوص الأصلية قبل التنظيف"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.fallback_local"
 msgstr "يتم استخدام نموذجك المحلي بدلًا من ذلك."
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.about.version_mode"
-msgstr "v{version} • {mode}"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

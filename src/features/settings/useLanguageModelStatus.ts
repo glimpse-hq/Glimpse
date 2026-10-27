@@ -26,6 +26,22 @@ type LanguageSetup = {
   licenseGateActive: boolean;
 };
 
+// Whether a server or cloud provider has what it needs to run.
+export function isLlmProviderReady(setup: {
+  provider: LlmProvider;
+  endpoint: string;
+  apiKey: string;
+  model: string;
+}): boolean {
+  const preset = getProviderPreset(setup.provider);
+  return Boolean(
+    preset &&
+    resolvedLlmEndpoint(setup.provider, setup.endpoint) &&
+    (!preset.apiKeyRequired || setup.apiKey.trim()) &&
+    setup.model.trim(),
+  );
+}
+
 // Which language model cleans up right now, and whether it can. Automatic
 // follows `llm_cleanup::active_provider` in Rust: the cleanup model, then Apple
 // Intelligence, then the set-up server or cloud provider.
@@ -80,13 +96,14 @@ export function useLanguageModelStatus({
   }, [llmProvider, downloadsDone]);
 
   const service = getProviderPreset(llmServiceProvider as LlmProvider);
-  const serviceReady = Boolean(
-    service &&
-    !service.onDevice &&
-    resolvedLlmEndpoint(service.id, llmEndpoint) &&
-    (!service.apiKeyRequired || llmApiKey.trim()) &&
-    llmModel.trim(),
-  );
+  const serviceReady =
+    Boolean(service && !service.onDevice) &&
+    isLlmProviderReady({
+      provider: llmServiceProvider as LlmProvider,
+      endpoint: llmEndpoint,
+      apiKey: llmApiKey,
+      model: llmModel,
+    });
   const cleanupModelInstalled = cleanupModelStatus?.installed ?? null;
   const probing =
     cleanupModelStatus === null || (isMac && appleAvailability === null);

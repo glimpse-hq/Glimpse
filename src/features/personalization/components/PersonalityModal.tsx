@@ -29,6 +29,7 @@ import {
   normalizeWebsite,
   type InstalledApp,
 } from "./personalization-utils";
+import { GITHUB_URL } from "../../../shared/lib/links";
 
 export type PendingDeletePersonality = {
   id: string;
@@ -131,8 +132,7 @@ type PersonalityModalProps = {
   onDelete: () => void;
 };
 
-const PERSONALIZATION_SNIPPETS_WIKI_URL =
-  "https://github.com/glimpse-hq/Glimpse/wiki/snippets";
+const PERSONALIZATION_SNIPPETS_WIKI_URL = `${GITHUB_URL}/wiki/snippets`;
 
 const iconButtonClass =
   "flex h-7 w-7 items-center justify-center rounded-md text-content-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-hover";

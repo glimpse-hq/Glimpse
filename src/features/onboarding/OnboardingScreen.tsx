@@ -12,10 +12,10 @@ import { CaretLeft as ChevronLeft } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
-import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
 import { pricingUrlFor } from "../license/purchaseConfig";
 import { settingsKeys, useSettings } from "../settings/queries";
-import { checkAccessibilityPermission, getSettings } from "../settings/api";
+import * as settingsApi from "../settings/api";
+import * as modelsApi from "../settings/models-api";
 import {
   modelKeys,
   pickDefaultOnboardingModel,
@@ -26,7 +26,6 @@ import {
   useModelStatuses,
 } from "../settings/models-queries";
 import { onboardingMachine, getSteps } from "./machine";
-import { getDefaultShortcuts, getOnboardingPlatform } from "./platform";
 import { useImportableApps } from "../import/queries";
 import { ImportStep } from "../import/components/ImportStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
@@ -48,7 +47,7 @@ import WindowControls from "../../shared/ui/WindowControls";
 import { showErrorToast } from "../../shared/lib/errorToast";
 import type {
   DownloadEvent,
-  ModelStatus,
+  StoredSettings,
   UpdateSettingsResult,
 } from "../../types";
 
@@ -57,97 +56,56 @@ const onboardingPermissionKeys = {
   microphone: () => [...onboardingPermissionKeys.all, "microphone"] as const,
 };
 
-const checkMicrophonePermission = () =>
-  invoke<boolean>("check_microphone_permission");
-
 const refreshModelStatus = (queryClient: QueryClient, model: string) =>
   queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
-
-type OnboardingSettings = Awaited<ReturnType<typeof getSettings>>;
 
 // The OS can refuse launch at login, for example when Glimpse is turned off in
 // Windows Startup apps. Setup then saves without it instead of stopping there.
 async function saveSetupSettings(
-  build: (autoLaunch: boolean) => ReturnType<typeof buildSettingsArgs>,
+  build: (autoLaunch: boolean) => settingsApi.UpdateSettingsArgs,
   autoLaunch: boolean,
 ): Promise<{ result: UpdateSettingsResult; autoLaunch: boolean }> {
   try {
-    const result = await invoke<UpdateSettingsResult>("update_settings", {
-      args: build(autoLaunch),
-    });
+    const result = await settingsApi.updateSettings(build(autoLaunch));
     return { result, autoLaunch };
   } catch (err) {
     if (!autoLaunch) throw err;
     console.error("Launch at login was refused; saving without it", err);
-    const result = await invoke<UpdateSettingsResult>("update_settings", {
-      args: build(false),
-    });
+    const result = await settingsApi.updateSettings(build(false));
     return { result, autoLaunch: false };
   }
 }
 
-const buildSettingsArgs = (
-  latest: OnboardingSettings,
+// Setup writes what it asks about and keeps the rest, so running it again
+// from Settings leaves other choices alone.
+const buildSetupArgs = (
+  latest: StoredSettings,
   smartShortcut: string,
   localModel: string,
   autoLaunchEnabled: boolean,
   microphoneDevice: string | null,
 ) => {
-  const { hold: holdShortcut, toggle: toggleShortcut } = getDefaultShortcuts(
-    getOnboardingPlatform().id,
-  );
-  return {
+  const [smartBinding, ...otherSmartBindings] = latest.shortcut_bindings.smart;
+  return settingsApi.buildUpdateSettingsArgs(latest, {
     smartShortcut,
     smartEnabled: true,
-    holdShortcut,
-    holdEnabled: false,
-    toggleShortcut,
-    toggleEnabled: false,
     shortcutBindings: {
+      ...latest.shortcut_bindings,
       smart: [
-        { shortcut: smartShortcut, temporary: false, cleanup_enabled: false },
-      ],
-      hold: [
-        { shortcut: holdShortcut, temporary: false, cleanup_enabled: false },
-      ],
-      toggle: [
-        { shortcut: toggleShortcut, temporary: false, cleanup_enabled: false },
+        {
+          ...(smartBinding ?? { temporary: false, cleanup_enabled: false }),
+          shortcut: smartShortcut,
+        },
+        ...otherSmartBindings,
       ],
     },
     transcriptionMode: "local",
     localModel,
     remoteSpeechEnabled: false,
-    remoteSpeechProvider: latest.remote_speech_provider ?? "custom",
-    remoteSpeechEndpoint: latest.remote_speech_endpoint ?? "",
-    remoteSpeechApiKey: latest.remote_speech_api_key ?? "",
-    remoteSpeechModel: latest.remote_speech_model ?? "",
     microphoneDevice,
-    language: latest.language ?? "",
-    appLocale: latest.app_locale ?? "system",
-    themeMode: latest.theme_mode ?? "system",
-    llmEnabled: false,
-    cleanupEnabled: false,
-    llmProvider: latest.llm_provider ?? "none",
-    llmEndpoint: latest.llm_endpoint ?? "",
-    llmApiKey: latest.llm_api_key ?? "",
-    llmModel: latest.llm_model ?? "",
-    llmServiceProvider: latest.llm_service_provider ?? "",
-    llmAuto: latest.llm_auto ?? true,
-    autoDictionaryEnabled: false,
     mediaAction: "pause",
-    autoUpdateEnabled: true,
     autoLaunchEnabled,
-    startInBackground: latest.start_in_background ?? false,
-    autoDeleteTarget: latest.auto_delete_target ?? "transcripts",
-    autoDeleteDuration: latest.auto_delete_duration ?? "never",
-    analyticsEnabled: latest.analytics_enabled ?? true,
-    localApiKey: latest.local_api_key ?? "",
-    localApiPort: latest.local_api_port ?? 11435,
-    localApiModel: latest.local_api_model ?? "auto",
-    localApiHost: latest.local_api_host ?? "127.0.0.1",
-    localApiStartOnLaunch: latest.local_api_start_on_launch ?? false,
-    localApiCors: latest.local_api_cors ?? false,
-  };
+  });
 };
 
 interface OnboardingScreenProps {
@@ -232,14 +190,16 @@ export default function OnboardingScreen({
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedSettings = settingsQuery.data;
 
-  const micDeviceSeeded = useRef(false);
+  // Stored settings hold the backend's defaults on a first run.
+  const setupSeeded = useRef(false);
   useEffect(() => {
-    if (!persistedSettings || micDeviceSeeded.current) return;
-    micDeviceSeeded.current = true;
+    if (!persistedSettings || setupSeeded.current) return;
+    setupSeeded.current = true;
     send({
       type: "SET_MICROPHONE_DEVICE",
-      device: persistedSettings.microphone_device ?? null,
+      device: persistedSettings.microphone_device,
     });
+    send({ type: "SET_SHORTCUT", shortcut: persistedSettings.smart_shortcut });
   }, [persistedSettings, send]);
 
   const recommendedModel = recommendationQuery.data?.key ?? "";
@@ -274,7 +234,7 @@ export default function OnboardingScreen({
 
   const microphonePermissionQuery = useQuery({
     queryKey: onboardingPermissionKeys.microphone(),
-    queryFn: checkMicrophonePermission,
+    queryFn: settingsApi.checkMicrophonePermission,
     enabled: ctx.platform.requiresMicrophonePermission,
     refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
     refetchInterval: (query) =>
@@ -285,7 +245,7 @@ export default function OnboardingScreen({
 
   const accessibilityPermissionQuery = useQuery({
     queryKey: settingsKeys.accessibility(),
-    queryFn: checkAccessibilityPermission,
+    queryFn: settingsApi.checkAccessibilityPermission,
     enabled: ctx.platform.requiresAccessibilityPermission,
     refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
     refetchInterval: (query) =>
@@ -298,14 +258,7 @@ export default function OnboardingScreen({
     mutate: requestMicrophonePermission,
     isPending: isRequestingMicrophonePermission,
   } = useMutation({
-    mutationFn: async () => {
-      await invoke("request_microphone_permission").catch(() => {});
-      const granted = await checkMicrophonePermission().catch(() => false);
-      if (!granted) {
-        await invoke("open_microphone_settings").catch(() => {});
-      }
-      return granted;
-    },
+    mutationFn: settingsApi.requestMicrophonePermission,
     onSettled: () => {
       void queryClient.invalidateQueries({
         queryKey: onboardingPermissionKeys.microphone(),
@@ -317,16 +270,7 @@ export default function OnboardingScreen({
     mutate: requestAccessibilityPermission,
     isPending: isRequestingAccessibilityPermission,
   } = useMutation({
-    mutationFn: async () => {
-      if (ctx.platform.id === "macos") {
-        await requestMacAccessibilityPermission().catch(() => {});
-      }
-      const granted = await checkAccessibilityPermission().catch(() => false);
-      if (!granted) {
-        await invoke("open_accessibility_settings").catch(() => {});
-      }
-      return granted;
-    },
+    mutationFn: settingsApi.requestAccessibilityPermission,
     onSettled: () => {
       void queryClient.invalidateQueries({
         queryKey: settingsKeys.accessibility(),
@@ -409,7 +353,7 @@ export default function OnboardingScreen({
           modelCatalogQuery.data?.some(
             (model) => model.key === modelKey && model.ane_size_mb != null,
           );
-        await invoke("download_model", { model: modelKey, ane: includeAne });
+        await modelsApi.downloadModel(modelKey, includeAne);
         void refreshModelStatus(queryClient, modelKey);
       } catch (err) {
         // download:error usually lands first and carries the reason.
@@ -434,9 +378,7 @@ export default function OnboardingScreen({
   const handleDelete = useCallback(
     async (modelKey: string) => {
       try {
-        const status = await invoke<ModelStatus>("delete_model", {
-          model: modelKey,
-        });
+        const status = await modelsApi.deleteModel(modelKey);
         queryClient.setQueryData(modelKeys.status(modelKey), status);
         updateDownloadStatus(modelKey, { status: "idle", percent: 0 });
       } catch {
@@ -456,7 +398,7 @@ export default function OnboardingScreen({
   const handleCancelDownload = useCallback(
     async (modelKey: string) => {
       try {
-        await invoke("cancel_download", { model: modelKey });
+        await modelsApi.cancelDownload(modelKey);
         updateDownloadStatus(modelKey, { status: "cancelled", percent: 0 });
         setTimeout(() => {
           // A download started again in the meantime keeps its status.
@@ -577,10 +519,10 @@ export default function OnboardingScreen({
     }
 
     try {
-      const latestSettings = await getSettings();
+      const latestSettings = await settingsApi.getSettings();
       const { result, autoLaunch } = await saveSetupSettings(
         (launch) =>
-          buildSettingsArgs(
+          buildSetupArgs(
             latestSettings,
             ctx.smartShortcut,
             resolvedLocalModel,
@@ -648,10 +590,10 @@ export default function OnboardingScreen({
   const applySmartShortcut = useCallback(
     async (shortcut: string) => {
       try {
-        const latest = await getSettings();
+        const latest = await settingsApi.getSettings();
         const { result, autoLaunch } = await saveSetupSettings(
           (launch) =>
-            buildSettingsArgs(
+            buildSetupArgs(
               latest,
               shortcut,
               selectedModel,
@@ -879,6 +821,7 @@ export default function OnboardingScreen({
           <LicenseStep
             key="license"
             stepMotionProps={stepMotionProps}
+            smartShortcut={ctx.smartShortcut}
             licenseState={licenseQuery.data ?? null}
             opening={openingLicenseCheckout}
             openError={licenseOpenError}

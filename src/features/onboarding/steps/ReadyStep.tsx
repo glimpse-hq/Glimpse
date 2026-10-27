@@ -1,14 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { useCallback, useState, type ReactNode } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { type ReactNode } from "react";
 import {
   SpinnerGap as Loader2,
   PencilSimple,
   CaretRight,
 } from "@phosphor-icons/react";
 import { shortcutDisplayParts } from "../../../shared/lib/shortcuts";
-import { useShortcutCapture } from "../../../shared/hooks/useShortcutCapture";
 import { useInputDevices } from "../../settings/queries";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import {
@@ -16,6 +14,7 @@ import {
   OnboardingStep,
   PRIMARY_BUTTON_CLASS,
   ShortcutKeys,
+  useSetupShortcutCapture,
   type StepMotionProps,
 } from "./shared";
 
@@ -49,36 +48,13 @@ export function ReadyStep({
   onComplete,
 }: ReadyStepProps) {
   const { t } = useLingui();
-  const [capturing, setCapturing] = useState(false);
-  const [preview, setPreview] = useState("");
+  const { capturing, preview, startCapture, stopCapture } =
+    useSetupShortcutCapture(onSetShortcut);
   const inputDevices = useInputDevices().data ?? [];
   const systemDefaultLabel = t({
     id: "onboarding.done.recap.microphone_default",
     message: "System default",
   });
-
-  const stopCapture = useCallback(async () => {
-    await invoke("set_shortcut_capture_active", { active: false }).catch(
-      () => {},
-    );
-    setCapturing(false);
-    setPreview("");
-  }, []);
-
-  useShortcutCapture({
-    active: capturing,
-    onCancel: stopCapture,
-    onPreviewChange: setPreview,
-    onShortcutCaptured: onSetShortcut,
-  });
-
-  const startCapture = () => {
-    setPreview("");
-    setCapturing(true);
-    void invoke("set_shortcut_capture_active", { active: true }).catch(() => {
-      setCapturing(false);
-    });
-  };
 
   return (
     <OnboardingStep

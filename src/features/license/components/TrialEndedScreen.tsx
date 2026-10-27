@@ -11,12 +11,12 @@ import {
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
+import { useTauriEvent } from "../../../shared/hooks/useTauriEvent";
 import {
   dismissTrialEndedScreen,
   openCheckout,
@@ -50,25 +50,17 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
   const dismiss = useCallback(
     (keepFree: boolean) => {
       queryClient.setQueryData(licenseKeys.trialEndedScreen(), null);
-      void dismissTrialEndedScreen(keepFree).catch(() => {});
+      dismissTrialEndedScreen(keepFree).catch((err) => {
+        console.error("Failed to dismiss the trial-ended screen:", err);
+        void queryClient.invalidateQueries({
+          queryKey: licenseKeys.trialEndedScreen(),
+        });
+      });
     },
     [queryClient],
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    let unlisten: (() => void) | undefined;
-    void listen("license:checkout-returned", () => dismiss(false)).then(
-      (fn) => {
-        if (cancelled) fn();
-        else unlisten = fn;
-      },
-    );
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
-  }, [dismiss]);
+  useTauriEvent("license:checkout-returned", () => dismiss(false));
 
   const buy = async () => {
     setError(null);

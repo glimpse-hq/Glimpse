@@ -6,7 +6,7 @@ const GLIMPSE_LOGO_SIZES: Record<
   GlimpseLogoSize,
   { dot: number; gap: number }
 > = {
-  sm: { dot: 5, gap: 4 },
+  sm: { dot: 5, gap: 3 },
   md: { dot: 10, gap: 7 },
   lg: { dot: 14, gap: 10 },
   xl: { dot: 22, gap: 16 },
@@ -34,7 +34,14 @@ const LOCAL_TRANSITION: Transition = {
   ease: ["linear", "easeIn", "easeOut", "linear", "easeIn", "easeOut"],
 };
 
-export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
+// `lit` draws still dots, dimming the cloud or local pair that is off.
+export const GlimpseLogo = ({
+  size = "md",
+  lit,
+}: {
+  size?: GlimpseLogoSize;
+  lit?: { cloud: boolean; local: boolean };
+}) => {
   const sizes = GLIMPSE_LOGO_SIZES[size];
   const distance = sizes.dot + sizes.gap;
   const radius = sizes.dot / 2;
@@ -49,6 +56,33 @@ export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
   const center = radius + distance / 2;
   const stdDev = sizes.dot * 0.2;
   const reduceMotion = useReducedMotion();
+
+  if (lit) {
+    return (
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        width={gridSize}
+        height={gridSize}
+        viewBox={`0 0 ${gridSize} ${gridSize}`}
+        style={{ overflow: "visible" }}
+      >
+        {coords.map((coord, i) => {
+          const on = i === 0 || i === 3 ? lit.cloud : lit.local;
+          return (
+            <circle
+              key={i}
+              cx={coord.cx}
+              cy={coord.cy}
+              r={radius}
+              fill={GLIMPSE_LOGO_DOT_COLORS[i]}
+              opacity={on ? 1 : 0.15}
+            />
+          );
+        })}
+      </svg>
+    );
+  }
 
   return (
     <div

@@ -15,7 +15,7 @@ type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureMode = { mode: ShortcutMode; index: number } | null;
 
 const MODES: ShortcutMode[] = ["smart", "hold", "toggle"];
-const MAX_PER_MODE = 3;
+export const MAX_PER_MODE = 3;
 
 type ShortcutListProps = {
   bindings: ShortcutBindings;

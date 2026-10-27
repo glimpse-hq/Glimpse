@@ -5,7 +5,6 @@ import {
   CLOUD_PROVIDERS,
   getProviderPreset,
   LOCAL_PROVIDERS,
-  resolvedLlmEndpoint,
   type LlmProviderPreset,
 } from "../../../shared/lib/llmProviders";
 import type { DownloadEvent, LlmProvider } from "../../../types";
@@ -17,7 +16,10 @@ import ProviderSheet, {
   type ProviderChoice,
   type ProviderDraft,
 } from "./ProviderSheet";
-import { useLanguageModelStatus } from "../useLanguageModelStatus";
+import {
+  isLlmProviderReady,
+  useLanguageModelStatus,
+} from "../useLanguageModelStatus";
 import {
   ModelSectionHeading,
   OnThisComputerHeading,
@@ -314,17 +316,15 @@ const LanguageModelList = ({
               model: llmModel,
             }}
             automaticModel={null}
-            isValid={(draft) => {
-              const id = draft.provider as LlmProvider | null;
-              const choice = id ? getProviderPreset(id) : undefined;
-              return Boolean(
-                id &&
-                choice &&
-                resolvedLlmEndpoint(id, draft.endpoint) &&
-                (!choice.apiKeyRequired || draft.apiKey.trim()) &&
-                draft.model.trim(),
-              );
-            }}
+            isValid={(draft) =>
+              draft.provider !== null &&
+              isLlmProviderReady({
+                provider: draft.provider as LlmProvider,
+                endpoint: draft.endpoint,
+                apiKey: draft.apiKey,
+                model: draft.model,
+              })
+            }
             fetchModels={(endpoint, apiKey) =>
               fetchLlmModels({ endpoint, apiKey })
             }
