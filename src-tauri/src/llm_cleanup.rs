@@ -190,17 +190,21 @@ pub fn active_provider(settings: &UserSettings) -> &str {
     if !settings.llm_auto {
         return settings.llm_provider.trim();
     }
-    automatic_provider(settings, crate::g1::resolve().is_some(), apple_llm_ready)
+    automatic_provider(
+        settings,
+        crate::cleanup_model::resolve().is_some(),
+        apple_llm_ready,
+    )
 }
 
-// G1 is only installed with a license or trial, and checks it again when it
+// The cleanup model is only installed with a license or trial, and checks it again when it
 // runs, so its installed state stands in for the license here.
 fn automatic_provider(
     settings: &UserSettings,
-    g1_installed: bool,
+    cleanup_model_installed: bool,
     apple_ready: impl Fn() -> bool,
 ) -> &str {
-    if g1_installed {
+    if cleanup_model_installed {
         BONSAI_PROVIDER
     } else if apple_ready() {
         APPLE_PROVIDER
@@ -246,7 +250,7 @@ pub fn is_llm_available(settings: &UserSettings) -> bool {
     }
     match active_provider(settings) {
         APPLE_PROVIDER => apple_llm_ready(),
-        BONSAI_PROVIDER => crate::g1::resolve().is_some(),
+        BONSAI_PROVIDER => crate::cleanup_model::resolve().is_some(),
         "" | "none" => false,
         _ => !settings.llm_endpoint.trim().is_empty() && configured_model(settings).is_some(),
     }
@@ -267,7 +271,7 @@ pub fn prewarm_cleanup(settings: &UserSettings) {
     std::thread::spawn(move || {
         if !apple {
             // Picks up model files copied in since the last scan.
-            crate::g1::refresh_installed();
+            crate::cleanup_model::refresh_installed();
         }
         if !should_refine_transcript(&settings) {
             return;
@@ -285,8 +289,8 @@ pub fn prewarm_cleanup(settings: &UserSettings) {
             if let Err(err) = glimpse_language::apple::apple_prewarm(&prompt) {
                 tracing::debug!("[Apple LLM] prewarm skipped: {err}");
             }
-        } else if let Err(err) = crate::g1::prewarm(&prompt) {
-            tracing::debug!("[G1] prewarm skipped: {err}");
+        } else if let Err(err) = crate::cleanup_model::prewarm(&prompt) {
+            tracing::debug!("[cleanup model] prewarm skipped: {err}");
         }
     });
 }
@@ -305,8 +309,8 @@ pub fn prewarm_edit(settings: &UserSettings) {
         });
     } else if uses_bonsai_provider(settings) {
         std::thread::spawn(|| {
-            if let Err(err) = crate::g1::prewarm(EDIT_PROMPT.trim()) {
-                tracing::debug!("[G1] edit prewarm skipped: {err}");
+            if let Err(err) = crate::cleanup_model::prewarm(EDIT_PROMPT.trim()) {
+                tracing::debug!("[cleanup model] edit prewarm skipped: {err}");
             }
         });
     }
@@ -318,7 +322,14 @@ pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {
     } else if uses_apple_provider(settings) {
         Some(APPLE_PROVIDER.to_string())
     } else if uses_bonsai_provider(settings) {
-        crate::g1::resolve().map(|_| format!("{BONSAI_PROVIDER}:2b"))
+        crate::cleanup_model::resolve().map(|_| {
+            format!(
+                "{BONSAI_PROVIDER}:{}",
+                crate::speech::catalog::CLEANUP_MODEL_MANIFEST
+                    .variant
+                    .to_lowercase()
+            )
+        })
     } else {
         configured_model(settings).map(|model| format!("{}:{model}", active_provider(settings)))
     }
@@ -644,7 +655,7 @@ async fn run_text_task(
         task.max_tokens()
     };
     if uses_bonsai_provider(settings) {
-        let model = crate::g1::resolve()
+        let model = crate::cleanup_model::resolve()
             .ok_or_else(|| remote_lib::config_error("The cleanup model is not installed"))?;
         let raw =
             run_bonsai_text_task(model, on_device_max_tokens, system_prompt, user_content).await?;
@@ -750,7 +761,7 @@ async fn run_bonsai_text_task(
     let task = tokio::task::spawn_blocking({
         let cancel = Arc::clone(&cancel);
         move || {
-            crate::g1::generate(
+            crate::cleanup_model::generate(
                 model,
                 &system_prompt,
                 &user_content,
@@ -772,7 +783,7 @@ async fn run_bonsai_text_task(
     };
     let stats = &generation.stats;
     tracing::info!(
-        "[G1] {model} responded in {} ms ({} prompt + {} cached tokens, {} generated, {:?})",
+        "[cleanup model] {model} responded in {} ms ({} prompt + {} cached tokens, {} generated, {:?})",
         started.elapsed().as_millis(),
         stats.prompt_tokens,
         stats.cached_tokens,
@@ -1444,7 +1455,7 @@ mod tests {
     }
 
     #[test]
-    fn automatic_prefers_g1_then_apple_then_a_set_up_service() {
+    fn automatic_prefers_cleanup_model_then_apple_then_a_set_up_service() {
         let ready = auto_settings("openai", "https://api.openai.com/v1", "gpt-x");
         assert_eq!(automatic_provider(&ready, true, || true), BONSAI_PROVIDER);
         assert_eq!(automatic_provider(&ready, false, || true), APPLE_PROVIDER);

@@ -1,6 +1,6 @@
-// G1, the on-device cleanup model: PrismML's Ternary Bonsai 2 with Glimpse's
-// LoRA adapter, run on the GPU by glimpse-language. Its files live in the
-// models directory like any catalog model (`speech::catalog::G1_MANIFESTS`).
+// The on-device cleanup model: PrismML's Ternary Bonsai 2 with Glimpse's LoRA
+// adapter, run on the GPU by glimpse-language. Its files live in the models
+// directory like any catalog model (`speech::catalog::CLEANUP_MODEL_MANIFEST`).
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -16,7 +16,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::AppRuntime;
 use crate::settings::SettingsStore;
-use crate::speech::catalog::{G1_ADAPTER, G1_MANIFEST};
+use crate::speech::catalog::{CLEANUP_MODEL_ADAPTER, CLEANUP_MODEL_MANIFEST};
 
 // Frees the GPU state and cached prompt (about 235 MB); the next request
 // rebuilds them in a few tens of ms.
@@ -57,7 +57,7 @@ fn is_adapter(name: &str) -> bool {
 
 /// The catalog's adapter, or an older one until its update downloads.
 fn adapter_path(dir: &Path) -> Option<PathBuf> {
-    let current = dir.join(G1_ADAPTER);
+    let current = dir.join(CLEANUP_MODEL_ADAPTER);
     if current.is_file() {
         return Some(current);
     }
@@ -78,7 +78,7 @@ pub fn init(app: &AppHandle<AppRuntime>) {
     let models_dir = match crate::model_manager::model_cache_dir(app) {
         Ok(dir) => dir,
         Err(err) => {
-            tracing::warn!("[G1] no models directory: {err:#}");
+            tracing::warn!("[cleanup model] no models directory: {err:#}");
             return;
         }
     };
@@ -107,13 +107,14 @@ pub fn refresh_installed() -> bool {
     let Some(runtime) = RUNTIME.get() else {
         return false;
     };
-    let dir = runtime.models_dir.join(G1_MANIFEST.id);
+    let dir = runtime.models_dir.join(CLEANUP_MODEL_MANIFEST.id);
     let installed = supported()
         && bonsai::MODEL_FILES
             .iter()
             .all(|file| dir.join(file).is_file())
         && adapter_path(&dir).is_some()
-        && bonsai::describe(&dir).is_ok_and(|info| info.size.label() == G1_MANIFEST.variant);
+        && bonsai::describe(&dir)
+            .is_ok_and(|info| info.size.label() == CLEANUP_MODEL_MANIFEST.variant);
     runtime.installed.store(installed, Ordering::SeqCst);
     if !installed && let Some(old) = runtime.loaded.lock().take() {
         old.bonsai.release_idle();
@@ -125,7 +126,7 @@ pub fn refresh_installed() -> bool {
 /// prompt states saved with them, then rescans.
 pub fn finish_install() {
     if let Some(runtime) = RUNTIME.get() {
-        remove_stale_files(&runtime.models_dir.join(G1_MANIFEST.id));
+        remove_stale_files(&runtime.models_dir.join(CLEANUP_MODEL_MANIFEST.id));
     }
     refresh_installed();
 }
@@ -140,9 +141,9 @@ fn remove_stale_files(dir: &Path) {
             .file_name()
             .and_then(|name| name.to_str())
             .unwrap_or("");
-        let stale = is_adapter(name) && name != G1_ADAPTER;
+        let stale = is_adapter(name) && name != CLEANUP_MODEL_ADAPTER;
         if stale && std::fs::remove_file(&path).is_ok() {
-            tracing::info!("[G1] removed {name}");
+            tracing::info!("[cleanup model] removed {name}");
             removed = true;
         }
     }
@@ -158,7 +159,7 @@ pub fn update_in_background(app: &AppHandle<AppRuntime>) {
     let Some(runtime) = RUNTIME.get() else {
         return;
     };
-    if runtime.models_dir.join(G1_MANIFEST.id).is_dir() {
+    if runtime.models_dir.join(CLEANUP_MODEL_MANIFEST.id).is_dir() {
         install_in_background(app);
     }
 }
@@ -170,18 +171,24 @@ pub fn install_in_background(app: &AppHandle<AppRuntime>) {
         return;
     };
     if !supported()
-        || crate::speech::install::check_model_installed_at(&runtime.models_dir, G1_MANIFEST.id)
+        || crate::speech::install::check_model_installed_at(
+            &runtime.models_dir,
+            CLEANUP_MODEL_MANIFEST.id,
+        )
         || !crate::license::license_gate_active(&runtime.store)
     {
         return;
     }
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
-        if let Err(err) =
-            crate::speech::install::download_model_now(app, G1_MANIFEST.id.into(), Some(false))
-                .await
+        if let Err(err) = crate::speech::install::download_model_now(
+            app,
+            CLEANUP_MODEL_MANIFEST.id.into(),
+            Some(false),
+        )
+        .await
         {
-            tracing::warn!("[G1] download failed: {err}");
+            tracing::warn!("[cleanup model] download failed: {err}");
         }
     });
 }
@@ -192,7 +199,7 @@ pub fn resolve() -> Option<&'static str> {
         .get()?
         .installed
         .load(Ordering::SeqCst)
-        .then_some(G1_MANIFEST.id)
+        .then_some(CLEANUP_MODEL_MANIFEST.id)
 }
 
 fn error(kind: BonsaiErrorKind, message: &str) -> BonsaiError {
@@ -232,7 +239,7 @@ fn load(runtime: &Runtime, model: &'static str) -> Result<Arc<Bonsai>, BonsaiErr
     let started = std::time::Instant::now();
     let bonsai = Arc::new(Bonsai::load(&dir, Some(&adapter))?);
     tracing::info!(
-        "[G1] loaded {model} with {} in {} ms",
+        "[cleanup model] loaded {model} with {} in {} ms",
         adapter.display(),
         started.elapsed().as_millis()
     );
@@ -288,14 +295,14 @@ pub fn generate(
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct G1Status {
+pub struct CleanupModelStatus {
     supported: bool,
     installed: bool,
 }
 
 #[tauri::command]
-pub async fn g1_status() -> Result<G1Status, String> {
-    tauri::async_runtime::spawn_blocking(|| G1Status {
+pub async fn cleanup_model_status() -> Result<CleanupModelStatus, String> {
+    tauri::async_runtime::spawn_blocking(|| CleanupModelStatus {
         supported: RUNTIME.get().is_some() && supported(),
         installed: refresh_installed(),
     })
@@ -330,23 +337,27 @@ mod tests {
         format!("rss {:.0} MB, footprint {footprint}", rss_kb / 1024.0)
     }
 
-    // G1_TEST_MODEL=<dir with the Hugging Face files>, then
-    // cargo test --manifest-path src-tauri/Cargo.toml g1::tests -- --ignored --nocapture
+    // CLEANUP_TEST_MODEL=<dir with the Hugging Face files>, then
+    // cargo test --manifest-path src-tauri/Cargo.toml cleanup_model::tests -- --ignored --nocapture
     #[test]
     #[ignore]
     fn cleans_up_through_the_provider_path() {
-        let source = PathBuf::from(std::env::var("G1_TEST_MODEL").expect("G1_TEST_MODEL"));
+        let source =
+            PathBuf::from(std::env::var("CLEANUP_TEST_MODEL").expect("CLEANUP_TEST_MODEL"));
         let size = bonsai::describe(&source).unwrap().size;
-        assert_eq!(size.label(), G1_MANIFEST.variant);
-        let id = G1_MANIFEST.id;
-        let root = std::env::temp_dir().join(format!("g1-test-{}", std::process::id()));
+        assert_eq!(size.label(), CLEANUP_MODEL_MANIFEST.variant);
+        let id = CLEANUP_MODEL_MANIFEST.id;
+        let root = std::env::temp_dir().join(format!("cleanup-model-test-{}", std::process::id()));
         let dir = root.join("models").join(id);
         std::fs::create_dir_all(&dir).unwrap();
         for file in bonsai::MODEL_FILES {
             std::os::unix::fs::symlink(source.join(file), dir.join(file)).unwrap();
         }
-        std::os::unix::fs::symlink(source.join("adapter.safetensors"), dir.join(G1_ADAPTER))
-            .unwrap();
+        std::os::unix::fs::symlink(
+            source.join("adapter.safetensors"),
+            dir.join(CLEANUP_MODEL_ADAPTER),
+        )
+        .unwrap();
         let store = Arc::new(SettingsStore::open(root.join("settings.db")).unwrap());
         start(root.join("models"), store);
         assert!(refresh_installed());

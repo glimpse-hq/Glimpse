@@ -11,7 +11,7 @@ import type { LlmProvider } from "../../types";
 export type AppleLlmAvailability =
   "available" | "not_enabled" | "not_ready" | "unsupported";
 
-type G1Status = {
+type CleanupModelStatus = {
   supported: boolean;
   installed: boolean;
 };
@@ -27,7 +27,7 @@ type LanguageSetup = {
 };
 
 // Which language model cleans up right now, and whether it can. Automatic
-// follows `llm_cleanup::active_provider` in Rust: G1, then Apple
+// follows `llm_cleanup::active_provider` in Rust: the cleanup model, then Apple
 // Intelligence, then the set-up server or cloud provider.
 export function useLanguageModelStatus({
   llmProvider,
@@ -41,7 +41,8 @@ export function useLanguageModelStatus({
   const isMac = detectAppPlatform() === "macos";
   const [appleAvailability, setAppleAvailability] =
     useState<AppleLlmAvailability | null>(null);
-  const [g1Status, setG1Status] = useState<G1Status | null>(null);
+  const [cleanupModelStatus, setCleanupModelStatus] =
+    useState<CleanupModelStatus | null>(null);
   const [downloadsDone, setDownloadsDone] = useState(0);
   useModelDownloadEvents({
     onComplete: () => setDownloadsDone((count) => count + 1),
@@ -65,12 +66,13 @@ export function useLanguageModelStatus({
   // Rescans on provider changes and finished downloads.
   useEffect(() => {
     let cancelled = false;
-    invoke<G1Status>("g1_status")
+    invoke<CleanupModelStatus>("cleanup_model_status")
       .then((value) => {
-        if (!cancelled) setG1Status(value);
+        if (!cancelled) setCleanupModelStatus(value);
       })
       .catch(() => {
-        if (!cancelled) setG1Status({ supported: false, installed: false });
+        if (!cancelled)
+          setCleanupModelStatus({ supported: false, installed: false });
       });
     return () => {
       cancelled = true;
@@ -85,13 +87,14 @@ export function useLanguageModelStatus({
     (!service.apiKeyRequired || llmApiKey.trim()) &&
     llmModel.trim(),
   );
-  const g1Installed = g1Status?.installed ?? null;
-  const probing = g1Status === null || (isMac && appleAvailability === null);
+  const cleanupModelInstalled = cleanupModelStatus?.installed ?? null;
+  const probing =
+    cleanupModelStatus === null || (isMac && appleAvailability === null);
   const activeProvider: LlmProvider | "none" | null = !llmAuto
     ? llmProvider
     : probing
       ? null
-      : g1Installed
+      : cleanupModelInstalled
         ? "bonsai"
         : appleAvailability === "available"
           ? "apple"
@@ -104,7 +107,8 @@ export function useLanguageModelStatus({
     activeProvider === null
       ? null
       : activeProvider === "bonsai"
-        ? licenseGateActive && (g1Status === null ? null : g1Status.installed)
+        ? licenseGateActive &&
+          (cleanupModelStatus === null ? null : cleanupModelStatus.installed)
         : activeProvider === "apple"
           ? appleAvailability === null
             ? null
@@ -119,8 +123,8 @@ export function useLanguageModelStatus({
     activeProvider,
     serviceReady,
     appleAvailability,
-    g1Installed,
-    showG1: Boolean(g1Status?.supported),
+    cleanupModelInstalled,
+    showCleanupModel: Boolean(cleanupModelStatus?.supported),
     ready,
   };
 }

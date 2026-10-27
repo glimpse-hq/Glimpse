@@ -10,7 +10,7 @@ These look wrong or redundant but are deliberate. Don't "fix" them. Add one line
 - **Whisper runs with non-speech tokens allowed, plus segment × VAD masking** against hallucinated phrases. Phrase blocklists, audio trimming, `no_speech_prob`, and `avg_logprob` were measured and failed.
 - **Apple Speech is batch-only.** Its streaming output is too bursty for the pill.
 - **Writing features need a license whatever model runs them**, including on-device Apple models.
-- **G1 needs a purchased license, not the trial.** Trial users never download its files. Selection, install, and every request check `require_active_license`.
+- **The cleanup model needs a license or trial.** It installs only with one, and every request checks the license gate again.
 - **Trial expiry degrades to free.** Notices are in-app only, fire only after a dictation, and have a budget. No OS notifications, nothing on a timer or at launch.
 - **No sentiment gate before review asks.** Store policy forbids it.
 - **Unsigned license grants are never trusted**, including ones cached before 1.2.5. A paid user who updates offline sees reconnect until the app is online once.

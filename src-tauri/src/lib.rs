@@ -6,12 +6,12 @@ mod assistive;
 mod audio;
 mod auto_delete;
 mod auto_dictionary;
+mod cleanup_model;
 mod cli_install;
 mod core;
 mod crypto;
 mod data_export;
 mod dictionary;
-mod g1;
 mod import;
 mod integrations;
 mod library;
@@ -433,8 +433,8 @@ pub fn run() {
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
-            g1::init(handle);
-            g1::update_in_background(handle);
+            cleanup_model::init(handle);
+            cleanup_model::update_in_background(handle);
             #[cfg(target_os = "windows")]
             platform::windows::elevation::watch_foreground(handle.clone());
             speech::upgrade_retired_diarizers(handle);
@@ -708,7 +708,7 @@ pub fn run() {
             analytics::track_screen_viewed,
             fetch_llm_models,
             apple_llm_availability,
-            g1::g1_status,
+            cleanup_model::cleanup_model_status,
             fetch_remote_speech_models,
             open_about_page,
             open_account_page,
@@ -1434,7 +1434,7 @@ fn complete_onboarding(
     if license::license_gate_active(&state.settings_store) {
         speech::install_diarizer_in_background(&app);
     }
-    g1::install_in_background(&app);
+    cleanup_model::install_in_background(&app);
     Ok(())
 }
 
@@ -1634,7 +1634,7 @@ struct TrialEndedScreen {
 // removes them.
 const PAID_ONLY_MODELS: [(&str, &str); 2] = [
     (speech::catalog::DIARIZER_MODEL, "speakers"),
-    (speech::catalog::G1_MANIFEST.id, "language"),
+    (speech::catalog::CLEANUP_MODEL_MANIFEST.id, "language"),
 ];
 
 /// What the trial-ended screen shows, or None once it has been seen.

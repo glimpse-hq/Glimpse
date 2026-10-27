@@ -88,8 +88,8 @@ const LanguageModelList = ({
     serviceReady,
     ready,
     appleAvailability,
-    g1Installed,
-    showG1,
+    cleanupModelInstalled,
+    showCleanupModel,
   } = useLanguageModelStatus({
     llmProvider,
     llmAuto,
@@ -144,9 +144,9 @@ const LanguageModelList = ({
     if (value !== llmProvider) setLlmProvider(value);
   };
 
-  const g1Blocker = !licenseGateActive
+  const cleanupModelBlocker = !licenseGateActive
     ? t({ id: "settings.models.status.locked", message: "Locked" })
-    : g1Installed === false
+    : cleanupModelInstalled === false
       ? cleanupDownload?.status === "downloading"
         ? `${Math.round(cleanupDownload.percent)}%`
         : t({
@@ -154,9 +154,9 @@ const LanguageModelList = ({
             message: "Not installed",
           })
       : null;
-  const g1DownloadKey =
+  const cleanupModelDownloadKey =
     licenseGateActive &&
-    g1Installed === false &&
+    cleanupModelInstalled === false &&
     cleanupModel &&
     cleanupDownload?.status !== "downloading"
       ? cleanupModel.key
@@ -175,7 +175,7 @@ const LanguageModelList = ({
               message: "Not supported",
             })
           : null;
-  const g1Facts = [
+  const cleanupModelFacts = [
     t({
       id: "settings.models.language.g1_description",
       message: "Glimpse's cleanup model",
@@ -244,30 +244,32 @@ const LanguageModelList = ({
         }
       />
       <OnThisComputerHeading />
-      {showG1 && (
+      {showCleanupModel && (
         <ModelRow
           title="Glimpse"
           facts={
-            chosenButBlocked("bonsai") && g1Blocker
-              ? g1Blocker
-              : withNote("bonsai", g1Facts)
+            chosenButBlocked("bonsai") && cleanupModelBlocker
+              ? cleanupModelBlocker
+              : withNote("bonsai", cleanupModelFacts)
           }
-          factsWarning={chosenButBlocked("bonsai") && Boolean(g1Blocker)}
+          factsWarning={
+            chosenButBlocked("bonsai") && Boolean(cleanupModelBlocker)
+          }
           state={
             isActive("bonsai")
               ? active
-              : g1DownloadKey
+              : cleanupModelDownloadKey
                 ? {
                     kind: "use",
                     label: t({
                       id: "model_picker.download",
                       message: "Download",
                     }),
-                    onUse: () => onDownload(g1DownloadKey, false),
+                    onUse: () => onDownload(cleanupModelDownloadKey, false),
                   }
-                : g1Blocker
-                  ? { kind: "status", text: g1Blocker }
-                  : g1Installed === null
+                : cleanupModelBlocker
+                  ? { kind: "status", text: cleanupModelBlocker }
+                  : cleanupModelInstalled === null
                     ? { kind: "status", text: "" }
                     : { kind: "use", onUse: () => select("bonsai") }
           }

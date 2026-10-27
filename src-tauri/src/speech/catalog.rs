@@ -199,10 +199,10 @@ macro_rules! c1_file {
 }
 
 /// Named after its sha256, so a new adapter is a missing file, which installs
-/// that have the base model fetch at launch (`g1::update_in_background`).
-pub const G1_ADAPTER: &str = "adapter-23d65c13.safetensors";
+/// that have the base model fetch at launch (`cleanup_model::update_in_background`).
+pub const CLEANUP_MODEL_ADAPTER: &str = "adapter-23d65c13.safetensors";
 
-const G1_2B_FILES: &[CatalogFile] = &[
+const CLEANUP_MODEL_FILES: &[CatalogFile] = &[
     c1_file!(
         "model.safetensors",
         "model.safetensors",
@@ -223,7 +223,7 @@ const G1_2B_FILES: &[CatalogFile] = &[
     ),
     c1_file!(
         "adapter.safetensors",
-        G1_ADAPTER,
+        CLEANUP_MODEL_ADAPTER,
         31_293_680,
         "23d65c138d8f081c1a4eab20d3ca41fa7e67836c834a0c6b9234dc4432901484"
     ),
@@ -1117,10 +1117,11 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
     capabilities: &[],
 };
 
-// G1, the on-device cleanup model, run by glimpse-language rather than the
+// The on-device cleanup model, run by glimpse-language rather than the
 // speech service. The install manager treats every engine but Apple alike, so
 // `engine` only keeps these out of the Apple paths.
-pub const G1_MANIFEST: LocalModelManifest = LocalModelManifest {
+// The id names the installed folder and analytics events, so it keeps the old name.
+pub const CLEANUP_MODEL_MANIFEST: LocalModelManifest = LocalModelManifest {
     id: "g1_2b",
     family: "g1",
     label: "Glimpse cleanup 2B",
@@ -1130,7 +1131,7 @@ pub const G1_MANIFEST: LocalModelManifest = LocalModelManifest {
     engine: LocalModelEngine::Transcribe,
     languages: Languages::None,
     variant: "2B",
-    files: G1_2B_FILES,
+    files: CLEANUP_MODEL_FILES,
     capabilities: &[],
 };
 
@@ -1259,7 +1260,7 @@ pub fn local_manifests() -> &'static [LocalModelManifest] {
 }
 
 /// Transcription models only. [`installable_definition`] also covers the
-/// diarizer and G1.
+/// diarizer and the cleanup model.
 pub fn definition(key: &str) -> Option<&'static LocalModelManifest> {
     MODEL_MANIFESTS.iter().find(|manifest| manifest.id == key)
 }
@@ -1267,11 +1268,11 @@ pub fn definition(key: &str) -> Option<&'static LocalModelManifest> {
 pub(crate) fn installable_definition(key: &str) -> Option<&'static LocalModelManifest> {
     definition(key)
         .or_else(|| (key == DIARIZER_MODEL).then_some(&DIARIZER_MANIFEST))
-        .or_else(|| g1_definition(key))
+        .or_else(|| cleanup_model_definition(key))
 }
 
-pub fn g1_definition(key: &str) -> Option<&'static LocalModelManifest> {
-    (key == G1_MANIFEST.id).then_some(&G1_MANIFEST)
+pub fn cleanup_model_definition(key: &str) -> Option<&'static LocalModelManifest> {
+    (key == CLEANUP_MODEL_MANIFEST.id).then_some(&CLEANUP_MODEL_MANIFEST)
 }
 
 fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {
@@ -1493,8 +1494,8 @@ pub fn diarizer_model_info() -> ModelInfo {
     manifest_to_model_info(&DIARIZER_MANIFEST)
 }
 
-pub fn g1_model_info() -> ModelInfo {
-    manifest_to_model_info(&G1_MANIFEST)
+pub fn cleanup_model_info() -> ModelInfo {
+    manifest_to_model_info(&CLEANUP_MODEL_MANIFEST)
 }
 
 pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<SpeechModel> {
