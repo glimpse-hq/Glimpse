@@ -1,9 +1,10 @@
 import ModelRow, { type ModelRowProps } from "./ModelRow";
 
-// Soft enough that the Active marker stays the only selection signal.
+// Soft enough that the Active marker stays the only selection signal. Remote
+// models are amber like their labels in Home; an unset provider stays neutral.
 const TINTS = {
   cloud: "var(--color-cloud-10)",
-  server: "var(--model-wave-glow-soft-whisper)",
+  server: "var(--color-cloud-10)",
   none: "var(--surface-interactive)",
 };
 

@@ -6,7 +6,6 @@ import { Check } from "@phosphor-icons/react";
 // why it can't be selected.
 export type ModelRowState =
   | { kind: "active"; label: string }
-  | { kind: "fallback"; label: string }
   | { kind: "use"; onUse: () => void; label?: string }
   | { kind: "status"; text: string };
 
@@ -62,8 +61,6 @@ const ModelRow = ({
             <Check size={12} aria-hidden="true" />
             {state.label}
           </span>
-        ) : state.kind === "fallback" ? (
-          <span className={`${label} text-content-muted`}>{state.label}</span>
         ) : state.kind === "use" ? (
           <button
             type="button"

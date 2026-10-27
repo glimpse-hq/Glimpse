@@ -141,6 +141,12 @@ const InstalledModelRow = ({
       title={model.label}
       titleAdornment={
         <>
+          {/* Cloud speech runs first; this model takes over when it fails. */}
+          {active && fallback && (
+            <span className="shrink-0 ui-text-meta font-medium text-content-secondary">
+              {t({ id: "settings.models.card.fallback", message: "Fallback" })}
+            </span>
+          )}
           {!model.downloadable && (
             <span className="shrink-0 font-normal text-content-muted">
               {t({ id: "settings.models.installed.legacy", message: "Legacy" })}
@@ -159,22 +165,14 @@ const InstalledModelRow = ({
       }
       facts={facts.join("  ·  ")}
       state={
-        active
-          ? fallback
-            ? {
-                kind: "fallback",
-                label: t({
-                  id: "settings.models.card.fallback",
-                  message: "Fallback",
-                }),
-              }
-            : {
-                kind: "active",
-                label: t({
-                  id: "settings.models.card.active",
-                  message: "Active",
-                }),
-              }
+        active && !fallback
+          ? {
+              kind: "active",
+              label: t({
+                id: "settings.models.card.active",
+                message: "Active",
+              }),
+            }
           : { kind: "use", onUse }
       }
       trailing={
