@@ -2230,6 +2230,7 @@ dependencies = [
 [[package]]
 name = "glimpse-language"
 version = "0.1.0"
+source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?tag=0.1.0#910465bb2f3d9580bddfdb45c57a97916ddf3344"
 dependencies = [
  "ash",
  "dispatch2",
@@ -2246,8 +2247,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "2.0.6"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?rev=4f75a82ce4f31792c5d4554bb74727911f9473d2#4f75a82ce4f31792c5d4554bb74727911f9473d2"
+version = "3.0.0"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.0#0d2717dce3f8782c5efd6f1fb719b6e06248c5ec"
 dependencies = [
  "anyhow",
  "axum",
@@ -2262,12 +2263,13 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "thiserror 2.0.21",
  "tokio",
  "tokio-util",
  "tower-http 0.7.1",
  "tracing",
  "transcribe-cpp",
- "zip 8.6.0",
+ "zip 9.1.2",
 ]
 
 [[package]]
@@ -6448,8 +6450,8 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp"
-version = "0.4.0"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=95e3eff8b2b58361b51d96a4f2077ed770aee9f0#95e3eff8b2b58361b51d96a4f2077ed770aee9f0"
+version = "0.4.1"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=352b27fb1b6c552dd261ad9de988b2a909046f0a#352b27fb1b6c552dd261ad9de988b2a909046f0a"
 dependencies = [
  "log",
  "thiserror 2.0.21",
@@ -6458,8 +6460,8 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp-sys"
-version = "0.4.0"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=95e3eff8b2b58361b51d96a4f2077ed770aee9f0#95e3eff8b2b58361b51d96a4f2077ed770aee9f0"
+version = "0.4.1"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=352b27fb1b6c552dd261ad9de988b2a909046f0a#352b27fb1b6c552dd261ad9de988b2a909046f0a"
 dependencies = [
  "cmake",
  "serde_json",
@@ -6505,9 +6507,9 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "typed-path"
-version = "0.12.3"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e28f89b80c87b8fb0cf04ab448d5dd0dd0ade2f8891bae878de66a75a28600e"
+checksum = "9ce898823d8cd0f028662d2f349694b1af0a5cc9be83f1d213a00d3147445e1e"
 
 [[package]]
 name = "typeid"
@@ -7625,15 +7627,18 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "8.6.0"
+version = "9.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
+checksum = "ec2e3161de27091f18a831d9494e9c53378a34833af5c1dda35ad85849da18d6"
 dependencies = [
  "crc32fast",
  "flate2",
+ "getrandom 0.4.3",
  "indexmap 2.14.2",
  "memchr",
+ "nix",
  "typed-path",
+ "windows-sys 0.61.2",
  "zopfli",
 ]
 

@@ -363,6 +363,7 @@ pub(crate) fn compile_ane_encoder(app: &AppHandle<AppRuntime>, model: String) {
         let service = SpeechService::new(SpeechConfig {
             resolver: install::local_resolver(models_dir.clone()),
             model_cache_dir: models_dir,
+            loose_paths: false,
         })
         .loading_compiling_encoders();
         let started = std::time::Instant::now();

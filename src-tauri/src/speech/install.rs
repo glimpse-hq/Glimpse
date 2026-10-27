@@ -809,6 +809,7 @@ mod catalog_only_resolver_tests {
         SpeechService::new(SpeechConfig {
             resolver,
             model_cache_dir: dir.to_path_buf(),
+            loose_paths: false,
         })
     }
 

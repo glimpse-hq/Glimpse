@@ -34,6 +34,7 @@ impl LocalTranscriber {
             service: SpeechService::new(SpeechConfig {
                 resolver: crate::model_manager::local_resolver(model_cache_dir.clone()),
                 model_cache_dir,
+                loose_paths: false,
             }),
             last_used: Mutex::new(None),
             idle_wait: Condvar::new(),
@@ -345,10 +346,16 @@ impl StreamingGuard<'_> {
 
     /// Language and vocabulary for the next streaming session, for engines
     /// that take per-session configuration.
-    pub fn configure(&self, model: &ReadyModel, language: Option<String>, dictionary: Vec<String>) {
+    pub fn configure(
+        &self,
+        model: &ReadyModel,
+        language: Option<String>,
+        dictionary: Vec<String>,
+    ) -> Result<()> {
         self.transcriber
             .service
-            .streaming_configure(&model.key, language, dictionary);
+            .streaming_configure(&model.key, language, dictionary)?;
+        Ok(())
     }
 
     pub fn transcribe_chunk(&self, model: &ReadyModel, chunk: &[f32]) -> Result<String> {
