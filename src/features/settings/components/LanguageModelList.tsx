@@ -246,7 +246,7 @@ const LanguageModelList = ({
       <OnThisComputerHeading />
       {showCleanupModel && (
         <ModelRow
-          title="Glimpse"
+          title="Glimpse C1 2B"
           facts={
             chosenButBlocked("bonsai") && cleanupModelBlocker
               ? cleanupModelBlocker
