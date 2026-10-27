@@ -385,8 +385,12 @@ pub fn run() {
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
 
-    let builder =
-        builder.on_menu_event(|app, event| tray::handle_menu_event(app, event.id().as_ref()));
+    let builder = builder
+        .on_menu_event(|app, event| tray::handle_menu_event(app, event.id().as_ref()))
+        .register_asynchronous_uri_scheme_protocol(
+            recording::playback::SCHEME,
+            recording::playback::protocol,
+        );
 
     builder
         .setup(|app| {

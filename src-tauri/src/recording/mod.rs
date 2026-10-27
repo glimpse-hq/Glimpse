@@ -4,6 +4,7 @@
 mod live;
 pub mod live_window;
 mod microphone;
+pub(crate) mod playback;
 mod track;
 
 #[cfg(target_os = "macos")]

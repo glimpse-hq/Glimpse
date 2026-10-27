@@ -24,6 +24,7 @@
 
 ### Fixes
 
+- Recordings with both your microphone and system audio no longer skip words when you play them back, and changing the playback speed stays smooth.
 - Fixed cleanup turning off when upgrading from the old shortcut settings.
 - Cancelling a dictation just as it finishes no longer pastes the text.
 - Pressing your shortcut again to cancel a dictation works sooner after you stop talking.

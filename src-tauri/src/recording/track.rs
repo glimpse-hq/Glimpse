@@ -370,7 +370,7 @@ struct TrackOutput {
 }
 
 /// Where a `RateConverter` writes its output.
-trait SampleSink {
+pub(super) trait SampleSink {
     fn write(&mut self, samples: &[f32]) -> Result<()>;
 }
 
@@ -419,7 +419,7 @@ impl TrackOutput {
 
 /// Streaming anti-aliased rate converter. The resampler's startup delay is
 /// dropped, so output frame `n` is source time `n / out_rate`.
-struct RateConverter {
+pub(super) struct RateConverter {
     resampler: Fft<f32>,
     pending: Vec<f32>,
     scratch: Vec<f32>,
@@ -431,7 +431,7 @@ impl RateConverter {
     /// `None` when the source already runs at the stored rate. A replacement
     /// microphone can run below it, so this also upsamples. `emitted` starts at
     /// the file position so `flush` targets stay absolute.
-    fn for_source(in_rate: u32, out_rate: u32, emitted: u64) -> Result<Option<Self>> {
+    pub(super) fn for_source(in_rate: u32, out_rate: u32, emitted: u64) -> Result<Option<Self>> {
         if in_rate == out_rate {
             return Ok(None);
         }
@@ -455,7 +455,7 @@ impl RateConverter {
         }))
     }
 
-    fn push(&mut self, samples: &[f32], output: &mut impl SampleSink) -> Result<()> {
+    pub(super) fn push(&mut self, samples: &[f32], output: &mut impl SampleSink) -> Result<()> {
         self.pending.extend_from_slice(samples);
         self.drain(output, u64::MAX)
     }
@@ -473,8 +473,14 @@ impl RateConverter {
         Ok(())
     }
 
+    /// Output frames per FFT block. A converter started on a block boundary
+    /// matches a straight run from one block onward.
+    pub(super) fn block_frames(&self) -> u64 {
+        2 * self.resampler.output_delay() as u64
+    }
+
     /// Pushes zeros through until `total` frames have come out, then stops.
-    fn flush(&mut self, total: u64, output: &mut impl SampleSink) -> Result<()> {
+    pub(super) fn flush(&mut self, total: u64, output: &mut impl SampleSink) -> Result<()> {
         while self.emitted < total {
             let chunk = self.resampler.input_frames_next();
             if self.pending.len() < chunk {

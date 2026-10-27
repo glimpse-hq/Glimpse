@@ -403,7 +403,6 @@ const LibraryDetail = ({
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const secondaryAudioRef = useRef<HTMLAudioElement | null>(null);
   const trackMutedRef = useRef(trackMuted);
   trackMutedRef.current = trackMuted;
   const tagMenuRef = useRef<HTMLDivElement>(null);
@@ -510,16 +509,19 @@ const LibraryDetail = ({
     });
   }, [item.created_at]);
 
-  const audioUrl = useMemo(
-    () => convertFileSrc(item.audio_path),
-    [item.audio_path],
-  );
-  const secondaryAudioUrl = useMemo(
-    () =>
-      item.secondary_audio_path
-        ? convertFileSrc(item.secondary_audio_path)
-        : null,
-    [item.secondary_audio_path],
+  const hasTracks = Boolean(item.secondary_audio_path);
+  // Recorded tracks are mixed into one stream so they share a clock.
+  const audioUrlFor = useCallback(
+    (muted: { primary: boolean; secondary: boolean }) => {
+      if (!item.secondary_audio_path) return convertFileSrc(item.audio_path);
+      const params = new URLSearchParams();
+      params.append("track", item.audio_path);
+      params.append("track", item.secondary_audio_path);
+      if (muted.primary) params.append("mute", "0");
+      if (muted.secondary) params.append("mute", "1");
+      return `${convertFileSrc("", "playback")}?${params}`;
+    },
+    [item.audio_path, item.secondary_audio_path],
   );
 
   const stopSeekLoop = useCallback(() => {
@@ -541,24 +543,24 @@ const LibraryDetail = ({
   const releaseAudioSource = useCallback(() => {
     stopSeekLoop();
     const audio = audioRef.current;
-    const secondary = secondaryAudioRef.current;
     audioRef.current = null;
-    for (const element of [audio, secondary]) {
-      if (!element) continue;
-      element.pause();
-      element.removeAttribute("src");
-      element.load();
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
     }
     updateIsPlaying(false);
-    return { audio, secondary };
+    return audio;
   }, [stopSeekLoop, updateIsPlaying]);
 
   const setPlaybackRateValue = useCallback((value: number) => {
     playbackRateRef.current = value;
     setPlaybackRate(value);
-    if (audioRef.current) audioRef.current.playbackRate = value;
-    if (secondaryAudioRef.current) {
-      secondaryAudioRef.current.playbackRate = value;
+    const audio = audioRef.current;
+    if (audio) {
+      // A reload resets the rate to the default one.
+      audio.defaultPlaybackRate = value;
+      audio.playbackRate = value;
     }
   }, []);
 
@@ -593,15 +595,6 @@ const LibraryDetail = ({
         if (playing && !isScrubbingRef.current) {
           setAudioCurrentTime(audio.currentTime);
         }
-        // The second track shadows the first; nudge it back if it drifts.
-        const secondary = secondaryAudioRef.current;
-        if (
-          secondary &&
-          playing &&
-          Math.abs(secondary.currentTime - audio.currentTime) > 0.25
-        ) {
-          secondary.currentTime = audio.currentTime;
-        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -627,18 +620,10 @@ const LibraryDetail = ({
     scrubWasPlayingRef.current = false;
     scrubValueRef.current = null;
 
-    const audio = new Audio(audioUrl);
+    const audio = new Audio(audioUrlFor(trackMutedRef.current));
     audio.preload = "auto";
+    audio.defaultPlaybackRate = playbackRateRef.current;
     audio.playbackRate = playbackRateRef.current;
-    audio.muted = trackMutedRef.current.primary;
-    const secondary = secondaryAudioUrl ? new Audio(secondaryAudioUrl) : null;
-    if (secondary) {
-      secondary.preload = "auto";
-      secondary.playbackRate = playbackRateRef.current;
-      secondary.muted = trackMutedRef.current.secondary;
-      secondary.load();
-    }
-    secondaryAudioRef.current = secondary;
 
     const handleReady = () => {
       setAudioDuration(
@@ -661,26 +646,19 @@ const LibraryDetail = ({
     const handlePlay = () => {
       updateIsPlaying(true);
       startSeekLoop();
-      if (secondary) {
-        secondary.currentTime = audio.currentTime;
-        void secondary.play().catch(() => {});
-      }
     };
     const handlePause = () => {
       updateIsPlaying(false);
       stopSeekLoop();
-      secondary?.pause();
     };
     const handleEnded = () => {
       updateIsPlaying(false);
       stopSeekLoop();
-      secondary?.pause();
       if (Number.isFinite(audio.duration)) {
         setAudioCurrentTime(audio.duration);
       }
     };
     const handleSeeked = () => {
-      if (secondary) secondary.currentTime = audio.currentTime;
       if (!isScrubbingRef.current) setAudioCurrentTime(audio.currentTime);
     };
 
@@ -705,18 +683,9 @@ const LibraryDetail = ({
       audio.removeAttribute("src");
       audio.load();
       if (audioRef.current === audio) audioRef.current = null;
-      if (secondary) {
-        secondary.pause();
-        secondary.removeAttribute("src");
-        secondary.load();
-      }
-      if (secondaryAudioRef.current === secondary) {
-        secondaryAudioRef.current = null;
-      }
     };
   }, [
-    audioUrl,
-    secondaryAudioUrl,
+    audioUrlFor,
     item.duration_seconds,
     startSeekLoop,
     stopSeekLoop,
@@ -1342,14 +1311,16 @@ const LibraryDetail = ({
   };
 
   const handleToggleTrackMute = (track: "primary" | "secondary") => {
-    setTrackMuted((prev) => {
-      const next = { ...prev, [track]: !prev[track] };
-      if (audioRef.current) audioRef.current.muted = next.primary;
-      if (secondaryAudioRef.current) {
-        secondaryAudioRef.current.muted = next.secondary;
-      }
-      return next;
-    });
+    const next = { ...trackMuted, [track]: !trackMuted[track] };
+    setTrackMuted(next);
+    const audio = audioRef.current;
+    if (!audio) return;
+    // The new mix reloads the stream at the same position.
+    const time = audio.currentTime;
+    const wasPlaying = !audio.paused;
+    audio.src = audioUrlFor(next);
+    audio.currentTime = time;
+    if (wasPlaying) playAudio(audio);
   };
 
   const handleRenameBookmark = async (id: string, label: string) => {
@@ -3206,7 +3177,7 @@ const LibraryDetail = ({
             </button>
           </div>
 
-          {secondaryAudioUrl && (
+          {hasTracks && (
             <>
               <button
                 type="button"
@@ -3340,16 +3311,12 @@ const LibraryDetail = ({
         onCancel={closeDeleteConfirm}
         onConfirm={() => {
           setShowDeleteConfirm(false);
-          const { audio, secondary } = releaseAudioSource();
+          const audio = releaseAudioSource();
           void onDelete().catch(() => {
             if (audio) {
-              audio.src = audioUrl;
+              audio.src = audioUrlFor(trackMutedRef.current);
               audioRef.current = audio;
               audio.load();
-            }
-            if (secondary && secondaryAudioUrl) {
-              secondary.src = secondaryAudioUrl;
-              secondary.load();
             }
           });
         }}
