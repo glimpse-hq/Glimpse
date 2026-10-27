@@ -1,6 +1,7 @@
 // Dictation events: stalls, cancels, language model failures, paste edits.
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use glimpse_speech::remote::{RemoteError, RemoteErrorKind};
 use serde_json::json;
@@ -197,13 +198,14 @@ pub fn track_dictation_stalled(
 }
 
 /// Records that you cancelled a dictation: the step it was on (recording,
-/// transcribing, or cleanup), how (escape or shortcut), and the audio length
-/// as a bucket.
+/// transcribing, or cleanup), how (escape or shortcut), the audio length as a
+/// bucket, and for a cancel after stopping, how soon after as a bucket.
 pub fn track_dictation_cancelled(
     app: &tauri::AppHandle<AppRuntime>,
     stage: &str,
     how: &str,
     audio_seconds: Option<f32>,
+    since_stop: Option<Duration>,
 ) {
     capture_event(
         app,
@@ -212,8 +214,32 @@ pub fn track_dictation_cancelled(
             "stage": stage,
             "how": how,
             "audio_length": audio_length_bucket(audio_seconds),
+            "since_stop": since_stop.map(since_stop_bucket),
         }),
     );
+}
+
+/// Records that a shortcut press right after stopping was taken as a double
+/// press and ignored, with the step it was on and how soon after as a bucket.
+pub fn track_cancel_press_ignored(
+    app: &tauri::AppHandle<AppRuntime>,
+    stage: &str,
+    since_stop: Duration,
+) {
+    capture_event(
+        app,
+        "cancel_press_ignored",
+        json!({ "stage": stage, "since_stop": since_stop_bucket(since_stop) }),
+    );
+}
+
+fn since_stop_bucket(elapsed: Duration) -> &'static str {
+    match elapsed.as_millis() {
+        ms if ms < 200 => "under_200ms",
+        ms if ms < 500 => "200_to_500ms",
+        ms if ms < 1000 => "500ms_to_1s",
+        _ => "over_1s",
+    }
 }
 
 /// Records how much of a pasted dictation you changed in the field shortly

@@ -26,7 +26,7 @@ const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
 const CAPTURE_ARM_DELAY: Duration = Duration::from_millis(280);
 // A press this soon after stopping is a double press, not a request to cancel.
-const CANCEL_PRESS_GRACE: Duration = Duration::from_secs(1);
+const CANCEL_PRESS_GRACE: Duration = Duration::from_millis(200);
 // Set when a press found the model still downloading, so the finished
 // download can say the shortcut works now.
 static ANNOUNCE_MODEL_READY: AtomicBool = AtomicBool::new(false);
@@ -654,12 +654,14 @@ impl PillController {
         }
 
         if self.status() == PillStatus::Processing {
-            let just_stopped = self
-                .stopped_at
-                .lock()
-                .is_some_and(|stopped| stopped.elapsed() < CANCEL_PRESS_GRACE);
-            if *self.shortcut_origin.lock() == Some(action) && !just_stopped {
-                self.cancel_processing(app, "shortcut");
+            if *self.shortcut_origin.lock() == Some(action) {
+                let since_stop = self.stopped_at.lock().map(|stopped| stopped.elapsed());
+                match since_stop {
+                    Some(elapsed) if elapsed < CANCEL_PRESS_GRACE => {
+                        analytics::track_cancel_press_ignored(app, processing_stage(), elapsed);
+                    }
+                    _ => self.cancel_processing(app, "shortcut"),
+                }
             }
             return false;
         }
@@ -1141,7 +1143,7 @@ impl PillController {
         }
         self.reset(app);
         if let Some(seconds) = recording_seconds {
-            analytics::track_dictation_cancelled(app, "recording", how, Some(seconds));
+            analytics::track_dictation_cancelled(app, "recording", how, Some(seconds), None);
         }
     }
 
@@ -1149,11 +1151,8 @@ impl PillController {
         if self.status() != PillStatus::Processing {
             return;
         }
-        let stage = if analytics::activity() == Activity::Llm {
-            "cleanup"
-        } else {
-            "transcribing"
-        };
+        let stage = processing_stage();
+        let since_stop = self.stopped_at.lock().map(|stopped| stopped.elapsed());
 
         self.stop_audio_spectrum_emitter();
         let state = app.state::<AppState>();
@@ -1183,7 +1182,15 @@ impl PillController {
         );
         self.reset(app);
         let audio_seconds = *self.stopped_audio_seconds.lock();
-        analytics::track_dictation_cancelled(app, stage, how, audio_seconds);
+        analytics::track_dictation_cancelled(app, stage, how, audio_seconds, since_stop);
+    }
+}
+
+fn processing_stage() -> &'static str {
+    if analytics::activity() == Activity::Llm {
+        "cleanup"
+    } else {
+        "transcribing"
     }
 }
 
