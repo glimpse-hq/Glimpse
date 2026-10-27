@@ -74,6 +74,11 @@ pub(crate) fn retry_llm_cleanup(
         return Err("Choose a language model in Settings -> Models.".to_string());
     }
     let llm_model = llm_cleanup::resolved_model_label(&settings);
+    crate::analytics::dictation::track_cleanup_action(
+        app,
+        if record.llm_cleaned { "retry" } else { "run" },
+        record.llm_model.as_deref().filter(|_| record.llm_cleaned),
+    );
 
     let text_to_clean = record.raw_text.unwrap_or(record.text);
 
@@ -152,9 +157,15 @@ pub(crate) fn undo_llm_cleanup(
     state: &AppState,
 ) -> Result<(), String> {
     let storage = state.storage();
+    let llm_model = storage.get_by_id(&id).and_then(|record| record.llm_model);
 
     match storage.revert_to_raw(&id) {
         Ok(Some(record)) => {
+            crate::analytics::dictation::track_cleanup_action(
+                app,
+                "restore_original",
+                llm_model.as_deref(),
+            );
             let _ = app.emit(
                 EVENT_TRANSCRIPTION_COMPLETE,
                 TranscriptionCompletePayload {

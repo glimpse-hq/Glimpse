@@ -335,3 +335,36 @@ pub fn track_cleanup_model_run(
         }),
     );
 }
+
+/// Records "Run cleanup", "Retry cleanup" or "Restore original transcript" on a
+/// dictation, with the language model id it had been cleaned with, if any.
+pub fn track_cleanup_action(
+    app: &tauri::AppHandle<AppRuntime>,
+    action: &str,
+    llm_model: Option<&str>,
+) {
+    capture_event(
+        app,
+        "cleanup_action",
+        json!({
+            "action": action,
+            "llm_model": llm_model.map(llm_model_id),
+        }),
+    );
+}
+
+/// Records that the safety checks rejected a cleanup and the raw transcript
+/// was kept: the provider as a fixed id, and whether a mode was active.
+pub fn track_cleanup_rejected(settings: &UserSettings, mode: bool) {
+    let Some(app) = app() else {
+        return;
+    };
+    capture_event(
+        app,
+        "cleanup_rejected",
+        json!({
+            "provider": llm_provider_kind(settings),
+            "mode": mode,
+        }),
+    );
+}

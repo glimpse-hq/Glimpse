@@ -128,6 +128,7 @@ pub async fn cleanup_transcription(
         tracing::error!(
             "[LLM] Cleanup candidate rejected by safety checks, keeping raw transcript"
         );
+        crate::analytics::dictation::track_cleanup_rejected(settings, has_style_guidance);
         return Ok(text.to_string());
     }
 
