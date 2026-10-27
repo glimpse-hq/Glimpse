@@ -74,7 +74,7 @@ const COMMANDS: &[CliCommand] = &[
     },
     CliCommand {
         name: "mcp",
-        help: "Let AI agents search and read your Library.",
+        help: "Let AI agents read your Library and follow recordings.",
         owned: true,
     },
     CliCommand {

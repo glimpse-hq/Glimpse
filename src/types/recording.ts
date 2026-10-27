@@ -35,6 +35,8 @@ export type RecordingSessionState = {
   sound: { microphone: SourceSound; system_audio: SourceSound };
   bookmarks: Bookmark[];
   finish_requested: boolean;
+  // An AI agent reading the live transcript; empty when it gave no name.
+  follower: string | null;
 };
 
 export type LiveSegment = {

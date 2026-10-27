@@ -1297,6 +1297,11 @@ msgid "settings.stats.card.faster_inline"
 msgstr "{fasterPercent}% أسرع من الكتابة"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.minutes_spoken"
 msgstr "{minutes, plural, one {# دقيقة منطوقة اليوم} other {# دقائق منطوقة اليوم}}"
@@ -1663,6 +1668,11 @@ msgstr "هل اشتريت الترخيص من قبل؟"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.enter_key"
 msgstr "هل اشتريت الترخيص من قبل؟ أدخل مفتاح الترخيص"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower_unnamed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3037,6 +3047,11 @@ msgstr "القاموس والاستبدالات"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "تعطيل"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/DismissButton.tsx
+msgid "record.warning.dismiss"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx

@@ -1297,6 +1297,11 @@ msgid "settings.stats.card.faster_inline"
 msgstr "{fasterPercent}% plus rapide qu'en tapant"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.minutes_spoken"
 msgstr "{minutes, plural, one {# minute parlée aujourd'hui} other {# minutes parlées aujourd'hui}}"
@@ -1663,6 +1668,11 @@ msgstr "Déjà acheté ?"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.enter_key"
 msgstr "Déjà acheté ? Saisissez votre clé de licence"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower_unnamed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3037,6 +3047,11 @@ msgstr "Dictionnaire et remplacements"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "Désactiver"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/DismissButton.tsx
+msgid "record.warning.dismiss"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx

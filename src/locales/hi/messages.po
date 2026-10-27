@@ -1297,6 +1297,11 @@ msgid "settings.stats.card.faster_inline"
 msgstr "टाइपिंग से {fasterPercent}% तेज़"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.minutes_spoken"
 msgstr "{minutes, plural, one {#आज कुल # मिनट बोला गया} other {#आज कुल # मिनट बोले गए}}"
@@ -1663,6 +1668,11 @@ msgstr "पहले ही ख़रीद लिया?"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.enter_key"
 msgstr "पहले ही ख़रीद लिया? अपनी लाइसेंस कुंजी डालें"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower_unnamed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3037,6 +3047,11 @@ msgstr "शब्दकोश और प्रतिस्थापन"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "अक्षम करें"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/DismissButton.tsx
+msgid "record.warning.dismiss"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx

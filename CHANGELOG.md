@@ -5,6 +5,10 @@
 - Glimpse has its own cleanup model that runs on your computer. It downloads during setup and works in your trial and with Glimpse Plus.
 - Edit the rules Glimpse uses to clean up your dictation in the new Global mode in Personalization, and restore the defaults at any time. App and website modes still take priority.
 - Edit Mode entries in Home now show the original selected text and spoken instruction under Edit details.
+- AI agents connected through `glimpse mcp` can follow a recording as it happens, getting what was said in short timestamped chunks whenever the speaker pauses, so they can take notes along with a lecture or meeting. The Record screen shows when an agent is following. They can also transcribe a file directly with word timings.
+- Opening the live view during a recording now shows what was said before you opened it.
+- You can dismiss the warning that a recording source has made no sound yet.
+- `glimpse transcribe --json` now includes segment and word timings, the detected language and how long the transcription took.
 
 ### Improvements
 

@@ -45,6 +45,7 @@ import type {
   SelectedApp,
 } from "../../../types";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { DismissButton } from "./DismissButton";
 
 type StartError = {
   message: string;
@@ -411,7 +412,8 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   };
   const queryClient = useQueryClient();
   const { state, applyState } = useRecordingSession();
-  const silenceWarning = useSilenceWarning(state);
+  const { warning: silenceWarning, dismiss: dismissSilenceWarning } =
+    useSilenceWarning(state);
   const { data: devices = [] } = useInputDevices(isActive);
   const { data: defaultDeviceId = null } = useSettings(
     (settings) => settings.microphone_device ?? null,
@@ -993,6 +995,22 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         </span>
       );
     }
+    if (active && state.follower !== null) {
+      const follower = state.follower;
+      return (
+        <span className="truncate text-content-muted">
+          {follower
+            ? t({
+                id: "record.active.follower",
+                message: `${follower} is following this recording.`,
+              })
+            : t({
+                id: "record.active.follower_unnamed",
+                message: "An AI agent is following this recording.",
+              })}
+        </span>
+      );
+    }
     return null;
   };
 
@@ -1070,7 +1088,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.15 }}
               role="status"
-              className="flex h-7 max-w-full items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-interactive)_40%,var(--border-strong))] bg-[var(--color-interactive-10)] px-3 ui-text-label font-medium text-content-primary"
+              className="flex h-7 max-w-full items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-interactive)_40%,var(--border-strong))] bg-[var(--color-interactive-10)] pr-1 pl-3 ui-text-label font-medium text-content-primary"
             >
               <Warning
                 size={13}
@@ -1078,6 +1096,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                 className="shrink-0 text-[var(--color-interactive)]"
               />
               <span className="truncate">{silenceWarning}</span>
+              <DismissButton onClick={dismissSilenceWarning} />
             </motion.div>
           )}
         </AnimatePresence>

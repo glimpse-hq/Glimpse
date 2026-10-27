@@ -10,7 +10,8 @@ pub(crate) use bleed::{BLEED_REACH_MS, remove_live_bleed};
 #[cfg(target_os = "macos")]
 pub(crate) use commands::handle_opened_paths;
 pub(crate) use processing::{
-    build_export_content, convert_to_wav, create_recording_item, read_wav_info, speaker_name,
+    build_export_content, convert_segments_to_ms, convert_to_wav, create_recording_item,
+    read_wav_info, speaker_name,
 };
 pub(crate) use queue::{LibraryJob, LibraryJobKind, schedule_library_job};
 pub(crate) use speakers::{recording_speakers, voiced_segments};

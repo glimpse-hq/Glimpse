@@ -1297,6 +1297,11 @@ msgid "settings.stats.card.faster_inline"
 msgstr "{fasterPercent}% faster than typing"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower"
+msgstr "{follower} is following this recording."
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.minutes_spoken"
 msgstr "{minutes, plural, one {# minute spoken today} other {# minutes spoken today}}"
@@ -1663,6 +1668,11 @@ msgstr "Already bought?"
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.enter_key"
 msgstr "Already bought? Enter your license key"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.follower_unnamed"
+msgstr "An AI agent is following this recording."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3037,6 +3047,11 @@ msgstr "Dictionary & Replacements"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "Disable"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/DismissButton.tsx
+msgid "record.warning.dismiss"
+msgstr "Dismiss"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx

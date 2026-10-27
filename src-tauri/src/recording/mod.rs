@@ -49,6 +49,8 @@ const LAST_SOURCES_FILE: &str = "last-sources.json";
 const MICROPHONE_FILE: &str = "microphone.wav";
 const SYSTEM_FILE: &str = "system.wav";
 const STATE_TICK: Duration = Duration::from_millis(100);
+// An agent works on each chunk between reads, so it keeps counting as following this long.
+const FOLLOWER_TIMEOUT: Duration = Duration::from_secs(120);
 // About three hours of microphone and system audio.
 const LOW_DISK_BYTES: u64 = 1024 * 1024 * 1024;
 // How often a recording without a working microphone looks for one.
@@ -183,6 +185,9 @@ pub struct RecordingSessionState {
     pub sound: SessionSound,
     pub bookmarks: Vec<Bookmark>,
     pub finish_requested: bool,
+    /// The AI agent reading the live transcript over MCP, if one did recently.
+    /// Empty when it gave no name.
+    pub follower: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -269,6 +274,7 @@ struct Shared {
     write_failure: Arc<AtomicU8>,
     emitter_running: AtomicBool,
     live: live::LiveState,
+    follower: Mutex<Option<(String, Instant)>>,
 }
 
 impl Shared {
@@ -293,6 +299,12 @@ impl Shared {
             },
             bookmarks: self.bookmarks.lock().clone(),
             finish_requested: self.finish_requested.load(Ordering::Relaxed),
+            follower: self
+                .follower
+                .lock()
+                .as_ref()
+                .filter(|(_, seen)| seen.elapsed() < FOLLOWER_TIMEOUT)
+                .map(|(name, _)| name.clone()),
         }
     }
 
@@ -358,6 +370,7 @@ impl Shared {
         *self.started_at.lock() = None;
         self.finish_requested.store(false, Ordering::Relaxed);
         self.write_failure.store(0, Ordering::Relaxed);
+        *self.follower.lock() = None;
         self.live.end();
     }
 }
@@ -425,6 +438,7 @@ impl Default for RecordingManager {
             write_failure: Arc::new(AtomicU8::new(0)),
             emitter_running: AtomicBool::new(false),
             live: live::LiveState::default(),
+            follower: Mutex::new(None),
         });
         let (tx, rx) = unbounded();
         let worker_shared = Arc::clone(&shared);
@@ -1642,6 +1656,23 @@ pub async fn finish_recording_session(
 #[tauri::command]
 pub fn get_live_transcript(app: AppHandle<AppRuntime>) -> LiveTranscript {
     app.state::<AppState>().recording().shared.live.last()
+}
+
+/// The live transcript and session start for `follower`, an agent following
+/// the recording. Turns live transcription on while recording, as the live view does.
+pub fn follow_live_transcript(
+    app: &AppHandle<AppRuntime>,
+    follower: &str,
+) -> Option<(DateTime<Local>, LiveTranscript)> {
+    let state = app.state::<AppState>();
+    let shared = &state.recording().shared;
+    let started_at = (*shared.started_at.lock())?;
+    let session = shared.state();
+    if matches!(session.status, "recording" | "paused") && !session.finish_requested {
+        shared.live.set_requested(true);
+        *shared.follower.lock() = Some((follower.to_string(), Instant::now()));
+    }
+    Some((started_at, shared.live.last()))
 }
 
 /// Applies a live speaker edit, stores it with the session and publishes the result.

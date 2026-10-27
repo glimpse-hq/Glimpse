@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::BufWriter,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicU8, Ordering},
@@ -48,10 +48,10 @@ impl TrackInput {
 
 /// A 16 kHz copy of what a track writes, on the track's timeline, for live
 /// transcription. Collects nothing until enabled.
-#[derive(Default)]
 pub(crate) struct LiveTap {
     enabled: AtomicBool,
     feed: Mutex<Option<LiveFeed>>,
+    path: PathBuf,
 }
 
 struct LiveFeed {
@@ -67,6 +67,17 @@ impl LiveTap {
         if !enabled {
             *self.feed.lock() = None;
         }
+    }
+
+    /// The 16 kHz index `take` continues from, once audio arrived after enabling.
+    pub(crate) fn next_start(&self) -> Option<u64> {
+        self.feed.lock().as_ref().map(|feed| feed.start)
+    }
+
+    /// 16 kHz samples from `from` up to `to` of what the track has written
+    /// before the tap was enabled, as far as the file holds them.
+    pub(crate) fn read_written(&self, from: u64, to: u64) -> Result<Vec<f32>> {
+        read_live(&self.path, from, to)
     }
 
     /// Samples since the last call and the 16 kHz index of the first. The
@@ -152,7 +163,11 @@ impl TrackWriter {
             .with_context(|| format!("Failed to create {}", path.display()))?;
         let writer = hound::WavWriter::new(BufWriter::new(file), spec)
             .map_err(|err| anyhow!("WAV init failed: {err}"))?;
-        let tap = Arc::new(LiveTap::default());
+        let tap = Arc::new(LiveTap {
+            enabled: AtomicBool::new(false),
+            feed: Mutex::new(None),
+            path: path.clone(),
+        });
         let mut output = TrackOutput {
             writer,
             written: 0,
@@ -304,6 +319,38 @@ impl TrackWriter {
 }
 
 type Writer = hound::WavWriter<BufWriter<fs::File>>;
+
+// Reads up to the length in the header, which the writer refreshes each second.
+fn read_live(path: &Path, from: u64, to: u64) -> Result<Vec<f32>> {
+    let mut reader = hound::WavReader::open(path).map_err(|err| anyhow!("{err}"))?;
+    let rate = reader.spec().sample_rate as u64;
+    let to = to.min(reader.len() as u64 * LIVE_RATE as u64 / rate);
+    if to <= from {
+        return Ok(Vec::new());
+    }
+    let first = from * rate / LIVE_RATE as u64;
+    let last = (to * rate)
+        .div_ceil(LIVE_RATE as u64)
+        .min(reader.len() as u64);
+    reader.seek(first as u32).map_err(|err| anyhow!("{err}"))?;
+    let samples = reader
+        .samples::<i16>()
+        .take((last - first) as usize)
+        .map(|sample| sample.map(|value| value as f32 / i16::MAX as f32))
+        .collect::<Result<Vec<f32>, _>>()
+        .map_err(|err| anyhow!("{err}"))?;
+    let count = (to - from) as usize;
+    let mut out = Vec::with_capacity(count);
+    match RateConverter::for_source(rate as u32, LIVE_RATE, 0)? {
+        Some(mut converter) => {
+            converter.push(&samples, &mut out)?;
+            converter.flush(count as u64, &mut out)?;
+        }
+        None => out = samples,
+    }
+    out.resize(count, 0.0);
+    Ok(out)
+}
 
 /// Keeps the io error as the source so a full disk can be recognised.
 fn wav_error(err: hound::Error) -> anyhow::Error {

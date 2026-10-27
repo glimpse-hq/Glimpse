@@ -15,6 +15,7 @@ import {
   CaretDown,
   CaretUp,
   Check,
+  CircleNotch,
   Copy,
   DotsSix,
   GearSix,
@@ -43,6 +44,7 @@ import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import type { Bookmark, LiveSegment } from "../../../types";
 import { detectAppPlatform } from "../../../platform/service";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { DismissButton } from "./DismissButton";
 
 const NATIVE_FRAME = detectAppPlatform() === "windows";
 
@@ -346,7 +348,13 @@ const LiveView = () => {
 
   const microphoneOn = Boolean(state.sources.microphone);
   const systemOn = Boolean(state.sources.system_audio);
-  const silenceWarning = useSilenceWarning(state);
+  const { warning: silenceWarning, dismiss: dismissSilenceWarning } =
+    useSilenceWarning(state);
+  const catchingUp = transcript.status === "catching_up";
+  const catchingUpLabel = t({
+    id: "live.status.catching_up",
+    message: "Catching up",
+  });
 
   // The panel eases inside the window; the window itself only resizes while
   // the change is invisible (after collapsing, before expanding).
@@ -790,16 +798,21 @@ const LiveView = () => {
               className="shrink-0 text-[var(--color-interactive)]"
               aria-label={silenceWarning}
             />
+          ) : compact && catchingUp ? (
+            <CircleNotch
+              size={13}
+              weight="bold"
+              className="shrink-0 animate-spin text-[var(--color-success)]"
+              aria-label={catchingUpLabel}
+            />
           ) : (
             <span
               aria-live="polite"
               className="pointer-events-none truncate ui-text-label text-content-muted"
             >
-              {transcript.status === "catching_up"
-                ? t({ id: "live.status.catching_up", message: "Catching up" })
-                : paused
-                  ? t({ id: "live.status.paused", message: "Paused" })
-                  : null}
+              {paused
+                ? t({ id: "live.status.paused", message: "Paused" })
+                : null}
             </span>
           )}
           <div className="ml-auto flex items-center">
@@ -896,13 +909,14 @@ const LiveView = () => {
             <AnimatePresence>
               {silenceWarning && (
                 <motion.div
+                  key="silence"
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.15 }}
                   role="status"
                   title={silenceWarning}
-                  className="ui-surface-menu absolute left-1/2 top-2 flex h-7 max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1.5 rounded-full border-[color-mix(in_srgb,var(--color-interactive)_35%,var(--border-strong))]! bg-[color-mix(in_srgb,var(--color-interactive)_10%,var(--surface-floating))]! px-3 ui-text-label font-medium text-content-primary"
+                  className="ui-surface-menu absolute left-1/2 -top-1 flex h-7 max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1.5 rounded-full border-[color-mix(in_srgb,var(--color-interactive)_35%,var(--border-strong))]! bg-[color-mix(in_srgb,var(--color-interactive)_10%,var(--surface-floating))]! pr-1 pl-3 ui-text-label font-medium text-content-primary"
                 >
                   <Warning
                     size={12}
@@ -910,6 +924,25 @@ const LiveView = () => {
                     className="shrink-0 text-[var(--color-interactive)]"
                   />
                   <span className="min-w-0 truncate">{silenceWarning}</span>
+                  <DismissButton onClick={dismissSilenceWarning} />
+                </motion.div>
+              )}
+              {!silenceWarning && catchingUp && (
+                <motion.div
+                  key="catching-up"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  role="status"
+                  className="ui-surface-menu absolute left-1/2 -top-1 flex h-7 max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1.5 rounded-full border-[color-mix(in_srgb,var(--color-success)_35%,var(--border-strong))]! bg-[color-mix(in_srgb,var(--color-success)_10%,var(--surface-floating))]! px-3 ui-text-label font-medium text-content-primary"
+                >
+                  <CircleNotch
+                    size={12}
+                    weight="bold"
+                    className="shrink-0 animate-spin text-[var(--color-success)]"
+                  />
+                  <span className="min-w-0 truncate">{catchingUpLabel}</span>
                 </motion.div>
               )}
             </AnimatePresence>
