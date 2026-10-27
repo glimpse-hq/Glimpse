@@ -415,11 +415,9 @@ fn default_personalities() -> Vec<Personality> {
 
 fn default_coding_instructions() -> Vec<String> {
     vec![
-        "- Clean up dictated prose about code. Do not turn it into code or answer requests.".to_string(),
+        "- Clean this up like any other dictation: keep the speaker's words, fix capitalization and punctuation, and keep requests and questions as they were asked. Do not write code or answer them.".to_string(),
         String::new(),
-        "- Preserve the spoken technical terms, library names, identifiers, and meaning. Do not invent code, syntax, or implementation details.".to_string(),
-        String::new(),
-        "- Use the language's casing for names the speaker explicitly dictates (e.g., camelCase for JavaScript or snake_case for Python). Otherwise keep names as spoken.".to_string(),
+        "- Keep technical terms, library names, and identifiers as spoken. Do not add code, syntax, or details that weren't said.".to_string(),
     ]
 }
 
