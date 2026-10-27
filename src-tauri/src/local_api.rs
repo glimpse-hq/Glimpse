@@ -104,8 +104,9 @@ struct RunningLocalApi {
 
 impl LocalApiController {
     pub fn status(&self) -> LocalApiStatus {
-        let state = self.inner.lock();
-        status_from_state(&state)
+        let mut status = status_from_state(&self.inner.lock());
+        status.lan_ip = lan_ip();
+        status
     }
 
     pub async fn start(
@@ -280,7 +281,10 @@ impl LocalApiController {
                     self.push_log(app, "info", "Stopping local API".to_string());
                     return Ok(self.status());
                 }
-                None => return Ok(status_from_state(state)),
+                None => {
+                    drop(guard);
+                    return Ok(self.status());
+                }
             }
         };
 
@@ -376,6 +380,7 @@ fn api_endpoint(message: &str) -> Option<&'static str> {
     }
 }
 
+// Leaves `lan_ip` empty; `status` fills it after releasing the lock.
 fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
     let logs = state.logs.iter().cloned().collect();
     if let Some(running) = &state.running {
@@ -391,22 +396,22 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             cors: running.cors,
             requests_total: running.requests_total,
             logs,
-            lan_ip: lan_ip(),
+            lan_ip: None,
         }
     } else {
         LocalApiStatus {
             running: false,
             starting: state.starting,
-            host: "127.0.0.1".to_string(),
+            host: crate::settings::default_local_api_host(),
             port: 0,
-            model: "auto".to_string(),
+            model: crate::settings::default_local_api_model(),
             loaded_model: None,
             api_key_required: false,
             config_id: None,
             cors: crate::settings::default_local_api_cors(),
             requests_total: 0,
             logs,
-            lan_ip: lan_ip(),
+            lan_ip: None,
         }
     }
 }
