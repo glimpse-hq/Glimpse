@@ -27,6 +27,7 @@ import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import WindowControls from "./shared/ui/WindowControls";
 import SidebarItem from "./shared/ui/SidebarItem";
 import SidebarTip from "./shared/ui/SidebarTip";
+import { GlimpseLogo } from "./shared/ui/GlimpseLogo";
 import SettingsNavToggle from "./features/settings/components/SettingsNavToggle";
 import {
   SETTINGS_PANE_GROUPS,
@@ -37,6 +38,7 @@ import { detectAppPlatform } from "./platform/service";
 import { useClickOutside } from "./shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "./shared/hooks/useMenuKeyboard";
 import { useCopyToClipboard } from "./shared/hooks/useCopyToClipboard";
+import { useTauriEvent } from "./shared/hooks/useTauriEvent";
 import HomeTodayHeader from "./features/transcriptions/components/HomeTodayHeader";
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
 import {
@@ -51,6 +53,8 @@ import LibraryView from "./features/library/components/LibraryView";
 import RecordingView from "./features/recording/components/RecordingView";
 import LocalApiSidebarStatus from "./features/settings/components/LocalApiSidebarStatus";
 import NewsMenu from "./features/news/components/NewsMenu";
+import AnnouncementScreen from "./features/news/components/AnnouncementScreen";
+import { useAnnouncement } from "./features/news/queries";
 import AccountPill from "./features/license/components/AccountPill";
 import { getLocalApiStatus } from "./features/settings/models-api";
 import type { LocalApiStatus } from "./types";
@@ -70,6 +74,7 @@ import { updateKeys, useUpdateStatus } from "./features/updates/queries";
 import { askKeys } from "./features/asks/queries";
 import { isRemoteSpeechInUse } from "./shared/lib/speechProviders";
 import { isCloudLlmInUse, isLlmInUse } from "./shared/lib/llmProviders";
+import { GITHUB_URL, SUPPORT_EMAIL } from "./shared/lib/links";
 
 const importSettingsScreen = () =>
   import("./features/settings/components/SettingsScreen");
@@ -80,67 +85,10 @@ type ActiveView = "home" | "dictionary" | "brain" | "library" | "record";
 
 let cachedLocalApiStatus: LocalApiStatus | null = null;
 
-const STATIC_LOGO_DOT_SIZE = 5;
-const STATIC_LOGO_GAP = 3;
-const STATIC_LOGO_DISTANCE = STATIC_LOGO_DOT_SIZE + STATIC_LOGO_GAP;
-const STATIC_LOGO_RADIUS = STATIC_LOGO_DOT_SIZE / 2;
-const STATIC_LOGO_GRID_SIZE = STATIC_LOGO_DOT_SIZE * 2 + STATIC_LOGO_GAP;
-const STATIC_LOGO_DOT_COLORS = [
-  "var(--color-cloud)",
-  "var(--color-local)",
-  "var(--color-local)",
-  "var(--color-cloud)",
-];
-const STATIC_LOGO_COORDS = [
-  { cx: STATIC_LOGO_RADIUS, cy: STATIC_LOGO_RADIUS },
-  { cx: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE, cy: STATIC_LOGO_RADIUS },
-  { cx: STATIC_LOGO_RADIUS, cy: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE },
-  {
-    cx: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE,
-    cy: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE,
-  },
-];
-
 const isMac = detectAppPlatform() === "macos";
 const isWindows = detectAppPlatform() === "windows";
 
-const SUPPORT_GITHUB_URL =
-  "https://github.com/glimpse-hq/Glimpse/issues/new/choose";
-const SUPPORT_EMAIL = "hello@tryglimpse.cc";
-
-const StaticGlimpseLogo = ({
-  cloudActive,
-  localActive,
-}: {
-  cloudActive: boolean;
-  localActive: boolean;
-}) => {
-  return (
-    <svg
-      aria-hidden="true"
-      focusable="false"
-      width={STATIC_LOGO_GRID_SIZE}
-      height={STATIC_LOGO_GRID_SIZE}
-      viewBox={`0 0 ${STATIC_LOGO_GRID_SIZE} ${STATIC_LOGO_GRID_SIZE}`}
-      style={{ overflow: "visible" }}
-    >
-      {STATIC_LOGO_COORDS.map((coord, i) => {
-        const isCloudDot = i === 0 || i === 3;
-        const isActive = isCloudDot ? cloudActive : localActive;
-        return (
-          <circle
-            key={`dot-${i}`}
-            cx={coord.cx}
-            cy={coord.cy}
-            r={STATIC_LOGO_RADIUS}
-            fill={STATIC_LOGO_DOT_COLORS[i]}
-            opacity={isActive ? 1 : 0.15}
-          />
-        );
-      })}
-    </svg>
-  );
-};
+const SUPPORT_GITHUB_URL = `${GITHUB_URL}/issues/new/choose`;
 
 const FIRST_SCREEN_QUERY_ROOTS: readonly string[] = [
   licenseKeys.state()[0],
@@ -325,119 +273,87 @@ const Home = ({ onReady }: HomeProps) => {
 
   useEffect(() => {
     let cancelled = false;
-    let unlistenStatus: UnlistenFn | null = null;
-
     getLocalApiStatus()
       .then((status) => {
         if (!cancelled) updateLocalApiStatus(status);
       })
       .catch(() => {});
-
-    listen<LocalApiStatus>("local-api:status", (event) => {
-      if (!cancelled) updateLocalApiStatus(event.payload);
-    })
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlistenStatus = fn;
-      })
-      .catch(() => {});
-
     return () => {
       cancelled = true;
-      unlistenStatus?.();
     };
   }, [updateLocalApiStatus]);
 
+  useTauriEvent<LocalApiStatus>("local-api:status", updateLocalApiStatus);
+
+  // The backend holds navigation until every listener is registered.
   useEffect(() => {
     let cancelled = false;
-    let unlistenNavigate: UnlistenFn | null = null;
-    let unlistenHistory: UnlistenFn | null = null;
-    let unlistenModels: UnlistenFn | null = null;
-    let unlistenAccount: UnlistenFn | null = null;
-    let unlistenViews: UnlistenFn[] = [];
-    let unlistenDragEnter: UnlistenFn | null = null;
-    let unlistenDragOver: UnlistenFn | null = null;
-    let unlistenDragLeave: UnlistenFn | null = null;
-    let unlistenDragDrop: UnlistenFn | null = null;
-    let unlistenOpenImport: UnlistenFn | null = null;
-    let unlistenLicenseReturn: UnlistenFn | null = null;
-
-    const navigateReady = listen("navigate:about", () => {
-      setSettingsTab("about");
-      setIsSettingsOpen(true);
-      emit("updater:check").catch(() => {});
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenNavigate = fn;
-    });
-
-    const historyReady = listen("navigate:history", () => {
-      setIsSettingsOpen(false);
-      setAccountSource("settings_account");
-      setActiveView("home");
-      setDragActive(false);
-      setPendingImportPaths(null);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenHistory = fn;
-    });
-
-    const modelsReady = listen("navigate:models", () => {
-      setSettingsTab("models");
-      setIsSettingsOpen(true);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenModels = fn;
-    });
-
-    const accountReady = listen("navigate:account", () => {
-      setAccountSource("trial_toast");
-      setSettingsTab("account");
-      setIsSettingsOpen(true);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenAccount = fn;
-    });
-
-    const viewsReady = (
+    const unlisteners: UnlistenFn[] = [];
+    const openView = (view: "dictionary" | "brain" | "library" | "record") => {
+      if (view === "dictionary") {
+        setIsSettingsOpen(false);
+        setActiveView(view);
+      } else {
+        openGatedView(view);
+      }
+    };
+    const handlers: [string, () => void][] = [
       [
-        ["navigate:dictionary", "dictionary"],
-        ["navigate:personalization", "brain"],
-        ["navigate:library", "library"],
-        ["navigate:record", "record"],
-      ] as const
-    ).map(([event, view]) =>
-      listen(event, () => {
-        if (view === "dictionary") {
+        "navigate:about",
+        () => {
+          setSettingsTab("about");
+          setIsSettingsOpen(true);
+          emit("updater:check").catch(() => {});
+        },
+      ],
+      [
+        "navigate:history",
+        () => {
           setIsSettingsOpen(false);
-          setActiveView(view);
-        } else {
-          openGatedView(view);
-        }
-      }).then((fn) => {
-        if (cancelled) fn();
-        else unlistenViews.push(fn);
-      }),
-    );
+          setAccountSource("settings_account");
+          setActiveView("home");
+          setDragActive(false);
+          setPendingImportPaths(null);
+        },
+      ],
+      [
+        "navigate:models",
+        () => {
+          setSettingsTab("models");
+          setIsSettingsOpen(true);
+        },
+      ],
+      [
+        "navigate:account",
+        () => {
+          setAccountSource("trial_toast");
+          setSettingsTab("account");
+          setIsSettingsOpen(true);
+        },
+      ],
+      ["navigate:dictionary", () => openView("dictionary")],
+      ["navigate:personalization", () => openView("brain")],
+      ["navigate:library", () => openView("library")],
+      ["navigate:record", () => openView("record")],
+      [
+        "license:checkout-returned",
+        () => {
+          // QuerySyncBridge refetches the license state.
+          setAccountSource("checkout_return");
+          setSettingsTab("account");
+          setIsSettingsOpen(true);
+        },
+      ],
+    ];
 
-    const licenseReturnReady = listen("license:checkout-returned", () => {
-      // QuerySyncBridge refetches the license state.
-      setAccountSource("checkout_return");
-      setSettingsTab("account");
-      setIsSettingsOpen(true);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenLicenseReturn = fn;
-    });
-
-    Promise.all([
-      navigateReady,
-      historyReady,
-      modelsReady,
-      accountReady,
-      licenseReturnReady,
-      ...viewsReady,
-    ])
+    Promise.all(
+      handlers.map(([event, handler]) =>
+        listen(event, handler).then((fn) => {
+          if (cancelled) fn();
+          else unlisteners.push(fn);
+        }),
+      ),
+    )
       .then(() => {
         if (!cancelled) {
           emit("settings:renderer_ready").catch(() => {});
@@ -447,86 +363,42 @@ const Home = ({ onReady }: HomeProps) => {
         console.error("Failed to register settings navigation listeners:", err);
       });
 
-    listen<{ paths?: string[] }>("tauri://drag-enter", (event) => {
+    return () => {
+      cancelled = true;
+      unlisteners.forEach((fn) => fn());
+    };
+  }, [openGatedView]);
+
+  const showDropTarget = (payload: { paths?: string[] } | undefined) => {
+    if (!licenseGateActiveRef.current) return;
+    if (payload?.paths?.length) setDragActive(true);
+  };
+  useTauriEvent<{ paths?: string[] }>("tauri://drag-enter", showDropTarget);
+  useTauriEvent<{ paths?: string[] }>("tauri://drag-over", showDropTarget);
+  useTauriEvent("tauri://drag-leave", () => setDragActive(false));
+  useTauriEvent<{ paths?: string[] }>("tauri://drag-drop", (payload) => {
+    setDragActive(false);
+    if (!payload?.paths?.length) return;
+    if (!licenseGateActiveRef.current) {
+      openGatedView("library");
+      return;
+    }
+    setPendingImportPaths(Array.from(new Set(payload.paths)));
+    setActiveView("library");
+    setIsSettingsOpen(false);
+  });
+  useTauriEvent<string[]>(
+    "library:open_import",
+    (paths) => {
       if (!licenseGateActiveRef.current) return;
-      if (event.payload?.paths?.length) setDragActive(true);
-    })
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlistenDragEnter = fn;
-      })
-      .catch(() => {});
-
-    listen<{ paths?: string[] }>("tauri://drag-over", (event) => {
-      if (!licenseGateActiveRef.current) return;
-      if (event.payload?.paths?.length) setDragActive(true);
-    })
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlistenDragOver = fn;
-      })
-      .catch(() => {});
-
-    listen("tauri://drag-leave", () => {
-      setDragActive(false);
-    })
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlistenDragLeave = fn;
-      })
-      .catch(() => {});
-
-    listen<{ paths?: string[] }>("tauri://drag-drop", (event) => {
-      setDragActive(false);
-      if (!event.payload?.paths?.length) return;
-      if (!licenseGateActiveRef.current) {
-        openGatedView("library");
-        return;
-      }
-      setPendingImportPaths(Array.from(new Set(event.payload.paths)));
-      setActiveView("library");
-      setIsSettingsOpen(false);
-    })
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlistenDragDrop = fn;
-      })
-      .catch(() => {});
-
-    listen<string[]>("library:open_import", (event) => {
-      if (!licenseGateActiveRef.current) return;
-      if (event.payload?.length) {
-        setPendingImportPaths(Array.from(new Set(event.payload)));
+      if (paths?.length) {
+        setPendingImportPaths(Array.from(new Set(paths)));
         setActiveView("library");
         setIsSettingsOpen(false);
       }
-    })
-      .then((fn) => {
-        if (cancelled) {
-          fn();
-        } else {
-          unlistenOpenImport = fn;
-          emit("library:renderer_ready").catch(() => {});
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-      unlistenNavigate?.();
-      unlistenHistory?.();
-      unlistenModels?.();
-      unlistenAccount?.();
-      unlistenViews.forEach((fn) => fn());
-      unlistenViews = [];
-      unlistenDragEnter?.();
-      unlistenDragOver?.();
-      unlistenDragLeave?.();
-      unlistenDragDrop?.();
-      unlistenOpenImport?.();
-      unlistenLicenseReturn?.();
-    };
-  }, [openGatedView]);
+    },
+    { onListening: () => emit("library:renderer_ready").catch(() => {}) },
+  );
 
   useClickOutside(
     supportMenuRef,
@@ -569,11 +441,6 @@ const Home = ({ onReady }: HomeProps) => {
   }, []);
 
   const showCleanupButtons = llmEnabled && licenseGateActive;
-  const currentModeLabel = t({
-    id: "home.mode.local",
-    message: "Local",
-  });
-
   const lockedHint = t({
     id: "home.sidebar.locked_hint.v2",
     message: "Comes with Glimpse Plus.",
@@ -590,6 +457,7 @@ const Home = ({ onReady }: HomeProps) => {
   const { data: trialEndedScreen } = useTrialEndedScreen(
     Boolean(licenseState && !licenseState.licenseGateActive),
   );
+  const { data: announcement } = useAnnouncement(licenseFetched);
   const returnIcon = {
     home: HomeIcon,
     dictionary: Book,
@@ -643,9 +511,12 @@ const Home = ({ onReady }: HomeProps) => {
             className={`flex items-center h-6 pl-[var(--sidebar-icon-pl,17px)] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"}`}
           >
             <div className="flex w-[20px] shrink-0 items-center justify-center">
-              <StaticGlimpseLogo
-                cloudActive={remoteSpeechInUse || cloudLlmInUse}
-                localActive={!remoteSpeechInUse || localLlmInUse}
+              <GlimpseLogo
+                size="sm"
+                lit={{
+                  cloud: remoteSpeechInUse || cloudLlmInUse,
+                  local: !remoteSpeechInUse || localLlmInUse,
+                }}
               />
             </div>
             <span
@@ -1014,10 +885,7 @@ const Home = ({ onReady }: HomeProps) => {
                             })}
                           </div>
                           <div className="ui-text-meta ui-color-muted">
-                            {t({
-                              id: "home.support.about.version_mode",
-                              message: `v${{ version: appVersion }} • ${{ mode: currentModeLabel }}`,
-                            })}
+                            v{appVersion}
                           </div>
                         </div>
                       </button>
@@ -1243,6 +1111,12 @@ const Home = ({ onReady }: HomeProps) => {
               openAccountSettings();
             }}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {announcement && !trialEndedScreen && (
+          <AnnouncementScreen announcement={announcement} />
         )}
       </AnimatePresence>
 

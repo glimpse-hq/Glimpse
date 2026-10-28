@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
-  Check,
+  ArrowCounterClockwise,
   CaretDown as ChevronDown,
   ArrowSquareOut as ExternalLink,
   Info,
@@ -13,7 +13,6 @@ import {
   Trash as Trash2,
   X,
 } from "@phosphor-icons/react";
-import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 import { detectAppPlatform } from "../../../platform/service";
@@ -25,10 +24,12 @@ import {
   getWebsiteFallback,
   isValidDomain,
   MAX_INSTRUCTIONS_CHARS,
+  GLOBAL_MODE_ID,
   normalizeEntry,
   normalizeWebsite,
   type InstalledApp,
 } from "./personalization-utils";
+import { GITHUB_URL } from "../../../shared/lib/links";
 
 export type PendingDeletePersonality = {
   id: string;
@@ -122,6 +123,7 @@ export { AppIconBadge, WebsiteFavicon };
 
 type PersonalityModalProps = {
   personality: Personality;
+  defaultInstructions: string;
   installedApps: InstalledApp[];
   websiteIconBySite: Record<string, string>;
   onClose: () => void;
@@ -130,11 +132,14 @@ type PersonalityModalProps = {
   onDelete: () => void;
 };
 
-const PERSONALIZATION_SNIPPETS_WIKI_URL =
-  "https://github.com/glimpse-hq/Glimpse/wiki/snippets";
+const PERSONALIZATION_SNIPPETS_WIKI_URL = `${GITHUB_URL}/wiki/snippets`;
+
+const iconButtonClass =
+  "flex h-7 w-7 items-center justify-center rounded-md text-content-muted transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-hover";
 
 const PersonalityModal = ({
   personality,
+  defaultInstructions,
   installedApps,
   websiteIconBySite,
   onClose,
@@ -143,7 +148,7 @@ const PersonalityModal = ({
   onDelete,
 }: PersonalityModalProps) => {
   const { t } = useLingui();
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const isGlobal = personality.id === GLOBAL_MODE_ID;
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(personality.name);
   const [appQuery, setAppQuery] = useState("");
@@ -156,9 +161,15 @@ const PersonalityModal = ({
   useFocusTrap(dialogRef, true);
   const [websiteInput, setWebsiteInput] = useState("");
   const [websiteError, setWebsiteError] = useState<string | null>(null);
+  // Global stores nothing until edited, so it opens on the shipped prompt.
   const [instructionsText, setInstructionsText] = useState(() =>
-    clampInstructionsText(personality.instructions.join("\n")),
+    clampInstructionsText(
+      personality.instructions.join("\n") ||
+        (isGlobal ? defaultInstructions : ""),
+    ),
   );
+  const isDefaultGlobal =
+    isGlobal && instructionsText.trim() === defaultInstructions.trim();
 
   const commitName = () => {
     const value = normalizeEntry(nameDraft);
@@ -186,10 +197,6 @@ const PersonalityModal = ({
   const installedAppByName = useMemo(() => {
     return new Map(appOptions.map((app) => [app.name.toLowerCase(), app]));
   }, [appOptions]);
-
-  const installedNameSet = useMemo(() => {
-    return new Set(installedAppByName.keys());
-  }, [installedAppByName]);
 
   const addedAppsSet = useMemo(() => {
     return new Set(personality.apps.map((app) => app.toLowerCase()));
@@ -258,11 +265,9 @@ const PersonalityModal = ({
       }
       return;
     }
-    if (event.key === "Escape") {
-      if (isAppMenuOpen) {
-        event.preventDefault();
-        setIsAppMenuOpen(false);
-      }
+    if (event.key === "Escape" && isAppMenuOpen) {
+      event.preventDefault();
+      setIsAppMenuOpen(false);
     }
   };
 
@@ -313,138 +318,122 @@ const PersonalityModal = ({
     });
   };
 
-  const parseInstructions = (value: string) => {
-    return value.split(/\r?\n/);
-  };
-
   const handleInstructionsChange = (value: string) => {
     const nextValue = clampInstructionsText(value);
     setInstructionsText(nextValue);
-    onUpdate({ instructions: parseInstructions(nextValue) });
+    const unchangedGlobal =
+      isGlobal && nextValue.trim() === defaultInstructions.trim();
+    onUpdate({
+      instructions: unchangedGlobal ? [] : nextValue.split(/\r?\n/),
+    });
   };
-
-  const instructionsCharCount = useMemo(
-    () => countInstructionsChars(instructionsText),
-    [instructionsText],
-  );
 
   const handleSaveName = () => {
     commitName();
     setIsEditingName(false);
   };
 
+  const sectionLabelClass = "ui-text-section-label-sm ui-color-muted";
+  const fieldClass =
+    "flex items-center gap-1 border-b border-border-primary transition-colors focus-within:border-border-hover";
+  const fieldInputClass =
+    "min-w-0 flex-1 bg-transparent py-2 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none";
+  const rowClass = "group/row flex items-center justify-between gap-2 py-2";
+  const removeButtonClass =
+    "rounded-md p-1 text-content-disabled opacity-0 transition-[opacity,color,background-color] hover:bg-surface-elevated hover:text-content-primary focus-visible:opacity-100 group-hover/row:opacity-100";
+
   return (
-    <AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-16 backdrop-blur-xs"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-xs"
-        onClick={onClose}
+        ref={dialogRef}
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        className="flex h-full max-h-[820px] w-full max-w-[960px] flex-col overflow-hidden rounded-2xl border border-border-primary bg-surface-tertiary ui-shadow-modal-deep"
+        onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby="personality-modal-title"
       >
-        <motion.div
-          ref={dialogRef}
-          initial={{ opacity: 0, scale: 0.96, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 20 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative w-[620px] h-[660px] max-w-[92vw] max-h-[92vh] bg-surface-overlay border border-border-primary rounded-2xl ui-shadow-modal-deep flex flex-col overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <header className="flex items-start justify-between gap-4 px-7 pt-6">
-            <div className="flex min-w-0 items-center gap-3.5">
-              <span className="flex shrink-0">
-                <DotMatrix
-                  rows={2}
-                  cols={3}
-                  activeDots={[0, 2, 3]}
-                  dotSize={3}
-                  gap={3}
-                  color="var(--color-section-marker-alt)"
-                  aria-hidden="true"
-                />
-              </span>
-              <div className="h-9 min-w-0 flex items-center">
-                {isEditingName ? (
-                  <div className="flex min-w-0 items-center gap-2">
-                    <input
-                      ref={nameInputRef}
-                      value={nameDraft}
-                      onChange={(event) => setNameDraft(event.target.value)}
-                      autoFocus
-                      aria-label={t({
-                        id: "personalization.modal.edit_name",
-                        message: "Edit mode name",
-                      })}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          handleSaveName();
-                        }
-                        if (event.key === "Escape") {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          setNameDraft(personality.name);
-                          setIsEditingName(false);
-                        }
-                      }}
-                      onBlur={handleSaveName}
-                      className="min-w-0 bg-transparent ui-text-screen-title tracking-tight ui-color-primary outline-hidden border-b border-border-hover"
-                    />
-                    <button
-                      onClick={handleSaveName}
-                      className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-primary transition-colors"
-                      aria-label={t({
-                        id: "personalization.modal.save_name",
-                        message: "Save name",
-                      })}
-                    >
-                      <Check size={14} aria-hidden="true" />
-                    </button>
-                  </div>
-                ) : (
-                  <h2 id="modal-title" className="min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (
-                          personality.name ===
-                          t({
-                            id: "personalization.new_mode.default_name.v2",
-                            message: "New mode",
-                          })
-                        ) {
-                          setNameDraft("");
-                        }
-                        setIsEditingName(true);
-                      }}
-                      title={t({
-                        id: "personalization.modal.edit_name",
-                        message: "Edit mode name",
-                      })}
-                      className="group/title flex min-w-0 max-w-full items-center gap-2 cursor-pointer text-left"
-                    >
-                      <span className="truncate ui-text-screen-title tracking-tight ui-color-primary group-hover/title:text-content-secondary transition-colors">
-                        {personality.name}
-                      </span>
-                      <Pencil
-                        size={13}
-                        className="shrink-0 opacity-0 group-hover/title:opacity-100 group-focus-visible/title:opacity-100 transition-opacity text-content-muted"
-                        aria-hidden="true"
-                      />
-                    </button>
-                  </h2>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-1 pt-1">
+        <header className="flex shrink-0 items-center justify-between gap-4 px-8 pt-5">
+          <div className="flex h-8 min-w-0 flex-1 items-center">
+            {isGlobal ? (
+              <h2
+                id="personality-modal-title"
+                className="ui-text-title-lg ui-color-primary"
+              >
+                {t({ id: "personalization.global.name", message: "Global" })}
+              </h2>
+            ) : isEditingName ? (
+              <input
+                value={nameDraft}
+                onChange={(event) => setNameDraft(event.target.value)}
+                autoFocus
+                aria-label={t({
+                  id: "personalization.modal.edit_name",
+                  message: "Edit mode name",
+                })}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleSaveName();
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setNameDraft(personality.name);
+                    setIsEditingName(false);
+                  }
+                }}
+                onBlur={handleSaveName}
+                className="w-full min-w-0 border-b border-border-hover bg-transparent ui-text-title-lg ui-color-primary outline-hidden"
+              />
+            ) : (
+              <h2 id="personality-modal-title" className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      personality.name ===
+                      t({
+                        id: "personalization.new_mode.default_name.v2",
+                        message: "New mode",
+                      })
+                    ) {
+                      setNameDraft("");
+                    }
+                    setIsEditingName(true);
+                  }}
+                  title={t({
+                    id: "personalization.modal.edit_name",
+                    message: "Edit mode name",
+                  })}
+                  className="group/title flex min-w-0 max-w-full items-center gap-2 text-left"
+                >
+                  <span className="truncate ui-text-title-lg ui-color-primary transition-colors group-hover/title:text-content-secondary">
+                    {personality.name}
+                  </span>
+                  <Pencil
+                    size={13}
+                    className="shrink-0 text-content-muted opacity-0 transition-opacity group-hover/title:opacity-100 group-focus-visible/title:opacity-100"
+                    aria-hidden="true"
+                  />
+                </button>
+              </h2>
+            )}
+          </div>
+          <div className="flex h-8 shrink-0 items-center gap-1">
+            {!isGlobal && (
               <button
+                type="button"
                 onClick={onDelete}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                className={`${iconButtonClass} hover:bg-red-500/10 hover:text-red-400`}
                 title={t({
                   id: "personalization.modal.delete_mode",
                   message: "Delete mode",
@@ -456,75 +445,98 @@ const PersonalityModal = ({
               >
                 <Trash2 size={14} aria-hidden="true" />
               </button>
-              <button
-                onClick={onClose}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-surface-elevated hover:text-content-secondary transition-colors"
-                aria-label={t({
-                  id: "personalization.modal.close",
-                  message: "Close modal",
-                })}
-              >
-                <X size={15} aria-hidden="true" />
-              </button>
-            </div>
-          </header>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className={`${iconButtonClass} hover:bg-surface-elevated hover:text-content-secondary`}
+              aria-label={t({
+                id: "personalization.modal.close",
+                message: "Close modal",
+              })}
+            >
+              <X size={15} aria-hidden="true" />
+            </button>
+          </div>
+        </header>
 
-          <div className="flex flex-1 min-h-0 flex-col gap-8 px-7 pt-6 pb-7">
-            <section className="shrink-0 flex flex-col gap-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="ui-text-section-label-sm ui-color-muted">
-                    {t({
-                      id: "personalization.modal.custom_instructions",
-                      message: "Custom instructions",
+        <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 pb-6 pt-3">
+          <section className="flex min-h-0 flex-1 flex-col">
+            <div className="flex h-6 items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <h3 className={sectionLabelClass}>
+                  {t({
+                    id: "personalization.modal.instructions",
+                    message: "Instructions",
+                  })}
+                </h3>
+                <div className="group/snippets relative">
+                  <button
+                    type="button"
+                    className="flex h-4 w-4 items-center justify-center rounded-sm text-content-disabled transition-colors hover:text-content-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-hover"
+                    aria-label={t({
+                      id: "personalization.modal.snippets.info",
+                      message: "Show personalization snippet examples",
                     })}
-                  </h3>
-                  <div className="group/snippets relative">
-                    <button
-                      type="button"
-                      className="flex h-4 w-4 items-center justify-center rounded-sm text-content-disabled transition-colors hover:text-content-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-hover"
-                      aria-label={t({
-                        id: "personalization.modal.snippets.info",
-                        message: "Show personalization snippet examples",
-                      })}
-                    >
-                      <Info size={11} aria-hidden="true" />
-                    </button>
-                    <div
-                      role="tooltip"
-                      className="absolute left-full top-1/2 z-30 hidden -translate-y-[42%] pl-2 group-hover/snippets:block group-focus-within/snippets:block"
-                    >
-                      <div className="w-72 rounded-lg border border-border-secondary bg-surface-overlay px-3 py-2.5 text-left shadow-lg">
-                        <p className="ui-text-meta ui-color-primary">
-                          {t({
-                            id: "personalization.modal.snippets.summary",
-                            message:
-                              "Use snippets to pass live context to the language model, like",
-                          })}{" "}
-                          <code>{"{{date}}"}</code>, <code>{"{{app}}"}</code>,{" "}
-                          <code>{"{{window}}"}</code>.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void openUrl(PERSONALIZATION_SNIPPETS_WIKI_URL);
-                          }}
-                          className="mt-2 inline-flex items-center gap-1 ui-text-meta ui-color-muted underline decoration-border-hover underline-offset-2 transition-colors hover:text-content-secondary"
-                        >
-                          {t({
-                            id: "personalization.modal.snippets.full_list",
-                            message: "Full snippet list",
-                          })}
-                          <ExternalLink size={10} aria-hidden="true" />
-                        </button>
-                      </div>
+                  >
+                    <Info size={11} aria-hidden="true" />
+                  </button>
+                  <div
+                    role="tooltip"
+                    className="absolute left-full top-1/2 z-30 hidden -translate-y-[42%] pl-2 group-hover/snippets:block group-focus-within/snippets:block"
+                  >
+                    <div className="w-72 rounded-lg border border-border-secondary bg-surface-overlay px-3 py-2.5 text-left shadow-lg">
+                      <p className="ui-text-meta ui-color-primary">
+                        {t({
+                          id: "personalization.modal.snippets.summary",
+                          message:
+                            "Use snippets to pass live context to the language model, like",
+                        })}{" "}
+                        <code>{"{{date}}"}</code>, <code>{"{{app}}"}</code>,{" "}
+                        <code>{"{{window}}"}</code>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void openUrl(PERSONALIZATION_SNIPPETS_WIKI_URL);
+                        }}
+                        className="mt-2 inline-flex items-center gap-1 ui-text-meta ui-color-muted underline decoration-border-hover underline-offset-2 transition-colors hover:text-content-secondary"
+                      >
+                        {t({
+                          id: "personalization.modal.snippets.full_list",
+                          message: "Full snippet list",
+                        })}
+                        <ExternalLink size={10} aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
                 </div>
+              </div>
+              <div className="flex items-center gap-4">
+                {isGlobal && (
+                  <button
+                    type="button"
+                    disabled={isDefaultGlobal}
+                    onClick={() =>
+                      handleInstructionsChange(defaultInstructions)
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-md ui-text-meta ui-color-secondary transition-colors hover:text-content-primary disabled:invisible focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-hover"
+                  >
+                    <ArrowCounterClockwise size={12} aria-hidden="true" />
+                    {t({
+                      id: "personalization.modal.restore_default",
+                      message: "Restore default",
+                    })}
+                  </button>
+                )}
                 <span className="ui-text-meta ui-color-disabled tabular-nums">
-                  {instructionsCharCount}/{MAX_INSTRUCTIONS_CHARS}
+                  {countInstructionsChars(instructionsText)}/
+                  {MAX_INSTRUCTIONS_CHARS}
                 </span>
               </div>
+            </div>
+            {/* py-3 keeps the scrollbar clear of the rounded corners */}
+            <div className="mt-3 min-h-0 flex-1 rounded-xl border border-transparent bg-[var(--surface-interactive)] py-3 pr-1 transition-colors focus-within:border-border-hover">
               <textarea
                 value={instructionsText}
                 onChange={(event) =>
@@ -535,17 +547,19 @@ const PersonalityModal = ({
                   message: "Add custom instructions",
                 })}
                 aria-label={t({
-                  id: "personalization.modal.custom_instructions",
-                  message: "Custom instructions",
+                  id: "personalization.modal.instructions",
+                  message: "Instructions",
                 })}
-                className="h-[176px] w-full resize-none rounded-xl border border-border-primary bg-transparent px-4 py-3 ui-text-body-sm ui-color-primary placeholder-content-disabled outline-hidden focus:border-border-hover transition-colors instructions-scroll"
+                className="h-full w-full resize-none bg-transparent px-5 py-1 ui-text-body-sm leading-relaxed ui-color-primary placeholder-content-disabled outline-hidden instructions-scroll"
               />
-            </section>
+            </div>
+          </section>
 
-            <div className="grid flex-1 min-h-0 grid-cols-2 gap-8">
-              <section className="flex min-h-0 min-w-0 flex-col gap-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="ui-text-section-label-sm ui-color-muted">
+          {!isGlobal && (
+            <div className="grid h-[224px] shrink-0 grid-cols-2 gap-10">
+              <section className="flex min-h-0 min-w-0 flex-col">
+                <div className="flex h-6 items-center justify-between gap-2">
+                  <h3 className={sectionLabelClass}>
                     {t({
                       id: "personalization.modal.applications",
                       message: "Applications",
@@ -557,7 +571,7 @@ const PersonalityModal = ({
                 </div>
                 <div
                   ref={appComboboxRef}
-                  className="relative flex items-center gap-1 border-b border-border-primary focus-within:border-border-hover transition-colors"
+                  className={`relative mt-1 ${fieldClass}`}
                 >
                   <input
                     ref={appInputRef}
@@ -587,7 +601,7 @@ const PersonalityModal = ({
                         : undefined
                     }
                     aria-autocomplete="list"
-                    className="min-w-0 flex-1 bg-transparent py-2 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none"
+                    className={fieldInputClass}
                   />
                   <button
                     type="button"
@@ -600,22 +614,20 @@ const PersonalityModal = ({
                       message: "Toggle application list",
                     })}
                     aria-expanded={isAppMenuOpen}
-                    className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
+                    className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted transition-colors hover:bg-surface-elevated hover:text-content-primary"
                   >
                     <ChevronDown
                       size={14}
                       aria-hidden="true"
-                      className={`transition-transform ${
-                        isAppMenuOpen ? "rotate-180" : ""
-                      }`}
+                      className={`transition-transform ${isAppMenuOpen ? "rotate-180" : ""}`}
                     />
                   </button>
                   <AnimatePresence>
                     {isAppMenuOpen && filteredAppOptions.length > 0 && (
                       <motion.ul
-                        initial={{ opacity: 0, y: -4 }}
+                        initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.12 }}
                         id={appListId}
                         role="listbox"
@@ -623,7 +635,7 @@ const PersonalityModal = ({
                           id: "personalization.modal.applications",
                           message: "Applications",
                         })}
-                        className="ui-surface-menu dropdown-list absolute left-0 right-0 top-full z-30 mt-2 max-h-[240px] px-1 py-1"
+                        className="ui-surface-menu dropdown-list absolute bottom-full left-0 right-0 z-30 mb-2 max-h-[240px] px-1 py-1"
                       >
                         {filteredAppOptions.map((app, index) => (
                           <li key={`app-option-${app.name}`}>
@@ -655,7 +667,7 @@ const PersonalityModal = ({
                     )}
                   </AnimatePresence>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto instructions-scroll">
+                <div className="mt-1 min-h-0 flex-1 overflow-y-auto instructions-scroll">
                   {personality.apps.length === 0 ? (
                     <p className="py-2.5 ui-text-body-sm ui-color-disabled">
                       {t({
@@ -665,29 +677,23 @@ const PersonalityModal = ({
                     </p>
                   ) : (
                     <ul className="divide-y divide-border-primary">
-                      {personality.apps.map((app, index) => {
+                      {personality.apps.map((app) => {
                         const installedApp = installedAppByName.get(
                           app.toLowerCase(),
                         );
-                        const isMissing = !installedNameSet.has(
-                          app.toLowerCase(),
-                        );
                         return (
-                          <li
-                            key={`app-${index}-${app || "empty"}`}
-                            className="group/row flex items-center justify-between gap-2 py-2"
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
+                          <li key={`app-${app}`} className={rowClass}>
+                            <div className="flex min-w-0 items-center gap-2.5">
                               <AppIconBadge
                                 appName={app}
                                 iconPath={installedApp?.icon_path}
                                 size="list"
                               />
-                              <span className="ui-text-body-sm ui-color-primary truncate">
+                              <span className="truncate ui-text-body-sm ui-color-primary">
                                 {app}
                               </span>
-                              {isMissing && (
-                                <span className="ui-text-meta ui-color-disabled shrink-0">
+                              {!installedApp && (
+                                <span className="shrink-0 ui-text-meta ui-color-disabled">
                                   {t({
                                     id: "personalization.modal.applications.not_installed",
                                     message: "Not installed",
@@ -696,8 +702,9 @@ const PersonalityModal = ({
                               )}
                             </div>
                             <button
+                              type="button"
                               onClick={() => removeApp(app)}
-                              className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
+                              className={removeButtonClass}
                               title={t({
                                 id: "personalization.modal.remove",
                                 message: "Remove",
@@ -707,7 +714,7 @@ const PersonalityModal = ({
                                 message: `Remove ${app}`,
                               })}
                             >
-                              <X size={12} />
+                              <X size={12} aria-hidden="true" />
                             </button>
                           </li>
                         );
@@ -717,9 +724,9 @@ const PersonalityModal = ({
                 </div>
               </section>
 
-              <section className="flex min-h-0 min-w-0 flex-col gap-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="shrink-0 ui-text-section-label-sm ui-color-muted">
+              <section className="flex min-h-0 min-w-0 flex-col">
+                <div className="flex h-6 items-center justify-between gap-2">
+                  <h3 className={`shrink-0 ${sectionLabelClass}`}>
                     {t({
                       id: "personalization.modal.websites",
                       message: "Websites",
@@ -739,7 +746,7 @@ const PersonalityModal = ({
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 border-b border-border-primary focus-within:border-border-hover transition-colors">
+                <div className={`mt-1 ${fieldClass}`}>
                   <input
                     value={websiteInput}
                     onChange={(event) => {
@@ -762,20 +769,21 @@ const PersonalityModal = ({
                       id: "personalization.modal.websites.aria",
                       message: "Add website domain",
                     })}
-                    className="min-w-0 flex-1 bg-transparent py-2 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none"
+                    className={fieldInputClass}
                   />
                   <button
+                    type="button"
                     onClick={addWebsite}
                     aria-label={t({
                       id: "personalization.modal.add",
                       message: "Add",
                     })}
-                    className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
+                    className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted transition-colors hover:bg-surface-elevated hover:text-content-primary"
                   >
                     <Plus size={14} aria-hidden="true" />
                   </button>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto instructions-scroll">
+                <div className="mt-1 min-h-0 flex-1 overflow-y-auto instructions-scroll">
                   {personality.websites.length === 0 ? (
                     <p className="py-2.5 ui-text-body-sm ui-color-disabled">
                       {t({
@@ -785,12 +793,9 @@ const PersonalityModal = ({
                     </p>
                   ) : (
                     <ul className="divide-y divide-border-primary">
-                      {personality.websites.map((site, index) => (
-                        <li
-                          key={`site-${index}-${site || "empty"}`}
-                          className="group/row flex items-center justify-between gap-2 py-2"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
+                      {personality.websites.map((site) => (
+                        <li key={`site-${site}`} className={rowClass}>
+                          <div className="flex min-w-0 items-center gap-2.5">
                             <WebsiteFavicon
                               site={site}
                               iconPath={
@@ -798,13 +803,14 @@ const PersonalityModal = ({
                               }
                               size="list"
                             />
-                            <span className="ui-text-body-sm ui-color-primary truncate">
+                            <span className="truncate ui-text-body-sm ui-color-primary">
                               {site}
                             </span>
                           </div>
                           <button
+                            type="button"
                             onClick={() => removeWebsite(site)}
-                            className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
+                            className={removeButtonClass}
                             title={t({
                               id: "personalization.modal.remove",
                               message: "Remove",
@@ -814,7 +820,7 @@ const PersonalityModal = ({
                               message: `Remove ${site}`,
                             })}
                           >
-                            <X size={12} />
+                            <X size={12} aria-hidden="true" />
                           </button>
                         </li>
                       ))}
@@ -823,10 +829,10 @@ const PersonalityModal = ({
                 </div>
               </section>
             </div>
-          </div>
-        </motion.div>
+          )}
+        </div>
       </motion.div>
-    </AnimatePresence>
+    </motion.div>
   );
 };
 

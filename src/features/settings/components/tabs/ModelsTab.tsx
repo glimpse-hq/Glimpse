@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useLingui } from "@lingui/react/macro";
-import { motion, type Variants } from "framer-motion";
 import {
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
-  Check,
   Trash as Trash2,
 } from "@phosphor-icons/react";
-import ModelStatCard from "../ModelStatCard";
 import ModelCapabilityIcon from "../../../../shared/ui/ModelCapabilityIcon";
-import CloudModelCard from "../CloudModelCard";
-import SectionLabel from "../../../../shared/ui/SectionLabel";
-import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
+import ModelRow from "../ModelRow";
+import SpeechProviderRow from "../SpeechProviderRow";
+import LanguageModelList from "../LanguageModelList";
+import {
+  ModelSectionHeading,
+  OnThisComputerHeading,
+} from "../ModelSectionParts";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
 import {
   deriveModelStats,
@@ -27,11 +28,6 @@ import {
   MODEL_CAPABILITY_STREAMING,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../../shared/lib/modelCapabilities";
-import {
-  getSpeechProviderPreset,
-  isRemoteSpeechConfigured,
-  resolvedSpeechModel,
-} from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import {
   resolveLocalFallbackModel,
@@ -42,14 +38,13 @@ import { showErrorToast } from "../../../../shared/lib/errorToast";
 import { useSettings } from "../../queries";
 import type {
   DownloadEvent,
+  LlmProvider,
   ModelInfo,
   ModelStatus,
   RemoteSpeechProvider,
 } from "../../../../types";
 
-const SIDE_BY_SIDE_WIDTH = 280;
 type ModelsTabProps = {
-  variants: Variants;
   modelCatalog: ModelInfo[];
   diarizerModel: ModelInfo | null;
   modelStatus: Record<string, ModelStatus>;
@@ -58,20 +53,38 @@ type ModelsTabProps = {
   remoteSpeechEnabled: boolean;
   setRemoteSpeechEnabled: (value: boolean) => void;
   remoteSpeechProvider: RemoteSpeechProvider;
+  setRemoteSpeechProvider: (value: RemoteSpeechProvider) => void;
   remoteSpeechEndpoint: string;
-  remoteSpeechModel: string;
+  setRemoteSpeechEndpoint: (value: string) => void;
   remoteSpeechApiKey: string;
+  setRemoteSpeechApiKey: (value: string) => void;
+  remoteSpeechModel: string;
+  setRemoteSpeechModel: (value: string) => void;
+  remoteSpeechConfigReady: boolean;
+  llmProvider: LlmProvider;
+  setLlmProvider: (value: LlmProvider) => void;
+  llmEndpoint: string;
+  setLlmEndpoint: (value: string) => void;
+  llmApiKey: string;
+  setLlmApiKey: (value: string) => void;
+  llmModel: string;
+  setLlmModel: (value: string) => void;
+  llmServiceProvider: string;
+  setLlmServiceProvider: (value: string) => void;
+  llmAuto: boolean;
+  setLlmAuto: (value: boolean) => void;
+  licenseGateActive: boolean;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
   handleDelete: (modelKey: string) => void;
   handleCancelDownload: (modelKey: string) => void;
-  onOpenProvidersTab: () => void;
 };
 
 const InstalledModelRow = ({
   model,
   active,
-  activeLabel,
+  fallback,
+  automatic,
   aneInstalled,
   shiftHeld,
   onUse,
@@ -79,7 +92,8 @@ const InstalledModelRow = ({
 }: {
   model: ModelInfo;
   active: boolean;
-  activeLabel: string;
+  fallback: boolean;
+  automatic: boolean;
   aneInstalled: boolean;
   shiftHeld: boolean;
   onUse: () => void;
@@ -112,17 +126,25 @@ const InstalledModelRow = ({
     facts.push(
       t({ id: "settings.models.installed.ane.v2", message: "Neural Engine" }),
     );
+  if (active && automatic)
+    facts.push(
+      t({
+        id: "settings.models.chosen_automatically",
+        message: "Chosen automatically",
+      }),
+    );
 
   return (
-    <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
-      <button
-        type="button"
-        onClick={onUse}
-        disabled={active}
-        className="min-w-0 text-left disabled:cursor-default"
-      >
-        <span className="flex min-w-0 items-center gap-1.5 ui-text-body-sm-strong text-content-primary">
-          <span className="truncate">{model.label}</span>
+    <ModelRow
+      title={model.label}
+      titleAdornment={
+        <>
+          {/* Cloud speech runs first; this model takes over when it fails. */}
+          {active && fallback && (
+            <span className="shrink-0 ui-text-meta font-medium text-content-secondary">
+              {t({ id: "settings.models.card.fallback", message: "Fallback" })}
+            </span>
+          )}
           {!model.downloadable && (
             <span className="shrink-0 font-normal text-content-muted">
               {t({ id: "settings.models.installed.legacy", message: "Legacy" })}
@@ -137,30 +159,22 @@ const InstalledModelRow = ({
           {hasTimestamps && (
             <ModelCapabilityIcon capability={MODEL_CAPABILITY_TIMESTAMPS} />
           )}
-        </span>
-        <span className="mt-0.5 block ui-text-meta tabular-nums text-content-muted">
-          {facts.join("  ·  ")}
-        </span>
-      </button>
-
-      <div className="flex items-center justify-end gap-2">
-        {active ? (
-          <span className="flex items-center gap-1 ui-text-meta font-medium text-local">
-            <Check size={12} aria-hidden="true" />
-            {activeLabel}
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={onUse}
-            className="ui-text-meta font-medium text-content-secondary transition-colors hover:text-content-primary"
-          >
-            {t({ id: "settings.models.installed.use", message: "Use" })}
-          </button>
-        )}
-        {builtIn ? (
-          <span className="h-6 w-6 shrink-0" aria-hidden="true" />
-        ) : (
+        </>
+      }
+      facts={facts.join("  ·  ")}
+      state={
+        active && !fallback
+          ? {
+              kind: "active",
+              label: t({
+                id: "settings.models.card.active",
+                message: "Active",
+              }),
+            }
+          : { kind: "use", onUse }
+      }
+      trailing={
+        builtIn ? undefined : (
           <button
             type="button"
             onClick={onDelete}
@@ -180,124 +194,13 @@ const InstalledModelRow = ({
           >
             <Trash2 size={12} aria-hidden="true" />
           </button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const AutomaticModelRow = ({
-  modelLabel,
-  progress,
-  enabled,
-  onToggle,
-}: {
-  modelLabel: string | null;
-  progress: DownloadEvent | undefined;
-  enabled: boolean;
-  onToggle: () => void;
-}) => {
-  const { t } = useLingui();
-  const title = t({ id: "settings.models.automatic", message: "Automatic" });
-  const percent = Math.round(progress?.percent ?? 0);
-  return (
-    <div className="flex shrink-0 items-center gap-3 border-b border-border-secondary px-2.5 pb-3">
-      <div className="min-w-0 flex-1">
-        <span className="block truncate ui-text-body-sm-strong text-content-primary">
-          {title}
-        </span>
-        <span className="mt-0.5 block truncate ui-text-meta tabular-nums text-content-muted">
-          {enabled && modelLabel && progress?.status === "downloading"
-            ? t({
-                id: "settings.models.automatic.downloading",
-                message: `Downloading ${modelLabel} ${percent}%`,
-              })
-            : modelLabel
-              ? t({
-                  id: "settings.models.automatic.uses",
-                  message: `Uses ${modelLabel} for your language`,
-                })
-              : t({
-                  id: "settings.models.automatic.description",
-                  message: "Uses the model for your language",
-                })}
-        </span>
-      </div>
-      <ToggleSwitch enabled={enabled} onToggle={onToggle} ariaLabel={title} />
-    </div>
-  );
-};
-
-type CloudMode = "on" | "off" | "unconfigured";
-
-const CloudHeroCard = ({
-  mode,
-  providerLabel,
-  modelLabel,
-  width,
-  onToggle,
-  onOpenProvidersTab,
-}: {
-  mode: CloudMode;
-  providerLabel: string;
-  modelLabel: string | null;
-  width?: number;
-  onToggle: () => void;
-  onOpenProvidersTab: () => void;
-}) => {
-  const { t } = useLingui();
-  const status =
-    mode === "on"
-      ? t({ id: "settings.models.card.active", message: "Active" })
-      : mode === "off"
-        ? t({ id: "settings.models.card.off", message: "Off" })
-        : t({ id: "settings.models.card.not_set_up", message: "Not set up" });
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative">
-        <div
-          className={`transition-opacity duration-200 ${
-            mode === "on" ? "" : "opacity-45"
-          }`}
-        >
-          <CloudModelCard
-            width={width}
-            providerLabel={providerLabel}
-            modelLabel={modelLabel}
-          />
-        </div>
-        <div className="absolute bottom-4 right-5 flex h-7 items-center">
-          {mode === "unconfigured" ? (
-            <button
-              type="button"
-              onClick={onOpenProvidersTab}
-              className="inline-flex h-7 items-center rounded-md px-2.5 ui-text-button-sm ui-color-secondary transition-colors hover:bg-surface-elevated hover:text-content-primary"
-            >
-              {t({ id: "settings.models.cloud.set_up", message: "Set up" })}
-            </button>
-          ) : (
-            <ToggleSwitch
-              size="md"
-              enabled={mode === "on"}
-              onToggle={onToggle}
-              ariaLabel={t({
-                id: "settings.models.cloud.toggle",
-                message: "Use cloud transcription",
-              })}
-            />
-          )}
-        </div>
-      </div>
-      <span className="flex h-7 items-center ui-text-meta ui-color-muted">
-        {status}
-      </span>
-    </div>
+        )
+      }
+    />
   );
 };
 
 const ModelsTab = ({
-  variants,
   modelCatalog,
   diarizerModel,
   modelStatus,
@@ -306,14 +209,31 @@ const ModelsTab = ({
   remoteSpeechEnabled,
   setRemoteSpeechEnabled,
   remoteSpeechProvider,
+  setRemoteSpeechProvider,
   remoteSpeechEndpoint,
-  remoteSpeechModel,
+  setRemoteSpeechEndpoint,
   remoteSpeechApiKey,
+  setRemoteSpeechApiKey,
+  remoteSpeechModel,
+  setRemoteSpeechModel,
+  remoteSpeechConfigReady,
+  llmProvider,
+  setLlmProvider,
+  llmEndpoint,
+  setLlmEndpoint,
+  llmApiKey,
+  setLlmApiKey,
+  llmModel,
+  setLlmModel,
+  llmServiceProvider,
+  setLlmServiceProvider,
+  llmAuto,
+  setLlmAuto,
+  licenseGateActive,
   setLocalModel,
   handleDownload,
   handleDelete,
   handleCancelDownload,
-  onOpenProvidersTab,
 }: ModelsTabProps) => {
   const { t } = useLingui();
   const [browsing, setBrowsing] = useState(false);
@@ -329,61 +249,32 @@ const ModelsTab = ({
     localModel,
   );
 
-  const providerLabel =
-    getSpeechProviderPreset(remoteSpeechProvider)?.label ??
-    t({
-      id: "settings.models.cloud_active.provider_fallback",
-      message: "your speech provider",
-    });
-  const activeModel = resolvedSpeechModel(
-    remoteSpeechProvider,
-    remoteSpeechModel,
-  );
+  const recommendedProgress = recommendedKey
+    ? downloadState[recommendedKey]
+    : undefined;
+  const modelLabel = recommendedLabel;
+  const percent = Math.round(recommendedProgress?.percent ?? 0);
+  const setAutomatic = (on: boolean) =>
+    void setLocalModelAuto(on).catch((err) => showErrorToast(String(err)));
+  // Choosing a model by hand turns Automatic off.
+  const chooseModel = async (key: string) => {
+    if (automatic) {
+      try {
+        await setLocalModelAuto(false);
+      } catch (err) {
+        showErrorToast(String(err));
+        return;
+      }
+    }
+    setLocalModel(key);
+  };
 
   const installedModels = sortInstalledModels(
     modelCatalog.filter((m) => modelStatus[m.key]?.installed),
   );
 
-  const cloudConfigured = isRemoteSpeechConfigured({
-    enabled: true,
-    provider: remoteSpeechProvider,
-    endpoint: remoteSpeechEndpoint,
-    model: remoteSpeechModel,
-    apiKey: remoteSpeechApiKey,
-  });
-  const cloudMode: CloudMode = remoteSpeechEnabled
-    ? "on"
-    : cloudConfigured
-      ? "off"
-      : "unconfigured";
-  const localRoleLabel =
-    cloudMode === "on"
-      ? t({ id: "settings.models.card.fallback", message: "Fallback" })
-      : t({ id: "settings.models.card.active", message: "Active" });
-
-  const renderLocalCard = (width?: number, compact?: boolean) =>
-    installedModel ? (
-      <ModelStatCard
-        model={installedModel}
-        status={modelStatus[installedModel.key]}
-        progress={downloadState[installedModel.key]}
-        width={width}
-        compact={compact}
-        onDownload={() => handleDownload(installedModel.key)}
-        onDelete={() => handleDelete(installedModel.key)}
-        onCancel={() => handleCancelDownload(installedModel.key)}
-      />
-    ) : null;
-
   return (
-    <motion.div
-      key="models"
-      variants={variants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="flex min-h-0 flex-1 flex-col"
-    >
+    <div className="flex min-h-0 flex-1 flex-col">
       {browsing ? (
         <>
           <button
@@ -409,95 +300,90 @@ const ModelsTab = ({
           />
         </>
       ) : (
-        <div className="flex h-full min-h-0 flex-col gap-5">
-          {installedModel ? (
-            <div className="flex shrink-0 items-start justify-center gap-4">
-              <CloudHeroCard
-                mode={cloudMode}
-                width={SIDE_BY_SIDE_WIDTH}
-                providerLabel={providerLabel}
-                modelLabel={activeModel ?? null}
-                onToggle={() => setRemoteSpeechEnabled(!remoteSpeechEnabled)}
-                onOpenProvidersTab={onOpenProvidersTab}
-              />
-              <div className="flex flex-col items-center gap-2">
-                {renderLocalCard(SIDE_BY_SIDE_WIDTH, true)}
-                <span className="flex h-7 items-center ui-text-meta ui-color-muted">
-                  {localRoleLabel}
-                </span>
-              </div>
-            </div>
-          ) : (
-            cloudMode !== "unconfigured" && (
-              <div className="flex shrink-0 justify-center">
-                <CloudHeroCard
-                  mode={cloudMode}
-                  providerLabel={providerLabel}
-                  modelLabel={activeModel ?? null}
-                  onToggle={() => setRemoteSpeechEnabled(!remoteSpeechEnabled)}
-                  onOpenProvidersTab={onOpenProvidersTab}
-                />
-              </div>
-            )
-          )}
-
-          <AutomaticModelRow
-            modelLabel={recommendedLabel}
-            progress={
-              recommendedKey ? downloadState[recommendedKey] : undefined
-            }
-            enabled={automatic}
-            onToggle={() =>
-              void setLocalModelAuto(!automatic).catch((err) =>
-                showErrorToast(String(err)),
-              )
+        // One grid for both sections, so the action columns line up.
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-2">
+          <ModelSectionHeading
+            title={t({ id: "settings.models.speech", message: "Speech" })}
+            automatic={automatic}
+            onAutomaticChange={setAutomatic}
+            automaticNote={
+              automatic &&
+              modelLabel &&
+              recommendedProgress?.status === "downloading"
+                ? t({
+                    id: "settings.models.automatic.downloading",
+                    message: `Downloading ${modelLabel} ${percent}%`,
+                  })
+                : null
             }
           />
-
-          <div className="flex min-h-0 flex-1 flex-col gap-2">
-            <div className="flex shrink-0 items-center gap-3">
-              <SectionLabel className="flex-1">
-                {t({
-                  id: "settings.models.installed",
-                  message: "Installed",
-                })}
-              </SectionLabel>
-
+          <SpeechProviderRow
+            enabled={remoteSpeechEnabled}
+            setEnabled={setRemoteSpeechEnabled}
+            configReady={remoteSpeechConfigReady}
+            provider={remoteSpeechProvider}
+            setProvider={setRemoteSpeechProvider}
+            endpoint={remoteSpeechEndpoint}
+            setEndpoint={setRemoteSpeechEndpoint}
+            apiKey={remoteSpeechApiKey}
+            setApiKey={setRemoteSpeechApiKey}
+            model={remoteSpeechModel}
+            setModel={setRemoteSpeechModel}
+          />
+          <OnThisComputerHeading
+            trailing={
               <button
                 type="button"
                 onClick={() => setBrowsing(true)}
-                className="group inline-flex shrink-0 items-center gap-1 ui-text-body-sm-strong ui-color-secondary transition-colors hover:text-content-primary"
+                className="group inline-flex shrink-0 items-center gap-1 whitespace-nowrap ui-text-meta ui-color-secondary transition-colors hover:text-content-primary"
               >
                 {t({
                   id: "settings.models.browse_all",
                   message: "Browse all models",
                 })}
                 <ChevronRight
-                  size={15}
+                  size={12}
                   className="transition-transform group-hover:translate-x-0.5"
                   aria-hidden="true"
                 />
               </button>
-            </div>
+            }
+          />
+          {installedModels.map((model) => (
+            <InstalledModelRow
+              key={model.key}
+              model={model}
+              active={model.key === installedModel?.key}
+              automatic={automatic}
+              fallback={remoteSpeechEnabled}
+              aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
+              shiftHeld={shiftHeld}
+              onUse={() => void chooseModel(model.key)}
+              onDelete={() => handleDelete(model.key)}
+            />
+          ))}
 
-            <div className="-mr-2 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2">
-              {installedModels.map((model) => (
-                <InstalledModelRow
-                  key={model.key}
-                  model={model}
-                  active={model.key === localModel}
-                  activeLabel={localRoleLabel}
-                  aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
-                  shiftHeld={shiftHeld}
-                  onUse={() => setLocalModel(model.key)}
-                  onDelete={() => handleDelete(model.key)}
-                />
-              ))}
-            </div>
-          </div>
+          <div className="col-span-3 h-5" aria-hidden="true" />
+          <LanguageModelList
+            llmProvider={llmProvider}
+            setLlmProvider={setLlmProvider}
+            llmEndpoint={llmEndpoint}
+            setLlmEndpoint={setLlmEndpoint}
+            llmApiKey={llmApiKey}
+            setLlmApiKey={setLlmApiKey}
+            llmModel={llmModel}
+            setLlmModel={setLlmModel}
+            llmServiceProvider={llmServiceProvider}
+            setLlmServiceProvider={setLlmServiceProvider}
+            llmAuto={llmAuto}
+            setLlmAuto={setLlmAuto}
+            licenseGateActive={licenseGateActive}
+            downloadState={downloadState}
+            onDownload={handleDownload}
+          />
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

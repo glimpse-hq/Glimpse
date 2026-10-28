@@ -1,22 +1,28 @@
 import { useLingui } from "@lingui/react/macro";
 import {
+  ArrowUpRight,
   Books,
   Brain,
   Broom,
+  CircleNotch,
+  PencilLine,
   Record,
+  Users,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { useCallback, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
+import { useTauriEvent } from "../../../shared/hooks/useTauriEvent";
 import {
   dismissTrialEndedScreen,
+  openCheckout,
   type TrialEndedScreen as Summary,
 } from "../api";
 import { licenseKeys } from "../queries";
-import PlanPicker from "./PlanPicker";
 
 type TrialEndedScreenProps = {
   summary: Summary;
@@ -28,6 +34,11 @@ type TrialEndedScreenProps = {
 const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
   const { t } = useLingui();
   const queryClient = useQueryClient();
+  const [opening, setOpening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmingFree, setConfirmingFree] = useState(false);
+  const confirmRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(confirmRef, confirmingFree, () => setConfirmingFree(false));
 
   useEffect(() => {
     void invoke("track_paywall_shown", { source: "trial_ended" }).catch(
@@ -35,47 +46,46 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
     );
   }, []);
 
-  const dismiss = useCallback(() => {
-    queryClient.setQueryData(licenseKeys.trialEndedScreen(), null);
-    void dismissTrialEndedScreen().catch(() => {});
-  }, [queryClient]);
+  // Continuing for free also removes the models only paid features use.
+  const dismiss = useCallback(
+    (keepFree: boolean) => {
+      queryClient.setQueryData(licenseKeys.trialEndedScreen(), null);
+      dismissTrialEndedScreen(keepFree).catch((err) => {
+        console.error("Failed to dismiss the trial-ended screen:", err);
+        void queryClient.invalidateQueries({
+          queryKey: licenseKeys.trialEndedScreen(),
+        });
+      });
+    },
+    [queryClient],
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    let unlisten: (() => void) | undefined;
-    void listen("license:checkout-returned", () => dismiss()).then((fn) => {
-      if (cancelled) fn();
-      else unlisten = fn;
-    });
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
-  }, [dismiss]);
+  useTauriEvent("license:checkout-returned", () => dismiss(false));
 
-  const libraryItems = summary.libraryItems;
-  const rows: { icon: PhosphorIcon; name: string; detail: string }[] = [
+  const buy = async () => {
+    setError(null);
+    setOpening(true);
+    try {
+      await openCheckout({ tier: "plus", source: "trial_ended" });
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setOpening(false);
+    }
+  };
+
+  const speakerDetection = t({
+    id: "trial_ended.speakers.name",
+    message: "Speaker detection",
+  });
+  const features: { icon: PhosphorIcon; name: string }[] = [
     {
-      icon: Books,
-      name: t({ id: "trial_ended.library.name", message: "Library" }),
-      detail:
-        libraryItems > 0
-          ? t({
-              id: "trial_ended.library.kept",
-              message: `Your ${libraryItems} items are kept. Glimpse Plus opens them again.`,
-            })
-          : t({
-              id: "trial_ended.library.detail",
-              message: "Transcribe audio and video files.",
-            }),
+      icon: Broom,
+      name: t({ id: "trial_ended.cleanup.name", message: "Cleanup" }),
     },
     {
-      icon: Record,
-      name: t({ id: "trial_ended.record.name", message: "Record" }),
-      detail: t({
-        id: "trial_ended.record.detail",
-        message: "Record meetings from your microphone and computer audio.",
-      }),
+      icon: PencilLine,
+      name: t({ id: "trial_ended.edit.name", message: "Edit with your voice" }),
     },
     {
       icon: Brain,
@@ -83,20 +93,26 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
         id: "trial_ended.personalization.name",
         message: "Personalization",
       }),
-      detail: t({
-        id: "trial_ended.personalization.detail",
-        message: "Writing styles for each app and website.",
-      }),
     },
     {
-      icon: Broom,
-      name: t({ id: "trial_ended.cleanup.name", message: "Cleanup" }),
-      detail: t({
-        id: "trial_ended.cleanup.detail",
-        message: "Cleanup and your writing model are turned off.",
-      }),
+      icon: Books,
+      name: t({ id: "trial_ended.library.name", message: "Library" }),
     },
+    {
+      icon: Record,
+      name: t({ id: "trial_ended.record.name", message: "Record" }),
+    },
+    { icon: Users, name: speakerDetection },
   ];
+
+  const modelNames = {
+    speakers: speakerDetection,
+    language: t({
+      id: "trial_ended.model.cleanup",
+      message: "Cleanup model",
+    }),
+  };
+  const installedModels = summary.installedModels;
 
   return (
     <motion.div
@@ -109,71 +125,156 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
       className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--color-bg-primary)]"
     >
       <div data-tauri-drag-region className="absolute inset-x-0 top-0 h-8" />
-      <div className="w-full max-w-[420px] px-6">
+      <div className="-mt-3 flex w-full max-w-[480px] flex-col items-center px-6">
         <h1
           id="trial-ended-title"
-          className="font-satoshi ui-text-display tracking-tight ui-color-primary"
+          className="text-center ui-text-title-lg font-semibold text-content-primary text-balance"
         >
           {t({
             id: "trial_ended.title",
             message: "Your trial has ended",
           })}
         </h1>
-        <p className="mt-2 ui-text-body ui-color-muted text-pretty">
-          {t({
-            id: "trial_ended.line",
-            message:
-              "Dictation stays free with every model. These now need Glimpse Plus:",
-          })}
-        </p>
 
-        <ul className="mt-6 divide-y divide-border-primary border-y border-border-primary">
-          {rows.map(({ icon: Icon, name, detail }) => (
-            <li key={name} className="flex items-center gap-3 py-2.5">
-              <Icon
-                size={16}
-                className="shrink-0 ui-color-muted"
-                aria-hidden="true"
-              />
-              <span className="w-[120px] shrink-0 ui-text-body-sm-strong ui-color-primary">
+        <p className="mt-8 ui-text-meta ui-color-muted">
+          {t({ id: "trial_ended.now_locked", message: "Now locked" })}
+        </p>
+        <ul className="mt-5 grid w-full grid-cols-3 gap-x-4 gap-y-6">
+          {features.map(({ icon: Icon, name }) => (
+            <li key={name} className="flex flex-col items-center gap-2">
+              <Icon size={22} className="ui-color-muted" aria-hidden="true" />
+              <span className="text-center ui-text-body-sm ui-color-secondary text-balance">
                 {name}
-              </span>
-              <span className="min-w-0 ui-text-meta ui-color-muted text-pretty">
-                {detail}
               </span>
             </li>
           ))}
         </ul>
 
-        <div className="mt-8">
-          <PlanPicker source="trial_ended" />
+        <div className="mt-10 flex w-full max-w-[320px] flex-col gap-2.5">
+          <button
+            type="button"
+            onClick={() => void buy()}
+            disabled={opening}
+            className="ui-button-primary flex h-10 w-full items-center justify-center gap-2 rounded-lg ui-text-body-sm"
+          >
+            {t({ id: "trial_ended.get_plus", message: "Get Glimpse Plus" })}
+            {opening ? (
+              <CircleNotch
+                size={13}
+                className="animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <ArrowUpRight size={13} aria-hidden="true" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              installedModels.length > 0
+                ? setConfirmingFree(true)
+                : dismiss(true)
+            }
+            className="flex h-10 w-full items-center justify-center rounded-lg bg-[var(--surface-interactive)] ui-text-body-sm ui-color-primary transition-colors hover:bg-[var(--surface-interactive-strong)]"
+          >
+            {t({
+              id: "trial_ended.continue_for_free",
+              message: "Continue for free",
+            })}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              dismiss(false);
+              onEnterKey();
+            }}
+            className="mx-auto mt-1 h-8 ui-text-body-sm ui-color-cloud underline-offset-4 hover:underline"
+          >
+            {t({ id: "trial_ended.enter_key", message: "Enter license key" })}
+          </button>
+          <p
+            aria-live="polite"
+            className="min-h-5 text-center ui-text-meta text-error"
+          >
+            {error}
+          </p>
         </div>
-
-        <button
-          type="button"
-          onClick={dismiss}
-          className="mx-auto mt-1 flex h-8 items-center ui-text-body-sm ui-color-secondary transition-colors hover:text-content-primary"
-        >
-          {t({
-            id: "trial_ended.continue_free",
-            message: "Keep using Glimpse for free",
-          })}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            dismiss();
-            onEnterKey();
-          }}
-          className="mx-auto flex h-8 items-center ui-text-meta ui-color-secondary transition-colors hover:text-content-primary"
-        >
-          {t({
-            id: "locked.enter_key",
-            message: "Already bought? Enter your license key",
-          })}
-        </button>
       </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {confirmingFree && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-6 backdrop-blur-xs"
+              onClick={() => setConfirmingFree(false)}
+            >
+              <motion.div
+                ref={confirmRef}
+                initial={{ scale: 0.96, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.96, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="w-full max-w-[280px] rounded-3xl border border-border-primary bg-surface-tertiary px-4 pt-5 pb-4 text-center ui-shadow-modal-deep"
+                onClick={(event) => event.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="trial-free-title"
+              >
+                <p
+                  id="trial-free-title"
+                  className="ui-text-body-strong text-content-primary text-balance"
+                >
+                  {t({
+                    id: "trial_ended.free_confirm.title",
+                    message: "Continue for free?",
+                  })}
+                </p>
+                <p className="mt-1.5 ui-text-body-sm text-content-muted">
+                  {t({
+                    id: "trial_ended.free_confirm.removed",
+                    message: "These models will be removed:",
+                  })}
+                </p>
+                <ul className="mt-0.5 ui-text-body-sm text-content-secondary">
+                  {installedModels.map((kind) => (
+                    <li key={kind}>{modelNames[kind]}</li>
+                  ))}
+                </ul>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingFree(false)}
+                    autoFocus
+                    className="ui-button-primary h-9 rounded-lg ui-text-body-sm"
+                  >
+                    {t({
+                      id: "trial_ended.free_confirm.cancel",
+                      message: "Cancel",
+                    })}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmingFree(false);
+                      dismiss(true);
+                    }}
+                    className="h-9 rounded-lg bg-[var(--surface-interactive)] ui-text-body-sm font-medium text-error transition-colors hover:bg-[var(--surface-interactive-strong)]"
+                  >
+                    {t({
+                      id: "trial_ended.free_confirm.continue",
+                      message: "Continue",
+                    })}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </motion.div>
   );
 };

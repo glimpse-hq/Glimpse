@@ -1,3 +1,64 @@
+1.4.0
+
+## New Models
+
+- Glimpse has its own cleanup model that runs on your computer. It downloads during setup and works in your trial and with Glimpse Plus.
+
+### New Features
+- Edit the rules Glimpse uses to clean up your dictation in the new Global mode in Personalization, and restore the defaults at any time. App and website modes still take priority.
+- Edit Mode entries in Home now show the original selected text and spoken instruction under Edit details.
+- AI agents connected through `glimpse mcp` can follow a recording as it happens, getting what was said in short timestamped chunks whenever the speaker pauses, so they can take notes along with a lecture or meeting. The Record screen shows when an agent is following. They can also transcribe a file directly with word timings.
+- Opening the live view during a recording now shows what was said before you opened it.
+- You can dismiss the warning that a recording source has made no sound yet.
+- Turn the microphone or system audio off and back on during a recording, from the Record screen or the live view. Turning the microphone off releases it.
+- `glimpse transcribe --json` now includes segment and word timings, the detected language and how long the transcription took.
+- Deleted something in the Library by mistake? Press Cmd+Z (Ctrl+Z on Windows) within a minute to bring it back.
+
+### Improvements
+
+- Improved Coding mode to keep dictated prose about code as prose.
+- The sharing cards now have new designs.
+- Personalization has a cleaner layout, and editing a mode gives you more room for its instructions, apps and websites.
+- Setting up Glimpse is quicker. It picks the best speech model for you and starts downloading it as soon as you open the app, so it's usually ready by your first dictation. You can follow the downloads in the corner while you finish setup.
+- The screen at the end of your trial is simpler: it shows what's now locked and lets you get Glimpse Plus or continue for free in one click. Continuing for free removes the speaker detection and cleanup models you no longer use.
+- The API server works through several files at once up to 20% faster, especially MP3, M4A and other formats that need converting first.
+- If a ANE model's cache has been deleted, on launch Glimpse will warm the model, quickly rebuilding the cache.
+- Long speaker turns in the Library are split into paragraphs, and clicking a paragraph plays the audio from there. The player sits lower and blends into the transcript.
+
+### Fixes
+
+- Recordings with both your microphone and system audio no longer skip words when you play them back, and changing the playback speed stays smooth.
+- Fixed cleanup turning off when upgrading from the old shortcut settings.
+- The copy button on long Library and live transcripts responds right away.
+- Cancelling a dictation just as it finishes no longer pastes the text.
+- Pressing your shortcut again to cancel a dictation works sooner after you stop talking.
+- Fixed the microphone failing to start every time on some Windows PCs.
+- Imported files and recordings with speech in them no longer fail with "No speech detected" when you use Parakeet, Nemotron or Apple speech models.
+- A dictation no longer times out while your speech model is still loading, such as right after it finishes setting up for the Neural Engine.
+- A quick tap on your shortcut no longer warns that Glimpse got no sound from your microphone.
+- When your selected microphone can't be opened, like AirPods that just disconnected, Glimpse records with your default microphone instead of failing.
+- The Local API in the sidebar no longer cuts off once it has served over 999 requests, and it shows its name when you hover it in the collapsed sidebar, like the other items.
+- The API log fills the window instead of stopping at a fixed height.
+- The API request count only counts transcriptions that succeeded.
+- The API server answers an unknown model name with a clear request error instead of a server error.
+- Library transcripts with detected speakers always show as speaker paragraphs, instead of sometimes falling back to plain text.
+- Copying or exporting a transcript with detected speakers keeps the same order as the speaker view.
+- Personalization modes apply again on Mac, and Edit mode finds the text you selected. Glimpse couldn't tell which app was in front on recent macOS versions.
+- Website modes work on Windows in Chrome, Edge, Brave, Opera, Vivaldi, Arc and Firefox, and app modes recognize apps like Word, Outlook, Teams and Edge.
+- On Windows, Store and system apps like Terminal and Microsoft Store can be added to modes.
+- The Record screen says an app isn't playing audio instead of saying it isn't running.
+- With cleanup on, text pastes sooner, especially when the app you're dictating into is slow to respond.
+- If saving a finished Library transcription fails, Glimpse keeps your previous transcript and shows an error instead of reporting success.
+- Running setup again from Settings no longer resets your shortcuts, cleanup, Auto Dictionary and auto-update settings.
+- Going back during setup while recording a shortcut no longer leaves your dictation shortcuts unresponsive.
+- Using Edit mode without a writing model now says so, instead of "Transcription failed".
+- Apps whose icon only lives in their asset catalog, like Shottr, now show their icon in Personalization on Mac.
+- Filtering the Library by a tag no longer also matches tags that differ only by an underscore or percent sign.
+- Words and replacements added with `glimpse dictionary` and `glimpse replacements` show up in open windows right away.
+- You can clear the API server's port field and type a new one without it snapping back.
+- File and storage sizes on Mac match Finder.
+- The Microsoft Store version cleans up the working files of failed imports and finished recordings.
+
 1.3.6
 
 ### New Features

@@ -124,7 +124,7 @@ fn print_state(data: &Value, json: bool) {
     println!("bookmarks:  {bookmarks}");
 }
 
-fn clock(ms: u64) -> String {
+pub(crate) fn clock(ms: u64) -> String {
     let seconds = ms / 1000;
     let (hours, minutes, seconds) = (seconds / 3600, seconds / 60 % 60, seconds % 60);
     if hours > 0 {

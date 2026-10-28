@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use tauri::AppHandle;
 use uuid::Uuid;
 
-use crate::settings::Personality;
+use crate::settings::{GLOBAL_PERSONALITY_ID, Personality, default_global_personality};
 use crate::{AppRuntime, AppState};
 
 const INSTRUCTION_CHAR_LIMIT: usize = 3000;
@@ -63,11 +63,29 @@ fn sanitize_instructions(entries: &[String]) -> Vec<String> {
     cleaned
 }
 
+fn sanitize_global_instructions(entries: &[String]) -> Vec<String> {
+    let joined = entries.join("\n");
+    if joined.trim().is_empty() || joined.trim() == crate::llm_cleanup::CLEANUP_RULES {
+        return Vec::new();
+    }
+    sanitize_instructions(entries)
+}
+
 pub fn sanitize_personalities(entries: &[Personality]) -> Vec<Personality> {
-    let mut seen = HashSet::new();
-    let mut cleaned = Vec::new();
+    let mut seen = HashSet::from([GLOBAL_PERSONALITY_ID.to_string()]);
+    let mut global = default_global_personality();
+    if let Some(entry) = entries
+        .iter()
+        .find(|entry| entry.id.trim().eq_ignore_ascii_case(GLOBAL_PERSONALITY_ID))
+    {
+        global.instructions = sanitize_global_instructions(&entry.instructions);
+    }
+    let mut cleaned = vec![global];
 
     for entry in entries {
+        if entry.id.trim().eq_ignore_ascii_case(GLOBAL_PERSONALITY_ID) {
+            continue;
+        }
         let name = entry.name.trim();
         if name.is_empty() {
             continue;
@@ -94,12 +112,17 @@ pub fn sanitize_personalities(entries: &[Personality]) -> Vec<Personality> {
             instructions,
         });
 
-        if cleaned.len() >= 32 {
+        if cleaned.len() >= 33 {
             break;
         }
     }
 
     cleaned
+}
+
+#[tauri::command]
+pub fn get_default_cleanup_instructions() -> String {
+    crate::llm_cleanup::CLEANUP_RULES.to_string()
 }
 
 #[tauri::command]
@@ -120,9 +143,22 @@ pub fn set_personalities(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<Vec<Personality>, String> {
-    let cleaned = sanitize_personalities(&personalities);
+    let mut cleaned = sanitize_personalities(&personalities);
+    let has_global = personalities
+        .iter()
+        .any(|mode| mode.id.trim().eq_ignore_ascii_case(GLOBAL_PERSONALITY_ID));
     let (previous, saved) = state
-        .persist_settings_with(|_, next| next.personalities = cleaned.clone())
+        .persist_settings_with(|previous, next| {
+            if !has_global
+                && let Some(global) = previous
+                    .personalities
+                    .iter()
+                    .find(|mode| mode.id == GLOBAL_PERSONALITY_ID)
+            {
+                cleaned[0].instructions = sanitize_global_instructions(&global.instructions);
+            }
+            next.personalities = cleaned.clone();
+        })
         .map_err(|err| err.to_string())?;
     let previous_custom = custom_count(&previous.personalities);
 
@@ -138,6 +174,7 @@ pub fn set_personalities(
 fn custom_count(personalities: &[Personality]) -> usize {
     personalities
         .iter()
+        .filter(|personality| personality.id != GLOBAL_PERSONALITY_ID)
         .filter(|personality| crate::analytics::personality_label(Some(personality)) == "custom")
         .count()
 }

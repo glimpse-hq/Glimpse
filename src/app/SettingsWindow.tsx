@@ -1,5 +1,4 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   AnimatePresence,
   MotionConfig,
@@ -9,6 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { licenseKeys } from "../features/license/queries";
 import { useTextScale, useTheme } from "../shared/hooks/useAppearance";
+import { useTauriEvent } from "../shared/hooks/useTauriEvent";
 import { modelKeys } from "../features/settings/models-queries";
 import { getSettings } from "../features/settings/api";
 import { settingsKeys, useSettings } from "../features/settings/queries";
@@ -44,66 +44,42 @@ loadHome().catch(() => {});
 const HOME_READY_TIMEOUT_MS = 2000;
 
 function QuerySyncBridge() {
-  useEffect(() => {
-    let cancelled = false;
-    const unlisteners: UnlistenFn[] = [];
-
-    const register = <TPayload,>(
-      event: string,
-      handler: (payload: TPayload) => void,
-    ) => {
-      listen<TPayload>(event, (eventPayload) => {
-        if (!cancelled) handler(eventPayload.payload);
-      })
-        .then((unlisten) => {
-          if (cancelled) unlisten();
-          else unlisteners.push(unlisten);
-        })
-        .catch(() => {});
-    };
-
-    register<StoredSettings>("settings:changed", (settings) => {
-      queryClient.setQueryData(settingsKeys.detail(), settings);
-      queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
-      // The app and dictation languages feed the recommendation.
-      queryClient.invalidateQueries({ queryKey: modelKeys.recommendation() });
-    });
-    register<LicenseState>("license:changed", (state) => {
-      queryClient.setQueryData(licenseKeys.state(), state);
-    });
-    // The backend may have just activated the key from the link. Onboarding
-    // has no Home mounted to pick that up.
-    register("license:checkout-returned", () => {
-      queryClient.invalidateQueries({ queryKey: licenseKeys.state() });
-    });
-    register("update:available", () => {
-      queryClient.invalidateQueries({ queryKey: updateKeys.status() });
-    });
-    register("update:cleared", () => {
-      queryClient.invalidateQueries({ queryKey: updateKeys.status() });
-    });
-    register<{ model: string }>("model:deleted", ({ model }) => {
-      queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
-      queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
-    });
-    register("transcription:complete", () => {
-      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
-    });
-    register("transcription:error", () => {
-      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
-    });
-    register("permissions:accessibility-granted", () => {
-      queryClient.setQueryData(settingsKeys.accessibility(), true);
-    });
-    register("audio:input-devices-changed", () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.devices() });
-    });
-
-    return () => {
-      cancelled = true;
-      unlisteners.forEach((unlisten) => unlisten());
-    };
-  }, []);
+  useTauriEvent<StoredSettings>("settings:changed", (settings) => {
+    queryClient.setQueryData(settingsKeys.detail(), settings);
+    queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
+    // The app and dictation languages feed the recommendation.
+    queryClient.invalidateQueries({ queryKey: modelKeys.recommendation() });
+  });
+  useTauriEvent<LicenseState>("license:changed", (state) => {
+    queryClient.setQueryData(licenseKeys.state(), state);
+  });
+  // The backend may have just activated the key from the link. Onboarding
+  // has no Home mounted to pick that up.
+  useTauriEvent("license:checkout-returned", () => {
+    queryClient.invalidateQueries({ queryKey: licenseKeys.state() });
+  });
+  useTauriEvent("update:available", () => {
+    queryClient.invalidateQueries({ queryKey: updateKeys.status() });
+  });
+  useTauriEvent("update:cleared", () => {
+    queryClient.invalidateQueries({ queryKey: updateKeys.status() });
+  });
+  useTauriEvent<{ model: string }>("model:deleted", ({ model }) => {
+    queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
+    queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
+  });
+  useTauriEvent("transcription:complete", () => {
+    queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
+  });
+  useTauriEvent("transcription:error", () => {
+    queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
+  });
+  useTauriEvent("permissions:accessibility-granted", () => {
+    queryClient.setQueryData(settingsKeys.accessibility(), true);
+  });
+  useTauriEvent("audio:input-devices-changed", () => {
+    queryClient.invalidateQueries({ queryKey: settingsKeys.devices() });
+  });
 
   return null;
 }

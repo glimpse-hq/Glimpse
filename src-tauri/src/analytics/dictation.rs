@@ -1,6 +1,7 @@
 // Dictation events: stalls, cancels, language model failures, paste edits.
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use glimpse_speech::remote::{RemoteError, RemoteErrorKind};
 use serde_json::json;
@@ -18,6 +19,7 @@ const BUILTIN_PERSONALITIES: &[(&str, &str)] = &[
 
 const LLM_PROVIDERS: &[&str] = &[
     "apple",
+    "bonsai",
     "lmstudio",
     "ollama",
     "openai",
@@ -38,12 +40,24 @@ const LLM_PROVIDERS: &[&str] = &[
 /// The configured language model provider as a fixed id; anything not built
 /// in is "custom". Never the endpoint or the typed model name.
 pub fn llm_provider_kind(settings: &UserSettings) -> &'static str {
-    let provider = settings.llm_provider.trim();
+    let provider = crate::llm_cleanup::active_provider(settings);
     LLM_PROVIDERS
         .iter()
         .find(|id| **id == provider)
         .copied()
         .unwrap_or("custom")
+}
+
+/// The language model a dictation was cleaned with, from its stored
+/// "provider:model" label: the local model's size, the provider as a fixed
+/// id, or "custom". Never a typed model name.
+pub fn llm_model_id(label: &str) -> String {
+    let (provider, model) = label.split_once(':').unwrap_or((label, ""));
+    match LLM_PROVIDERS.iter().find(|id| **id == provider) {
+        Some(&"bonsai") if matches!(model, "2b" | "4b") => format!("bonsai:{model}"),
+        Some(id) => (*id).to_string(),
+        None => "custom".to_string(),
+    }
 }
 
 /// "none", "builtin:<id>" for the shipped personalities, or "custom".
@@ -184,13 +198,14 @@ pub fn track_dictation_stalled(
 }
 
 /// Records that you cancelled a dictation: the step it was on (recording,
-/// transcribing, or cleanup), how (escape or shortcut), and the audio length
-/// as a bucket.
+/// transcribing, or cleanup), how (escape or shortcut), the audio length as a
+/// bucket, and for a cancel after stopping, how soon after as a bucket.
 pub fn track_dictation_cancelled(
     app: &tauri::AppHandle<AppRuntime>,
     stage: &str,
     how: &str,
     audio_seconds: Option<f32>,
+    since_stop: Option<Duration>,
 ) {
     capture_event(
         app,
@@ -199,15 +214,54 @@ pub fn track_dictation_cancelled(
             "stage": stage,
             "how": how,
             "audio_length": audio_length_bucket(audio_seconds),
+            "since_stop": since_stop.map(since_stop_bucket),
         }),
     );
 }
 
+/// Records that a shortcut press right after stopping was taken as a double
+/// press and ignored, with the step it was on and how soon after as a bucket.
+pub fn track_cancel_press_ignored(
+    app: &tauri::AppHandle<AppRuntime>,
+    stage: &str,
+    since_stop: Duration,
+) {
+    capture_event(
+        app,
+        "cancel_press_ignored",
+        json!({ "stage": stage, "since_stop": since_stop_bucket(since_stop) }),
+    );
+}
+
+fn since_stop_bucket(elapsed: Duration) -> &'static str {
+    match elapsed.as_millis() {
+        ms if ms < 200 => "under_200ms",
+        ms if ms < 500 => "200_to_500ms",
+        ms if ms < 1000 => "500ms_to_1s",
+        _ => "over_1s",
+    }
+}
+
 /// Records how much of a pasted dictation you changed in the field shortly
 /// after: none, small (up to a tenth of the words), or large, plus the speech
-/// model. Only the bucket is sent, never the text.
-pub fn track_paste_edited(app: &tauri::AppHandle<AppRuntime>, edit: &str, model: &str) {
-    capture_event(app, "paste_edited", json!({ "edit": edit, "model": model }));
+/// model and the language model id if it was cleaned. Only the bucket is
+/// sent, never the text.
+pub fn track_paste_edited(
+    app: &tauri::AppHandle<AppRuntime>,
+    edit: &str,
+    model: &str,
+    llm_model: Option<&str>,
+) {
+    capture_event(
+        app,
+        "paste_edited",
+        json!({
+            "edit": edit,
+            "model": model,
+            "llm_cleaned": llm_model.is_some(),
+            "llm_model": llm_model.map(llm_model_id),
+        }),
+    );
 }
 
 /// Records that inserting a dictation failed, as `transcription_failed` with
@@ -233,4 +287,84 @@ pub fn track_auto_paste_failed(
     }
     reason.into().insert_into(&mut props);
     capture_event(app, "transcription_failed", props);
+}
+
+/// Records one on-device cleanup model run: task, model, adapter hash,
+/// whether it finished, token counts, timings, and the output/input word
+/// ratio as a bucket. Never any text.
+pub fn track_cleanup_model_run(
+    task: &str,
+    model: &str,
+    run: &crate::cleanup_model::Run,
+    input_words: usize,
+) {
+    let Some(app) = app() else {
+        return;
+    };
+    let generation = &run.generation;
+    let stats = &generation.stats;
+    let output_words = generation
+        .text
+        .split_whitespace()
+        .filter(|word| !word.starts_with('<'))
+        .count();
+    let ratio = output_words as f32 / input_words.max(1) as f32;
+    let ratio_bucket = match ratio {
+        r if r < 0.5 => "under_0.5",
+        r if r < 0.8 => "0.5_0.8",
+        r if r <= 1.2 => "0.8_1.2",
+        r if r <= 2.0 => "1.2_2",
+        _ => "over_2",
+    };
+    capture_event(
+        app,
+        "cleanup_model_run",
+        json!({
+            "task": task,
+            "model": model,
+            "adapter": run.adapter,
+            "state": run.state,
+            "finished": generation.stop == glimpse_language::bonsai::StopReason::Eos,
+            "prompt_tokens": stats.prompt_tokens,
+            "cached_tokens": stats.cached_tokens,
+            "generated_tokens": stats.generated_tokens,
+            "prefill_ms": stats.prefill.as_millis() as u64,
+            "first_token_ms": stats.first_token.as_millis() as u64,
+            "write_ms": stats.decode.as_millis() as u64,
+            "ratio_bucket": ratio_bucket,
+        }),
+    );
+}
+
+/// Records "Run cleanup", "Retry cleanup" or "Restore original transcript" on a
+/// dictation, with the language model id it had been cleaned with, if any.
+pub fn track_cleanup_action(
+    app: &tauri::AppHandle<AppRuntime>,
+    action: &str,
+    llm_model: Option<&str>,
+) {
+    capture_event(
+        app,
+        "cleanup_action",
+        json!({
+            "action": action,
+            "llm_model": llm_model.map(llm_model_id),
+        }),
+    );
+}
+
+/// Records that the safety checks rejected a cleanup and the raw transcript
+/// was kept: the provider as a fixed id, and whether a mode was active.
+pub fn track_cleanup_rejected(settings: &UserSettings, mode: bool) {
+    let Some(app) = app() else {
+        return;
+    };
+    capture_event(
+        app,
+        "cleanup_rejected",
+        json!({
+            "provider": llm_provider_kind(settings),
+            "mode": mode,
+        }),
+    );
 }

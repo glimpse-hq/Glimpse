@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import * as importApi from "./api";
 
-export const importKeys = {
+const importKeys = {
   all: ["import"] as const,
   detected: () => [...importKeys.all, "detected"] as const,
   preview: (id: string) => [...importKeys.all, "preview", id] as const,

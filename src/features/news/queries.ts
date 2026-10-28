@@ -5,6 +5,8 @@ import * as newsApi from "./api";
 
 export const newsKeys = {
   feed: () => ["news", "feed"] as const,
+  announcement: () => ["news", "announcement"] as const,
+  announcements: () => ["news", "announcements"] as const,
 };
 
 export function useNewsFeed() {
@@ -21,6 +23,27 @@ export function useNewsFeed() {
     queryKey: newsKeys.feed(),
     queryFn: newsApi.fetchNews,
     select,
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useAnnouncement(enabled: boolean) {
+  return useQuery({
+    queryKey: newsKeys.announcement(),
+    queryFn: newsApi.getAnnouncement,
+    enabled,
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useAnnouncements() {
+  return useQuery({
+    queryKey: newsKeys.announcements(),
+    queryFn: newsApi.listAnnouncements,
     staleTime: Infinity,
     retry: false,
     refetchOnWindowFocus: false,

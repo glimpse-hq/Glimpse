@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTauriEvent } from "../../shared/hooks/useTauriEvent";
 import * as recordingApi from "./api";
 import type { LiveTranscript } from "../../types";
 
@@ -17,62 +17,42 @@ export function useLiveTranscript() {
   const [transcript, setTranscript] = useState<LiveTranscript>(EMPTY);
   const current = useRef(EMPTY);
 
-  useEffect(() => {
-    let cancelled = false;
-    let unlisten: UnlistenFn | null = null;
-
-    const commit = (next: LiveTranscript) => {
-      current.current = next;
-      setTranscript(next);
-    };
-
-    const refetch = () => {
-      recordingApi
-        .getLiveTranscript()
-        .then((snapshot) => {
-          if (!cancelled && snapshot.revision >= current.current.revision) {
-            commit(snapshot);
-          }
-        })
-        .catch(() => {});
-    };
-
-    // Events carry only the changed tail; a gap in revisions means one was
-    // missed, so take a full snapshot.
-    const apply = (next: LiveTranscript) => {
-      if (cancelled) return;
-      const prev = current.current;
-      if (next.from_index === 0) {
-        commit(next);
-      } else if (next.revision === prev.revision + 1) {
-        commit({
-          ...next,
-          segments: [
-            ...prev.segments.slice(0, next.from_index),
-            ...next.segments,
-          ],
-        });
-      } else {
-        refetch();
-      }
-    };
-
-    listen<LiveTranscript>(recordingApi.LIVE_TRANSCRIPT_EVENT, (event) =>
-      apply(event.payload),
-    )
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlisten = fn;
+  const refetch = useCallback(() => {
+    recordingApi
+      .getLiveTranscript()
+      .then((snapshot) => {
+        if (snapshot.revision >= current.current.revision) {
+          current.current = snapshot;
+          setTranscript(snapshot);
+        }
       })
       .catch(() => {});
-
-    refetch();
-
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
   }, []);
+
+  // Events carry only the changed tail; a gap in revisions means one was
+  // missed, so take a full snapshot.
+  useTauriEvent<LiveTranscript>(recordingApi.LIVE_TRANSCRIPT_EVENT, (next) => {
+    const prev = current.current;
+    if (next.from_index === 0) {
+      current.current = next;
+    } else if (next.revision === prev.revision + 1) {
+      current.current = {
+        ...next,
+        segments: [
+          ...prev.segments.slice(0, next.from_index),
+          ...next.segments,
+        ],
+      };
+    } else {
+      refetch();
+      return;
+    }
+    setTranscript(current.current);
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   return transcript;
 }

@@ -12,30 +12,28 @@ import { CaretLeft as ChevronLeft } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
-import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
 import { pricingUrlFor } from "../license/purchaseConfig";
 import { settingsKeys, useSettings } from "../settings/queries";
-import { checkAccessibilityPermission, getSettings } from "../settings/api";
+import * as settingsApi from "../settings/api";
+import * as modelsApi from "../settings/models-api";
 import {
   modelKeys,
   pickDefaultOnboardingModel,
-  useDiarizerInstalled,
+  useCleanupModel,
   useDiarizerModel,
   useModelCatalog,
   useModelRecommendation,
   useModelStatuses,
 } from "../settings/models-queries";
 import { onboardingMachine, getSteps } from "./machine";
-import { getDefaultShortcuts, getOnboardingPlatform } from "./platform";
 import { useImportableApps } from "../import/queries";
 import { ImportStep } from "../import/components/ImportStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
-import { ModelStep } from "./steps/ModelStep";
 import { PermissionsStep } from "./steps/PermissionsStep";
 import { ReadyStep } from "./steps/ReadyStep";
 import { LicenseStep } from "./steps/LicenseStep";
 import { SourceStep, type OnboardingSource } from "./steps/SourceStep";
-import { ModelDownloadStatus } from "./ModelDownloadStatus";
+import { ModelDownloadStatus, type ModelDownload } from "./ModelDownloadStatus";
 import FirstDictationGuide from "./FirstDictationGuide";
 import { StepIndicator } from "./steps/shared";
 import {
@@ -49,7 +47,7 @@ import WindowControls from "../../shared/ui/WindowControls";
 import { showErrorToast } from "../../shared/lib/errorToast";
 import type {
   DownloadEvent,
-  ModelStatus,
+  StoredSettings,
   UpdateSettingsResult,
 } from "../../types";
 
@@ -58,95 +56,56 @@ const onboardingPermissionKeys = {
   microphone: () => [...onboardingPermissionKeys.all, "microphone"] as const,
 };
 
-const checkMicrophonePermission = () =>
-  invoke<boolean>("check_microphone_permission");
-
 const refreshModelStatus = (queryClient: QueryClient, model: string) =>
   queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
-
-type OnboardingSettings = Awaited<ReturnType<typeof getSettings>>;
 
 // The OS can refuse launch at login, for example when Glimpse is turned off in
 // Windows Startup apps. Setup then saves without it instead of stopping there.
 async function saveSetupSettings(
-  build: (autoLaunch: boolean) => ReturnType<typeof buildSettingsArgs>,
+  build: (autoLaunch: boolean) => settingsApi.UpdateSettingsArgs,
   autoLaunch: boolean,
 ): Promise<{ result: UpdateSettingsResult; autoLaunch: boolean }> {
   try {
-    const result = await invoke<UpdateSettingsResult>("update_settings", {
-      args: build(autoLaunch),
-    });
+    const result = await settingsApi.updateSettings(build(autoLaunch));
     return { result, autoLaunch };
   } catch (err) {
     if (!autoLaunch) throw err;
     console.error("Launch at login was refused; saving without it", err);
-    const result = await invoke<UpdateSettingsResult>("update_settings", {
-      args: build(false),
-    });
+    const result = await settingsApi.updateSettings(build(false));
     return { result, autoLaunch: false };
   }
 }
 
-const buildSettingsArgs = (
-  latest: OnboardingSettings,
+// Setup writes what it asks about and keeps the rest, so running it again
+// from Settings leaves other choices alone.
+const buildSetupArgs = (
+  latest: StoredSettings,
   smartShortcut: string,
   localModel: string,
   autoLaunchEnabled: boolean,
   microphoneDevice: string | null,
 ) => {
-  const { hold: holdShortcut, toggle: toggleShortcut } = getDefaultShortcuts(
-    getOnboardingPlatform().id,
-  );
-  return {
+  const [smartBinding, ...otherSmartBindings] = latest.shortcut_bindings.smart;
+  return settingsApi.buildUpdateSettingsArgs(latest, {
     smartShortcut,
     smartEnabled: true,
-    holdShortcut,
-    holdEnabled: false,
-    toggleShortcut,
-    toggleEnabled: false,
     shortcutBindings: {
+      ...latest.shortcut_bindings,
       smart: [
-        { shortcut: smartShortcut, temporary: false, cleanup_enabled: false },
-      ],
-      hold: [
-        { shortcut: holdShortcut, temporary: false, cleanup_enabled: false },
-      ],
-      toggle: [
-        { shortcut: toggleShortcut, temporary: false, cleanup_enabled: false },
+        {
+          ...(smartBinding ?? { temporary: false, cleanup_enabled: false }),
+          shortcut: smartShortcut,
+        },
+        ...otherSmartBindings,
       ],
     },
     transcriptionMode: "local",
     localModel,
     remoteSpeechEnabled: false,
-    remoteSpeechProvider: latest.remote_speech_provider ?? "custom",
-    remoteSpeechEndpoint: latest.remote_speech_endpoint ?? "",
-    remoteSpeechApiKey: latest.remote_speech_api_key ?? "",
-    remoteSpeechModel: latest.remote_speech_model ?? "",
     microphoneDevice,
-    language: latest.language ?? "",
-    appLocale: latest.app_locale ?? "system",
-    themeMode: latest.theme_mode ?? "system",
-    llmEnabled: false,
-    cleanupEnabled: false,
-    llmProvider: latest.llm_provider ?? "none",
-    llmEndpoint: latest.llm_endpoint ?? "",
-    llmApiKey: latest.llm_api_key ?? "",
-    llmModel: latest.llm_model ?? "",
-    autoDictionaryEnabled: false,
     mediaAction: "pause",
-    autoUpdateEnabled: true,
     autoLaunchEnabled,
-    startInBackground: latest.start_in_background ?? false,
-    autoDeleteTarget: latest.auto_delete_target ?? "transcripts",
-    autoDeleteDuration: latest.auto_delete_duration ?? "never",
-    analyticsEnabled: latest.analytics_enabled ?? true,
-    localApiKey: latest.local_api_key ?? "",
-    localApiPort: latest.local_api_port ?? 11435,
-    localApiModel: latest.local_api_model ?? "auto",
-    localApiHost: latest.local_api_host ?? "127.0.0.1",
-    localApiStartOnLaunch: latest.local_api_start_on_launch ?? false,
-    localApiCors: latest.local_api_cors ?? false,
-  };
+  });
 };
 
 interface OnboardingScreenProps {
@@ -222,8 +181,8 @@ export default function OnboardingScreen({
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const diarizer = useDiarizerModel().data;
+  const cleanupModel = useCleanupModel().data;
   const licensed = useLicenseGate();
-  const diarizerInstalled = useDiarizerInstalled();
   const recommendationQuery = useModelRecommendation();
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
@@ -231,14 +190,16 @@ export default function OnboardingScreen({
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedSettings = settingsQuery.data;
 
-  const micDeviceSeeded = useRef(false);
+  // Stored settings hold the backend's defaults on a first run.
+  const setupSeeded = useRef(false);
   useEffect(() => {
-    if (!persistedSettings || micDeviceSeeded.current) return;
-    micDeviceSeeded.current = true;
+    if (!persistedSettings || setupSeeded.current) return;
+    setupSeeded.current = true;
     send({
       type: "SET_MICROPHONE_DEVICE",
-      device: persistedSettings.microphone_device ?? null,
+      device: persistedSettings.microphone_device,
     });
+    send({ type: "SET_SHORTCUT", shortcut: persistedSettings.smart_shortcut });
   }, [persistedSettings, send]);
 
   const recommendedModel = recommendationQuery.data?.key ?? "";
@@ -259,10 +220,12 @@ export default function OnboardingScreen({
           [
             ...(modelCatalogQuery.data ?? []).map((model) => model.key),
             selectedModel,
+            diarizer?.key ?? "",
+            cleanupModel?.key ?? "",
           ].filter(Boolean),
         ),
       ),
-    [modelCatalogQuery.data, selectedModel],
+    [modelCatalogQuery.data, selectedModel, diarizer, cleanupModel],
   );
   const { statusByModel: modelStatus } = useModelStatuses(
     statusModelKeys,
@@ -271,7 +234,7 @@ export default function OnboardingScreen({
 
   const microphonePermissionQuery = useQuery({
     queryKey: onboardingPermissionKeys.microphone(),
-    queryFn: checkMicrophonePermission,
+    queryFn: settingsApi.checkMicrophonePermission,
     enabled: ctx.platform.requiresMicrophonePermission,
     refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
     refetchInterval: (query) =>
@@ -282,7 +245,7 @@ export default function OnboardingScreen({
 
   const accessibilityPermissionQuery = useQuery({
     queryKey: settingsKeys.accessibility(),
-    queryFn: checkAccessibilityPermission,
+    queryFn: settingsApi.checkAccessibilityPermission,
     enabled: ctx.platform.requiresAccessibilityPermission,
     refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
     refetchInterval: (query) =>
@@ -295,14 +258,7 @@ export default function OnboardingScreen({
     mutate: requestMicrophonePermission,
     isPending: isRequestingMicrophonePermission,
   } = useMutation({
-    mutationFn: async () => {
-      await invoke("request_microphone_permission").catch(() => {});
-      const granted = await checkMicrophonePermission().catch(() => false);
-      if (!granted) {
-        await invoke("open_microphone_settings").catch(() => {});
-      }
-      return granted;
-    },
+    mutationFn: settingsApi.requestMicrophonePermission,
     onSettled: () => {
       void queryClient.invalidateQueries({
         queryKey: onboardingPermissionKeys.microphone(),
@@ -314,16 +270,7 @@ export default function OnboardingScreen({
     mutate: requestAccessibilityPermission,
     isPending: isRequestingAccessibilityPermission,
   } = useMutation({
-    mutationFn: async () => {
-      if (ctx.platform.id === "macos") {
-        await requestMacAccessibilityPermission().catch(() => {});
-      }
-      const granted = await checkAccessibilityPermission().catch(() => false);
-      if (!granted) {
-        await invoke("open_accessibility_settings").catch(() => {});
-      }
-      return granted;
-    },
+    mutationFn: settingsApi.requestAccessibilityPermission,
     onSettled: () => {
       void queryClient.invalidateQueries({
         queryKey: settingsKeys.accessibility(),
@@ -392,9 +339,6 @@ export default function OnboardingScreen({
 
   const handleDownload = useCallback(
     async (modelKey: string, ane?: boolean) => {
-      void invoke("track_onboarding_step_viewed", {
-        step: "model_downloading",
-      }).catch(() => {});
       updateDownloadStatus(modelKey, {
         status: "downloading",
         percent: 0,
@@ -409,7 +353,7 @@ export default function OnboardingScreen({
           modelCatalogQuery.data?.some(
             (model) => model.key === modelKey && model.ane_size_mb != null,
           );
-        await invoke("download_model", { model: modelKey, ane: includeAne });
+        await modelsApi.downloadModel(modelKey, includeAne);
         void refreshModelStatus(queryClient, modelKey);
       } catch (err) {
         // download:error usually lands first and carries the reason.
@@ -434,9 +378,7 @@ export default function OnboardingScreen({
   const handleDelete = useCallback(
     async (modelKey: string) => {
       try {
-        const status = await invoke<ModelStatus>("delete_model", {
-          model: modelKey,
-        });
+        const status = await modelsApi.deleteModel(modelKey);
         queryClient.setQueryData(modelKeys.status(modelKey), status);
         updateDownloadStatus(modelKey, { status: "idle", percent: 0 });
       } catch {
@@ -456,7 +398,7 @@ export default function OnboardingScreen({
   const handleCancelDownload = useCallback(
     async (modelKey: string) => {
       try {
-        await invoke("cancel_download", { model: modelKey });
+        await modelsApi.cancelDownload(modelKey);
         updateDownloadStatus(modelKey, { status: "cancelled", percent: 0 });
         setTimeout(() => {
           // A download started again in the meantime keeps its status.
@@ -539,7 +481,6 @@ export default function OnboardingScreen({
     modelCatalogQuery.isLoading ||
     settingsQuery.isLoading ||
     recommendationQuery.isLoading;
-  const modelCatalogUnavailable = modelCatalogQuery.isError;
 
   const handleStartPractice = useCallback(async () => {
     if (
@@ -560,6 +501,10 @@ export default function OnboardingScreen({
     const resolvedLocalModel = selectedModel;
 
     send({ type: "COMPLETING" });
+    void invoke("track_onboarding_model_chosen", {
+      recommended: recommendedModel,
+      chosen: resolvedLocalModel,
+    }).catch(() => {});
 
     if (!resolvedLocalModel) {
       send({
@@ -574,10 +519,10 @@ export default function OnboardingScreen({
     }
 
     try {
-      const latestSettings = await getSettings();
+      const latestSettings = await settingsApi.getSettings();
       const { result, autoLaunch } = await saveSetupSettings(
         (launch) =>
-          buildSettingsArgs(
+          buildSetupArgs(
             latestSettings,
             ctx.smartShortcut,
             resolvedLocalModel,
@@ -609,6 +554,7 @@ export default function OnboardingScreen({
     ctx.microphoneDevice,
     ctx.smartShortcut,
     persistedSettings,
+    recommendedModel,
     selectedModel,
     send,
     settingsQuery.isError,
@@ -644,10 +590,10 @@ export default function OnboardingScreen({
   const applySmartShortcut = useCallback(
     async (shortcut: string) => {
       try {
-        const latest = await getSettings();
+        const latest = await settingsApi.getSettings();
         const { result, autoLaunch } = await saveSetupSettings(
           (launch) =>
-            buildSettingsArgs(
+            buildSetupArgs(
               latest,
               shortcut,
               selectedModel,
@@ -713,42 +659,80 @@ export default function OnboardingScreen({
     [goNext, source],
   );
 
-  const selectedModelState = displayStateByModel[selectedModel] ?? null;
-  const pastModelStep =
-    currentStep !== "welcome" &&
-    currentStep !== "import" &&
-    currentStep !== "model";
-  const speakerState = diarizer ? (downloadStatus[diarizer.key] ?? null) : null;
-  const showDownloadStatus =
-    pastModelStep &&
-    (Boolean(downloadStatus[selectedModel]) || Boolean(speakerState));
-
-  // Speaker detection downloads after the dictation model, so it never slows
-  // the first dictation, and only with a license or trial, since only
-  // licensed features use it. Setup's end retries it if this doesn't finish.
+  // The speech model starts at launch, so it's ready by the first dictation.
+  const speechDownloadStarted = useRef(false);
   useEffect(() => {
-    if (!licensed || !diarizer || diarizerInstalled || speakerState) return;
-    if (!pastModelStep || !selectedModelReady) return;
-    updateDownloadStatus(diarizer.key, {
-      status: "downloading",
-      percent: 0,
-      file: "",
-    });
-    void invoke("download_model", { model: diarizer.key, ane: false }).catch(
-      () => {},
-    );
+    if (speechDownloadStarted.current || isModelCatalogLoading) return;
+    const status = modelStatus[selectedModel];
+    if (!status) return;
+    speechDownloadStarted.current = true;
+    if (status.installed) return;
+    void invoke("track_onboarding_step_viewed", {
+      step: "model_downloading",
+    }).catch(() => {});
+    void handleDownload(selectedModel);
+  }, [handleDownload, isModelCatalogLoading, modelStatus, selectedModel]);
+
+  const speakerWanted = Boolean(
+    licensed && diarizer && modelStatus[diarizer.key]?.installed === false,
+  );
+  const speakerStarted = diarizer
+    ? Boolean(downloadStatus[diarizer.key])
+    : false;
+
+  // Speaker detection follows the speech model, so it never slows the first
+  // dictation, and only with a license or trial, since only licensed features
+  // use it. Setup's end retries it if this doesn't finish.
+  useEffect(() => {
+    if (!selectedModelReady || !diarizer || !speakerWanted || speakerStarted) {
+      return;
+    }
+    void handleDownload(diarizer.key, false);
   }, [
-    licensed,
-    diarizer,
-    diarizerInstalled,
-    speakerState,
-    pastModelStep,
     selectedModelReady,
-    updateDownloadStatus,
+    diarizer,
+    speakerWanted,
+    speakerStarted,
+    handleDownload,
   ]);
+
+  const cleanupWanted = Boolean(
+    licensed &&
+    cleanupModel &&
+    modelStatus[cleanupModel.key]?.installed === false,
+  );
+  const cleanupStarted = cleanupModel
+    ? Boolean(downloadStatus[cleanupModel.key])
+    : false;
+  const speakerStatus = diarizer ? downloadStatus[diarizer.key]?.status : null;
+  const speakerSettled =
+    !speakerWanted ||
+    (speakerStatus != null && speakerStatus !== "downloading");
+
+  // The cleanup model goes last, under the same rules as speaker detection.
+  useEffect(() => {
+    if (
+      !selectedModelReady ||
+      !speakerSettled ||
+      !cleanupModel ||
+      !cleanupWanted ||
+      cleanupStarted
+    ) {
+      return;
+    }
+    void handleDownload(cleanupModel.key, false);
+  }, [
+    selectedModelReady,
+    speakerSettled,
+    cleanupModel,
+    cleanupWanted,
+    cleanupStarted,
+    handleDownload,
+  ]);
+
   const practiceModelState = selectedModelReady
     ? "ready"
-    : selectedModelState?.status === "error"
+    : displayStateByModel[selectedModel]?.status === "error"
       ? "failed"
       : "downloading";
 
@@ -776,40 +760,6 @@ export default function OnboardingScreen({
             startDisabled={importableAppsQuery.isLoading}
           />
         );
-      case "model":
-        return (
-          <ModelStep
-            key="model"
-            stepMotionProps={stepMotionProps}
-            selectedModel={selectedModelInfo}
-            catalog={modelCatalogQuery.data ?? []}
-            modelStatus={modelStatus}
-            displayStateByModel={displayStateByModel}
-            activeModelKey={selectedModel}
-            onUse={(key) => send({ type: "SELECT_MODEL", key })}
-            isLoading={isModelCatalogLoading}
-            unavailable={modelCatalogUnavailable}
-            displayState={
-              displayStateByModel[selectedModel] ?? {
-                status: "idle",
-                percent: 0,
-              }
-            }
-            selectedModelReady={selectedModelReady}
-            onDownload={handleDownload}
-            onDelete={handleDelete}
-            onCancelDownload={handleCancelDownload}
-            recommendedKey={recommendedModel}
-            userLanguages={recommendationQuery.data?.languages ?? []}
-            onNext={() => {
-              void invoke("track_onboarding_model_chosen", {
-                recommended: recommendedModel,
-                chosen: selectedModel,
-              }).catch(() => {});
-              goNext();
-            }}
-          />
-        );
       case "import":
         return (
           <ImportStep
@@ -817,7 +767,12 @@ export default function OnboardingScreen({
             stepMotionProps={stepMotionProps}
             apps={ctx.importableApps}
             onApplied={(result) => {
-              if (result.modelKey) {
+              if (result.modelKey && result.modelKey !== selectedModel) {
+                if (
+                  displayStateByModel[selectedModel]?.status === "downloading"
+                ) {
+                  void handleCancelDownload(selectedModel);
+                }
                 send({ type: "SELECT_MODEL", key: result.modelKey });
                 if (!modelStatus[result.modelKey]?.installed) {
                   void handleDownload(result.modelKey);
@@ -866,6 +821,7 @@ export default function OnboardingScreen({
           <LicenseStep
             key="license"
             stepMotionProps={stepMotionProps}
+            smartShortcut={ctx.smartShortcut}
             licenseState={licenseQuery.data ?? null}
             opening={openingLicenseCheckout}
             openError={licenseOpenError}
@@ -916,6 +872,40 @@ export default function OnboardingScreen({
     }
   };
 
+  // In download order. Speaker detection shows as waiting until the speech
+  // model is done.
+  const downloads: ModelDownload[] = [];
+  if (selectedModelInfo && downloadStatus[selectedModel]) {
+    downloads.push({
+      key: selectedModel,
+      name: t({ id: "onboarding.downloads.speech", message: "Speech model" }),
+      state: displayStateByModel[selectedModel] ?? null,
+      onRetry: () => void handleDownload(selectedModel),
+    });
+  }
+  if (diarizer && (speakerWanted || speakerStarted)) {
+    downloads.push({
+      key: diarizer.key,
+      name: t({
+        id: "onboarding.downloads.speakers",
+        message: "Speaker detection",
+      }),
+      state: downloadStatus[diarizer.key] ?? null,
+      onRetry: () => void handleDownload(diarizer.key, false),
+    });
+  }
+  if (cleanupModel && (cleanupWanted || cleanupStarted)) {
+    downloads.push({
+      key: cleanupModel.key,
+      name: t({
+        id: "onboarding.downloads.cleanup",
+        message: "Cleanup model",
+      }),
+      state: downloadStatus[cleanupModel.key] ?? null,
+      onRetry: () => void handleDownload(cleanupModel.key, false),
+    });
+  }
+
   const showChrome =
     currentStep !== "welcome" &&
     currentStep !== "done" &&
@@ -961,12 +951,8 @@ export default function OnboardingScreen({
             </button>
           )}
 
-        {showDownloadStatus ? (
-          <ModelDownloadStatus
-            state={downloadStatus[selectedModel] ? selectedModelState : null}
-            speakerState={speakerState}
-            onRetry={() => void handleDownload(selectedModel)}
-          />
+        {currentStep !== "welcome" && downloads.length > 0 ? (
+          <ModelDownloadStatus downloads={downloads} />
         ) : null}
 
         <FAQModal

@@ -4,10 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, ArrowUpRight } from "@phosphor-icons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { useQueryClient } from "@tanstack/react-query";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
-import { getLastSeenId, setLastSeenId } from "../api";
-import { useNewsFeed } from "../queries";
+import {
+  announcementTitle,
+  getLastSeenId,
+  setLastSeenId,
+  type AnnouncementMessage,
+} from "../api";
+import { newsKeys, useAnnouncements, useNewsFeed } from "../queries";
 
 const BLOG_URL = "https://tryglimpse.cc/blog";
 const MAX_COMPACT = 4;
@@ -18,7 +24,9 @@ const NewsMenu = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const queryClient = useQueryClient();
   const { data: items = [], isLoading } = useNewsFeed();
+  const { data: messages = [] } = useAnnouncements();
   const [lastSeen, setLastSeen] = useState<string | null>(() =>
     getLastSeenId(),
   );
@@ -60,6 +68,13 @@ const NewsMenu = () => {
   const openLink = (url: string) => {
     close();
     void openUrl(url);
+  };
+
+  const openMessage = (message: AnnouncementMessage) => {
+    close();
+    // A startup fetch still in flight would otherwise replace the reopened message.
+    void queryClient.cancelQueries({ queryKey: newsKeys.announcement() });
+    queryClient.setQueryData(newsKeys.announcement(), message);
   };
 
   const title = t({ id: "news.title", message: "News from Glimpse" });
@@ -120,12 +135,30 @@ const NewsMenu = () => {
               </span>
             </div>
 
+            {messages.map((message) => (
+              <button
+                key={message.id}
+                type="button"
+                onClick={() => openMessage(message)}
+                className="flex w-full px-3.5 py-2.5 text-left border-t border-border-primary transition-colors hover:bg-[var(--surface-interactive)]"
+              >
+                <span className="ui-text-body-sm-strong ui-color-primary min-w-0 flex-1 truncate">
+                  {announcementTitle(message.markdown)}
+                </span>
+              </button>
+            ))}
+
             {items.length === 0 ? (
-              <div className="px-3.5 pb-5 ui-text-meta ui-color-secondary">
-                {isLoading
-                  ? t({ id: "news.loading", message: "Checking for news…" })
-                  : t({ id: "news.empty", message: "Nothing new right now." })}
-              </div>
+              messages.length === 0 && (
+                <div className="px-3.5 pb-5 ui-text-meta ui-color-secondary">
+                  {isLoading
+                    ? t({ id: "news.loading", message: "Checking for news…" })
+                    : t({
+                        id: "news.empty",
+                        message: "Nothing new right now.",
+                      })}
+                </div>
+              )
             ) : (
               <>
                 <button

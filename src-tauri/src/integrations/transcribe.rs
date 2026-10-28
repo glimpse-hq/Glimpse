@@ -44,7 +44,10 @@ fn help() {
                 ),
                 ("--cleanup", "Force LLM cleanup."),
                 ("--no-cleanup", "Skip LLM cleanup."),
-                ("--json", "Output machine-readable JSON."),
+                (
+                    "--json",
+                    "Output JSON with segment and word timings (before replacements and cleanup), language and speed.",
+                ),
             ],
         )],
     );
@@ -87,7 +90,7 @@ pub(crate) fn run(_identifier: &str, args: &[String], json: bool) -> Result<()> 
     for file in &files {
         let absolute =
             std::fs::canonicalize(file).map_err(|_| coded(1, format!("File not found: {file}")))?;
-        let mut payload = json!({ "path": absolute.to_string_lossy() });
+        let mut payload = json!({ "path": absolute.to_string_lossy(), "timestamps": json });
         if let Some(language) = language {
             payload["language"] = json!(language);
         }
@@ -183,6 +186,10 @@ fn emit(entries: &[Entry], json: bool, to_stdout: bool) {
                     "speech_model": entry.data.get("speech_model"),
                     "llm_cleaned": entry.data.get("llm_cleaned").and_then(Value::as_bool).unwrap_or(false),
                     "duration_seconds": entry.data.get("duration_seconds"),
+                    "processing_seconds": entry.data.get("processing_seconds"),
+                    "language": entry.data.get("language"),
+                    "segments": entry.data.get("segments"),
+                    "words": entry.data.get("words"),
                 })
             })
             .collect();

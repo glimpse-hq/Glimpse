@@ -4,6 +4,7 @@
 mod live;
 pub mod live_window;
 mod microphone;
+pub(crate) mod playback;
 mod track;
 
 #[cfg(target_os = "macos")]
@@ -49,6 +50,8 @@ const LAST_SOURCES_FILE: &str = "last-sources.json";
 const MICROPHONE_FILE: &str = "microphone.wav";
 const SYSTEM_FILE: &str = "system.wav";
 const STATE_TICK: Duration = Duration::from_millis(100);
+// An agent works on each chunk between reads, so it keeps counting as following this long.
+const FOLLOWER_TIMEOUT: Duration = Duration::from_secs(120);
 // About three hours of microphone and system audio.
 const LOW_DISK_BYTES: u64 = 1024 * 1024 * 1024;
 // How often a recording without a working microphone looks for one.
@@ -183,6 +186,11 @@ pub struct RecordingSessionState {
     pub sound: SessionSound,
     pub bookmarks: Vec<Bookmark>,
     pub finish_requested: bool,
+    /// The AI agent reading the live transcript over MCP, if one did recently.
+    /// Empty when it gave no name.
+    pub follower: Option<String>,
+    pub microphone_off: bool,
+    pub system_audio_off: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -269,6 +277,13 @@ struct Shared {
     write_failure: Arc<AtomicU8>,
     emitter_running: AtomicBool,
     live: live::LiveState,
+    follower: Mutex<Option<(String, Instant)>>,
+    // The last saved recording's live transcript, so agents following it
+    // still get the words that settled as it finished.
+    finished: Mutex<Option<(DateTime<Local>, live::LiveTranscript, Instant)>>,
+    // Sources the user turned off mid-recording. They record silence.
+    microphone_off: AtomicBool,
+    system_off: Arc<AtomicBool>,
 }
 
 impl Shared {
@@ -293,6 +308,14 @@ impl Shared {
             },
             bookmarks: self.bookmarks.lock().clone(),
             finish_requested: self.finish_requested.load(Ordering::Relaxed),
+            follower: self
+                .follower
+                .lock()
+                .as_ref()
+                .filter(|(_, seen)| seen.elapsed() < FOLLOWER_TIMEOUT)
+                .map(|(name, _)| name.clone()),
+            microphone_off: self.microphone_off.load(Ordering::Relaxed),
+            system_audio_off: self.system_off.load(Ordering::Relaxed),
         }
     }
 
@@ -342,7 +365,11 @@ impl Shared {
         }
     }
 
-    fn reset(&self) {
+    fn reset(&self, keep_transcript: bool) {
+        let started_at = *self.started_at.lock();
+        *self.finished.lock() = started_at
+            .filter(|_| keep_transcript)
+            .map(|at| (at, self.live.last(), Instant::now()));
         *self.status.lock() = Status::Idle;
         *self.clock.lock() = None;
         self.paused.store(false, Ordering::Relaxed);
@@ -358,6 +385,9 @@ impl Shared {
         *self.started_at.lock() = None;
         self.finish_requested.store(false, Ordering::Relaxed);
         self.write_failure.store(0, Ordering::Relaxed);
+        *self.follower.lock() = None;
+        self.microphone_off.store(false, Ordering::Relaxed);
+        self.system_off.store(false, Ordering::Relaxed);
         self.live.end();
     }
 }
@@ -397,6 +427,10 @@ enum WorkerCommand {
         paused: bool,
         reply: Sender<()>,
     },
+    SetMicrophoneOff {
+        off: bool,
+        reply: Sender<()>,
+    },
     /// From the stream's error callback; the generation drops signals of a stream already replaced.
     MicrophoneLost(u64),
 }
@@ -425,6 +459,10 @@ impl Default for RecordingManager {
             write_failure: Arc::new(AtomicU8::new(0)),
             emitter_running: AtomicBool::new(false),
             live: live::LiveState::default(),
+            follower: Mutex::new(None),
+            finished: Mutex::new(None),
+            microphone_off: AtomicBool::new(false),
+            system_off: Arc::new(AtomicBool::new(false)),
         });
         let (tx, rx) = unbounded();
         let worker_shared = Arc::clone(&shared);
@@ -464,7 +502,11 @@ impl Default for RecordingManager {
                             let _ = reply.send(());
                         }
                         WorkerCommand::SetMicrophonePaused { paused, reply } => {
-                            worker.set_microphone_paused(paused);
+                            worker.set_microphone(|mic| mic.paused = paused);
+                            let _ = reply.send(());
+                        }
+                        WorkerCommand::SetMicrophoneOff { off, reply } => {
+                            worker.set_microphone(|mic| mic.off = off);
                             let _ = reply.send(());
                         }
                         WorkerCommand::MicrophoneLost(generation) => {
@@ -574,6 +616,19 @@ impl RecordingManager {
         true
     }
 
+    /// Waits for the microphone to stop or run again.
+    fn set_microphone_off(&self, off: bool) {
+        self.shared.microphone_off.store(off, Ordering::Relaxed);
+        let (reply, rx) = bounded(1);
+        if self
+            .tx
+            .send(WorkerCommand::SetMicrophoneOff { off, reply })
+            .is_ok()
+        {
+            let _ = rx.recv();
+        }
+    }
+
     fn add_bookmark(&self) -> Option<Bookmark> {
         if !matches!(
             *self.shared.status.lock(),
@@ -643,6 +698,8 @@ struct MicrophoneTrack {
     generation: u64,
     // Set in worker command order, so a loss signal can't race a resume.
     paused: bool,
+    // Turned off by the user; stopped like a pause while the session runs.
+    off: bool,
 }
 
 struct Worker {
@@ -714,7 +771,7 @@ impl Worker {
                     paused: Arc::clone(&self.shared.paused),
                     level: Arc::clone(&self.shared.system_level),
                     sound: Arc::clone(&self.shared.system_sound),
-                    silenced: None,
+                    silenced: Some(Arc::clone(&self.shared.system_off)),
                 };
                 let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
                 let failure = Arc::clone(&self.shared.write_failure);
@@ -808,6 +865,7 @@ impl Worker {
                     device_id: mic.device_id.clone(),
                     generation: 0,
                     paused: false,
+                    off: false,
                 });
             }
             Ok(())
@@ -887,25 +945,33 @@ impl Worker {
 }
 
 impl Worker {
-    fn set_microphone_paused(&mut self, paused: bool) {
+    /// Applies `change`, then runs the microphone unless the session is paused
+    /// or the user turned it off.
+    fn set_microphone(&mut self, change: impl FnOnce(&mut MicrophoneTrack)) {
         let Some(mic) = self.active.as_mut().and_then(|s| s.microphone.as_mut()) else {
             return;
         };
-        mic.paused = paused;
+        change(mic);
+        let stopped = mic.paused || mic.off;
+        if stopped {
+            self.shared
+                .microphone_level
+                .store(0f32.to_bits(), Ordering::Relaxed);
+        }
         match mic
             .capture
             .as_ref()
-            .map(|capture| capture.set_paused(paused))
+            .map(|capture| capture.set_paused(stopped))
         {
             Some(Ok(())) => {}
             Some(Err(err)) => {
                 tracing::warn!("{err}");
-                if !paused {
+                if !stopped {
                     self.reopen_microphone(false);
                 }
             }
-            // Lost while paused; resume is the retry.
-            None if !paused => self.reopen_microphone(false),
+            // Lost while stopped; starting again is the retry.
+            None if !stopped => self.reopen_microphone(false),
             None => {}
         }
     }
@@ -921,7 +987,7 @@ impl Worker {
         self.shared
             .microphone_level
             .store(0f32.to_bits(), Ordering::Relaxed);
-        if !mic.paused {
+        if !mic.paused && !mic.off {
             self.reopen_microphone(false);
         }
     }
@@ -934,7 +1000,7 @@ impl Worker {
             .active
             .as_ref()
             .and_then(|s| s.microphone.as_ref())
-            .is_some_and(|mic| mic.capture.is_none() && !mic.paused);
+            .is_some_and(|mic| mic.capture.is_none() && !mic.paused && !mic.off);
         if missing {
             self.reopen_microphone(true);
         }
@@ -1044,7 +1110,7 @@ fn discard_session(session: ActiveSession) {
         capture.stop();
         writer.discard();
     }
-    let _ = fs::remove_dir_all(&session.dir);
+    let _ = crate::platform::remove_dir_all_compat(&session.dir);
 }
 
 struct SinkParts {
@@ -1237,7 +1303,7 @@ fn save_session(
             live: output.live,
         },
     )?;
-    let _ = fs::remove_dir_all(&output.dir);
+    let _ = crate::platform::remove_dir_all_compat(&output.dir);
     crate::library::schedule_library_job(
         app,
         &state,
@@ -1280,7 +1346,7 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             .ok()
             .and_then(|bytes| serde_json::from_slice::<SessionManifest>(&bytes).ok());
         let Some(manifest) = manifest else {
-            let _ = fs::remove_dir_all(&dir);
+            let _ = crate::platform::remove_dir_all_compat(&dir);
             continue;
         };
         let readable = |name: &str| -> Option<(PathBuf, f32)> {
@@ -1299,7 +1365,7 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             .as_ref()
             .and_then(|_| readable(SYSTEM_FILE));
         if microphone.is_none() && system.is_none() {
-            let _ = fs::remove_dir_all(&dir);
+            let _ = crate::platform::remove_dir_all_compat(&dir);
             continue;
         }
         let duration_seconds = microphone
@@ -1499,6 +1565,41 @@ pub fn pause_recording_session(
     manager.state()
 }
 
+/// Turns `source` ("microphone" or "system_audio") of the recording off, so
+/// it records silence, or back on.
+#[tauri::command]
+pub async fn set_recording_source_off(
+    app: AppHandle<AppRuntime>,
+    source: String,
+    off: bool,
+) -> Result<RecordingSessionState, String> {
+    let state = app.state::<AppState>();
+    let manager = state.recording();
+    if !manager.is_active() {
+        return Err("not_recording".into());
+    }
+    let sources = manager.shared.sources.lock().clone();
+    match source.as_str() {
+        "microphone" if sources.microphone.is_some() => {
+            let app_for_task = app.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                app_for_task
+                    .state::<AppState>()
+                    .recording()
+                    .set_microphone_off(off);
+            })
+            .await
+            .map_err(|err| err.to_string())?;
+        }
+        "system_audio" if sources.system_audio.is_some() => {
+            manager.shared.system_off.store(off, Ordering::Relaxed);
+        }
+        _ => return Err("source_not_recorded".into()),
+    }
+    emit_state(&app, &manager.shared);
+    Ok(manager.state())
+}
+
 /// Blocks until the microphone runs again, so keep it off the main thread.
 pub(crate) fn resume_session(app: &AppHandle<AppRuntime>) -> RecordingSessionState {
     let state = app.state::<AppState>();
@@ -1573,7 +1674,7 @@ pub async fn discard_recording_session(app: AppHandle<AppRuntime>) -> RecordingS
     .await;
     let state = app.state::<AppState>();
     let manager = state.recording();
-    manager.shared.reset();
+    manager.shared.reset(false);
     manager.shared.live.publish(&app, false);
     if let Some(summary) = summary {
         analytics::set_activity(Activity::Idle);
@@ -1620,7 +1721,7 @@ pub async fn finish_recording_session(
     .await
     .map_err(|err| err.to_string())?;
 
-    manager.shared.reset();
+    manager.shared.reset(true);
     manager.shared.live.publish(&app, false);
     analytics::set_activity(Activity::Idle);
     match &result {
@@ -1642,6 +1743,33 @@ pub async fn finish_recording_session(
 #[tauri::command]
 pub fn get_live_transcript(app: AppHandle<AppRuntime>) -> LiveTranscript {
     app.state::<AppState>().recording().shared.live.last()
+}
+
+// How long a saved recording's live transcript stays readable by agents.
+const FINISHED_TRANSCRIPT_TTL: Duration = Duration::from_secs(120);
+
+/// The live transcript and session start for `follower`, an agent following
+/// the recording. Turns live transcription on while recording, as the live view does.
+pub fn follow_live_transcript(
+    app: &AppHandle<AppRuntime>,
+    follower: &str,
+) -> Option<(DateTime<Local>, LiveTranscript)> {
+    let state = app.state::<AppState>();
+    let shared = &state.recording().shared;
+    let Some(started_at) = *shared.started_at.lock() else {
+        return shared
+            .finished
+            .lock()
+            .as_ref()
+            .filter(|(_, _, saved)| saved.elapsed() < FINISHED_TRANSCRIPT_TTL)
+            .map(|(started_at, transcript, _)| (*started_at, transcript.clone()));
+    };
+    let session = shared.state();
+    if matches!(session.status, "recording" | "paused") && !session.finish_requested {
+        shared.live.set_requested(true);
+        *shared.follower.lock() = Some((follower.to_string(), Instant::now()));
+    }
+    Some((started_at, shared.live.last()))
 }
 
 /// Applies a live speaker edit, stores it with the session and publishes the result.

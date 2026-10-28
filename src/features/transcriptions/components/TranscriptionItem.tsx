@@ -27,6 +27,9 @@ import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import TranscriptText from "../../../shared/ui/TranscriptText";
 import { showErrorToast } from "../../../shared/lib/errorToast";
 
+const MENU_ITEM =
+  "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none disabled:opacity-50";
+
 interface TranscriptionItemProps {
   record: TranscriptionRecord;
   onDelete: (id: string) => Promise<void>;
@@ -61,6 +64,9 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const { i18n, t } = useLingui();
   const { data: speechModels } = useSpeechModels();
   const { copied, copy } = useCopyToClipboard(2000);
+  const { copied: originalCopied, copy: copyOriginal } = useCopyToClipboard();
+  const { copied: instructionCopied, copy: copyInstruction } =
+    useCopyToClipboard();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancellingRetry, setIsCancellingRetry] = useState(false);
   const [startingCleanup, setStartingCleanup] = useState(false);
@@ -68,6 +74,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const [isUndoingLlm, setIsUndoingLlm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(initialOverflowing);
+  const [showEditDetails, setShowEditDetails] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectionText, setSelectionText] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
@@ -239,7 +246,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     day: "numeric",
   });
   const isError = record.status === "error";
-  const canRetryFromAudio = record.audio_available;
+  const isEdit = record.selected_text != null;
+  const canRetryFromAudio = record.audio_available && !isEdit;
   const errorMessage =
     record.error_message ||
     t({
@@ -310,6 +318,19 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               </>
             )}
             <span>{timeStr}</span>
+            {isEdit && (
+              <>
+                <span aria-hidden="true" className="opacity-60">
+                  ·
+                </span>
+                <span className="ui-color-secondary">
+                  {t({
+                    id: "transcriptions.item.edit_mode",
+                    message: "Edit mode",
+                  })}
+                </span>
+              </>
+            )}
             {isError && (
               <>
                 <span aria-hidden="true" className="opacity-60">
@@ -387,6 +408,140 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               >
                 <TranscriptText text={displayText || ""} />
               </div>
+              {isEdit && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditDetails(!showEditDetails)}
+                    aria-expanded={showEditDetails}
+                    className="flex items-center gap-1 mt-1 -ml-0.5 px-1 py-0.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors rounded"
+                  >
+                    {showEditDetails ? (
+                      <ChevronUp size={11} aria-hidden="true" />
+                    ) : (
+                      <ChevronDown size={11} aria-hidden="true" />
+                    )}
+                    {t({
+                      id: "transcriptions.item.edit_details",
+                      message: "Edit details",
+                    })}
+                  </button>
+                  {showEditDetails && (
+                    <>
+                      <div
+                        className="mt-2 h-px w-full bg-border-secondary [mask-image:linear-gradient(to_right,black_70%,transparent)]"
+                        aria-hidden="true"
+                      />
+                      <dl className="mt-2 space-y-2">
+                        <div>
+                          <dt className="flex items-center gap-1 ui-text-label-strong ui-color-secondary">
+                            {t({
+                              id: "transcriptions.item.original_text",
+                              message: "Original text",
+                            })}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void copyOriginal(record.selected_text ?? "")
+                              }
+                              className="inline-flex size-6 shrink-0 items-center justify-center rounded ui-color-muted hover:bg-surface-elevated hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cloud"
+                              title={
+                                originalCopied
+                                  ? t({
+                                      id: "transcriptions.item.copied",
+                                      message: "Copied",
+                                    })
+                                  : t({
+                                      id: "transcriptions.item.copy_original_text",
+                                      message: "Copy original text",
+                                    })
+                              }
+                              aria-label={
+                                originalCopied
+                                  ? t({
+                                      id: "transcriptions.item.copied",
+                                      message: "Copied",
+                                    })
+                                  : t({
+                                      id: "transcriptions.item.copy_original_text",
+                                      message: "Copy original text",
+                                    })
+                              }
+                            >
+                              {originalCopied ? (
+                                <Check
+                                  size={12}
+                                  className="text-success"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <Copy size={12} aria-hidden="true" />
+                              )}
+                            </button>
+                          </dt>
+                          <dd className="mt-1 ui-text-body-sm ui-color-muted select-text break-words">
+                            <TranscriptText text={record.selected_text ?? ""} />
+                          </dd>
+                        </div>
+                        {record.edit_instruction && (
+                          <div>
+                            <dt className="flex items-center gap-1 ui-text-label-strong ui-color-secondary">
+                              {t({
+                                id: "transcriptions.item.edit_instruction",
+                                message: "Spoken instruction",
+                              })}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void copyInstruction(
+                                    record.edit_instruction ?? "",
+                                  )
+                                }
+                                className="inline-flex size-6 shrink-0 items-center justify-center rounded ui-color-muted hover:bg-surface-elevated hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cloud"
+                                title={
+                                  instructionCopied
+                                    ? t({
+                                        id: "transcriptions.item.copied",
+                                        message: "Copied",
+                                      })
+                                    : t({
+                                        id: "transcriptions.item.copy_edit_instruction",
+                                        message: "Copy spoken instruction",
+                                      })
+                                }
+                                aria-label={
+                                  instructionCopied
+                                    ? t({
+                                        id: "transcriptions.item.copied",
+                                        message: "Copied",
+                                      })
+                                    : t({
+                                        id: "transcriptions.item.copy_edit_instruction",
+                                        message: "Copy spoken instruction",
+                                      })
+                                }
+                              >
+                                {instructionCopied ? (
+                                  <Check
+                                    size={12}
+                                    className="text-success"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <Copy size={12} aria-hidden="true" />
+                                )}
+                              </button>
+                            </dt>
+                            <dd className="mt-1 ui-text-body-sm ui-color-muted select-text break-words">
+                              <TranscriptText text={record.edit_instruction} />
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
+                    </>
+                  )}
+                </>
+              )}
               {(isOverflowing || isExpanded) && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
@@ -549,15 +704,15 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     id: "transcriptions.item.more_options",
                     message: "More options",
                   })}
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  transition={{ duration: 0.12 }}
-                  className="ui-surface-menu absolute right-0 top-full mt-1 z-[100] min-w-[200px] origin-top-right"
+                  initial={false}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.1 }}
+                  className="ui-surface-menu absolute right-0 top-full mt-1 z-[100] min-w-[200px] p-1"
                 >
                   {(speechModelLabel || modeLabel || llmModelLabel) && (
                     <>
-                      <div className="px-3 pt-2.5 pb-2 space-y-0.5">
+                      <div className="px-2 pt-1.5 pb-1 space-y-0.5">
                         <div className="ui-text-meta ui-color-disabled">
                           {dateStr} · {timeStr}
                         </div>
@@ -579,7 +734,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                           </div>
                         )}
                       </div>
-                      <div className="h-px bg-border-secondary mx-2" />
+                      <div className="mx-2 my-1 h-px bg-border-secondary" />
                     </>
                   )}
                   {selectionText.trim().length > 0 && (
@@ -588,7 +743,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         type="button"
                         role="menuitem"
                         onClick={handleCopySelection}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors"
+                        className={MENU_ITEM}
                       >
                         <Copy size={12} className="text-content-muted" />
                         <span>
@@ -598,7 +753,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                           })}
                         </span>
                       </button>
-                      <div className="h-px bg-border-secondary mx-2" />
+                      <div className="mx-2 my-1 h-px bg-border-secondary" />
                     </>
                   )}
                   {canRetryFromAudio && (
@@ -607,7 +762,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       role="menuitem"
                       onClick={handleRetry}
                       disabled={isRetrying}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
+                      className={MENU_ITEM}
                     >
                       <RotateCw size={12} className="ui-color-cloud" />
                       <span>
@@ -619,7 +774,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     </button>
                   )}
 
-                  {!isError &&
+                  {!isEdit &&
+                    !isError &&
                     onRetryLlm &&
                     showLlmButtons &&
                     !isCloudModel && (
@@ -628,7 +784,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         role="menuitem"
                         onClick={handleRetryLlm}
                         disabled={isRetryingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
+                        className={MENU_ITEM}
                       >
                         <RotateCw size={12} className="text-local" />
                         <span>
@@ -645,7 +801,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       </button>
                     )}
 
-                  {!isError &&
+                  {!isEdit &&
+                    !isError &&
                     record.llm_cleaned &&
                     record.raw_text &&
                     onUndoLlm &&
@@ -656,7 +813,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         role="menuitem"
                         onClick={handleUndoLlm}
                         disabled={isUndoingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
+                        className={MENU_ITEM}
                       >
                         <Undo2 size={12} className="text-warning" />
                         <span>
@@ -669,24 +826,26 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     )}
 
                   {(canRetryFromAudio ||
-                    (!isError &&
+                    (!isEdit &&
+                      !isError &&
                       onRetryLlm &&
                       showLlmButtons &&
                       !isCloudModel) ||
-                    (!isError &&
+                    (!isEdit &&
+                      !isError &&
                       record.llm_cleaned &&
                       record.raw_text &&
                       onUndoLlm &&
                       showLlmButtons &&
                       !isCloudModel)) && (
-                    <div className="h-px bg-border-secondary mx-2" />
+                    <div className="mx-2 my-1 h-px bg-border-secondary" />
                   )}
                   <button
                     type="button"
                     role="menuitem"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 focus-visible:bg-red-500/10 focus-visible:outline-none transition-colors disabled:opacity-50"
+                    className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 focus-visible:bg-red-500/10 focus-visible:outline-none disabled:opacity-50"
                   >
                     <Trash2 size={12} />
                     <span>

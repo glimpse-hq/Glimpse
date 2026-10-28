@@ -1,10 +1,12 @@
 mod accessibility_context;
 mod analytics;
+mod announcements;
 mod asks;
 mod assistive;
 mod audio;
 mod auto_delete;
 mod auto_dictionary;
+mod cleanup_model;
 mod cli_install;
 mod core;
 mod crypto;
@@ -384,8 +386,12 @@ pub fn run() {
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
 
-    let builder =
-        builder.on_menu_event(|app, event| tray::handle_menu_event(app, event.id().as_ref()));
+    let builder = builder
+        .on_menu_event(|app, event| tray::handle_menu_event(app, event.id().as_ref()))
+        .register_asynchronous_uri_scheme_protocol(
+            recording::playback::SCHEME,
+            recording::playback::protocol,
+        );
 
     builder
         .setup(|app| {
@@ -427,6 +433,8 @@ pub fn run() {
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            cleanup_model::init(handle);
+            cleanup_model::update_in_background(handle);
             #[cfg(target_os = "windows")]
             platform::windows::elevation::watch_foreground(handle.clone());
             speech::upgrade_retired_diarizers(handle);
@@ -434,6 +442,7 @@ pub fn run() {
             speech::remove_whisper_cpp_files(handle);
             speech::compile_pending_ane_encoders(handle);
             speech::upgrade_parakeet_encoder(handle);
+            speech::warm_ane_encoder(handle);
             speech::upgrade_whisper_decoder(handle);
             speech::replace_onnx_models(handle);
             {
@@ -454,6 +463,7 @@ pub fn run() {
             }
             analytics::set_crash_phase("services");
             integrations::start_control_server(handle.clone());
+            library::commands::purge_deleted_library_items(handle);
             library::commands::recover_interrupted_library_items(handle);
             recording::recover_interrupted_sessions(handle);
             register_deep_link_handlers(app);
@@ -521,6 +531,10 @@ pub fn run() {
             }
 
             update_checker::check_post_auto_update(handle);
+            announcements::note_launch(
+                &state.settings_store,
+                state.current_settings().onboarding_completed,
+            );
 
             analytics::set_crash_phase("background_tasks");
             if platform::is_store_build() {
@@ -577,9 +591,13 @@ pub fn run() {
             refresh_license,
             deactivate_license,
             get_purchase_plans,
-            open_checkout,
-            get_trial_ended_screen,
-            dismiss_trial_ended_screen,
+            license::open_checkout,
+            license::get_trial_ended_screen,
+            license::dismiss_trial_ended_screen,
+            announcements::get_announcement,
+            announcements::list_announcements,
+            announcements::dismiss_release_notes,
+            announcements::dismiss_announcement,
             get_dictation_stats,
             auto_delete::preview_recording_prune,
             auto_delete::preview_transcription_prune,
@@ -588,6 +606,7 @@ pub fn run() {
             dictionary::set_replacements,
             auto_dictionary::accept_auto_dictionary_suggestion,
             auto_dictionary::reject_auto_dictionary_suggestion,
+            personalization::get_default_cleanup_instructions,
             personalization::get_personalities,
             personalization::set_personalities,
             personalization::icons::list_installed_apps,
@@ -615,6 +634,7 @@ pub fn run() {
             library::commands::get_library_item,
             library::commands::update_library_item,
             library::commands::delete_library_item,
+            library::commands::restore_deleted_library_item,
             library::commands::cancel_library_transcription,
             library::commands::retry_library_transcription,
             library::commands::rediarize_library_item,
@@ -627,6 +647,7 @@ pub fn run() {
             recording::get_last_recording_sources,
             recording::start_recording_session,
             recording::pause_recording_session,
+            recording::set_recording_source_off,
             recording::resume_recording_session,
             recording::add_recording_bookmark,
             recording::finish_recording_session,
@@ -689,6 +710,7 @@ pub fn run() {
             analytics::track_screen_viewed,
             fetch_llm_models,
             apple_llm_availability,
+            cleanup_model::cleanup_model_status,
             fetch_remote_speech_models,
             open_about_page,
             open_account_page,
@@ -863,7 +885,6 @@ pub struct AppState {
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     pub(crate) local_api: Arc<local_api::LocalApiController>,
     update_state: update_checker::SharedUpdateState,
-    auto_update_completed: AtomicBool,
     preflight_cancel: CancellationToken,
     preflight_started: AtomicBool,
     preflight_notify: Arc<Notify>,
@@ -948,7 +969,6 @@ impl AppState {
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
             local_api: Arc::new(local_api::LocalApiController::default()),
             update_state: update_checker::create_state(),
-            auto_update_completed: AtomicBool::new(false),
             preflight_cancel: CancellationToken::new(),
             preflight_started: AtomicBool::new(false),
             preflight_notify: Arc::new(Notify::new()),
@@ -1022,14 +1042,6 @@ impl AppState {
             && self.library_queue.lock().is_empty()
             && self.retry_tokens.lock().is_empty()
             && !self.recording.is_active()
-    }
-
-    pub fn set_auto_update_completed(&self) {
-        self.auto_update_completed.store(true, Ordering::SeqCst);
-    }
-
-    pub fn take_auto_update_completed(&self) -> bool {
-        self.auto_update_completed.swap(false, Ordering::SeqCst)
     }
 
     pub fn current_settings(&self) -> UserSettings {
@@ -1424,6 +1436,7 @@ fn complete_onboarding(
     if license::license_gate_active(&state.settings_store) {
         speech::install_diarizer_in_background(&app);
     }
+    cleanup_model::install_in_background(&app);
     Ok(())
 }
 
@@ -1592,50 +1605,6 @@ async fn get_purchase_plans(
     Ok(license::purchase_plans(&state.http()).await)
 }
 
-#[tauri::command]
-fn open_checkout(
-    app: AppHandle<AppRuntime>,
-    tier: String,
-    source: String,
-    feature: Option<String>,
-    code: Option<String>,
-) -> Result<(), String> {
-    let source = match source.as_str() {
-        "account" | "locked_view" | "trial_ended" | "activation" => source,
-        _ => "other".to_string(),
-    };
-    let url = license::checkout_url(&tier, &source, code.as_deref())?;
-    app.opener()
-        .open_url(url, None::<&str>)
-        .map_err(|err| format!("Couldn't open checkout: {err}"))?;
-    analytics::track_checkout_opened(&app, &tier, &source, feature.as_deref(), code.is_some());
-    Ok(())
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TrialEndedScreen {
-    library_items: u64,
-}
-
-/// What the trial-ended screen shows, or None once it has been seen.
-#[tauri::command]
-fn get_trial_ended_screen(
-    state: tauri::State<AppState>,
-) -> Result<Option<TrialEndedScreen>, String> {
-    let license_state = license::get_license_state(&state.settings_store)?;
-    if !license::trial_ended_screen_due(&state.settings_store, &license_state) {
-        return Ok(None);
-    }
-    let library_items = state.storage().count_library_items().unwrap_or(0);
-    Ok(Some(TrialEndedScreen { library_items }))
-}
-
-#[tauri::command]
-fn dismiss_trial_ended_screen(state: tauri::State<AppState>) -> Result<(), String> {
-    license::mark_trial_ended_screen_seen(&state.settings_store)
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DictationStats {
@@ -1676,58 +1645,74 @@ struct AppInfo {
 }
 
 #[tauri::command]
-fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
-    let version = env!("CARGO_PKG_VERSION").to_string();
-
+async fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
     let data_dir = app
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
     let data_dir_path = data_dir.display().to_string();
+    let models_dir = model_manager::model_cache_dir(&app).ok();
 
-    let recordings_bytes = calculate_dir_size(&data_dir.join("recordings")).unwrap_or(0);
-    let library_bytes = calculate_dir_size(&data_dir.join("library")).unwrap_or(0);
-
-    let databases_bytes = [
-        "transcriptions.db",
-        "transcriptions.db-wal",
-        "transcriptions.db-shm",
-    ]
-    .iter()
-    .map(|name| {
-        std::fs::metadata(data_dir.join(name))
-            .map(|m| m.len())
-            .unwrap_or(0)
-    })
-    .sum::<u64>();
-
-    let models_bytes = model_manager::model_cache_dir(&app)
-        .ok()
-        .map(|p| calculate_dir_size(&p).unwrap_or(0))
-        .unwrap_or(0);
-
-    let total_bytes = calculate_dir_size(&data_dir).unwrap_or(0);
+    // The walk covers recordings, the Library and models, which can be gigabytes.
+    let storage_breakdown =
+        async_runtime::spawn_blocking(move || storage_breakdown(&data_dir, models_dir))
+            .await
+            .map_err(|err| err.to_string())?;
 
     Ok(AppInfo {
-        version,
-        data_dir_size_bytes: total_bytes,
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        data_dir_size_bytes: storage_breakdown.total_bytes,
         data_dir_path,
-        storage_breakdown: StorageBreakdown {
-            recordings_bytes,
-            library_bytes,
-            databases_bytes,
-            models_bytes,
-            total_bytes,
-        },
+        storage_breakdown,
         store_build: platform::is_store_build(),
     })
 }
 
+fn storage_breakdown(data_dir: &std::path::Path, models_dir: Option<PathBuf>) -> StorageBreakdown {
+    let mut breakdown = StorageBreakdown {
+        recordings_bytes: 0,
+        library_bytes: 0,
+        databases_bytes: 0,
+        models_bytes: 0,
+        total_bytes: 0,
+    };
+    let Ok(entries) = std::fs::read_dir(data_dir) else {
+        return breakdown;
+    };
+    for entry in entries.flatten() {
+        let bytes = entry_size(&entry);
+        breakdown.total_bytes += bytes;
+        if models_dir.as_deref() == Some(entry.path().as_path()) {
+            breakdown.models_bytes = bytes;
+            continue;
+        }
+        match entry.file_name().to_str() {
+            Some("recordings") => breakdown.recordings_bytes = bytes,
+            Some("library") => breakdown.library_bytes = bytes,
+            Some("transcriptions.db" | "transcriptions.db-wal" | "transcriptions.db-shm") => {
+                breakdown.databases_bytes += bytes
+            }
+            _ => {}
+        }
+    }
+    breakdown
+}
+
+// Unreadable entries count as zero rather than failing the whole walk.
+fn entry_size(entry: &std::fs::DirEntry) -> u64 {
+    match entry.metadata() {
+        Ok(metadata) if metadata.is_dir() => std::fs::read_dir(entry.path())
+            .map(|entries| entries.flatten().map(|entry| entry_size(&entry)).sum())
+            .unwrap_or(0),
+        Ok(metadata) if metadata.is_file() => metadata.len(),
+        _ => 0,
+    }
+}
+
 #[tauri::command]
 fn apple_llm_availability() -> String {
-    use glimpse_speech::cleanup::AppleAvailability;
-    match glimpse_speech::cleanup::apple_availability() {
+    use glimpse_language::apple::AppleAvailability;
+    match glimpse_language::apple::apple_availability() {
         AppleAvailability::Available => "available",
         AppleAvailability::NotEnabled => "not_enabled",
         AppleAvailability::NotReady => "not_ready",
@@ -1831,33 +1816,6 @@ fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(),
     app.opener()
         .reveal_item_in_dir(&canonical_path)
         .map_err(|err| format!("Failed to open path: {err}"))
-}
-
-fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
-    let mut total_size = 0u64;
-
-    if !path.exists() {
-        return Ok(0);
-    }
-
-    if path.is_file() {
-        return Ok(path.metadata()?.len());
-    }
-
-    if path.is_dir() {
-        for entry in std::fs::read_dir(path)? {
-            let entry = entry?;
-            let metadata = entry.metadata()?;
-
-            if metadata.is_file() {
-                total_size += metadata.len();
-            } else if metadata.is_dir() {
-                total_size += calculate_dir_size(&entry.path())?;
-            }
-        }
-    }
-
-    Ok(total_size)
 }
 
 #[tauri::command]

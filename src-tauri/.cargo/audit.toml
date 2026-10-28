@@ -1,0 +1,5 @@
+[advisories]
+# zip 4.6.1 comes only from tauri-plugin-updater 2.14.0, which extracts zip
+# updates after verifying their signature. Glimpse ships signed installers,
+# not zips. Remove once the updater depends on zip 9.
+ignore = ["RUSTSEC-2026-0367", "RUSTSEC-2026-0368", "RUSTSEC-2026-0369"]

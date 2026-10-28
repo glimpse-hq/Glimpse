@@ -2,7 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Warning as AlertTriangle,
   Check,
@@ -16,11 +16,6 @@ import SectionLabel from "../../../../shared/ui/SectionLabel";
 import SettingCard from "../../../../shared/ui/SettingCard";
 import SettingRow, { ToggleRow } from "../../../../shared/ui/SettingRow";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import {
-  checkMacInputMonitoringPermission,
-  requestMacAccessibilityPermission,
-  requestMacInputMonitoringPermission,
-} from "../../../../shared/lib/macosPermissions";
 import { buildAppLocaleOptions } from "../../../../shared/lib/appLocales";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { useFocusTrap } from "../../../../shared/hooks/useFocusTrap";
@@ -33,6 +28,8 @@ import type {
   TextSizeMode,
   ThemeMode,
 } from "../../../../types";
+import { GITHUB_URL } from "../../../../shared/lib/links";
+import { startDragStep } from "../../dragStep";
 
 type RecordingPrunePreview = {
   candidate_count: number;
@@ -144,12 +141,13 @@ const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
 };
 
 type AppTabProps = {
-  variants: Variants;
   active: boolean;
   micPermission: boolean | null;
   accessibilityPermission: boolean | null;
   inputMonitoringPermission: boolean | null;
   onRequestMicrophonePermission: () => Promise<void>;
+  onRequestAccessibilityPermission: () => Promise<void>;
+  onRequestInputMonitoringPermission: () => Promise<void>;
   textSizeMode: TextSizeMode;
   onTextSizeModeChange: (mode: TextSizeMode) => void;
   themeMode: ThemeMode;
@@ -175,12 +173,13 @@ type AppTabProps = {
 };
 
 const AppTab = ({
-  variants,
   active,
   micPermission,
   accessibilityPermission,
   inputMonitoringPermission,
   onRequestMicrophonePermission,
+  onRequestAccessibilityPermission,
+  onRequestInputMonitoringPermission,
   textSizeMode,
   onTextSizeModeChange,
   themeMode,
@@ -233,36 +232,7 @@ const AppTab = ({
   const handleDuckScrubStart = (
     event:
       React.MouseEvent<HTMLSpanElement> | React.TouchEvent<HTMLSpanElement>,
-  ) => {
-    event.preventDefault();
-    const startX =
-      "touches" in event ? event.touches[0].clientX : event.clientX;
-    const initialIndex = duckIndex;
-    let lastIndex = initialIndex;
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      const currentX =
-        "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-      const steps = Math.round((currentX - startX) / 15);
-      const nextIndex = Math.min(
-        duckStops.length - 1,
-        Math.max(0, initialIndex + steps),
-      );
-      if (nextIndex !== lastIndex) {
-        lastIndex = nextIndex;
-        handleDuckChange(nextIndex);
-      }
-    };
-    const handleEnd = () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("touchend", handleEnd);
-    };
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchmove", handleMove, { passive: false });
-    window.addEventListener("touchend", handleEnd);
-  };
+  ) => startDragStep(event, duckIndex, duckStops.length, handleDuckChange);
   const duckDescription =
     mediaAction === "off"
       ? t({
@@ -614,14 +584,7 @@ const AppTab = ({
 
   return (
     <>
-      <motion.div
-        key="app"
-        variants={variants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        className="space-y-6"
-      >
+      <div className="space-y-6">
         <div className="space-y-2">
           <SectionLabel>
             {t({
@@ -739,15 +702,8 @@ const AppTab = ({
                     description={
                       <OpenSettingsButton
                         visible={accessibilityPermission === false}
-                        onClick={async () => {
-                          try {
-                            const granted =
-                              await requestMacAccessibilityPermission();
-                            if (!granted)
-                              await invoke("open_accessibility_settings");
-                          } catch {
-                            await invoke("open_accessibility_settings");
-                          }
+                        onClick={() => {
+                          void onRequestAccessibilityPermission();
                         }}
                       />
                     }
@@ -770,16 +726,8 @@ const AppTab = ({
                     description={
                       <OpenSettingsButton
                         visible={inputMonitoringPermission === false}
-                        onClick={async () => {
-                          try {
-                            await requestMacInputMonitoringPermission();
-                            const granted =
-                              await checkMacInputMonitoringPermission();
-                            if (!granted)
-                              await invoke("open_input_monitoring_settings");
-                          } catch {
-                            await invoke("open_input_monitoring_settings");
-                          }
+                        onClick={() => {
+                          void onRequestInputMonitoringPermission();
                         }}
                       />
                     }
@@ -812,11 +760,7 @@ const AppTab = ({
                         "Anonymous. Never includes transcripts or audio.",
                     })}{" "}
                     <button
-                      onClick={() =>
-                        openUrl(
-                          "https://github.com/glimpse-hq/Glimpse/wiki/Analytics",
-                        )
-                      }
+                      onClick={() => openUrl(`${GITHUB_URL}/wiki/Analytics`)}
                       className="ui-color-muted hover:text-content-secondary transition-colors underline"
                     >
                       {t({
@@ -1048,7 +992,7 @@ const AppTab = ({
             </SettingCard>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {active &&
         createPortal(

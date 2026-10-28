@@ -21,14 +21,26 @@ function isModifierToken(token: string): boolean {
   return modifierRank(token) !== Number.MAX_SAFE_INTEGER;
 }
 
-function humanizeModifierToken(token: string): string {
-  const modifierDisplay: Record<string, string> = {
-    Cmd: isMacPlatform ? "Command" : "Win",
-    Opt: isMacPlatform ? "Option" : "Alt",
-    Ctrl: "Ctrl",
-    Shift: "Shift",
-    Fn: "Fn",
-  };
+// Mac key symbols, for places too narrow for the names.
+const MAC_MODIFIER_SYMBOLS: Record<string, string> = {
+  Cmd: "⌘",
+  Opt: "⌥",
+  Ctrl: "⌃",
+  Shift: "⇧",
+  Fn: "fn",
+};
+
+function humanizeModifierToken(token: string, symbols: boolean): string {
+  const modifierDisplay: Record<string, string> =
+    symbols && isMacPlatform
+      ? MAC_MODIFIER_SYMBOLS
+      : {
+          Cmd: isMacPlatform ? "Command" : "Win",
+          Opt: isMacPlatform ? "Option" : "Alt",
+          Ctrl: "Ctrl",
+          Shift: "Shift",
+          Fn: "Fn",
+        };
 
   for (const modifier of MODIFIER_ORDER) {
     if (token === modifier) {
@@ -172,13 +184,16 @@ function shortcutTokens(shortcut: string): string[] {
   return shortcut.split("+").map(normalizeShortcutToken).filter(Boolean);
 }
 
-export function shortcutDisplayParts(shortcut: string): string[] {
+export function shortcutDisplayParts(
+  shortcut: string,
+  { symbols = false }: { symbols?: boolean } = {},
+): string[] {
   const tokens = shortcutTokens(shortcut);
 
   const modifiers = tokens
     .filter(isModifierToken)
     .sort((left, right) => modifierRank(left) - modifierRank(right))
-    .map(humanizeModifierToken);
+    .map((token) => humanizeModifierToken(token, symbols));
 
   const keys = tokens
     .filter((token) => !isModifierToken(token))
@@ -187,6 +202,9 @@ export function shortcutDisplayParts(shortcut: string): string[] {
   return [...modifiers, ...keys];
 }
 
-export function formatShortcutForDisplay(shortcut: string): string {
-  return shortcutDisplayParts(shortcut).join(" + ");
+export function formatShortcutForDisplay(
+  shortcut: string,
+  options?: { symbols?: boolean },
+): string {
+  return shortcutDisplayParts(shortcut, options).join(" + ");
 }

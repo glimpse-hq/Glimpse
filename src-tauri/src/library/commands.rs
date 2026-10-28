@@ -1,28 +1,26 @@
 use std::fs;
 use std::path::{Component, Path, PathBuf};
-#[cfg(target_os = "macos")]
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
-#[cfg(target_os = "macos")]
 use parking_lot::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::library::{LibraryJob, LibraryJobKind};
 use crate::{AppRuntime, AppState};
 
+use super::export::build_export_content;
 use super::processing::{
-    build_export_content, create_item_from_path, library_root, probe_media_duration_ms,
-    stored_original_path,
+    create_item_from_path, library_root, probe_media_duration_ms, stored_original_path,
 };
-use super::queue::schedule_library_job;
+use super::queue::{fail_library_item, schedule_library_job};
 #[cfg(target_os = "macos")]
 use super::types::EVENT_LIBRARY_OPEN_IMPORT;
 use super::types::{
-    EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR, ExportFormat, JobSource, LibraryCompletePayload,
-    LibraryErrorPayload, LibraryFilter, LibraryImportOptions, LibraryItem, LibraryItemPatch,
-    LibraryItemStatus, LibraryItemsPage,
+    EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_RESTORED, ExportFormat, JobSource,
+    LibraryCompletePayload, LibraryFilter, LibraryImportOptions, LibraryItem, LibraryItemPatch,
+    LibraryItemStatus, LibraryItemsPage, cancelled_error,
 };
 
 #[cfg(target_os = "macos")]
@@ -160,6 +158,9 @@ pub fn update_library_item(
     Ok(updated)
 }
 
+// How long a deleted item can be restored before its files go to the Trash.
+const LIBRARY_UNDO_WINDOW: Duration = Duration::from_secs(60);
+
 #[tauri::command]
 pub async fn delete_library_item(
     id: String,
@@ -168,8 +169,8 @@ pub async fn delete_library_item(
 ) -> Result<(), String> {
     let was_queued = state.remove_library_job(&id);
     state.cancel_library_transcription(&id);
-    // A running job holds the audio open, which blocks the Recycle Bin move on
-    // Windows, and keeps the queue slot until it has actually stopped.
+    // A running job keeps the queue slot until it has actually stopped, and its
+    // last status write needs the item still listed.
     let stop_deadline = Instant::now() + LIBRARY_JOB_STOP_TIMEOUT;
     while state.library_job_pending(&id) {
         if Instant::now() >= stop_deadline {
@@ -179,53 +180,150 @@ pub async fn delete_library_item(
     }
 
     let storage = state.storage();
-    let item = storage
-        .get_library_item(&id)
-        .map_err(|err| format!("Failed to load library item: {err}"))?;
-    let Some(item) = item else {
-        return Ok(());
+    let deleted = match storage.delete_library_item(&id) {
+        Ok(deleted) => deleted,
+        Err(err) => {
+            // The item stays; a job it lost from the queue shows as cancelled, like
+            // the Cancel button, unless a retry has queued it again meanwhile.
+            if was_queued && !state.library_job_pending(&id) {
+                fail_library_item(&app, &storage, &id, cancelled_error().to_string(), true);
+            }
+            return Err(format!("Failed to delete library item: {err}"));
+        }
     };
+    if !deleted {
+        return Ok(());
+    }
 
-    let trash_target = match determine_delete_scope(&app, &item.audio_path) {
+    let deleted_at = Instant::now();
+    undo_stack().lock().push((id.clone(), deleted_at));
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(LIBRARY_UNDO_WINDOW).await;
+        let still_deleted = {
+            let mut stack = undo_stack().lock();
+            let before = stack.len();
+            stack.retain(|(entry_id, at)| !(*entry_id == id && *at == deleted_at));
+            before != stack.len()
+        };
+        if still_deleted {
+            let _ =
+                tauri::async_runtime::spawn_blocking(move || trash_deleted_item(&app, &id)).await;
+        }
+    });
+    Ok(())
+}
+
+// Deleted items that can still be restored, most recent last.
+fn undo_stack() -> &'static Mutex<Vec<(String, Instant)>> {
+    static STACK: OnceLock<Mutex<Vec<(String, Instant)>>> = OnceLock::new();
+    STACK.get_or_init(Default::default)
+}
+
+/// Restores the most recently deleted item that is still in its undo window.
+#[tauri::command]
+pub fn restore_deleted_library_item(
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    let Some(entry) = undo_stack().lock().pop() else {
+        return Ok(None);
+    };
+    match reopen_deleted_item(&state.storage(), &entry.0) {
+        Ok(true) => Ok(Some(entry.0)),
+        Ok(false) => Ok(None),
+        Err(err) => {
+            undo_stack().lock().push(entry);
+            Err(format!("Failed to restore library item: {err}"))
+        }
+    }
+}
+
+fn reopen_deleted_item(
+    storage: &std::sync::Arc<crate::storage::StorageManager>,
+    id: &str,
+) -> Result<bool> {
+    if !storage.restore_library_item(id)? {
+        return Ok(false);
+    }
+    // Deleting dropped its queued or running job.
+    if let Ok(Some(item)) = storage.get_library_item(id)
+        && matches!(
+            item.status,
+            LibraryItemStatus::Pending
+                | LibraryItemStatus::Importing { .. }
+                | LibraryItemStatus::Transcribing { .. }
+                | LibraryItemStatus::Cancelling
+        )
+    {
+        set_library_status(storage, id, LibraryItemStatus::Cancelled);
+    }
+    Ok(true)
+}
+
+// Never deletes for good: when the move fails, the item comes back with its
+// files.
+fn trash_deleted_item(app: &AppHandle<AppRuntime>, id: &str) {
+    let storage = app.state::<AppState>().storage();
+    let item = match storage.get_deleted_library_items() {
+        Ok(items) => items.into_iter().find(|item| item.id == id),
+        Err(err) => {
+            tracing::error!("Failed to load deleted library item {id}: {err}");
+            return;
+        }
+    };
+    let Some(item) = item else {
+        return;
+    };
+    let trash_target = match determine_delete_scope(app, &item.audio_path) {
         LibraryDeleteScope::DeleteFile(path) if path.exists() => Some(path),
         LibraryDeleteScope::DeleteDirectory(path) => Some(path),
         _ => None,
     };
-    let trashed = match trash_target {
-        Some(path) => tauri::async_runtime::spawn_blocking(move || move_to_trash(&path))
-            .await
-            .unwrap_or_else(|err| Err(format!("Couldn't move the audio to the Trash: {err}"))),
-        None => Ok(()),
-    };
-    if let Err(err) = trashed {
-        // The item stays; a job it lost from the queue shows as cancelled, like
-        // the Cancel button, unless a retry has queued it again meanwhile. An
-        // active job reports its own cancellation.
-        if was_queued && !state.library_job_pending(&id) {
-            set_library_status(&storage, &id, LibraryItemStatus::Cancelled);
-            let _ = app.emit(
-                EVENT_LIBRARY_ERROR,
-                LibraryErrorPayload {
-                    id: id.clone(),
-                    message: "Transcription cancelled".to_string(),
-                    cancelled: true,
-                },
-            );
+    if let Some(path) = trash_target
+        && let Err(err) = crate::platform::move_to_trash(&path)
+    {
+        tracing::warn!("Couldn't move deleted library item {id} to the Trash: {err}");
+        if let Err(err) = reopen_deleted_item(&storage, id) {
+            tracing::error!("Failed to restore library item {id}: {err}");
+            return;
         }
-        return Err(err);
+        let _ = app.emit(
+            EVENT_LIBRARY_RESTORED,
+            LibraryCompletePayload { id: id.to_string() },
+        );
+        crate::toast::show(
+            app,
+            "error",
+            None,
+            &crate::toast::native(app, "native.toast.library_trash_failed"),
+        );
+        return;
     }
-
-    storage
-        .delete_library_item(&id)
-        .map_err(|err| format!("Failed to delete library item: {err}"))?;
-    Ok(())
+    if let Err(err) = storage.purge_library_item(id) {
+        tracing::error!("Failed to purge library item {id}: {err}");
+    }
 }
 
-// Never deletes for good: deleting promises the files can be restored, so a
-// failed move keeps the item and its files.
-fn move_to_trash(path: &Path) -> Result<(), String> {
-    crate::platform::move_to_trash(path)
-        .map_err(|err| format!("Couldn't move the audio to the Trash: {err}"))
+/// Moves the files of items left deleted by an earlier session to the Trash.
+pub(crate) fn purge_deleted_library_items(app: &AppHandle<AppRuntime>) {
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let items = match app
+            .state::<AppState>()
+            .storage()
+            .get_deleted_library_items()
+        {
+            Ok(items) => items,
+            Err(err) => {
+                tracing::error!("Failed to load deleted library items: {err}");
+                return;
+            }
+        };
+        for item in items {
+            if !undo_stack().lock().iter().any(|(id, _)| *id == item.id) {
+                trash_deleted_item(&app, &item.id);
+            }
+        }
+    });
 }
 
 #[tauri::command]
@@ -235,14 +333,12 @@ pub fn cancel_library_transcription(
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     if state.remove_library_job(&id) {
-        set_library_status(&state.storage(), &id, LibraryItemStatus::Cancelled);
-        let _ = app.emit(
-            EVENT_LIBRARY_ERROR,
-            LibraryErrorPayload {
-                id,
-                message: "Transcription cancelled".to_string(),
-                cancelled: true,
-            },
+        fail_library_item(
+            &app,
+            &state.storage(),
+            &id,
+            cancelled_error().to_string(),
+            true,
         );
         return Ok(());
     }
@@ -278,15 +374,7 @@ pub fn retry_library_transcription(
     let job = match build_retry_job(&item) {
         Ok(job) => job,
         Err(message) => {
-            set_library_item_error(&storage, &id, &message);
-            let _ = app.emit(
-                EVENT_LIBRARY_ERROR,
-                LibraryErrorPayload {
-                    id,
-                    message: message.clone(),
-                    cancelled: false,
-                },
-            );
+            fail_library_item(&app, &storage, &id, message.clone(), false);
             return Err(message);
         }
     };
@@ -328,11 +416,15 @@ pub async fn rediarize_library_item(
             tracing::warn!("[library] speaker detection failed: {err}");
             err.to_string()
         })?;
+        let transcript =
+            (!item.transcript_edited && !item.llm_cleanup_enabled && !labeled.segments.is_empty())
+                .then(|| super::speakers::transcript_from_segments(&labeled.segments));
         // A transcription or a speaker edit made meanwhile must not be overwritten.
         storage
             .update_library_item_if(
                 &task_id,
                 LibraryItemPatch {
+                    transcript,
                     segments: Some(labeled.segments),
                     words: labeled.words,
                     speakers: Some(labeled.speakers),
@@ -341,6 +433,7 @@ pub async fn rediarize_library_item(
                 },
                 |current| {
                     matches!(current.status, LibraryItemStatus::Complete)
+                        && current.transcript == item.transcript
                         && current.segments == item.segments
                         && current.words == item.words
                         && current.speakers == item.speakers
@@ -488,15 +581,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                     );
                     continue;
                 }
-                set_library_status(&storage, &item.id, LibraryItemStatus::Cancelled);
-                let _ = app.emit(
-                    EVENT_LIBRARY_ERROR,
-                    LibraryErrorPayload {
-                        id: item.id.clone(),
-                        message: "Transcription cancelled".to_string(),
-                        cancelled: true,
-                    },
-                );
+                fail_library_item(app, &storage, &item.id, cancelled_error().to_string(), true);
             }
             LibraryItemStatus::Pending
             | LibraryItemStatus::Importing { .. }
@@ -534,7 +619,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                             },
                         );
                     }
-                    None => set_library_item_error(&storage, &item.id, &message),
+                    None => fail_library_item(app, &storage, &item.id, message, false),
                 },
             },
             _ => {}
@@ -687,20 +772,6 @@ fn find_recoverable_source_path(item: &LibraryItem) -> Option<PathBuf> {
 
 fn missing_original_file_message() -> String {
     "Original file not found. Re-import the file to try again.".to_string()
-}
-
-fn set_library_item_error(
-    storage: &std::sync::Arc<crate::storage::StorageManager>,
-    id: &str,
-    message: &str,
-) {
-    set_library_status(
-        storage,
-        id,
-        LibraryItemStatus::Error {
-            message: message.to_string(),
-        },
-    );
 }
 
 fn set_library_status(

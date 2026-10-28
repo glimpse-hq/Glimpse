@@ -641,7 +641,8 @@ fn path_tail(path: &str) -> String {
         .to_string()
 }
 
-fn stable_hash(value: &str) -> String {
+/// FNV-1a, stable across Rust releases unlike `DefaultHasher`.
+pub(crate) fn stable_hash(value: &str) -> String {
     const FNV_OFFSET: u64 = 0xcbf29ce484222325;
     const FNV_PRIME: u64 = 0x100000001b3;
     let mut hash = FNV_OFFSET;

@@ -3,6 +3,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
 } from "react";
@@ -22,7 +23,6 @@ import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import FilterMenu from "../../../shared/ui/FilterMenu";
-import type { TranscriptionRecord } from "../../../types";
 import {
   parseTranscriptionSearch,
   withSortToken,
@@ -108,14 +108,18 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     isLoading,
     isFetched,
   } = useTranscriptionList(filter, isActive);
-  const deleteMutation = useDeleteTranscription();
+  // mutateAsync is stable across renders, unlike the mutation objects.
+  const { mutateAsync: deleteTranscription } = useDeleteTranscription();
   const {
-    retry: retryMutation,
-    cancelRetry: cancelRetryMutation,
+    retry: { mutateAsync: retryTranscription },
+    cancelRetry: { mutateAsync: cancelRetryTranscription },
     retryingIds,
   } = useRetryTranscription(isActive);
-  const { retryLlm: retryLlmMutation, cleaningIds } = useRetryLlmCleanup();
-  const undoLlmMutation = useUndoLlmCleanup();
+  const {
+    retryLlm: { mutateAsync: retryLlmCleanup },
+    cleaningIds,
+  } = useRetryLlmCleanup();
+  const { mutateAsync: undoLlmCleanup } = useUndoLlmCleanup();
   const retryingIdSet = useMemo(() => new Set(retryingIds), [retryingIds]);
   const cleaningIdSet = useMemo(() => new Set(cleaningIds), [cleaningIds]);
   const overflowByIdRef = useRef(new Map<string, boolean>());
@@ -123,29 +127,29 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     overflowByIdRef.current.set(id, overflowing);
   }, []);
 
-  const freshIdsRef = useRef<{
-    data: TranscriptionRecord[] | null;
-    seen: Set<string>;
-  }>({ data: null, seen: new Set() });
+  // Records that arrived after the first load fade in once.
+  const seenIdsRef = useRef<Set<string> | null>(null);
+  const [freshIds, setFreshIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
 
-  const freshIds = useMemo(() => {
-    if (!isFetched) return new Set<string>();
-    const cache = freshIdsRef.current;
-    if (cache.data === records) return new Set<string>();
+  // Before paint, so a new row never shows without its fade.
+  useLayoutEffect(() => {
+    if (!isFetched) return;
+    const firstLoad = seenIdsRef.current === null;
+    const seen = seenIdsRef.current ?? new Set<string>();
     const fresh = new Set<string>();
     for (const record of records) {
-      if (cache.data !== null && !cache.seen.has(record.id)) {
-        fresh.add(record.id);
-      }
-      cache.seen.add(record.id);
+      if (!firstLoad && !seen.has(record.id)) fresh.add(record.id);
+      seen.add(record.id);
     }
-    cache.data = records;
-    return fresh;
+    seenIdsRef.current = seen;
+    if (fresh.size > 0) setFreshIds(fresh);
   }, [records, isFetched]);
 
   useEffect(() => {
     if (freshIds.size === 0) return;
-    const timer = setTimeout(() => freshIds.clear(), 600);
+    const timer = setTimeout(() => setFreshIds(new Set()), 600);
     return () => clearTimeout(timer);
   }, [freshIds]);
 
@@ -182,41 +186,6 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
       });
     },
     [i18n.locale, t],
-  );
-
-  const deleteTranscription = useCallback(
-    async (id: string) => {
-      await deleteMutation.mutateAsync(id);
-    },
-    [deleteMutation],
-  );
-
-  const retryTranscription = useCallback(
-    async (id: string) => {
-      await retryMutation.mutateAsync(id);
-    },
-    [retryMutation],
-  );
-
-  const cancelRetryTranscription = useCallback(
-    async (id: string) => {
-      await cancelRetryMutation.mutateAsync(id);
-    },
-    [cancelRetryMutation],
-  );
-
-  const retryLlmCleanup = useCallback(
-    async (id: string) => {
-      await retryLlmMutation.mutateAsync(id);
-    },
-    [retryLlmMutation],
-  );
-
-  const undoLlmCleanup = useCallback(
-    async (id: string) => {
-      await undoLlmMutation.mutateAsync(id);
-    },
-    [undoLlmMutation],
   );
 
   const sortOptions: { value: TranscriptionSort; label: string }[] = [

@@ -1,8 +1,4 @@
-/**
- * Label that flies out beside a collapsed sidebar item on hover or focus.
- * Pure CSS: the parent must be `group relative`. Renders nothing when the
- * sidebar is expanded, since the label is already visible inline.
- */
+// Hover label beside a collapsed sidebar item; the parent must be `group relative`.
 const SidebarTip = ({ label, show }: { label: string; show: boolean }) => {
   if (!show) return null;
   return (

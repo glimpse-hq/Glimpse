@@ -1,14 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { useCallback, useState, type ReactNode } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { type ReactNode } from "react";
 import {
   SpinnerGap as Loader2,
   PencilSimple,
   CaretRight,
 } from "@phosphor-icons/react";
 import { shortcutDisplayParts } from "../../../shared/lib/shortcuts";
-import { useShortcutCapture } from "../../../shared/hooks/useShortcutCapture";
 import { useInputDevices } from "../../settings/queries";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import {
@@ -16,6 +14,7 @@ import {
   OnboardingStep,
   PRIMARY_BUTTON_CLASS,
   ShortcutKeys,
+  useSetupShortcutCapture,
   type StepMotionProps,
 } from "./shared";
 
@@ -49,36 +48,13 @@ export function ReadyStep({
   onComplete,
 }: ReadyStepProps) {
   const { t } = useLingui();
-  const [capturing, setCapturing] = useState(false);
-  const [preview, setPreview] = useState("");
+  const { capturing, preview, startCapture, stopCapture } =
+    useSetupShortcutCapture(onSetShortcut);
   const inputDevices = useInputDevices().data ?? [];
   const systemDefaultLabel = t({
     id: "onboarding.done.recap.microphone_default",
     message: "System default",
   });
-
-  const stopCapture = useCallback(async () => {
-    await invoke("set_shortcut_capture_active", { active: false }).catch(
-      () => {},
-    );
-    setCapturing(false);
-    setPreview("");
-  }, []);
-
-  useShortcutCapture({
-    active: capturing,
-    onCancel: stopCapture,
-    onPreviewChange: setPreview,
-    onShortcutCaptured: onSetShortcut,
-  });
-
-  const startCapture = () => {
-    setPreview("");
-    setCapturing(true);
-    void invoke("set_shortcut_capture_active", { active: true }).catch(() => {
-      setCapturing(false);
-    });
-  };
 
   return (
     <OnboardingStep
@@ -204,7 +180,7 @@ export function ReadyStep({
             className="h-7 max-w-[16rem] shrink-0"
             buttonClassName="h-7 !rounded-md !border-0 !bg-transparent px-0 ui-text-body-sm-strong hover:!bg-transparent"
             valueClassName="text-content-primary text-right"
-            menuClassName="top-8"
+            menuClassName="top-8 !left-auto w-max min-w-full max-w-[20rem]"
             truncate
           />
         </Row>

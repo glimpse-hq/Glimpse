@@ -11,7 +11,7 @@ const ApiKeyField = ({
   placeholder,
   ariaLabel,
 }: ApiKeyFieldProps) => (
-  <div className="mt-2 border-b border-border-secondary transition-colors focus-within:border-content-primary">
+  <div className="border-b border-border-secondary transition-colors focus-within:border-content-primary">
     <input
       type="password"
       value={value}

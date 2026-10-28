@@ -43,7 +43,7 @@ export async function getPurchasePlans(): Promise<PurchasePlan[]> {
 }
 
 export type CheckoutSource =
-  "account" | "locked_view" | "trial_ended" | "activation";
+  "account" | "locked_view" | "trial_ended" | "activation" | "announcement";
 
 export async function openCheckout(args: {
   tier: PurchasePlan["id"];
@@ -61,13 +61,18 @@ export type ActivationError = {
 };
 
 export type TrialEndedScreen = {
-  libraryItems: number;
+  // Models only paid features use that are on this computer. Continuing for
+  // free removes them.
+  installedModels: ("speakers" | "language")[];
 };
 
 export async function getTrialEndedScreen(): Promise<TrialEndedScreen | null> {
   return invoke<TrialEndedScreen | null>("get_trial_ended_screen");
 }
 
-export async function dismissTrialEndedScreen(): Promise<void> {
-  return invoke("dismiss_trial_ended_screen");
+// Keeping only free dictation also removes the models only Plus uses.
+export async function dismissTrialEndedScreen(
+  keepFree: boolean,
+): Promise<void> {
+  return invoke("dismiss_trial_ended_screen", { keepFree });
 }

@@ -1,4 +1,3 @@
-import { motion, type Variants } from "framer-motion";
 import { useEffect, useRef } from "react";
 import type { PurchaseSource } from "../../../license/purchaseConfig";
 import {
@@ -11,7 +10,6 @@ import AccountView from "../AccountView";
 import DictationStatsPanel from "../../../license/components/DictationStatsPanel";
 
 type AccountTabProps = {
-  variants: Variants;
   source?: PurchaseSource;
   focusLicenseKey?: boolean;
   onLicenseKeyFocused?: () => void;
@@ -20,7 +18,6 @@ type AccountTabProps = {
 const noop = () => {};
 
 const AccountTab = ({
-  variants,
   source = "settings_account",
   focusLicenseKey = false,
   onLicenseKeyFocused = noop,
@@ -47,14 +44,7 @@ const AccountTab = ({
   }, [licenseQuery.data, refreshLicense, refreshLicensePending]);
 
   return (
-    <motion.div
-      key="account"
-      variants={variants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <AccountView
         licenseState={licenseQuery.data ?? null}
         licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
@@ -75,7 +65,7 @@ const AccountTab = ({
         onDeactivateLicense={() => deactivateLicense.mutate()}
       />
       <DictationStatsPanel />
-    </motion.div>
+    </div>
   );
 };
 

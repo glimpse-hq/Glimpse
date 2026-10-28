@@ -29,6 +29,14 @@ const LLM_PROVIDER_PRESETS: LlmProviderPreset[] = [
     onDevice: true,
   },
   {
+    id: "bonsai",
+    label: "Glimpse C1 2B",
+    endpoint: "",
+    defaultModel: "",
+    apiKeyRequired: false,
+    onDevice: true,
+  },
+  {
     id: "lmstudio",
     label: "LM Studio",
     endpoint: "http://localhost:1234/v1",
@@ -170,6 +178,8 @@ export function formatTranscriptionLlmModel(stored: string): string | null {
     const providerId = trimmed.slice(0, splitAt) as LlmProvider;
     const model = trimmed.slice(splitAt + 1).trim();
     const providerLabel = getProviderPreset(providerId)?.label ?? providerId;
+    // The cleanup model label already names its size.
+    if (providerId === "bonsai") return providerLabel;
     return model ? `${providerLabel} · ${model}` : providerLabel;
   }
 

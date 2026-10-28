@@ -89,7 +89,6 @@ const TwinklingGrid = React.memo(
 const ToastOverlay: React.FC = () => {
   const { t } = useLingui();
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [isRetrying, setIsRetrying] = useState(false);
   const { copied, copy, reset: resetCopied } = useCopyToClipboard(1500);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismissAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -120,88 +119,39 @@ const ToastOverlay: React.FC = () => {
     return () => observer.disconnect();
   }, [toast]);
 
-  const closeAll = async () => {
-    try {
-      await invoke("toast_dismissed");
-      await getCurrentWindow().hide();
-    } catch (e) {
-      console.error("closeAll failed:", e);
-    }
-  };
-
-  const dismiss = () => {
+  const clearTimers = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
     if (dismissAnimationTimerRef.current) {
       clearTimeout(dismissAnimationTimerRef.current);
-    }
-    setToast((t) => (t ? { ...t, isLeaving: true } : null));
-    dismissAnimationTimerRef.current = setTimeout(async () => {
       dismissAnimationTimerRef.current = null;
-      setToast(null);
-      try {
-        await invoke("toast_dismissed");
-      } catch {
-        /* ignore */
-      }
-      try {
-        await getCurrentWindow().hide();
-      } catch {
-        return;
-      }
-    }, 120);
+    }
   };
 
-  const dismissWithCleanup = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
+  const hideNow = async () => {
+    clearTimers();
     setToast(null);
     resetCopied();
-    closeAll();
+    await invoke("toast_dismissed").catch((err) =>
+      console.error("toast_dismissed failed:", err),
+    );
+    await getCurrentWindow()
+      .hide()
+      .catch((err) => console.error("Hiding the toast window failed:", err));
+  };
+
+  const dismiss = () => {
+    clearTimers();
+    setToast((t) => (t ? { ...t, isLeaving: true } : null));
+    dismissAnimationTimerRef.current = setTimeout(() => void hideNow(), 120);
   };
 
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    dismissWithCleanup();
-  };
-
-  const handleRetry = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!toast?.retryId) return;
-    const generation = toastGenerationRef.current;
-    setIsRetrying(true);
-    try {
-      await invoke("retry_transcription", { id: toast.retryId });
-      // Don't dismiss - the transcription runs async and will show a new toast
-      // (either success, error, or quota exceeded) which replaces this one
-    } catch (err) {
-      console.error("Retry failed:", err);
-      if (generation !== toastGenerationRef.current) return;
-      setIsRetrying(false);
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(dismiss, DURATIONS.error);
-      setToast((prev) =>
-        prev
-          ? {
-              ...prev,
-              message:
-                typeof err === "string"
-                  ? err
-                  : t({
-                      id: "toast.retry_failed",
-                      message: "Retry failed. Please try again.",
-                    }),
-              type: "error",
-            }
-          : null,
-      );
-    }
+    void hideNow();
   };
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -222,20 +172,14 @@ const ToastOverlay: React.FC = () => {
   const handleToastAction = async (action: string) => {
     const generation = toastGenerationRef.current;
     try {
-      const args =
-        toast?.retryId &&
-        (action === "accept_auto_dictionary_suggestion" ||
-          action === "reject_auto_dictionary_suggestion")
-          ? { suggestion: toast.retryId }
-          : undefined;
-      await invoke(action, args);
+      await invoke(action, toast?.actionArgs ?? undefined);
       // copy_last_transcription replaces this toast with its own "Copied" toast,
       // so dismissing here would race and hide that confirmation.
       if (
         action !== "copy_last_transcription" &&
         generation === toastGenerationRef.current
       ) {
-        dismissWithCleanup();
+        void hideNow();
       }
     } catch (err) {
       console.error("Action failed:", err);
@@ -262,7 +206,7 @@ const ToastOverlay: React.FC = () => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && toast) {
         e.preventDefault();
-        dismissWithCleanup();
+        void hideNow();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -271,14 +215,9 @@ const ToastOverlay: React.FC = () => {
 
   useEffect(() => {
     const unsub1 = listen<ToastPayload>("toast:show", (ev) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (dismissAnimationTimerRef.current) {
-        clearTimeout(dismissAnimationTimerRef.current);
-        dismissAnimationTimerRef.current = null;
-      }
+      clearTimers();
       toastGenerationRef.current += 1;
       setToast({ ...ev.payload, isLeaving: false });
-      setIsRetrying(false);
       resetCopied();
 
       const autoDismiss = ev.payload.autoDismiss !== false;
@@ -289,48 +228,26 @@ const ToastOverlay: React.FC = () => {
     });
 
     const unsub2 = listen("toast:hide", () => dismiss());
-    const unsub3 = listen("recording:start", async () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      if (dismissAnimationTimerRef.current) {
-        clearTimeout(dismissAnimationTimerRef.current);
-        dismissAnimationTimerRef.current = null;
-      }
-      if (toastRef.current) {
-        setToast(null);
-        resetCopied();
-        try {
-          await invoke("toast_dismissed");
-        } catch {
-          /* ignore */
-        }
-        try {
-          await getCurrentWindow().hide();
-        } catch {
-          return;
-        }
-      }
+    const unsub3 = listen("recording:start", () => {
+      if (toastRef.current) void hideNow();
     });
 
     return () => {
       unsub1.then((u) => u());
       unsub2.then((u) => u());
       unsub3.then((u) => u());
-      if (timerRef.current) clearTimeout(timerRef.current);
+      clearTimers();
     };
   }, []);
 
   if (!toast) return null;
 
   const colors = COLORS[toast.type];
-  const showRetry = toast.retryId && toast.mode === "cloud";
   const showCopy = toast.type === "error";
   const copySecondary = toast.secondaryAction === "copy_last_transcription";
 
   const handleBackgroundClick = () => {
-    dismissWithCleanup();
+    void hideNow();
   };
 
   return (
@@ -428,24 +345,6 @@ const ToastOverlay: React.FC = () => {
             <p className="ui-text-body ui-color-gray-200 leading-relaxed break-words">
               {toast.message}
             </p>
-            {showRetry && (
-              <button
-                type="button"
-                onClick={handleRetry}
-                disabled={isRetrying}
-                className="mt-2 ui-text-body-sm ui-color-info-strong ui-hover-on-solid ui-disabled-gray-600 transition-colors"
-              >
-                {isRetrying
-                  ? t({
-                      id: "toast.retrying",
-                      message: "Retrying...",
-                    })
-                  : t({
-                      id: "toast.retry_transcription",
-                      message: "Retry transcription",
-                    })}
-              </button>
-            )}
             {((toast.action && toast.actionLabel) ||
               (toast.secondaryAction && toast.secondaryActionLabel)) && (
               <div

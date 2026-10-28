@@ -1,4 +1,4 @@
-Glimpse is a local-first dictation app for macOS and Windows (never Linux). Tauri 2: Rust in `src-tauri/`, React + TypeScript in `src/`. Transcription engines live in the sibling crate Glimpse-Speech, pinned by git tag.
+Glimpse is a local-first dictation app for macOS and Windows (never Linux). Tauri 2: Rust in `src-tauri/`, React + TypeScript in `src/`. Transcription engines live in the sibling crate Glimpse-Speech and on-device language models in Glimpse-Language, both pinned by git tag.
 
 ## Before editing
 

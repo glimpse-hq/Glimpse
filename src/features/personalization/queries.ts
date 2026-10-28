@@ -12,6 +12,8 @@ const WEBSITE_ICON_STALE_TIME = 10 * 60 * 1000;
 export const personalizationKeys = {
   all: ["personalization"] as const,
   personalities: () => [...personalizationKeys.all, "personalities"] as const,
+  defaultCleanupInstructions: () =>
+    [...personalizationKeys.all, "defaultCleanupInstructions"] as const,
   installedApps: () => [...personalizationKeys.all, "installedApps"] as const,
   websiteIcons: (sites: string[]) =>
     [...personalizationKeys.all, "websiteIcons", sites] as const,
@@ -23,6 +25,14 @@ export function usePersonalities(enabled: boolean = true) {
     queryFn: personalizationApi.getPersonalities,
     enabled,
     staleTime: PERSONALITIES_STALE_TIME,
+  });
+}
+
+export function useDefaultCleanupInstructions() {
+  return useQuery({
+    queryKey: personalizationKeys.defaultCleanupInstructions(),
+    queryFn: personalizationApi.getDefaultCleanupInstructions,
+    staleTime: Infinity,
   });
 }
 

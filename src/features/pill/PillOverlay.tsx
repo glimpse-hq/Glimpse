@@ -7,8 +7,6 @@ import { usePillState } from "./usePillState";
 import { getExpandedTextSegments } from "../../shared/lib/wordReveal";
 import type { PillStatus, PillTone } from "../../types";
 
-/* ───────────────────────── Constants ───────────────────────── */
-
 interface GridInfo {
   spacing: number;
   cols: number;
@@ -67,8 +65,6 @@ const EXPAND_TRANSITION = [
   "border-radius 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)",
 ].join(", ");
 
-/* ───────────────────────── Color Palette ───────────────────────── */
-
 interface PillColorPalette {
   base: string;
   highlight: string;
@@ -106,8 +102,6 @@ const resolvePillColorPalette = (): PillColorPalette => ({
     FALLBACK_PILL_COLOR_PALETTE.cleanup,
   ),
 });
-
-/* ───────────────────────── Drawing Helpers ───────────────────────── */
 
 function getMaskOpacity(
   x: number,
@@ -153,7 +147,7 @@ function isIconPixel(
   return false;
 }
 
-/** Prepares a canvas for drawing (clears, scales) and calls the render function. */
+// Clears and scales the canvas, then calls the render function.
 function renderToCanvas(
   canvas: HTMLCanvasElement | null,
   grid: GridInfo,
@@ -199,8 +193,6 @@ function drawWaveDot(
   ctx.arc(cx, cy, DOT_RADIUS.wave, 0, Math.PI * 2);
   ctx.fill();
 }
-
-/* ───────────────────────── Component ───────────────────────── */
 
 interface PillOverlayProps {
   className?: string;
@@ -300,8 +292,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const refreshColorPalette = useCallback(() => {
     colorPaletteRef.current = resolvePillColorPalette();
   }, []);
-
-  /* ── Draw: Processing (scattered dot pops) ── */
 
   const drawProcessingFrame = useCallback(
     (time: number) => {
@@ -430,8 +420,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     [renderVisible],
   );
 
-  /* ── Draw: Error (flashing warning icon) ── */
-
   const drawErrorFrame = useCallback(
     (time: number) => {
       renderVisible(
@@ -482,8 +470,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     },
     [renderVisible],
   );
-
-  /* ── Draw: Audio spectrum (listening waveform) ── */
 
   const drawAudioFrame = useCallback(
     (audioData: Uint8Array) => {
@@ -627,8 +613,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     [decay, sensitivity],
   );
 
-  /* ── Draw: Idle (static base dots) ── */
-
   const drawBaseDots = useCallback(
     (fade: number = 1) => {
       renderVisible(
@@ -657,8 +641,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     },
     [renderVisible],
   );
-
-  /* ── Draw: Static icon (error settled state) ── */
 
   const drawStaticIcon = useCallback(
     (icon: number[][], color: string, glowColor?: string) => {
@@ -704,8 +686,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     },
     [renderVisible],
   );
-
-  /* ───────────────────────── Animation Loop ───────────────────────── */
 
   const stopAllAnimations = useCallback(() => {
     if (animationRef.current) {
@@ -834,8 +814,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     hoverPrevRef.current = isHovered;
   }, [isHovered]);
 
-  /* ───────────────────────── Window / Keyboard ───────────────────────── */
-
   const hideWindow = useCallback(async () => {
     try {
       await invoke("cancel_recording");
@@ -857,8 +835,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [pillStatus, dismiss, hideWindow]);
-
-  /* ───────────────────────── Canvas Setup ───────────────────────── */
 
   const setupCanvas = useCallback(() => {
     refreshColorPalette();
@@ -909,7 +885,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     if (pillStatus === "idle") {
       drawBaseDotsRef.current();
     }
-  }, [drawBaseDots, refreshColorPalette, pillStatus]);
+  }, [refreshColorPalette, pillStatus]);
 
   useEffect(() => {
     refreshColorPalette();
@@ -922,8 +898,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     setupCanvas();
     return () => observer.disconnect();
   }, [setupCanvas]);
-
-  /* ───────────────────────── Render ───────────────────────── */
 
   const getStatusMessage = (s: PillStatus) => {
     switch (s) {

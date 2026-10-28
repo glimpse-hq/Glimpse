@@ -7,6 +7,8 @@ use crate::library::{
     LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, PreviousTranscript,
 };
 
+const ACTIVE_STATUSES: &str = "('pending', 'importing', 'transcribing')";
+
 const LIBRARY_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
     error_message, transcript, segments, words, duration_seconds, file_size_bytes, original_format, \
     created_at, transcribed_at, tags, llm_cleanup_enabled, speech_model, show_timestamps, \
@@ -121,16 +123,13 @@ pub(crate) fn get_library_items_page(
     Ok((items, has_more))
 }
 
-pub(crate) fn count_library_items(conn: &Connection) -> Result<u64> {
-    let count: i64 = conn.query_row("SELECT COUNT(*) FROM library_items", [], |row| row.get(0))?;
-    Ok(count.max(0) as u64)
-}
-
 /// Marks an active item as cancelling; false when it already has another status.
 pub(crate) fn mark_library_item_cancelling(conn: &Connection, id: &str) -> Result<bool> {
     let changed = conn.execute(
-        "UPDATE library_items SET status = 'cancelling', progress = 0
-         WHERE id = ?1 AND status IN ('pending', 'importing', 'transcribing')",
+        &format!(
+            "UPDATE library_items SET status = 'cancelling', progress = 0
+         WHERE id = ?1 AND status IN {ACTIVE_STATUSES}"
+        ),
         params![id],
     )?;
     Ok(changed > 0)
@@ -143,7 +142,7 @@ pub(crate) fn get_recoverable_library_items(
     let mut stmt = conn.prepare(&format!(
         "SELECT {LIBRARY_COLUMNS}
          FROM library_items
-         WHERE status IN ('pending', 'importing', 'transcribing', 'cancelling')
+         WHERE status IN ('pending', 'importing', 'transcribing', 'cancelling') AND deleted = 0
          ORDER BY created_at ASC"
     ))?;
 
@@ -249,20 +248,46 @@ pub(crate) fn get_previous_transcript(
     }))
 }
 
-pub(crate) fn delete_library_item(
+/// Hides an item until it is restored or purged; false when it was not listed.
+pub(crate) fn delete_library_item(conn: &Connection, id: &str) -> Result<bool> {
+    let changed = conn.execute(
+        "UPDATE library_items SET deleted = 1 WHERE id = ?1 AND deleted = 0",
+        params![id],
+    )?;
+    Ok(changed > 0)
+}
+
+pub(crate) fn restore_library_item(conn: &Connection, id: &str) -> Result<bool> {
+    let changed = conn.execute(
+        "UPDATE library_items SET deleted = 0 WHERE id = ?1 AND deleted = 1",
+        params![id],
+    )?;
+    Ok(changed > 0)
+}
+
+pub(crate) fn get_deleted_library_items(
     conn: &Connection,
     root: &Path,
-    id: &str,
-) -> Result<Option<String>> {
-    let item = get_library_item(conn, root, id)?;
-    if item.is_some() {
-        conn.execute("DELETE FROM library_items WHERE id = ?1", params![id])?;
-    }
-    Ok(item.map(|value| value.audio_path))
+) -> Result<Vec<LibraryItem>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {LIBRARY_COLUMNS} FROM library_items WHERE deleted = 1"
+    ))?;
+    let items = stmt
+        .query_map([], |row| library_item_from_row(root, row))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(items)
+}
+
+pub(crate) fn purge_library_item(conn: &Connection, id: &str) -> Result<()> {
+    conn.execute(
+        "DELETE FROM library_items WHERE id = ?1 AND deleted = 1",
+        params![id],
+    )?;
+    Ok(())
 }
 
 pub(crate) fn get_library_tags(conn: &Connection) -> Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT tags FROM library_items")?;
+    let mut stmt = conn.prepare("SELECT tags FROM library_items WHERE deleted = 0")?;
     let mut rows = stmt.query([])?;
     let mut set = std::collections::BTreeSet::new();
     while let Some(row) = rows.next()? {
@@ -284,7 +309,7 @@ pub(crate) fn get_library_item(
     id: &str,
 ) -> Result<Option<LibraryItem>> {
     conn.query_row(
-        &format!("SELECT {LIBRARY_COLUMNS} FROM library_items WHERE id = ?1"),
+        &format!("SELECT {LIBRARY_COLUMNS} FROM library_items WHERE id = ?1 AND deleted = 0"),
         params![id],
         |row| library_item_from_row(root, row),
     )
@@ -486,8 +511,23 @@ pub(crate) fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
     (text_terms, tag_terms)
 }
 
+const TAG_CLAUSE: &str = "tags LIKE ? ESCAPE '\\'";
+
+fn escape_like(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
+// Tags are stored as a JSON array, so match the tag's quoted JSON form.
+fn tag_like_pattern(tag: &str) -> String {
+    let quoted = serde_json::to_string(tag).unwrap_or_default();
+    format!("%{}%", escape_like(&quoted))
+}
+
 fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>) {
-    let mut clauses: Vec<String> = Vec::new();
+    let mut clauses: Vec<String> = vec!["deleted = 0".to_string()];
     let mut params: Vec<Box<dyn ToSql>> = Vec::new();
 
     if let Some(search) = filter.search.as_ref()
@@ -497,19 +537,15 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
 
         // Each word matches independently, so word order and gaps don't matter.
         for term in text_terms {
-            let escaped = term
-                .replace('\\', "\\\\")
-                .replace('%', "\\%")
-                .replace('_', "\\_");
-            let like = format!("%{escaped}%");
+            let like = format!("%{}%", escape_like(&term));
             clauses.push("(name LIKE ? ESCAPE '\\' OR transcript LIKE ? ESCAPE '\\')".to_string());
             params.push(Box::new(like.clone()));
             params.push(Box::new(like));
         }
 
         for tag in tag_terms {
-            clauses.push("tags LIKE ?".to_string());
-            params.push(Box::new(format!("%\"{}\"%", tag)));
+            clauses.push(TAG_CLAUSE.to_string());
+            params.push(Box::new(tag_like_pattern(&tag)));
         }
     }
 
@@ -517,7 +553,7 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         let trimmed = status.trim();
         if !trimmed.is_empty() {
             if trimmed == "active" {
-                clauses.push("status IN ('pending', 'importing', 'transcribing')".to_string());
+                clauses.push(format!("status IN {ACTIVE_STATUSES}"));
             } else {
                 clauses.push("status = ?".to_string());
                 params.push(Box::new(trimmed.to_string()));
@@ -528,8 +564,8 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
     if let Some(tag) = filter.tag.as_ref()
         && !tag.trim().is_empty()
     {
-        clauses.push("tags LIKE ?".to_string());
-        params.push(Box::new(format!("%\"{}\"%", tag.trim())));
+        clauses.push(TAG_CLAUSE.to_string());
+        params.push(Box::new(tag_like_pattern(tag.trim())));
     }
 
     if let Some(cutoff) = filter.since_days.and_then(|days| {
@@ -540,9 +576,5 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         params.push(Box::new(cutoff.to_rfc3339()));
     }
 
-    if clauses.is_empty() {
-        ("".to_string(), params)
-    } else {
-        (format!("WHERE {}", clauses.join(" AND ")), params)
-    }
+    (format!("WHERE {}", clauses.join(" AND ")), params)
 }
