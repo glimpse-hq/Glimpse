@@ -54,9 +54,9 @@ fn mode_matches(mode: &Personality, context: &ActiveContext) -> bool {
     let app_match = mode.apps.iter().any(|app| {
         app_matches(&context.app_name, app)
             || context
-                .process_name
-                .as_deref()
-                .is_some_and(|name| app_matches(name, app))
+                .other_names
+                .iter()
+                .any(|name| app_matches(name, app))
     });
     let site_match = if let Some(url) = context.url.as_ref() {
         mode.websites.iter().any(|site| site_matches(url, site))

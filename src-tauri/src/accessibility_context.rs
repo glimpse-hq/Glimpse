@@ -4,8 +4,9 @@ pub(crate) const AX_MESSAGING_TIMEOUT_SECS: f32 = 2.0;
 
 pub struct ActiveContext {
     pub app_name: String,
-    /// The exe name on Windows, matched alongside `app_name`.
-    pub process_name: Option<String>,
+    /// Other names the app goes by on Windows (exe name, Start menu and
+    /// Store names), matched alongside `app_name`.
+    pub other_names: Vec<String>,
     pub window_title: String,
     pub url: Option<String>,
 }
@@ -116,7 +117,7 @@ mod macos {
 
         Some(ActiveContext {
             app_name,
-            process_name: None,
+            other_names: Vec::new(),
             window_title,
             url,
         })
@@ -224,6 +225,26 @@ mod windows_context {
         Some(String::from_utf16_lossy(&buffer[..size as usize]))
     }
 
+    // A packaged app's ID, like "Microsoft.WindowsStore_8wekyb3d8bbwe!App".
+    fn app_user_model_id(pid: u32) -> Option<String> {
+        use windows::Win32::Storage::Packaging::Appx::GetApplicationUserModelId;
+        let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()? };
+        let mut buffer = vec![0u16; 256];
+        let mut len = buffer.len() as u32;
+        let status = unsafe {
+            GetApplicationUserModelId(handle, &mut len, Some(PWSTR(buffer.as_mut_ptr())))
+        };
+        let _ = unsafe { CloseHandle(handle) };
+        if status.is_err() || len == 0 {
+            return None;
+        }
+        let end = buffer
+            .iter()
+            .position(|ch| *ch == 0)
+            .unwrap_or(len as usize);
+        Some(String::from_utf16_lossy(&buffer[..end]))
+    }
+
     fn exe_stem(path: &str) -> String {
         Path::new(path)
             .file_stem()
@@ -305,12 +326,14 @@ mod windows_context {
         if pid == 0 {
             return None;
         }
+        let mut app_pid = pid;
         let mut path = process_image_path(pid)?;
         if exe_stem(&path).eq_ignore_ascii_case("ApplicationFrameHost")
-            && let Some(app_pid) = hosted_app_pid(hwnd, pid)
-            && let Some(app_path) = process_image_path(app_pid)
+            && let Some(hosted_pid) = hosted_app_pid(hwnd, pid)
+            && let Some(hosted_path) = process_image_path(hosted_pid)
         {
-            path = app_path;
+            app_pid = hosted_pid;
+            path = hosted_path;
         }
 
         let process_name = exe_stem(&path);
@@ -323,10 +346,15 @@ mod windows_context {
             .iter()
             .any(|browser| process_name.eq_ignore_ascii_case(browser));
         let url = if is_browser { browser_url(hwnd) } else { None };
+        let mut other_names = crate::platform::windows::icons::picker_names(
+            Path::new(&path),
+            app_user_model_id(app_pid).as_deref(),
+        );
+        other_names.push(process_name);
 
         Some(ActiveContext {
             app_name,
-            process_name: Some(process_name),
+            other_names,
             window_title: window_title(hwnd),
             url,
         })

@@ -1,6 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::os::windows::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+
+use parking_lot::Mutex;
 
 use tauri::AppHandle;
 
@@ -640,6 +643,121 @@ fn ensure_packaged_icon(app_id: &str, cache_dir: &Path) -> Option<PathBuf> {
         &pixels?,
     )?;
     Some(cached)
+}
+
+// Start menu shortcut names by target exe, so a running app maps back to the
+// name the picker showed ("Command Prompt" for cmd.exe).
+static SHORTCUT_NAMES: Mutex<Option<(Instant, HashMap<String, Vec<String>>)>> = Mutex::new(None);
+const SHORTCUT_NAMES_TTL: Duration = Duration::from_secs(300);
+
+/// The names the app picker lists for a running app: its Start menu shortcut
+/// names, or a packaged app's display name.
+pub(crate) fn picker_names(exe_path: &Path, app_id: Option<&str>) -> Vec<String> {
+    let mut names = Vec::new();
+    if let Some(name) = app_id.and_then(packaged_app_display_name) {
+        names.push(name);
+    }
+    let key = exe_path.to_string_lossy().to_lowercase();
+    let mut cache = SHORTCUT_NAMES.lock();
+    if cache
+        .as_ref()
+        .is_none_or(|(built, _)| built.elapsed() > SHORTCUT_NAMES_TTL)
+    {
+        *cache = Some((Instant::now(), shortcut_names_by_target()));
+    }
+    if let Some((_, map)) = cache.as_ref()
+        && let Some(found) = map.get(&key)
+    {
+        names.extend(found.iter().cloned());
+    }
+    names
+}
+
+fn shortcut_names_by_target() -> HashMap<String, Vec<String>> {
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    let mut stack = windows_start_menu_roots();
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            let is_shortcut = path
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("lnk"));
+            let Some(name) = path.file_stem().and_then(|stem| stem.to_str()) else {
+                continue;
+            };
+            if !is_shortcut || is_blacklisted_shortcut(name.trim()) {
+                continue;
+            }
+            if let Some(target) = shortcut_target(&path) {
+                map.entry(target.to_string_lossy().to_lowercase())
+                    .or_default()
+                    .push(name.trim().to_string());
+            }
+        }
+    }
+    map
+}
+
+fn shortcut_target(shortcut_path: &Path) -> Option<PathBuf> {
+    use windows::Win32::Foundation::S_OK;
+    use windows::Win32::System::Com::{
+        CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
+        CoUninitialize, IPersistFile, STGM_READ,
+    };
+    use windows::Win32::UI::Shell::{IShellLinkW, ShellLink};
+    use windows::core::{Interface, PCWSTR};
+
+    let hr = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+    let should_uninitialize = hr == S_OK;
+    let result = (|| {
+        let shell_link: IShellLinkW =
+            unsafe { CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER).ok()? };
+        let persist_file: IPersistFile = shell_link.cast().ok()?;
+        let shortcut_wide = path_to_wide_null(shortcut_path);
+        unsafe {
+            persist_file
+                .Load(PCWSTR(shortcut_wide.as_ptr()), STGM_READ)
+                .ok()?;
+        }
+        let mut buffer = [0u16; 1024];
+        unsafe {
+            shell_link
+                .GetPath(&mut buffer, std::ptr::null_mut(), 0)
+                .ok()?;
+        }
+        wide_buffer_to_string(&buffer).map(PathBuf::from)
+    })();
+    if should_uninitialize {
+        unsafe { CoUninitialize() };
+    }
+    result
+}
+
+fn packaged_app_display_name(app_id: &str) -> Option<String> {
+    use windows::Win32::Foundation::S_OK;
+    use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
+    use windows::Win32::UI::Shell::{IShellItem, SHCreateItemFromParsingName, SIGDN_NORMALDISPLAY};
+    use windows::core::HSTRING;
+
+    let hr = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+    let should_uninitialize = hr == S_OK;
+    let name = (|| {
+        let item: IShellItem = unsafe {
+            SHCreateItemFromParsingName(&HSTRING::from(packaged_app_path(app_id)), None).ok()?
+        };
+        shell_item_name(&item, SIGDN_NORMALDISPLAY)
+    })();
+    if should_uninitialize {
+        unsafe { CoUninitialize() };
+    }
+    name
 }
 
 fn warm_icon_cache_in_background(
