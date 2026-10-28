@@ -1,5 +1,4 @@
-// Caps how long one cross-process Accessibility query may block. Set on the
-// system-wide element, it applies to every element in the process.
+// Caps how long one cross-process Accessibility query may block.
 #[cfg(target_os = "macos")]
 pub(crate) const AX_MESSAGING_TIMEOUT_SECS: f32 = 2.0;
 
@@ -22,8 +21,6 @@ mod macos {
     #[link(name = "ApplicationServices", kind = "framework")]
     unsafe extern "C" {
         fn AXUIElementCreateApplication(pid: pid_t) -> *mut c_void;
-        fn AXUIElementCreateSystemWide() -> *mut c_void;
-        fn AXUIElementGetPid(element: *mut c_void, pid: *mut pid_t) -> i32;
         fn AXUIElementCopyAttributeValue(
             element: *mut c_void,
             attribute: *const c_void,
@@ -63,30 +60,17 @@ mod macos {
         }
     }
 
+    // The system-wide element's AXFocusedApplication fails with
+    // kAXErrorCannotComplete on macOS 27, so ask NSWorkspace instead.
     fn get_frontmost_app() -> Option<(String, pid_t)> {
-        let pid = unsafe {
-            let system = AXUIElementCreateSystemWide();
-            if system.is_null() {
-                return None;
-            }
-            AXUIElementSetMessagingTimeout(system, AX_MESSAGING_TIMEOUT_SECS);
-            let focused = copy_attribute(system, "AXFocusedApplication");
-            CFRelease(system);
-            if focused.is_null() {
-                return None;
-            }
-            let mut pid: pid_t = 0;
-            let status = AXUIElementGetPid(focused, &mut pid);
-            CFRelease(focused);
-            if status != 0 || pid <= 0 {
-                return None;
-            }
-            pid
-        };
-        let app =
-            objc2_app_kit::NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
+        let app = objc2_app_kit::NSWorkspace::sharedWorkspace().frontmostApplication()?;
+        let pid = app.processIdentifier();
         let name = app.localizedName()?.to_string().trim().to_string();
-        (!name.is_empty()).then_some((name, pid))
+        (pid > 0 && !name.is_empty()).then_some((name, pid))
+    }
+
+    pub(crate) fn frontmost_pid() -> Option<pid_t> {
+        get_frontmost_app().map(|(_, pid)| pid)
     }
 
     pub fn get_active_context() -> Option<ActiveContext> {
@@ -136,6 +120,8 @@ mod macos {
     }
 }
 
+#[cfg(target_os = "macos")]
+pub(crate) use macos::frontmost_pid;
 #[cfg(target_os = "macos")]
 pub use macos::get_active_context;
 

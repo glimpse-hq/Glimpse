@@ -82,7 +82,7 @@ mod macos_ax {
 
     #[link(name = "ApplicationServices", kind = "framework")]
     unsafe extern "C" {
-        fn AXUIElementCreateSystemWide() -> AXUIElementRef;
+        fn AXUIElementCreateApplication(pid: i32) -> AXUIElementRef;
         fn AXUIElementCopyAttributeValue(
             element: *mut c_void,
             attribute: *const c_void,
@@ -154,24 +154,25 @@ mod macos_ax {
             return None;
         }
 
+        let pid = crate::accessibility_context::frontmost_pid()?;
         unsafe {
-            let system = AXUIElementCreateSystemWide();
-            if system.is_null() {
+            let app = AXUIElementCreateApplication(pid);
+            if app.is_null() {
                 return None;
             }
             AXUIElementSetMessagingTimeout(
-                system,
+                app,
                 crate::accessibility_context::AX_MESSAGING_TIMEOUT_SECS,
             );
 
             let focused_attr = CFString::new("AXFocusedUIElement");
             let mut focused: *mut c_void = ptr::null_mut();
             let err = AXUIElementCopyAttributeValue(
-                system,
+                app,
                 focused_attr.as_concrete_TypeRef() as *const c_void,
                 &mut focused,
             );
-            CFRelease(system as CFTypeRef);
+            CFRelease(app as CFTypeRef);
 
             if err != AX_ERROR_SUCCESS || focused.is_null() {
                 return None;
