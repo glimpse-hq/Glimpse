@@ -810,6 +810,8 @@ fn show_settings_window(
     SETTINGS_WINDOW_GENERATION.fetch_add(1, Ordering::SeqCst);
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(ActivationPolicy::Regular);
+    #[cfg(not(target_os = "macos"))]
+    let _ = app;
 
     if window.is_minimized().unwrap_or(false) {
         window.unminimize()?;

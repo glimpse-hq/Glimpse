@@ -298,7 +298,9 @@ fn read_samples(path: &Path, from: u64, to: u64) -> Result<Vec<i16>> {
     let mut bytes = vec![0u8; (to - from) as usize * 2];
     reader.into_inner().read_exact(&mut bytes)?;
     Ok(bytes
-        .chunks_exact(2)
-        .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|pair| i16::from_le_bytes(*pair))
         .collect())
 }
