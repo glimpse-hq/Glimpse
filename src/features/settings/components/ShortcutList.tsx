@@ -103,7 +103,7 @@ const ShortcutList = ({
   return (
     <SettingCard>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] items-center gap-x-3 px-2 py-1.5">
-        <div className="col-span-5 grid grid-cols-subgrid pb-1 ui-text-meta ui-color-muted">
+        <div className="col-span-5 grid grid-cols-subgrid items-center pb-1 ui-text-meta ui-color-muted">
           <span>
             {t({
               id: "settings.general.shortcuts.column.shortcut",
@@ -141,7 +141,7 @@ const ShortcutList = ({
           const capturing =
             captureActive?.mode === mode && captureActive.index === index;
           const display = binding.shortcut
-            ? formatShortcutForDisplay(binding.shortcut)
+            ? formatShortcutForDisplay(binding.shortcut, { symbols: true })
             : addShortcutLabel;
           return (
             <div

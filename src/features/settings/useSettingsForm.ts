@@ -914,7 +914,9 @@ export function useSettingsForm({
     onCancel: finalizeCapture,
     onCaptureCancelled: discardEmptyCaptureDraft,
     onPreviewChange: (shortcut) =>
-      setCapturePreview(shortcut ? formatShortcutForDisplay(shortcut) : ""),
+      setCapturePreview(
+        shortcut ? formatShortcutForDisplay(shortcut, { symbols: true }) : "",
+      ),
     onShortcutCaptured: (combo) => {
       clearPendingSettingsSave();
       const target = captureActiveRef.current;
