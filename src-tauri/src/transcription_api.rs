@@ -8,16 +8,6 @@ pub struct TranscriptionSuccess {
     pub language: Option<String>,
 }
 
-pub fn auto_paste_enabled() -> bool {
-    env_flag("GLIMPSE_AUTO_PASTE", true)
-}
-
-fn env_flag(key: &str, default: bool) -> bool {
-    std::env::var(key)
-        .map(|value| matches!(value.to_ascii_lowercase().as_str(), "1" | "true" | "yes"))
-        .unwrap_or(default)
-}
-
 pub fn normalize_transcript(input: &str) -> String {
     input
         .lines()

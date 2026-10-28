@@ -1238,6 +1238,23 @@ body {
   scrollbar-gutter: stable both-edges;
 }
 
+.scroll-quiet::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-quiet::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-quiet::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.scroll-quiet:hover::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb-subtle);
+}
+
 .settings-scroll::-webkit-scrollbar {
   width: 6px;
 }

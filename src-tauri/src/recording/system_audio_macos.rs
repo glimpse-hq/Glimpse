@@ -7,9 +7,7 @@ use anyhow::{Result, anyhow};
 use objc2::AnyThread;
 use objc2::rc::Retained;
 use objc2::runtime::AnyObject;
-use objc2_app_kit::{
-    NSApplicationActivationPolicy, NSBitmapImageFileType, NSBitmapImageRep, NSRunningApplication,
-};
+use objc2_app_kit::{NSApplicationActivationPolicy, NSRunningApplication};
 use objc2_core_audio::{
     AudioDeviceCreateIOProcID, AudioDeviceDestroyIOProcID, AudioDeviceIOProcID, AudioDeviceStart,
     AudioDeviceStop, AudioHardwareCreateAggregateDevice, AudioHardwareCreateProcessTap,
@@ -25,12 +23,11 @@ use objc2_core_audio::{
 };
 use objc2_core_audio_types::{AudioBufferList, AudioStreamBasicDescription, AudioTimeStamp};
 use objc2_core_foundation::{CFDictionary, CFString};
-use objc2_foundation::{NSArray, NSDictionary, NSNumber, NSProcessInfo, NSRect, NSString};
+use objc2_foundation::{NSArray, NSDictionary, NSNumber, NSProcessInfo, NSString};
 
 use super::{AudioApp, SamplesCallback, SystemAudioScope};
 
 const MIN_MACOS: (isize, isize) = (14, 2);
-const APP_ICON_POINTS: f64 = 32.0;
 
 pub(crate) fn supported() -> bool {
     let version = NSProcessInfo::processInfo().operatingSystemVersion();
@@ -155,17 +152,9 @@ pub(crate) fn list_apps() -> Result<Vec<AudioApp>> {
 }
 
 fn icon_data_url(icon: &objc2_app_kit::NSImage) -> Option<String> {
-    let mut rect = NSRect::new(
-        objc2_foundation::NSPoint::new(0.0, 0.0),
-        objc2_foundation::NSSize::new(APP_ICON_POINTS, APP_ICON_POINTS),
-    );
-    let cg_image = unsafe { icon.CGImageForProposedRect_context_hints(&mut rect, None, None) }?;
-    let rep = NSBitmapImageRep::initWithCGImage(NSBitmapImageRep::alloc(), &cg_image);
-    let png = unsafe {
-        rep.representationUsingType_properties(NSBitmapImageFileType::PNG, &NSDictionary::new())
-    }?;
+    let png = crate::platform::macos::icons::icon_png(icon)?;
     use base64::Engine;
-    let encoded = base64::engine::general_purpose::STANDARD.encode(png.to_vec());
+    let encoded = base64::engine::general_purpose::STANDARD.encode(png);
     Some(format!("data:image/png;base64,{encoded}"))
 }
 

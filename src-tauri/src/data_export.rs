@@ -359,7 +359,7 @@ fn is_safe_wipe_target(path: &Path, identifier: &str) -> bool {
 
 #[cfg(windows)]
 fn spawn_windows_cleaner(targets: &[PathBuf]) -> Result<(), String> {
-    use crate::crypto::CREATE_NO_WINDOW;
+    use crate::platform::windows::CREATE_NO_WINDOW;
     use std::os::windows::process::CommandExt;
 
     let delete_commands = targets
@@ -663,6 +663,7 @@ mod tests {
                     synced: false,
                     mode_id: None,
                     mode_name: None,
+                    ..Default::default()
                 },
                 None,
                 None,

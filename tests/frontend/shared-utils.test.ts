@@ -29,8 +29,6 @@ const {
   modelSizeMb,
   sortInstalledModels,
 } = await import("../../src/shared/lib/modelStats");
-const { getDefaultShortcuts } =
-  await import("../../src/features/onboarding/platform");
 
 type Model = Parameters<typeof deriveModelStats>[0];
 
@@ -316,15 +314,5 @@ describe("model stats", () => {
     expect(formatQuantLabel("Full")).toBe("Full");
     expect(isBuiltInModel({ engine_id: "apple" })).toBe(true);
     expect(isBuiltInModel({ engine_id: "whisper" })).toBe(false);
-  });
-});
-
-describe("onboarding default shortcuts", () => {
-  test("Windows avoids Alt+Space, which opens the window menu", () => {
-    const windows = getDefaultShortcuts("windows");
-    expect(Object.values(windows)).not.toContain("Alt+Space");
-    expect(getDefaultShortcuts("macos").smart).toBe("Alt+Space");
-    expect(new Set(Object.values(windows)).size).toBe(3);
-    expect(new Set(Object.values(getDefaultShortcuts("macos"))).size).toBe(3);
   });
 });

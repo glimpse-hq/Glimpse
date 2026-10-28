@@ -1,6 +1,7 @@
 import {
   createContext,
   Fragment,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -9,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { motion } from "framer-motion";
-import { listen } from "@tauri-apps/api/event";
+import { useTauriEvent } from "../../../shared/hooks/useTauriEvent";
 import {
   mulberry32,
   seedFromLicenseKey,
@@ -88,11 +89,12 @@ export function MemberCardPaletteProvider({
     paletteForAppTheme(readAppTheme()),
   );
 
-  useEffect(() => {
-    const sync = () => setPalette(paletteForAppTheme(readAppTheme()));
-    let disposed = false;
-    let unlistenTheme: (() => void) | null = null;
+  const sync = useCallback(
+    () => setPalette(paletteForAppTheme(readAppTheme())),
+    [],
+  );
 
+  useEffect(() => {
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, {
       attributes: true,
@@ -102,24 +104,13 @@ export function MemberCardPaletteProvider({
     const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
     mediaQuery.addEventListener("change", sync);
 
-    void listen("ui:theme_changed", sync)
-      .then((unlisten) => {
-        if (disposed) {
-          unlisten();
-        } else {
-          unlistenTheme = unlisten;
-        }
-      })
-      .catch(() => {});
-
     return () => {
-      disposed = true;
       observer.disconnect();
       mediaQuery.removeEventListener("change", sync);
-      unlistenTheme?.();
-      unlistenTheme = null;
     };
-  }, []);
+  }, [sync]);
+
+  useTauriEvent("ui:theme_changed", sync);
 
   return (
     <MemberCardPaletteContext.Provider value={palette}>

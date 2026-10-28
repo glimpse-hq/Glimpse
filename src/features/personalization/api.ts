@@ -5,6 +5,10 @@ import type {
   WebsiteIcon,
 } from "./components/personalization-utils";
 
+export function getDefaultCleanupInstructions() {
+  return invoke<string>("get_default_cleanup_instructions");
+}
+
 export function getPersonalities() {
   return invoke<Personality[]>("get_personalities");
 }

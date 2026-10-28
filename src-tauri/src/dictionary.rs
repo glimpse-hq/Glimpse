@@ -8,6 +8,10 @@ use crate::{
     settings::{Replacement, UserSettings},
 };
 
+pub(crate) const MAX_DICTIONARY_ENTRIES: usize = 64;
+pub(crate) const MAX_DICTIONARY_ENTRY_CHARS: usize = 160;
+const MAX_REPLACEMENTS: usize = 64;
+
 pub fn sanitize_dictionary_entries(entries: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
     let mut cleaned = Vec::new();
@@ -19,11 +23,11 @@ pub fn sanitize_dictionary_entries(entries: &[String]) -> Vec<String> {
         }
         let normalized = trimmed.to_lowercase();
         if seen.insert(normalized) {
-            let capped: String = trimmed.chars().take(160).collect();
+            let capped: String = trimmed.chars().take(MAX_DICTIONARY_ENTRY_CHARS).collect();
             let capped = capped.trim_end().to_string();
             cleaned.push(capped);
         }
-        if cleaned.len() >= 64 {
+        if cleaned.len() >= MAX_DICTIONARY_ENTRIES {
             break;
         }
     }
@@ -60,7 +64,7 @@ pub fn sanitize_replacements(replacements: &[Replacement]) -> Vec<Replacement> {
                 to: to_capped.trim().to_string(),
             });
         }
-        if cleaned.len() >= 64 {
+        if cleaned.len() >= MAX_REPLACEMENTS {
             break;
         }
     }

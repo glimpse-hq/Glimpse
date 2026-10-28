@@ -1,5 +1,5 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 
 type ShortcutCapturePayload =
   | { kind: "preview"; shortcut: string }
@@ -31,7 +31,16 @@ export function useShortcutCapture({
     onPreviewChange("");
   }, [onPreviewChange]);
 
+  // Capture pauses the backend's shortcuts; an unmount mid-capture must end it.
+  const capturePendingRef = useRef(false);
+  const cancelOnUnmount = useEffectEvent(() => {
+    if (capturePendingRef.current)
+      void Promise.resolve(onCancel()).catch(() => {});
+  });
+  useEffect(() => () => cancelOnUnmount(), []);
+
   useEffect(() => {
+    capturePendingRef.current = active;
     if (!active) return;
 
     let disposed = false;
@@ -40,6 +49,7 @@ export function useShortcutCapture({
     const finishCapture = async (shortcut: string) => {
       if (disposed) return;
       disposed = true;
+      capturePendingRef.current = false;
       unlisten?.();
       unlisten = null;
       try {
@@ -55,6 +65,7 @@ export function useShortcutCapture({
     const cancelCapture = async () => {
       if (disposed) return;
       disposed = true;
+      capturePendingRef.current = false;
       unlisten?.();
       unlisten = null;
       try {

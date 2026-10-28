@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy } from "@phosphor-icons/react";
@@ -10,32 +10,9 @@ import LocalApiTab from "./tabs/LocalApiTab";
 import LockedFeature from "../../license/components/LockedFeature";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
-import ProvidersTab from "./tabs/ProvidersTab";
 import type { PurchaseSource } from "../../license/purchaseConfig";
 import { useSettingsForm } from "../useSettingsForm";
 import { SETTINGS_PANE_LABELS, type SettingsPane } from "../settingsPanes";
-
-type LegacyTab =
-  | "general"
-  | "account"
-  | "models"
-  | "providers"
-  | "local-api"
-  | "about"
-  | "app";
-
-const paneForLegacyTab: Record<LegacyTab, SettingsPane> = {
-  account: "account",
-  general: "general",
-  app: "app",
-  about: "about",
-  models: "models",
-  providers: "providers",
-  "local-api": "api",
-};
-
-const legacyTabFor = (pane: SettingsPane): LegacyTab =>
-  pane === "api" ? "local-api" : pane;
 
 interface SettingsScreenProps {
   active: boolean;
@@ -46,12 +23,6 @@ interface SettingsScreenProps {
   focusLicenseKey?: boolean;
   onLicenseKeyFocused?: () => void;
 }
-
-const paneVariants = {
-  hidden: { opacity: 1, x: 0 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0 } },
-  exit: { opacity: 1, x: 0, transition: { duration: 0 } },
-};
 
 const SettingsScreen = ({
   active,
@@ -68,22 +39,8 @@ const SettingsScreen = ({
     setApiLicenseKeyFocus(false);
     onLicenseKeyFocused?.();
   }, [onLicenseKeyFocused]);
-  const form = useSettingsForm({
-    isOpen: true,
-    active,
-    onClose,
-    initialTab: legacyTabFor(pane),
-  });
-  const { activeLicense, setActiveTab } = form;
-  const localApiLocked = !activeLicense;
-
-  useEffect(() => {
-    setActiveTab(legacyTabFor(pane));
-  }, [pane, setActiveTab]);
-
-  const handleOpenTab = (tab: LegacyTab) => {
-    onPaneChange(paneForLegacyTab[tab]);
-  };
+  const form = useSettingsForm({ pane, active, onClose });
+  const localApiLocked = !form.activeLicense;
 
   return (
     <div className="settings-typescale flex flex-1 flex-col min-h-0">
@@ -99,7 +56,7 @@ const SettingsScreen = ({
           <SettingsErrorBanner
             error={form.error}
             sourceTab={form.errorSourceTab}
-            onOpenTab={handleOpenTab}
+            onOpenPane={onPaneChange}
           />
         </div>
       </div>
@@ -109,11 +66,10 @@ const SettingsScreen = ({
         style={{ scrollbarGutter: "stable" }}
       >
         {form.loading ? null : (
-          <AnimatePresence mode="wait">
+          <>
             {pane === "account" && (
               <AccountTab
                 key="account"
-                variants={paneVariants}
                 source={accountSource}
                 focusLicenseKey={focusLicenseKey || apiLicenseKeyFocus}
                 onLicenseKeyFocused={handleLicenseKeyFocused}
@@ -123,19 +79,12 @@ const SettingsScreen = ({
             {pane === "general" && (
               <GeneralTab
                 key="general"
-                variants={paneVariants}
                 inputDevices={form.inputDevices}
                 microphoneDevice={form.microphoneDevice}
                 onMicrophoneDeviceChange={form.setMicrophoneDevice}
                 language={form.language}
                 onLanguageChange={form.setLanguage}
                 languages={form.languages}
-                smartEnabled={form.smartEnabled}
-                setSmartEnabled={form.setSmartEnabled}
-                holdEnabled={form.holdEnabled}
-                setHoldEnabled={form.setHoldEnabled}
-                toggleEnabled={form.toggleEnabled}
-                setToggleEnabled={form.setToggleEnabled}
                 shortcutBindings={form.shortcutBindings}
                 invalidShortcutDrafts={form.invalidShortcutDrafts}
                 captureActive={form.captureActive}
@@ -144,20 +93,25 @@ const SettingsScreen = ({
                 updateShortcutBinding={form.updateShortcutBinding}
                 addShortcutBinding={form.addShortcutBinding}
                 removeShortcutBinding={form.removeShortcutBinding}
+                moveShortcutBinding={form.moveShortcutBinding}
                 autoDictionaryEnabled={form.autoDictionaryEnabled}
                 autoDictionarySupported={form.autoDictionarySupported}
                 setAutoDictionaryEnabled={form.setAutoDictionaryEnabled}
-                aiFeaturesReady={form.aiFeaturesReady}
                 licenseGateActive={form.licenseGateActive}
+                llmProvider={form.llmProvider}
+                llmAuto={form.llmAuto}
+                llmServiceProvider={form.llmServiceProvider}
+                llmEndpoint={form.llmEndpoint}
+                llmApiKey={form.llmApiKey}
+                llmModel={form.llmModel}
                 onOpenAccountTab={() => onPaneChange("account")}
-                onOpenProvidersTab={() => onPaneChange("providers")}
+                onOpenModelsTab={() => onPaneChange("models")}
               />
             )}
 
             {pane === "models" && (
               <ModelsTab
                 key="models"
-                variants={paneVariants}
                 modelCatalog={form.modelCatalog}
                 diarizerModel={form.diarizerModel}
                 modelStatus={form.modelStatus}
@@ -166,21 +120,14 @@ const SettingsScreen = ({
                 remoteSpeechEnabled={form.remoteSpeechEnabled}
                 setRemoteSpeechEnabled={form.setRemoteSpeechEnabled}
                 remoteSpeechProvider={form.remoteSpeechProvider}
+                setRemoteSpeechProvider={form.setRemoteSpeechProvider}
                 remoteSpeechEndpoint={form.remoteSpeechEndpoint}
-                remoteSpeechModel={form.remoteSpeechModel}
+                setRemoteSpeechEndpoint={form.setRemoteSpeechEndpoint}
                 remoteSpeechApiKey={form.remoteSpeechApiKey}
-                setLocalModel={form.setLocalModel}
-                handleDownload={form.handleDownload}
-                handleDelete={form.handleDelete}
-                handleCancelDownload={form.handleCancelDownload}
-                onOpenProvidersTab={() => onPaneChange("providers")}
-              />
-            )}
-
-            {pane === "providers" && (
-              <ProvidersTab
-                key="providers"
-                variants={paneVariants}
+                setRemoteSpeechApiKey={form.setRemoteSpeechApiKey}
+                remoteSpeechModel={form.remoteSpeechModel}
+                setRemoteSpeechModel={form.setRemoteSpeechModel}
+                remoteSpeechConfigReady={form.remoteSpeechConfigReady}
                 llmProvider={form.llmProvider}
                 setLlmProvider={form.setLlmProvider}
                 llmEndpoint={form.llmEndpoint}
@@ -189,33 +136,33 @@ const SettingsScreen = ({
                 setLlmApiKey={form.setLlmApiKey}
                 llmModel={form.llmModel}
                 setLlmModel={form.setLlmModel}
-                availableModels={form.availableModels}
-                fetchAvailableModels={form.fetchAvailableModels}
-                remoteSpeechProvider={form.remoteSpeechProvider}
-                setRemoteSpeechProvider={form.setRemoteSpeechProvider}
-                remoteSpeechEndpoint={form.remoteSpeechEndpoint}
-                setRemoteSpeechEndpoint={form.setRemoteSpeechEndpoint}
-                remoteSpeechApiKey={form.remoteSpeechApiKey}
-                setRemoteSpeechApiKey={form.setRemoteSpeechApiKey}
-                remoteSpeechModel={form.remoteSpeechModel}
-                setRemoteSpeechModel={form.setRemoteSpeechModel}
-                availableSpeechModels={form.availableSpeechModels}
-                fetchAvailableSpeechModels={form.fetchAvailableSpeechModels}
-                onOpenModelsTab={() => onPaneChange("models")}
-                onOpenGeneralTab={() => onPaneChange("general")}
+                llmServiceProvider={form.llmServiceProvider}
+                setLlmServiceProvider={form.setLlmServiceProvider}
+                llmAuto={form.llmAuto}
+                setLlmAuto={form.setLlmAuto}
+                licenseGateActive={form.licenseGateActive}
+                setLocalModel={form.setLocalModel}
+                handleDownload={form.handleDownload}
+                handleDelete={form.handleDelete}
+                handleCancelDownload={form.handleCancelDownload}
               />
             )}
 
             {pane === "app" && (
               <AppTab
                 key="app"
-                variants={paneVariants}
                 active={active}
                 micPermission={form.micPermission}
                 accessibilityPermission={form.accessibilityPermission}
                 inputMonitoringPermission={form.inputMonitoringPermission}
                 onRequestMicrophonePermission={
                   form.handleRequestMicrophonePermission
+                }
+                onRequestAccessibilityPermission={
+                  form.handleRequestAccessibilityPermission
+                }
+                onRequestInputMonitoringPermission={
+                  form.handleRequestInputMonitoringPermission
                 }
                 textSizeMode={form.textSizeMode}
                 onTextSizeModeChange={form.setTextSizeMode}
@@ -245,7 +192,6 @@ const SettingsScreen = ({
             {pane === "about" && (
               <AboutTab
                 key="about"
-                variants={paneVariants}
                 active={active}
                 appInfo={form.appInfo}
                 appInfoFailed={form.appInfoFailed}
@@ -272,7 +218,6 @@ const SettingsScreen = ({
             {pane === "api" && !localApiLocked && (
               <LocalApiTab
                 key="api"
-                variants={paneVariants}
                 modelCatalog={form.modelCatalog}
                 modelStatus={form.modelStatus}
                 apiKey={form.localApiKey}
@@ -296,7 +241,7 @@ const SettingsScreen = ({
                 onClearLogs={form.handleClearLocalApiLogs}
               />
             )}
-          </AnimatePresence>
+          </>
         )}
       </div>
     </div>
@@ -306,11 +251,11 @@ const SettingsScreen = ({
 const SettingsErrorBanner = ({
   error,
   sourceTab,
-  onOpenTab,
+  onOpenPane,
 }: {
   error: string | null;
-  sourceTab: Exclude<LegacyTab, "account"> | null;
-  onOpenTab: (tab: LegacyTab) => void;
+  sourceTab: Exclude<SettingsPane, "account"> | null;
+  onOpenPane: (pane: SettingsPane) => void;
 }) => {
   const { t } = useLingui();
   const { copied, copy } = useCopyToClipboard(1500);
@@ -337,7 +282,7 @@ const SettingsErrorBanner = ({
                 : ""
             }`}
             onClick={() => {
-              if (sourceTab) onOpenTab(sourceTab);
+              if (sourceTab) onOpenPane(sourceTab);
             }}
           >
             <p className="break-words [overflow-wrap:anywhere] ui-text-meta ui-color-error leading-snug">
@@ -346,7 +291,7 @@ const SettingsErrorBanner = ({
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onOpenTab(sourceTab);
+                    onOpenPane(sourceTab);
                   }}
                   className="text-left"
                 >

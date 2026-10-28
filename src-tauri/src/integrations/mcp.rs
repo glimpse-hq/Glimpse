@@ -1,14 +1,19 @@
 //! `glimpse mcp` - a Model Context Protocol server on stdio, so AI agents can
-//! search and read the Library. Read-only unless started with `--allow-import`.
+//! search and read the Library, follow a recording live and transcribe files.
+//! Adds nothing to the Library unless started with `--allow-import`.
 
-use std::sync::Arc;
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use rmcp::{
-    ServerHandler, ServiceExt,
+    RoleServer, ServerHandler, ServiceExt,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
     model::{Implementation, ServerCapabilities, ServerConfig},
-    schemars, tool, tool_handler, tool_router,
+    schemars,
+    service::RequestContext,
+    tool, tool_handler, tool_router,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -26,10 +31,13 @@ const DEFAULT_LIMIT: usize = 10;
 const MAX_LIMIT: usize = 50;
 const SNIPPET_CHARS: usize = 240;
 const SNIPPET_LEAD_CHARS: usize = 60;
+const LIVE_POLL: Duration = Duration::from_secs(1);
+// A transcript line starts over after this long, even with the same speaker.
+const LIVE_LINE_MS: u64 = 60_000;
 
 fn help() {
     super::print_command_help(
-        "Serve your Library to AI agents over the Model Context Protocol (stdio).",
+        "Serve your Library, live recordings and transcription to AI agents over the Model Context Protocol (stdio).",
         "glimpse mcp [options]",
         &[
             (
@@ -159,10 +167,102 @@ struct TranscribeParams {
     model: Option<String>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct TranscribeAudioParams {
+    #[schemars(description = "Absolute path to an audio or video file on this computer.")]
+    path: String,
+    #[schemars(
+        description = "Include segment and word timings in milliseconds. Defaults to false."
+    )]
+    timestamps: Option<bool>,
+    #[schemars(description = "Language code, like en. Defaults to the language set in Glimpse.")]
+    language: Option<String>,
+    #[schemars(description = "Speech model id. Defaults to the model selected in Glimpse.")]
+    model: Option<String>,
+    #[schemars(
+        description = "Clean up the text with the user's cleanup model. Defaults to their setting."
+    )]
+    cleanup: Option<bool>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct LiveParams {
+    #[schemars(
+        description = "Name the speaker on each line: You is the microphone, Others or Speaker N is system audio. Defaults to true."
+    )]
+    speakers: Option<bool>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct WaitLiveParams {
+    #[schemars(
+        description = "Seconds of silence that end a chunk once it has min_words. Defaults to 4."
+    )]
+    pause_seconds: Option<f32>,
+    #[schemars(description = "Words a chunk needs before a pause can end it. Defaults to 15.")]
+    min_words: Option<usize>,
+    #[schemars(
+        description = "Seconds after its first words that a chunk is returned even without a pause. Defaults to 60."
+    )]
+    max_seconds: Option<u64>,
+    #[schemars(
+        description = "Seconds to wait before returning with what there is. Defaults to 55, under common client time limits."
+    )]
+    timeout_seconds: Option<u64>,
+    #[schemars(
+        description = "Name the speaker on each line: You is the microphone, Others or Speaker N is system audio. Defaults to true."
+    )]
+    speakers: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct LiveSegment {
+    id: String,
+    start_ms: u64,
+    speaker: String,
+    text: String,
+}
+
+/// What `wait_for_live_transcript` has returned for the current recording.
+#[derive(Default)]
+struct LiveCursor {
+    session: Option<String>,
+    delivered: HashSet<String>,
+    ended: bool,
+}
+
+impl LiveCursor {
+    /// Settled segments not returned yet. A new recording starts over.
+    fn pending(&mut self, snapshot: &Value) -> Vec<LiveSegment> {
+        if let Some(started_at) = snapshot["started_at"].as_str()
+            && self.session.as_deref() != Some(started_at)
+        {
+            *self = Self {
+                session: Some(started_at.to_string()),
+                ..Default::default()
+            };
+        }
+        live_segments(snapshot)
+            .into_iter()
+            .filter(|segment| !self.delivered.contains(&segment.id))
+            .collect()
+    }
+
+    fn ended(&self, snapshot: &Value) -> bool {
+        self.session.is_some()
+            && !self.ended
+            && !matches!(snapshot["status"].as_str(), Some("recording" | "paused"))
+    }
+}
+
 #[derive(Clone)]
 struct LibraryServer {
     storage: Arc<StorageManager>,
     settings: Arc<SettingsStore>,
+    live: Arc<Mutex<LiveCursor>>,
     tool_router: ToolRouter<Self>,
 }
 
@@ -175,6 +275,7 @@ impl LibraryServer {
         Self {
             storage,
             settings,
+            live: Arc::default(),
             tool_router,
         }
     }
@@ -274,6 +375,109 @@ impl LibraryServer {
                 .map_err(|err| format!("{err:#}"))?;
         Ok(job.to_string())
     }
+
+    #[tool(
+        description = "Transcribe an audio or video file with Glimpse and return the text, optionally with segment and word timings. Nothing is added to the Library. Opens Glimpse if it isn't running.",
+        annotations(read_only_hint = true, open_world_hint = false)
+    )]
+    async fn transcribe_audio(
+        &self,
+        Parameters(params): Parameters<TranscribeAudioParams>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let path = std::fs::canonicalize(&params.path)
+            .map_err(|_| format!("File not found: {}", params.path))?;
+        let mut payload = json!({
+            "path": path.to_string_lossy(),
+            "timestamps": params.timestamps.unwrap_or(false),
+        });
+        if let Some(language) = params.language {
+            payload["language"] = json!(language);
+        }
+        if let Some(model) = params.model {
+            payload["model"] = json!(model);
+        }
+        if let Some(cleanup) = params.cleanup {
+            payload["cleanup"] = json!(cleanup);
+        }
+        let result =
+            tokio::task::spawn_blocking(move || client::request_data("transcribe", payload))
+                .await
+                .map_err(|err| format!("{err:#}"))?
+                .map_err(|err| format!("{err:#}"))?;
+        Ok(result.to_string())
+    }
+
+    #[tool(
+        description = "Read what has been said so far in the recording in progress in Glimpse, as timestamped lines. Starts live transcription if it is off, catching up on what was said earlier first.",
+        annotations(read_only_hint = true, open_world_hint = false)
+    )]
+    async fn get_live_transcript(
+        &self,
+        Parameters(params): Parameters<LiveParams>,
+        context: RequestContext<RoleServer>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let snapshot = live_snapshot(client_name(&context)).await?;
+        let segments = live_segments(&snapshot);
+        Ok(live_chunk(&snapshot, &segments, false, params.speakers.unwrap_or(true)).to_string())
+    }
+
+    #[tool(
+        description = "Follow the recording in progress in Glimpse, such as a lecture or meeting, one chunk at a time. Waits until the speaker pauses or max_seconds pass, then returns the new timestamped lines since the last call (the first call returns everything so far). Call it again after handling each chunk to keep listening. Waits for a recording to start if none is in progress, and reports status ended when it stops.",
+        annotations(read_only_hint = true, open_world_hint = false)
+    )]
+    async fn wait_for_live_transcript(
+        &self,
+        Parameters(params): Parameters<WaitLiveParams>,
+        context: RequestContext<RoleServer>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let follower = client_name(&context);
+        let pause = Duration::from_secs_f32(params.pause_seconds.unwrap_or(4.0).clamp(0.5, 60.0));
+        let min_words = params.min_words.unwrap_or(15);
+        let max = Duration::from_secs(params.max_seconds.unwrap_or(60).clamp(5, 600));
+        let timeout = Duration::from_secs(params.timeout_seconds.unwrap_or(55).clamp(5, 3600));
+        let deadline = Instant::now() + timeout;
+        let mut first_heard: Option<Instant> = None;
+        let mut quiet_since = Instant::now();
+        let mut heard = 0;
+        loop {
+            let snapshot = live_snapshot(follower.clone()).await?;
+            let (pending, ended) = {
+                let mut cursor = self.live.lock().expect("live cursor");
+                let pending = cursor.pending(&snapshot);
+                let ended = cursor.ended(&snapshot);
+                (pending, ended)
+            };
+            let now = Instant::now();
+            if pending.len() != heard || snapshot["speaking"] == true {
+                heard = pending.len();
+                quiet_since = now;
+            }
+            if !pending.is_empty() {
+                first_heard.get_or_insert(now);
+            }
+            let words: usize = pending
+                .iter()
+                .map(|segment| segment.text.split_whitespace().count())
+                .sum();
+            let ready = ended
+                || first_heard.is_some_and(|at| now - at >= max)
+                || (words >= min_words && now - quiet_since >= pause);
+            if ready || now >= deadline {
+                let mut cursor = self.live.lock().expect("live cursor");
+                cursor
+                    .delivered
+                    .extend(pending.iter().map(|segment| segment.id.clone()));
+                cursor.ended |= ended;
+                drop(cursor);
+                let speakers = params.speakers.unwrap_or(true);
+                return Ok(live_chunk(&snapshot, &pending, ended, speakers).to_string());
+            }
+            tokio::time::sleep(LIVE_POLL).await;
+        }
+    }
 }
 
 // The default router is rebuilt per call and would bring back routes removed in `new`.
@@ -286,7 +490,9 @@ impl ServerHandler for LibraryServer {
             )
             .with_instructions(
                 "The user's Glimpse Library: meetings, calls and files transcribed on their computer. \
-                 Find items with search_library or list_recent, then read one with get_transcript.",
+                 Find items with search_library or list_recent, then read one with get_transcript. \
+                 To work along with a recording in progress, call wait_for_live_transcript in a loop. \
+                 Transcribe a file directly with transcribe_audio.",
             )
     }
 }
@@ -362,6 +568,108 @@ fn transcript_json(item: &LibraryItem) -> Value {
             .remove("transcript");
     }
     out
+}
+
+/// The name the client gave, shown in Glimpse while it follows a recording.
+/// Names are often ids like `claude-code`, so those are title-cased.
+fn client_name(context: &RequestContext<RoleServer>) -> String {
+    let Some(client) = context.client_info() else {
+        return String::new();
+    };
+    if let Some(title) = client.title.filter(|title| !title.is_empty()) {
+        return title;
+    }
+    client
+        .name
+        .split(['-', '_'])
+        .filter(|word| !word.is_empty())
+        .map(|word| {
+            let mut chars = word.chars();
+            chars
+                .next()
+                .map(|first| first.to_uppercase().chain(chars).collect::<String>())
+                .unwrap_or_default()
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+async fn live_snapshot(follower: String) -> Result<Value, String> {
+    let snapshot = tokio::task::spawn_blocking(move || {
+        client::try_request_data(
+            "record.live",
+            json!({ "client": follower }),
+            "Glimpse could not read the live transcript",
+        )
+    })
+    .await
+    .map_err(|err| format!("{err:#}"))?
+    .map_err(|err| format!("{err:#}"))?
+    .unwrap_or_else(|| json!({ "status": "not_running" }));
+    if snapshot["live"] == "unavailable" {
+        return Err("Live transcription needs a downloaded local speech model in Glimpse.".into());
+    }
+    Ok(snapshot)
+}
+
+fn live_segments(snapshot: &Value) -> Vec<LiveSegment> {
+    snapshot
+        .get("segments")
+        .and_then(|segments| serde_json::from_value(segments.clone()).ok())
+        .unwrap_or_default()
+}
+
+fn live_chunk(snapshot: &Value, segments: &[LiveSegment], ended: bool, speakers: bool) -> Value {
+    let status = if ended {
+        "ended"
+    } else {
+        snapshot["status"].as_str().unwrap_or("idle")
+    };
+    let mut out = json!({ "status": status, "transcript": live_lines(segments, speakers) });
+    if let Some(started_at) = snapshot.get("started_at") {
+        out["started_at"] = started_at.clone();
+    }
+    let note = match status {
+        "ended" => Some(
+            "The recording ended. Its full transcript is in the Library: find it with list_recent, then read it with get_transcript.",
+        ),
+        "recording" | "paused" if segments.is_empty() => Some("Nothing new has been said yet."),
+        "recording" | "paused" => None,
+        _ => Some("No recording is in progress in Glimpse."),
+    };
+    if let Some(note) = note {
+        out["note"] = json!(note);
+    }
+    out
+}
+
+/// One line per speaker turn, `[m:ss] Speaker: text`, times from the start of
+/// the recording.
+fn live_lines(segments: &[LiveSegment], speakers: bool) -> String {
+    let mut lines: Vec<(u64, &str, String)> = Vec::new();
+    for segment in segments {
+        match lines.last_mut() {
+            Some((start_ms, speaker, text))
+                if *speaker == segment.speaker && segment.start_ms < *start_ms + LIVE_LINE_MS =>
+            {
+                text.push(' ');
+                text.push_str(&segment.text);
+            }
+            _ => lines.push((segment.start_ms, &segment.speaker, segment.text.clone())),
+        }
+    }
+    lines
+        .iter()
+        .map(|(start_ms, speaker, text)| {
+            let at = super::record::clock(*start_ms);
+            if speakers {
+                format!("[{at}] {speaker}: {text}")
+            } else {
+                format!("[{at}] {text}")
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// A one-line excerpt starting just before the first search term, or at the
@@ -554,7 +862,17 @@ mod tests {
                 .filter_map(|tool| tool["name"].as_str())
                 .collect();
             names.sort_unstable();
-            assert_eq!(names, ["get_transcript", "list_recent", "search_library"]);
+            assert_eq!(
+                names,
+                [
+                    "get_live_transcript",
+                    "get_transcript",
+                    "list_recent",
+                    "search_library",
+                    "transcribe_audio",
+                    "wait_for_live_transcript"
+                ]
+            );
 
             let found = call(
                 &mut lines,

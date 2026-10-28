@@ -101,6 +101,9 @@ pub struct TranscriptionEvent<'a> {
     /// (the on-device model can't take this transcript).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm_outcome: Option<&'a str>,
+    /// The language model id from `llm_model_id`, when cleaned.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub llm_model: Option<String>,
     /// Key release to text inserted.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub insert_latency_seconds: Option<f32>,
@@ -227,8 +230,8 @@ pub fn track_feature_used_command(app: tauri::AppHandle<AppRuntime>, feature: St
 #[tauri::command]
 pub fn track_onboarding_step_viewed(app: tauri::AppHandle<AppRuntime>, step: String) {
     let step = match step.as_str() {
-        "welcome" | "import" | "model" | "model_downloading" | "source" | "permissions"
-        | "license" | "done" | "practice" => step.as_str(),
+        "welcome" | "import" | "model_downloading" | "source" | "permissions" | "license"
+        | "done" | "practice" => step.as_str(),
         _ => "unknown",
     };
     capture_event(&app, "onboarding_step_viewed", json!({ "step": step }));
@@ -443,8 +446,8 @@ pub fn track_setting_changed(
     );
 }
 
-/// Compares persisted settings and records changes to product-feature toggles
-/// and to the selected speech model.
+/// Compares persisted settings and records changes to product-feature toggles,
+/// the selected speech model, and the language model provider.
 pub fn track_settings_changes(
     app: &tauri::AppHandle<AppRuntime>,
     previous: &UserSettings,
@@ -486,6 +489,18 @@ pub fn track_settings_changes(
             app,
             from.as_str().unwrap_or_default(),
             to.as_str().unwrap_or_default(),
+        );
+    }
+
+    let (from, to) = (
+        super::dictation::llm_provider_kind(previous),
+        super::dictation::llm_provider_kind(next),
+    );
+    if from != to {
+        capture_event(
+            app,
+            "llm_provider_changed",
+            json!({ "from": from, "to": to }),
         );
     }
 }

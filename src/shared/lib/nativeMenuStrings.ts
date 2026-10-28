@@ -93,10 +93,6 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.toast.dictionary_never", message: "Never" }),
   msg({ id: "native.toast.update_available", message: "Update available." }),
   msg({ id: "native.toast.update_action", message: "Update" }),
-  msg({
-    id: "native.toast.updated_to",
-    message: "Glimpse updated to v{version}.",
-  }),
   msg({ id: "native.provider.speech", message: "Speech provider" }),
   msg({ id: "native.provider.writing", message: "Writing model" }),
   msg({
@@ -152,6 +148,10 @@ export const NATIVE_MENU_STRINGS = [
   msg({
     id: "native.error.no_model_selected",
     message: "No transcription model selected",
+  }),
+  msg({
+    id: "native.error.edit_needs_writing_model",
+    message: "Editing selected text needs a writing model",
   }),
   msg({ id: "native.error.microphone", message: "Microphone error" }),
   msg({ id: "native.error.permission", message: "Permission denied" }),
@@ -260,6 +260,11 @@ export const NATIVE_MENU_STRINGS = [
     message: "Transcription no longer available",
   }),
   msg({ id: "native.toast.copy_empty", message: "Transcription is empty" }),
+  msg({
+    id: "native.toast.library_trash_failed",
+    message:
+      "Couldn't move the audio to the Trash or Recycle Bin, so the item is back in your Library.",
+  }),
 
   msg({
     id: "native.toast.export_done",

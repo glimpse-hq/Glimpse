@@ -15,7 +15,7 @@ Work that can wait (notices, asks, analytics) runs after insertion. For analytic
 
 - New Tauri commands go in their owning module, registered in `lib.rs`. `lib.rs` still holds older commands; don't add to them.
 - `speech/` owns model lifecycle and routing mechanisms; recording and transcription callers reuse them. The local model catalog is `speech/catalog.rs`. Do not introduce another loader or catalog in a feature.
-- Engines, remote provider HTTP, and VAD belong in Glimpse-Speech. Glimpse only passes config from settings. A local `[patch]` for testing is never committed.
+- Engines, remote provider HTTP, and VAD belong in Glimpse-Speech. On-device language models (Apple Intelligence, the cleanup model) belong in Glimpse-Language; `llm_cleanup.rs` builds the prompts and `g1.rs` manages G1's files and loaded model. Glimpse only passes config from settings. A local `[patch]` for testing is never committed.
 - `integrations/` adapts CLI and MCP requests to existing owners; see `integrations.md`. `local_api.rs` manages the HTTP transcription server backed by Glimpse-Speech.
 - Frontend model lists and labels come through `src/features/settings/models-queries.ts`.
 - `src/shared/lib/` is static metadata and formatting, not a service layer.

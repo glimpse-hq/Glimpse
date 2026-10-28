@@ -1,7 +1,6 @@
 import { setup, assign } from "xstate";
 import type { DetectedApp } from "../../types";
 import {
-  getDefaultShortcuts,
   getOnboardingPlatform,
   type OnboardingPlatform,
   type OnboardingStep,
@@ -47,7 +46,7 @@ function getSteps(
     steps.push("import");
   }
 
-  steps.push("model", "source");
+  steps.push("source");
 
   if (
     platform.requiresMicrophonePermission ||
@@ -94,7 +93,8 @@ export const onboardingMachine = setup({
     localModelChoice: "",
     microphoneDevice: null,
     autoLaunch: true,
-    smartShortcut: getDefaultShortcuts(initialPlatform.id).smart,
+    // Seeded from the stored settings once they load.
+    smartShortcut: "",
     completionError: null,
     isCompleting: false,
     showFAQModal: false,
@@ -138,23 +138,14 @@ export const onboardingMachine = setup({
       on: {
         NEXT: [
           { target: "import", guard: hasImportStep, actions: "forward" },
-          { target: "model", actions: "forward" },
+          { target: "source", actions: "forward" },
         ],
       },
     },
     import: {
       on: {
-        NEXT: { target: "model", actions: "forward" },
-        BACK: { target: "welcome", actions: "backward" },
-      },
-    },
-    model: {
-      on: {
         NEXT: { target: "source", actions: "forward" },
-        BACK: [
-          { target: "import", guard: hasImportStep, actions: "backward" },
-          { target: "welcome", actions: "backward" },
-        ],
+        BACK: { target: "welcome", actions: "backward" },
       },
     },
     source: {
@@ -167,7 +158,7 @@ export const onboardingMachine = setup({
           },
           { target: "license", actions: "forward" },
         ],
-        BACK: { target: "model", actions: "backward" },
+        BACK: { target: "import", guard: hasImportStep, actions: "backward" },
       },
     },
     permissions: {

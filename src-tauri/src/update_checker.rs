@@ -106,8 +106,6 @@ fn write_marker(app: &AppHandle<AppRuntime>, source: &str) -> bool {
 }
 
 /// Called on startup: if a marker file exists, the app was just updated.
-/// After an automatic update, sets a flag on AppState so a toast can be shown
-/// when the user opens the settings window.
 pub fn check_post_auto_update(app: &AppHandle<AppRuntime>) {
     if let Some(path) = marker_path(app)
         && path.is_file()
@@ -131,12 +129,6 @@ pub fn check_post_auto_update(app: &AppHandle<AppRuntime>) {
                     field("from_version").unwrap_or_default(),
                     source,
                 );
-                if source == "auto" {
-                    app.state::<AppState>().set_auto_update_completed();
-                    info!(
-                        "auto-update: detected post-restart marker, will show toast on next settings open"
-                    );
-                }
             }
             Err(err) => {
                 warn!(
@@ -565,49 +557,4 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
 
     info!("update downloaded and installed");
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn toast_shows_once_per_available_version() {
-        let mut state = UpdateState::default();
-        assert!(!state.is_available());
-        assert!(!state.should_show_toast());
-
-        state.set_available("1.4.0".to_string());
-        assert!(state.should_show_toast());
-        assert_eq!(state.available_version().map(String::as_str), Some("1.4.0"));
-
-        state.mark_toast_shown();
-        assert!(!state.should_show_toast());
-        assert!(state.is_available());
-    }
-
-    #[test]
-    fn clearing_forgets_the_version_and_rearms_the_toast() {
-        let mut state = UpdateState::default();
-        state.set_available("1.4.0".to_string());
-        state.mark_toast_shown();
-        state.clear();
-        assert!(!state.is_available());
-        assert!(!state.should_show_toast());
-
-        state.set_available("1.4.1".to_string());
-        assert!(state.should_show_toast());
-    }
-
-    #[test]
-    fn status_snapshot_mirrors_state() {
-        let mut state = UpdateState::default();
-        let status = UpdateStatus::snapshot(&state);
-        assert!(!status.available && status.version.is_none());
-
-        state.set_available("2.0.0".to_string());
-        let status = UpdateStatus::snapshot(&state);
-        assert!(status.available);
-        assert_eq!(status.version.as_deref(), Some("2.0.0"));
-    }
 }

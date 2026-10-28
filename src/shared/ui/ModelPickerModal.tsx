@@ -36,6 +36,7 @@ import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import DotMatrix from "./DotMatrix";
 import FilterMenu from "./FilterMenu";
 import HoverTip from "./HoverTip";
+import { CheckboxMark } from "./Checkbox";
 import ModelCapabilityIcon, {
   CAPABILITY_ICONS,
   MODEL_CAPABILITY_ORDER,
@@ -792,16 +793,7 @@ function AneCheckbox({
         }
         className="flex items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors enabled:hover:bg-surface-elevated/60 disabled:cursor-default"
       >
-        <span
-          aria-hidden="true"
-          className={`flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border transition-colors ${
-            checked
-              ? "border-local bg-local-15 text-local"
-              : "border-border-secondary text-transparent"
-          }`}
-        >
-          {checked && <Check size={9} weight="bold" />}
-        </span>
+        <CheckboxMark checked={checked} />
         <span
           className={`font-mono ui-text-micro ${
             installed

@@ -45,6 +45,8 @@ const KEY_LLM_PROVIDER: &str = "llm_provider";
 const KEY_LLM_ENDPOINT: &str = "llm_endpoint";
 const KEY_LLM_API_KEY: &str = "llm_api_key";
 const KEY_LLM_MODEL: &str = "llm_model";
+const KEY_LLM_SERVICE_PROVIDER: &str = "llm_service_provider";
+const KEY_LLM_AUTO: &str = "llm_auto";
 const KEY_PERSONALITIES_NOTES_SEEDED: &str = "personalities_notes_seeded";
 const KEY_DICTIONARY: &str = "dictionary";
 const KEY_AUTO_DICTIONARY_ENABLED: &str = "auto_dictionary_enabled";
@@ -174,6 +176,14 @@ pub struct UserSettings {
     pub llm_api_key: String,
     #[serde(default)]
     pub llm_model: String,
+    /// The server or cloud provider that `llm_endpoint`, `llm_api_key` and
+    /// `llm_model` belong to. Kept while an on-device model is active.
+    #[serde(default)]
+    pub llm_service_provider: String,
+    /// Cleans up with the best available language model instead of
+    /// `llm_provider`; see `llm_cleanup::active_provider`.
+    #[serde(default = "default_true")]
+    pub llm_auto: bool,
     #[serde(default)]
     pub personalities_notes_seeded: bool,
     #[serde(default)]
@@ -338,8 +348,23 @@ fn default_apps_for(personality_id: &str) -> Vec<String> {
     )
 }
 
+pub(crate) const GLOBAL_PERSONALITY_ID: &str = "global";
+
+pub(crate) fn default_global_personality() -> Personality {
+    Personality {
+        id: GLOBAL_PERSONALITY_ID.to_string(),
+        name: "Global".to_string(),
+        enabled: true,
+        apps: Vec::new(),
+        websites: Vec::new(),
+        // Empty means the shipped cleanup prompt, so prompt updates still reach it.
+        instructions: Vec::new(),
+    }
+}
+
 fn default_personalities() -> Vec<Personality> {
     vec![
+        default_global_personality(),
         Personality {
             id: "messaging".to_string(),
             name: "Messaging".to_string(),
@@ -388,6 +413,32 @@ fn default_personalities() -> Vec<Personality> {
     ]
 }
 
+fn default_coding_instructions() -> Vec<String> {
+    vec![
+        "- Clean this up like any other dictation: keep the speaker's words, fix capitalization and punctuation, and keep requests and questions as they were asked. Do not write code or answer them.".to_string(),
+        String::new(),
+        "- Keep technical terms, library names, and identifiers as spoken. Do not add code, syntax, or details that weren't said.".to_string(),
+    ]
+}
+
+// 1.4.0: replace only the shipped Coding instructions, preserving user edits.
+fn migrate_coding_instructions(personalities: &mut [Personality]) -> bool {
+    let mut changed = false;
+    for personality in personalities {
+        if personality.id == "coding" && personality.instructions.iter().map(String::as_str).eq([
+            "- Treat technical keywords, library names, and logic as immutable constants based on the user's speech; do not rephrase them.",
+            "",
+            "- Apply proper casing conventions to variables and functions based on context (e.g., camelCase for JS, snake_case for Python) based on the user's speech.",
+            "",
+            "- Prioritize syntax accuracy over conversational flow based on the user's speech.",
+        ]) {
+            personality.instructions = default_coding_instructions();
+            changed = true;
+        }
+    }
+    changed
+}
+
 fn seed_personality_notes(personalities: &mut [Personality]) {
     for personality in personalities.iter_mut() {
         if !personality.instructions.is_empty() {
@@ -420,13 +471,7 @@ fn seed_personality_notes(personalities: &mut [Personality]) {
                 "".to_string(),
                 "- Rephrase rambling narrative into direct, active-voice statements based on the user's speech.".to_string(),
             ],
-            "coding" => vec![
-                "- Treat technical keywords, library names, and logic as immutable constants based on the user's speech; do not rephrase them.".to_string(),
-                "".to_string(),
-                "- Apply proper casing conventions to variables and functions based on context (e.g., camelCase for JS, snake_case for Python) based on the user's speech.".to_string(),
-                "".to_string(),
-                "- Prioritize syntax accuracy over conversational flow based on the user's speech.".to_string(),
-            ],
+            "coding" => default_coding_instructions(),
             _ => Vec::new(),
         };
 
@@ -466,6 +511,8 @@ impl Default for UserSettings {
             llm_endpoint: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
+            llm_service_provider: String::new(),
+            llm_auto: true,
             personalities_notes_seeded: false,
             dictionary: Vec::new(),
             auto_dictionary_enabled: false,
@@ -732,6 +779,22 @@ pub fn canonicalize_app_locale_or_default(value: &str) -> String {
     canonicalize_app_locale(value).unwrap_or_else(default_app_locale)
 }
 
+/// The server or cloud provider to remember: the one given, or when that is
+/// empty, the active provider if it is a service. Settings from 1.3.6 and
+/// earlier store none, and saves that omit the field send an empty one.
+pub(crate) fn llm_service_provider_for(given: String, active: &str) -> String {
+    let active = active.trim();
+    if !given.trim().is_empty()
+        || active.is_empty()
+        || active == "none"
+        || crate::llm_cleanup::is_on_device_provider(active)
+    {
+        given
+    } else {
+        active.to_string()
+    }
+}
+
 /// Decrypts a stored key. On failure the ciphertext is kept so `save` writes it back untouched.
 fn decrypt_stored_setting(encrypted: String, label: &str, cache: &Mutex<Option<String>>) -> String {
     if encrypted.is_empty() {
@@ -845,6 +908,7 @@ impl SettingsStore {
         let encrypted_local_api_key: String;
         let theme_mode_exists: bool;
         let local_model_auto: Option<bool>;
+        let llm_auto: Option<bool>;
         let unreadable_keys;
         {
             let conn = self.conn.lock();
@@ -908,6 +972,11 @@ impl SettingsStore {
             encrypted_llm_api_key = loader.value(KEY_LLM_API_KEY, String::new())?;
 
             settings.llm_model = loader.value(KEY_LLM_MODEL, settings.llm_model.clone())?;
+            llm_auto = loader.optional::<bool>(KEY_LLM_AUTO)?;
+            settings.llm_service_provider = llm_service_provider_for(
+                loader.value(KEY_LLM_SERVICE_PROVIDER, String::new())?,
+                &settings.llm_provider,
+            );
             settings.personalities_notes_seeded = loader.value(
                 KEY_PERSONALITIES_NOTES_SEEDED,
                 settings.personalities_notes_seeded,
@@ -1014,7 +1083,26 @@ impl SettingsStore {
             should_persist = true;
         }
 
+        if migrate_coding_instructions(&mut settings.personalities) {
+            should_persist = true;
+        }
+
         if !theme_mode_exists {
+            should_persist = true;
+        }
+
+        // 1.4.0: cleanup moved from one setting to each shortcut.
+        if settings.cleanup_enabled {
+            for binding in settings
+                .shortcut_bindings
+                .smart
+                .iter_mut()
+                .chain(settings.shortcut_bindings.hold.iter_mut())
+                .chain(settings.shortcut_bindings.toggle.iter_mut())
+            {
+                binding.cleanup_enabled = true;
+            }
+            settings.cleanup_enabled = false;
             should_persist = true;
         }
 
@@ -1037,6 +1125,13 @@ impl SettingsStore {
         settings.local_model_auto = local_model_auto.unwrap_or_else(|| {
             should_persist = true;
             crate::speech::catalog::is_recommended(&settings)
+        });
+
+        // Settings from 1.3.6 and earlier keep the language model the user
+        // chose; only a fresh install starts on Automatic.
+        settings.llm_auto = llm_auto.unwrap_or_else(|| {
+            should_persist = true;
+            !settings.onboarding_completed
         });
 
         if matches!(settings.transcription_mode, TranscriptionMode::Cloud) {
@@ -1190,6 +1285,11 @@ impl SettingsStore {
             (KEY_LLM_ENDPOINT, json(&settings.llm_endpoint)?),
             (KEY_LLM_API_KEY, json(&stored_key)?),
             (KEY_LLM_MODEL, json(&settings.llm_model)?),
+            (
+                KEY_LLM_SERVICE_PROVIDER,
+                json(&settings.llm_service_provider)?,
+            ),
+            (KEY_LLM_AUTO, json(&settings.llm_auto)?),
             (
                 KEY_PERSONALITIES_NOTES_SEEDED,
                 json(&settings.personalities_notes_seeded)?,
@@ -1378,6 +1478,21 @@ fn settings_db_path(mut dir: PathBuf) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remembers_the_chosen_service_provider() {
+        assert_eq!(llm_service_provider_for(String::new(), "openai"), "openai");
+        assert_eq!(
+            llm_service_provider_for("ollama".to_string(), "openai"),
+            "ollama"
+        );
+        assert_eq!(
+            llm_service_provider_for("ollama".to_string(), "bonsai"),
+            "ollama"
+        );
+        assert_eq!(llm_service_provider_for(String::new(), "apple"), "");
+        assert_eq!(llm_service_provider_for(String::new(), "none"), "");
+    }
 
     fn test_store() -> SettingsStore {
         let store = SettingsStore {

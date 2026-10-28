@@ -112,8 +112,12 @@ const LibraryImportModal = ({
     })
       .then((results) => {
         if (cancelled) return;
+        // Paths the backend skipped count as probed, so they aren't retried.
         setProbes((current) => {
           const next = { ...current };
+          for (const path of unprobed) {
+            next[path] = { path, duration_ms: null, size_bytes: null };
+          }
           for (const probe of results) {
             next[probe.path] = probe;
           }

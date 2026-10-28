@@ -1,7 +1,8 @@
 use crate::personalization_snippets::extract_host;
-use crate::settings::{Personality, UserSettings};
+use crate::settings::{GLOBAL_PERSONALITY_ID, Personality, UserSettings};
 use crate::{
-    accessibility_context, permissions,
+    accessibility_context::{self, ActiveContext},
+    permissions,
     personalization_snippets::{SnippetContext, expand_personalization_snippets},
 };
 
@@ -49,11 +50,14 @@ fn app_matches(active_app_name: &str, configured_app_name: &str) -> bool {
         || tokens_contain_all(&active_tokens, &configured_tokens)
 }
 
-fn mode_matches(mode: &Personality, context: &accessibility_context::ActiveContext) -> bool {
-    let app_match = mode
-        .apps
-        .iter()
-        .any(|app| app_matches(&context.app_name, app));
+fn mode_matches(mode: &Personality, context: &ActiveContext) -> bool {
+    let app_match = mode.apps.iter().any(|app| {
+        app_matches(&context.app_name, app)
+            || context
+                .other_names
+                .iter()
+                .any(|name| app_matches(name, app))
+    });
     let site_match = if let Some(url) = context.url.as_ref() {
         mode.websites.iter().any(|site| site_matches(url, site))
     } else {
@@ -95,17 +99,23 @@ fn format_mode_context_with_snippets(
     lines.join("\n")
 }
 
-pub fn format_active_cleanup_style_guidance(settings: &UserSettings) -> Option<String> {
-    if !permissions::check_accessibility_permission() {
-        return None;
-    }
+/// The frontmost app, window and URL, or None without Accessibility access.
+pub fn active_context() -> Option<ActiveContext> {
+    permissions::check_accessibility_permission()
+        .then(accessibility_context::get_active_context)
+        .flatten()
+}
 
-    let context = accessibility_context::get_active_context()?;
+pub fn format_active_cleanup_style_guidance(
+    settings: &UserSettings,
+    context: Option<&ActiveContext>,
+) -> Option<String> {
+    let context = context?;
     let modes: Vec<ModeContextMode> = settings
         .personalities
         .iter()
-        .filter(|mode| mode.enabled)
-        .filter(|mode| mode_matches(mode, &context))
+        .filter(|mode| mode.enabled && mode.id != GLOBAL_PERSONALITY_ID)
+        .filter(|mode| mode_matches(mode, context))
         .map(|mode| ModeContextMode {
             name: mode.name.clone(),
             instructions: mode.instructions.clone(),
@@ -116,7 +126,7 @@ pub fn format_active_cleanup_style_guidance(settings: &UserSettings) -> Option<S
         return None;
     }
 
-    let snippet_context = SnippetContext::from_active_context(&context);
+    let snippet_context = SnippetContext::from_active_context(context);
     let instructions = format_mode_context_with_snippets(&modes, Some(&snippet_context));
     if instructions.is_empty() {
         None
@@ -125,14 +135,11 @@ pub fn format_active_cleanup_style_guidance(settings: &UserSettings) -> Option<S
     }
 }
 
-pub fn format_cleanup_style_guidance_for_personality(personality: &Personality) -> Option<String> {
-    let snippet_context = if permissions::check_accessibility_permission() {
-        accessibility_context::get_active_context()
-            .as_ref()
-            .map(SnippetContext::from_active_context)
-    } else {
-        None
-    };
+pub fn format_cleanup_style_guidance_for_personality(
+    personality: &Personality,
+    context: Option<&ActiveContext>,
+) -> Option<String> {
+    let snippet_context = context.map(SnippetContext::from_active_context);
     let mode = ModeContextMode {
         name: personality.name.clone(),
         instructions: personality.instructions.clone(),
@@ -145,17 +152,22 @@ pub fn format_cleanup_style_guidance_for_personality(personality: &Personality) 
     }
 }
 
-pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality> {
-    if !permissions::check_accessibility_permission() {
+// `cleanup_enabled` here is the dictation's shortcut flag; modes only apply
+// through a shortcut with Clean up on.
+pub fn resolve_active_personality(
+    settings: &UserSettings,
+    context: Option<&ActiveContext>,
+) -> Option<Personality> {
+    if !settings.cleanup_enabled {
         return None;
     }
 
-    let context = accessibility_context::get_active_context()?;
+    let context = context?;
 
     settings
         .personalities
         .iter()
-        .filter(|mode| mode.enabled)
-        .find(|mode| mode_matches(mode, &context))
+        .filter(|mode| mode.enabled && mode.id != GLOBAL_PERSONALITY_ID)
+        .find(|mode| mode_matches(mode, context))
         .cloned()
 }

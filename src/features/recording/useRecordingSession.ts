@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useTauriEvent } from "../../shared/hooks/useTauriEvent";
 import * as recordingApi from "./api";
 import type { RecordingSessionState } from "../../types";
 
@@ -11,6 +11,9 @@ const IDLE_STATE: RecordingSessionState = {
   sound: { microphone: "none", system_audio: "none" },
   bookmarks: [],
   finish_requested: false,
+  follower: null,
+  microphone_off: false,
+  system_audio_off: false,
 };
 
 // Meters rise fast and fall slowly so speech reads as movement, not flicker.
@@ -39,34 +42,29 @@ export function useRecordingSession() {
     setState({ ...next, levels: levelsRef.current });
   }, []);
 
+  // A snapshot that resolves after an event would be older than it.
+  const eventSeenRef = useRef(false);
+
   useEffect(() => {
     let cancelled = false;
-    let unlisten: UnlistenFn | null = null;
-
     recordingApi
       .getRecordingSessionState()
       .then((next) => {
-        if (!cancelled) applyState(next);
+        if (!cancelled && !eventSeenRef.current) applyState(next);
       })
       .catch(() => {});
-
-    listen<RecordingSessionState>(
-      recordingApi.RECORDING_STATE_EVENT,
-      (event) => {
-        if (!cancelled) applyState(event.payload);
-      },
-    )
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlisten = fn;
-      })
-      .catch(() => {});
-
     return () => {
       cancelled = true;
-      unlisten?.();
     };
   }, [applyState]);
+
+  useTauriEvent<RecordingSessionState>(
+    recordingApi.RECORDING_STATE_EVENT,
+    (next) => {
+      eventSeenRef.current = true;
+      applyState(next);
+    },
+  );
 
   return { state, applyState };
 }

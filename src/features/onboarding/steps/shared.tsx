@@ -1,9 +1,49 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useRef, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { motion, type Variants, type Easing } from "framer-motion";
 import type { Icon } from "@phosphor-icons/react";
+import { invoke } from "@tauri-apps/api/core";
+import { useShortcutCapture } from "../../../shared/hooks/useShortcutCapture";
 
 export { GlimpseLogo } from "../../../shared/ui/GlimpseLogo";
+
+export function useSetupShortcutCapture(
+  onShortcutCaptured: (shortcut: string) => void,
+) {
+  const [capturing, setCapturing] = useState(false);
+  const [preview, setPreview] = useState("");
+
+  const stopCapture = useCallback(async () => {
+    await invoke("set_shortcut_capture_active", { active: false }).catch(
+      () => {},
+    );
+    setCapturing(false);
+    setPreview("");
+  }, []);
+
+  useShortcutCapture({
+    active: capturing,
+    onCancel: stopCapture,
+    onPreviewChange: setPreview,
+    onShortcutCaptured,
+  });
+
+  const startCapture = () => {
+    setPreview("");
+    setCapturing(true);
+    void invoke("set_shortcut_capture_active", { active: true }).catch(() => {
+      setCapturing(false);
+    });
+  };
+
+  return { capturing, preview, startCapture, stopCapture };
+}
 
 export type StepMotionProps = {
   custom: number;

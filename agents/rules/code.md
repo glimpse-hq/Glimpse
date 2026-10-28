@@ -12,7 +12,7 @@
 
 - Never log transcripts, audio, prompts, LLM output, selected text, or API keys.
 - API-key persistence and encryption handling belong in `settings.rs` and `crypto.rs`. Reuse that path; never introduce another credential store or log settings structs containing keys.
-- Audio and transcript processing stays local by default. Remote processing uses the provider the user configured. Existing licensing, updates, and opt-out analytics have separate network paths; do not send user content through them.
+- Audio and transcript processing stays local by default. Remote processing uses the provider the user configured. Existing licensing, updates, opt-out analytics, and website icons for personalization modes (the typed domain only, see `../reference/decisions.md`) have separate network paths; do not send user content through them.
 - Never gate or cap free local dictation.
 
 ## Comments

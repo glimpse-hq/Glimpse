@@ -6,6 +6,8 @@ const LICENSE_KEY = new RegExp(
 );
 const BARE_UUID = new RegExp(`^${UUID}$`, "i");
 
+export const LICENSE_KEY_PLACEHOLDER = "XXXXX-XXXXX-…";
+
 export type ActivationInputShape =
   "key" | "order_id" | "masked_key" | "discount_code" | "unknown";
 

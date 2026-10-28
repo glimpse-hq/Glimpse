@@ -27,7 +27,9 @@ import {
   X,
 } from "@phosphor-icons/react";
 import * as recordingApi from "../api";
+import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { useRecordingSession } from "../useRecordingSession";
+import BookmarkNoteInput from "./BookmarkNoteInput";
 import { useSilenceWarning } from "../useSilenceWarning";
 import { readLivePrefs } from "../livePrefs";
 import { useInputDevices, useSettings } from "../../settings/queries";
@@ -45,6 +47,7 @@ import type {
   SelectedApp,
 } from "../../../types";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { DismissButton } from "./DismissButton";
 
 type StartError = {
   message: string;
@@ -271,11 +274,6 @@ const BookmarkNoteRow = ({
   onRemove: () => void;
 }) => {
   const { t } = useLingui();
-  const [draft, setDraft] = useState(bookmark.label ?? "");
-  const commit = () => {
-    const value = draft.trim();
-    if (value !== (bookmark.label ?? "")) onCommit(value);
-  };
   return (
     <li className="group/bookmark flex h-9 items-center gap-3">
       <span className="flex w-4 shrink-0 justify-center">
@@ -289,19 +287,11 @@ const BookmarkNoteRow = ({
       <span className="w-14 shrink-0 ui-text-body-sm tabular-nums text-content-muted">
         {formatTimestamp(bookmark.at_ms)}
       </span>
-      <input
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === "Escape") {
-            event.preventDefault();
-            event.currentTarget.blur();
-          }
-        }}
-        placeholder={t({ id: "record.bookmark.note", message: "Add a note" })}
-        className="min-w-0 flex-1 bg-transparent ui-text-body-sm text-content-primary outline-hidden placeholder:text-content-disabled"
+      <BookmarkNoteInput
+        bookmark={bookmark}
         autoFocus={autoFocus}
+        onCommit={onCommit}
+        className="min-w-0 flex-1 bg-transparent ui-text-body-sm text-content-primary outline-hidden placeholder:text-content-disabled"
       />
       <button
         type="button"
@@ -411,7 +401,8 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   };
   const queryClient = useQueryClient();
   const { state, applyState } = useRecordingSession();
-  const silenceWarning = useSilenceWarning(state);
+  const { warning: silenceWarning, dismiss: dismissSilenceWarning } =
+    useSilenceWarning(state);
   const { data: devices = [] } = useInputDevices(isActive);
   const { data: defaultDeviceId = null } = useSettings(
     (settings) => settings.microphone_device ?? null,
@@ -642,6 +633,22 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     id: "record.bookmark_failed",
     message: "Couldn't save the bookmark.",
   });
+
+  const handleToggleSource = async (source: recordingApi.RecordingSource) => {
+    const off =
+      source === "microphone" ? state.microphone_off : state.system_audio_off;
+    try {
+      applyState(await recordingApi.setRecordingSourceOff(source, !off));
+    } catch (err) {
+      console.error("Failed to turn a recording source on or off:", err);
+      showErrorToast(
+        t({
+          id: "record.source_failed",
+          message: "Couldn't change what's being recorded.",
+        }),
+      );
+    }
+  };
 
   const handleTogglePause = async () => {
     try {
@@ -882,7 +889,10 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           <AppWindow size={14} className="shrink-0 text-content-muted" />
         ),
         detail: isClosed(app)
-          ? t({ id: "record.setup.apps.not_running", message: "Not running" })
+          ? t({
+              id: "record.setup.apps.not_running",
+              message: "Not playing audio",
+            })
           : undefined,
         selected:
           choices.systemAudio &&
@@ -980,15 +990,31 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           {closedApps.length === 1
             ? t({
                 id: "record.setup.apps.closed_one",
-                message: `${closedApps[0].name} isn't running, so it won't be recorded.`,
+                message: `${closedApps[0].name} isn't playing audio, so it won't be recorded.`,
               })
             : t({
                 id: "record.setup.apps.closed_many",
                 message: plural(closedApps.length, {
-                  one: "# selected app isn't running, so it won't be recorded.",
+                  one: "# selected app isn't playing audio, so it won't be recorded.",
                   other:
-                    "# selected apps aren't running, so they won't be recorded.",
+                    "# selected apps aren't playing audio, so they won't be recorded.",
                 }),
+              })}
+        </span>
+      );
+    }
+    if (active && state.follower !== null) {
+      const follower = state.follower;
+      return (
+        <span className="truncate text-content-muted">
+          {follower
+            ? t({
+                id: "record.active.follower",
+                message: `${follower} is following this recording.`,
+              })
+            : t({
+                id: "record.active.follower_unnamed",
+                message: "An AI agent is following this recording.",
               })}
         </span>
       );
@@ -1070,7 +1096,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.15 }}
               role="status"
-              className="flex h-7 max-w-full items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-interactive)_40%,var(--border-strong))] bg-[var(--color-interactive-10)] px-3 ui-text-label font-medium text-content-primary"
+              className="flex h-7 max-w-full items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-interactive)_40%,var(--border-strong))] bg-[var(--color-interactive-10)] pr-1 pl-3 ui-text-label font-medium text-content-primary"
             >
               <Warning
                 size={13}
@@ -1078,6 +1104,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                 className="shrink-0 text-[var(--color-interactive)]"
               />
               <span className="truncate">{silenceWarning}</span>
+              <DismissButton onClick={dismissSilenceWarning} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1100,7 +1127,23 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           <div className="flex min-w-0 flex-1 items-center justify-end">
             {active ? (
               microphoneOn ? (
-                <LevelMeter level={paused ? 0 : state.levels.microphone} />
+                <div className="flex items-center gap-3">
+                  {state.microphone_off ? (
+                    <span className="ui-text-body-sm text-content-secondary">
+                      {offLabel}
+                    </span>
+                  ) : (
+                    <LevelMeter level={paused ? 0 : state.levels.microphone} />
+                  )}
+                  <ToggleSwitch
+                    enabled={!state.microphone_off}
+                    onToggle={() => void handleToggleSource("microphone")}
+                    ariaLabel={t({
+                      id: "record.setup.microphone",
+                      message: "Microphone",
+                    })}
+                  />
+                </div>
               ) : (
                 <span className="ui-text-body-sm text-content-secondary">
                   {offLabel}
@@ -1139,7 +1182,25 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
               </span>
             ) : active ? (
               systemOn ? (
-                <LevelMeter level={paused ? 0 : state.levels.system_audio} />
+                <div className="flex items-center gap-3">
+                  {state.system_audio_off ? (
+                    <span className="ui-text-body-sm text-content-secondary">
+                      {offLabel}
+                    </span>
+                  ) : (
+                    <LevelMeter
+                      level={paused ? 0 : state.levels.system_audio}
+                    />
+                  )}
+                  <ToggleSwitch
+                    enabled={!state.system_audio_off}
+                    onToggle={() => void handleToggleSource("system_audio")}
+                    ariaLabel={t({
+                      id: "record.setup.system_audio",
+                      message: "System Audio",
+                    })}
+                  />
+                </div>
               ) : (
                 <span className="ui-text-body-sm text-content-secondary">
                   {offLabel}

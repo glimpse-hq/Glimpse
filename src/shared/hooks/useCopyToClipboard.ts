@@ -20,17 +20,19 @@ export function useCopyToClipboard(resetMs = 2000) {
 
   const copy = useCallback(
     async (text: string) => {
+      // Confirms before the write resolves, which can lag on long text.
+      setCopied(true);
+      clear();
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        setCopied(false);
+      }, resetMs);
       try {
         await navigator.clipboard.writeText(text);
-        setCopied(true);
-        clear();
-        timerRef.current = setTimeout(() => {
-          timerRef.current = null;
-          setCopied(false);
-        }, resetMs);
         return true;
       } catch (err) {
         console.error("Failed to copy:", err);
+        clear();
         setCopied(false);
         return false;
       }

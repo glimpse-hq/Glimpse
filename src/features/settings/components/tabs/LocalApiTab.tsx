@@ -1,16 +1,19 @@
 import { useLingui } from "@lingui/react/macro";
 import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import { useCopyToClipboard } from "../../../../shared/hooks/useCopyToClipboard";
-import { motion, type Variants } from "framer-motion";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import DotMatrix from "../../../../shared/ui/DotMatrix";
 import ActivityDots from "../../../../shared/ui/ActivityDots";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import type { LocalApiStatus, ModelInfo, ModelStatus } from "../../../../types";
+import {
+  LOCAL_API_LAN_HOST,
+  LOCAL_API_LOOPBACK_HOST,
+  localApiReachableHost,
+} from "../../localApi";
 
 type LocalApiTabProps = {
-  variants: Variants;
   modelCatalog: ModelInfo[];
   modelStatus: Record<string, ModelStatus>;
   apiKey: string;
@@ -35,7 +38,6 @@ type LocalApiTabProps = {
 };
 
 const LocalApiTab = ({
-  variants,
   modelCatalog,
   modelStatus,
   apiKey,
@@ -66,6 +68,16 @@ const LocalApiTab = ({
     value: string;
   } | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  // The field edits a draft so clearing it while typing doesn't snap back.
+  const [portDraft, setPortDraft] = useState<string | null>(null);
+  const commitPortDraft = () => {
+    if (portDraft === null) return;
+    const value = Math.trunc(Number(portDraft));
+    if (portDraft.trim() !== "" && Number.isFinite(value)) {
+      setPort(Math.min(65535, Math.max(1, value)));
+    }
+    setPortDraft(null);
+  };
   const installedModels = modelCatalog.filter(
     (entry) => modelStatus[entry.key]?.installed,
   );
@@ -73,13 +85,12 @@ const LocalApiTab = ({
   const starting = status?.starting ?? false;
   const logs = status?.logs ?? [];
   const boundHost = running ? (status?.host ?? host) : host;
-  const effectiveHost =
-    boundHost === "0.0.0.0" ? (status?.lan_ip ?? boundHost) : boundHost;
+  const effectiveHost = localApiReachableHost(boundHost, status?.lan_ip);
   const effectivePort = running ? (status?.port ?? port) : port;
   const baseUrl = `http://${effectiveHost}:${effectivePort}/v1`;
   const requireApiKey = apiKey.trim().length > 0;
   const configuredApiKey = requireApiKey ? apiKey.trim() : "";
-  const lanEnabled = host === "0.0.0.0";
+  const lanEnabled = host === LOCAL_API_LAN_HOST;
   const lanRequiresApiKey = lanEnabled && !requireApiKey;
   const runningConfigId = status?.config_id ?? null;
   const runningApiKey =
@@ -158,14 +169,7 @@ const LocalApiTab = ({
   }, [logs, copyLogsText]);
 
   return (
-    <motion.div
-      key="local-api"
-      variants={variants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="flex min-h-0 flex-1 flex-col gap-6"
-    >
+    <div className="flex min-h-0 flex-1 flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
@@ -315,10 +319,11 @@ const LocalApiTab = ({
                   type="number"
                   min={1}
                   max={65535}
-                  value={port}
-                  onChange={(event) => {
-                    const value = Number(event.target.value) || 11435;
-                    setPort(Math.min(65535, Math.max(1, value)));
+                  value={portDraft ?? port}
+                  onChange={(event) => setPortDraft(event.target.value)}
+                  onBlur={commitPortDraft}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") event.currentTarget.blur();
                   }}
                 />
               </label>
@@ -421,7 +426,11 @@ const LocalApiTab = ({
                 </span>
                 <ToggleSwitch
                   enabled={lanEnabled}
-                  onToggle={() => setHost(lanEnabled ? "127.0.0.1" : "0.0.0.0")}
+                  onToggle={() =>
+                    setHost(
+                      lanEnabled ? LOCAL_API_LOOPBACK_HOST : LOCAL_API_LAN_HOST,
+                    )
+                  }
                   ariaLabel={t({
                     id: "settings.local_api.listen_on_lan_aria",
                     message: "Listen on LAN",
@@ -489,7 +498,7 @@ const LocalApiTab = ({
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="flex min-h-[238px] flex-1 flex-col gap-2">
         <div className="flex items-center gap-3">
           <SectionLabel className="flex-1">
             {t({
@@ -549,7 +558,7 @@ const LocalApiTab = ({
           </div>
         </div>
 
-        <div className="h-[210px] overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {logs.length === 0 ? (
             <p className="ui-text-label ui-color-muted">
               {t({
@@ -575,7 +584,7 @@ const LocalApiTab = ({
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

@@ -38,18 +38,7 @@ export function useLicenseState() {
   });
 }
 
-/**
- * Returns whether the user can currently use license-gated features (paid or
- * trial). The single primitive to consult when gating UI; defaults to `false`
- * while the query is loading so we err on the locked side.
- *
- * To gate a new feature in UI:
- *
- *   const licensed = useLicenseGate();
- *   <MyFeatureButton disabled={!licensed} />
- *
- * For the backend equivalent, see `crate::license::require_license_gate`.
- */
+// UI gate for paid or trial features; false while loading. Rust enforces with `require_license_gate`.
 export function useLicenseGate(): boolean {
   return useLicenseState().data?.licenseGateActive ?? false;
 }

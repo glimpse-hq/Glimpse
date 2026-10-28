@@ -4,6 +4,7 @@ import ReactMarkdown, { type Components, type Options } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkGithub from "remark-github";
 import remarkBreaks from "remark-breaks";
+import { GITHUB_REPO } from "../../../shared/lib/links";
 
 const isSafeHttpUrl = (value: string): boolean => {
   try {
@@ -19,7 +20,7 @@ const markdownPlugins: {
 } = {
   remark: [
     remarkGfm,
-    [remarkGithub, { repository: "glimpse-hq/Glimpse", mentionStrong: false }],
+    [remarkGithub, { repository: GITHUB_REPO, mentionStrong: false }],
     remarkBreaks,
   ],
 };
@@ -37,7 +38,7 @@ function MarkdownListItem({ children }: { children?: ReactNode }) {
   }
   return (
     <li className="flex items-start gap-3 ui-text-body leading-relaxed ui-color-secondary">
-      <span className="ui-color-warning-strong mt-1 ui-text-meta">●</span>
+      <span className="ui-color-muted mt-1 ui-text-meta">●</span>
       <span className="min-w-0 flex-1">{children}</span>
     </li>
   );
@@ -132,11 +133,17 @@ const markdownComponents: Components = {
   ),
 };
 
-export default function ReleaseNotesMarkdown({ body }: { body: string }) {
+export default function ReleaseNotesMarkdown({
+  body,
+  components,
+}: {
+  body: string;
+  components?: Components;
+}) {
   return (
     <ReactMarkdown
       remarkPlugins={markdownPlugins.remark}
-      components={markdownComponents}
+      components={{ ...markdownComponents, ...components }}
     >
       {body}
     </ReactMarkdown>

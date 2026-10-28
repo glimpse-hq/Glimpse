@@ -46,6 +46,18 @@ export async function resumeRecordingSession(): Promise<RecordingSessionState> {
   return invoke<RecordingSessionState>("resume_recording_session");
 }
 
+export type RecordingSource = "microphone" | "system_audio";
+
+export async function setRecordingSourceOff(
+  source: RecordingSource,
+  off: boolean,
+): Promise<RecordingSessionState> {
+  return invoke<RecordingSessionState>("set_recording_source_off", {
+    source,
+    off,
+  });
+}
+
 export async function addRecordingBookmark(): Promise<Bookmark> {
   return invoke<Bookmark>("add_recording_bookmark");
 }

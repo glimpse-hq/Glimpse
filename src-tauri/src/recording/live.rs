@@ -52,6 +52,8 @@ const SILENCE_DROP_FRAMES: usize = 67;
 const BEHIND_FRAMES: usize = 200;
 // Audio waiting for live work is capped at 5 minutes per track.
 const MAX_BACKLOG_FRAMES: usize = 10_000;
+// Recorded audio read back per step (30 s) when live starts mid-recording.
+const CATCH_UP_SAMPLES: u64 = 30 * LIVE_RATE as u64;
 const MIN_TURN_MS: u64 = 300;
 const DIARIZE_STEP: usize = LIVE_RATE as usize;
 // About -35 dBFS on the level meter.
@@ -571,11 +573,7 @@ fn default_speaker(id: &str) -> Option<Speaker> {
         SYSTEM_ID => Some(others),
         _ => {
             let number: u32 = id.strip_prefix(NUMBERED_PREFIX)?.parse().ok()?;
-            Some(Speaker {
-                id: id.to_string(),
-                name: format!("Speaker {number}"),
-                color: None,
-            })
+            Some(crate::library::numbered_speaker(SYSTEM_ID, number))
         }
     }
 }
@@ -653,6 +651,8 @@ struct TrackRun {
     voiced: Vec<bool>,
     // Frames the open window was last transcribed with.
     open_frames: usize,
+    // Next 16 kHz index to read from the track file, until it reaches the tap.
+    catch_up: Option<u64>,
 }
 
 impl TrackRun {
@@ -667,6 +667,7 @@ impl TrackRun {
             samples: Vec::new(),
             voiced: Vec::new(),
             open_frames: 0,
+            catch_up: None,
         }
     }
 
@@ -695,14 +696,48 @@ impl TrackRun {
         self.open_frames = 0;
     }
 
-    /// New audio from the tap, also returned for the diarizer. `true` in the
-    /// result means the window restarted after a jump.
-    fn pull(&mut self) -> Option<(u64, Vec<f32>, bool)> {
+    /// New audio, also returned for the diarizer: what was recorded before
+    /// live started while `room` allows, then the tap. `true` in the result
+    /// means the window restarted after a jump.
+    fn pull(&mut self, room: bool) -> Option<(u64, Vec<f32>, bool)> {
+        if let Some(next) = self.catch_up {
+            if !room || self.samples.len() as u64 >= CATCH_UP_SAMPLES {
+                return None;
+            }
+            // Without tap audio yet (paused), reading stops where the file ends.
+            let until = self.tap.next_start();
+            match self
+                .tap
+                .read_written(next, until.unwrap_or(u64::MAX).min(next + CATCH_UP_SAMPLES))
+            {
+                Ok(samples) if !samples.is_empty() => {
+                    self.catch_up = Some(next + samples.len() as u64);
+                    return self.append(next, samples);
+                }
+                Ok(_) if until.is_none_or(|until| next < until) => return None,
+                Ok(_) => self.catch_up = None,
+                Err(err) => {
+                    tracing::warn!("Live transcription could not read the recording: {err}");
+                    self.catch_up = None;
+                }
+            }
+        }
         let (start, samples) = self.tap.take()?;
+        self.append(start, samples)
+    }
+
+    fn append(&mut self, start: u64, mut samples: Vec<f32>) -> Option<(u64, Vec<f32>, bool)> {
+        let expected = self.start + self.samples.len() as u64;
+        // The file can hold a little of what the tap also has.
+        let start = if start < expected {
+            samples.drain(..((expected - start) as usize).min(samples.len()));
+            expected
+        } else {
+            start
+        };
         if samples.is_empty() {
             return None;
         }
-        let expected = self.start + self.samples.len() as u64;
         let restarted = !self.samples.is_empty() && start != expected;
         if self.samples.is_empty() || restarted {
             self.clear();
@@ -935,6 +970,7 @@ impl Runner {
         for track in &mut self.tracks {
             track.clear();
             track.tap.set_enabled(true);
+            track.catch_up = Some(0);
         }
         self.refresh_model();
         let has_system = self.tracks.iter().any(|t| t.source == Source::System);
@@ -1006,8 +1042,13 @@ impl Runner {
     /// Returns whether a transcription ran, so the loop goes again without waiting.
     fn step(&mut self) -> bool {
         let flush = self.shared.paused.load(Ordering::Relaxed);
+        // Catching up feeds the diarizer no faster than it keeps up.
+        let room = self
+            .diarizer
+            .as_ref()
+            .is_none_or(|diarizer| (diarizer.pending.len() as u64) < CATCH_UP_SAMPLES);
         for track in &mut self.tracks {
-            let Some((start, samples, restarted)) = track.pull() else {
+            let Some((start, samples, restarted)) = track.pull(room) else {
                 continue;
             };
             if restarted {
@@ -1056,10 +1097,7 @@ impl Runner {
                 .as_deref()
                 == Some(model.key.as_str());
         }
-        let behind = self
-            .tracks
-            .iter()
-            .any(|track| track.untranscribed_speech() >= BEHIND_FRAMES);
+        let behind = self.behind();
         if self.must_yield(&model) {
             // Waiting out a dictation is expected, not falling behind.
             let dictating = self.state().pill().status() != crate::pill::PillStatus::Idle;
@@ -1097,12 +1135,15 @@ impl Runner {
         } else {
             false
         };
-        let behind = self
-            .tracks
-            .iter()
-            .any(|track| track.untranscribed_speech() >= BEHIND_FRAMES);
+        let behind = self.behind();
         self.set_status(behind);
         worked
+    }
+
+    fn behind(&self) -> bool {
+        self.tracks
+            .iter()
+            .any(|track| track.catch_up.is_some() || track.untranscribed_speech() >= BEHIND_FRAMES)
     }
 
     fn set_status(&self, behind: bool) {

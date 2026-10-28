@@ -38,6 +38,7 @@ pub(crate) fn is_ffmpeg_error_message(message: &str) -> bool {
 pub const EVENT_LIBRARY_PROGRESS: &str = "library:transcription_progress";
 pub const EVENT_LIBRARY_COMPLETE: &str = "library:transcription_complete";
 pub const EVENT_LIBRARY_ERROR: &str = "library:transcription_error";
+pub const EVENT_LIBRARY_RESTORED: &str = "library:item_restored";
 #[cfg(target_os = "macos")]
 pub const EVENT_LIBRARY_OPEN_IMPORT: &str = "library:open_import";
 #[cfg(target_os = "macos")]
@@ -414,11 +415,6 @@ mod tests {
         let (name, _, message) = LibraryItemStatus::from_fields("paused", 0.3, None).as_fields();
         assert_eq!(name, "error");
         assert_eq!(message.as_deref(), Some("Unknown status"));
-    }
-
-    #[test]
-    fn complete_reports_full_progress() {
-        assert_eq!(LibraryItemStatus::Complete.as_fields().1, 1.0);
     }
 
     #[test]

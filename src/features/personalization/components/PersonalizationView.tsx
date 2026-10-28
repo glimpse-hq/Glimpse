@@ -22,17 +22,27 @@ import * as personalizationApi from "../api";
 import {
   personalizationKeys,
   setPersonalitiesCache,
+  useDefaultCleanupInstructions,
   useInstalledApps,
   usePersonalities,
   useWebsiteIconMap,
 } from "../queries";
-import { createId, normalizeWebsite } from "./personalization-utils";
+import {
+  createId,
+  GLOBAL_MODE_ID,
+  normalizeWebsite,
+} from "./personalization-utils";
 import { showErrorToast } from "../../../shared/lib/errorToast";
 import PersonalityModal, {
   AppIconBadge,
   WebsiteFavicon,
   type PendingDeletePersonality,
 } from "./PersonalityModal";
+
+const instructionsPreview = (instructions: string[]) =>
+  instructions
+    .map((line) => line.trim().replace(/^[-*•]\s+/, ""))
+    .find(Boolean);
 
 const ModeMenuItem = ({
   icon,
@@ -78,6 +88,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const hasRequestedIconRefreshRef = useRef(false);
   const websiteIconRefreshKeyRef = useRef<string | null>(null);
   const persistVersionRef = useRef(0);
+  const persistSavesRef = useRef<Promise<unknown>>(Promise.resolve());
   const saveTimeoutRef = useRef<number | null>(null);
   const lastPendingPersonalitiesRef = useRef<Personality[] | null>(null);
   const mountedRef = useRef(true);
@@ -91,7 +102,16 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
   const personalitiesQuery = usePersonalities();
   const installedAppsQuery = useInstalledApps();
-  const personalities = personalitiesQuery.data ?? [];
+  const defaultInstructionsQuery = useDefaultCleanupInstructions();
+  const personalities = useMemo(
+    () => personalitiesQuery.data ?? [],
+    [personalitiesQuery.data],
+  );
+  const globalMode = personalities.find((mode) => mode.id === GLOBAL_MODE_ID);
+  const modes = useMemo(
+    () => personalities.filter((mode) => mode.id !== GLOBAL_MODE_ID),
+    [personalities],
+  );
   const installedApps = installedAppsQuery.data ?? [];
   const loading = isActive && personalitiesQuery.isLoading;
   const queryError = personalitiesQuery.error ?? installedAppsQuery.error;
@@ -203,7 +223,11 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
       saveTimeoutRef.current = window.setTimeout(async () => {
         saveTimeoutRef.current = null;
         try {
-          const cleaned = await personalizationApi.setPersonalities(next);
+          const save = persistSavesRef.current
+            .catch(() => {})
+            .then(() => personalizationApi.setPersonalities(next));
+          persistSavesRef.current = save;
+          const cleaned = await save;
           if (
             !mountedRef.current ||
             persistVersion !== persistVersionRef.current
@@ -238,6 +262,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   );
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       if (saveTimeoutRef.current !== null) {
@@ -245,8 +270,11 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         saveTimeoutRef.current = null;
         const pendingPersonalities = lastPendingPersonalitiesRef.current;
         if (pendingPersonalities !== null) {
-          void personalizationApi
-            .setPersonalities(pendingPersonalities)
+          void persistSavesRef.current
+            .catch(() => {})
+            .then(() =>
+              personalizationApi.setPersonalities(pendingPersonalities),
+            )
             .catch((err) => {
               console.error("Failed to flush pending personalities", err);
             });
@@ -338,6 +366,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
   const handleDeleteMode = useCallback(
     (id: string) => {
+      if (id === GLOBAL_MODE_ID) return;
       updatePersonalities((prev) => prev.filter((mode) => mode.id !== id));
       setActivePersonalityId(null);
     },
@@ -345,6 +374,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   );
 
   const requestDeleteModeConfirm = useCallback((personality: Personality) => {
+    if (personality.id === GLOBAL_MODE_ID) return;
     setPendingDeletePersonality({ id: personality.id, name: personality.name });
   }, []);
 
@@ -458,216 +488,226 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
             className="opacity-60"
           />
         </div>
-      ) : personalities.length === 0 ? (
-        <p className="ui-text-meta ui-color-disabled text-pretty">
-          {t({
-            id: "personalization.empty.title",
-            message: "No modes yet",
-          })}
-        </p>
       ) : (
         <div className="-mt-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar scrollbar-gutter pt-1 pb-6 pr-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-            {personalities.map((personality, index) => {
-              const appsPreview = personality.apps.slice(0, 4);
-              const sitesPreview = personality.websites.slice(0, 3);
-              const hiddenCount =
-                personality.apps.length +
-                personality.websites.length -
-                appsPreview.length -
-                sitesPreview.length;
-              const instructionsPreview = personality.instructions
-                .map((line) => line.trim().replace(/^[-*•]\s+/, ""))
-                .find(Boolean);
-              return (
-                <div
-                  key={personality.id || `personality-${index}`}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    setModeMenu({
-                      personality,
-                      x: event.clientX,
-                      y: event.clientY,
-                    });
-                  }}
-                  onClick={() => {
-                    if (shiftHeld) {
-                      requestDeleteModeConfirm(personality);
-                      return;
-                    }
-                    setActivePersonalityId(personality.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "ContextMenu" ||
-                      (e.shiftKey && e.key === "F10")
-                    ) {
-                      e.preventDefault();
-                      const rect = e.currentTarget.getBoundingClientRect();
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {(globalMode ? [globalMode, ...modes] : modes).map(
+              (personality) => {
+                const isGlobal = personality.id === GLOBAL_MODE_ID;
+                const modeName = isGlobal
+                  ? t({ id: "personalization.global.name", message: "Global" })
+                  : personality.name;
+                const appsPreview = personality.apps.slice(0, 4);
+                const sitesPreview = personality.websites.slice(0, 3);
+                const hiddenCount =
+                  personality.apps.length +
+                  personality.websites.length -
+                  appsPreview.length -
+                  sitesPreview.length;
+                const deleting = shiftHeld && !isGlobal;
+                return (
+                  <div
+                    key={personality.id}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      if (isGlobal) return;
                       setModeMenu({
                         personality,
-                        x: rect.left + 16,
-                        y: rect.top + 32,
+                        x: event.clientX,
+                        y: event.clientY,
                       });
-                      return;
-                    }
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (shiftHeld) {
-                        requestDeleteModeConfirm(personality);
-                        return;
-                      }
-                      setActivePersonalityId(personality.id);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  className={`ui-card-liftable group relative p-4 text-left ${
-                    shiftHeld
-                      ? "!border-red-500/30 hover:!border-red-500/60 hover:!bg-red-500/5"
-                      : ""
-                  }`}
-                >
-                  <div className="relative flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        {renamingId === personality.id ? (
-                          <input
-                            data-no-press
-                            autoFocus
-                            value={renameDraft}
-                            onChange={(event) =>
-                              setRenameDraft(event.target.value)
-                            }
-                            onClick={(event) => event.stopPropagation()}
-                            onPointerDown={(event) => event.stopPropagation()}
-                            onBlur={commitRename}
-                            onKeyDown={(event) => {
-                              event.stopPropagation();
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                commitRename();
-                              }
-                              if (event.key === "Escape") {
-                                event.preventDefault();
-                                setRenamingId(null);
-                              }
-                            }}
-                            className="ui-text-body-lg-strong ui-color-primary block w-full min-w-0 border-0 bg-transparent p-0 shadow-[inset_0_-1px_0_0_var(--color-border-hover)] outline-hidden"
-                          />
-                        ) : (
-                          <p className="ui-text-body-lg-strong ui-color-primary">
-                            {personality.name}
+                    }}
+                    className={`ui-card-liftable group relative flex flex-col p-5 has-[>button:focus-visible]:ring-1 has-[>button:focus-visible]:ring-border-hover ${
+                      isGlobal ? "col-span-full" : ""
+                    } ${
+                      deleting
+                        ? "!border-red-500/30 hover:!border-red-500/60 hover:!bg-red-500/5"
+                        : ""
+                    }`}
+                  >
+                    {renamingId !== personality.id && (
+                      <button
+                        type="button"
+                        aria-label={modeName}
+                        onClick={() => {
+                          if (deleting) {
+                            requestDeleteModeConfirm(personality);
+                            return;
+                          }
+                          setActivePersonalityId(personality.id);
+                        }}
+                        onKeyDown={(event) => {
+                          if (
+                            !isGlobal &&
+                            (event.key === "ContextMenu" ||
+                              (event.shiftKey && event.key === "F10"))
+                          ) {
+                            event.preventDefault();
+                            const rect =
+                              event.currentTarget.getBoundingClientRect();
+                            setModeMenu({
+                              personality,
+                              x: rect.left + 16,
+                              y: rect.top + 32,
+                            });
+                          }
+                        }}
+                        className="absolute inset-0 rounded-[inherit] focus-visible:outline-none"
+                      />
+                    )}
+                    {isGlobal ? (
+                      <div className="pointer-events-none relative flex items-center gap-6">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate ui-text-body-lg-strong ui-color-primary">
+                            {modeName}
                           </p>
-                        )}
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div
-                          data-no-press
-                          className="-mt-0.5"
-                          onPointerDown={(event) => event.stopPropagation()}
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => {
-                            if (
-                              event.key === "Enter" ||
-                              event.key === " " ||
-                              event.key === "Spacebar"
-                            ) {
-                              event.stopPropagation();
-                            }
-                          }}
-                        >
-                          <ToggleSwitch
-                            enabled={personality.enabled}
-                            onToggle={() =>
-                              updatePersonality(personality.id, {
-                                enabled: !personality.enabled,
-                              })
-                            }
-                            ariaLabel={
-                              personality.enabled
-                                ? t({
-                                    id: "personalization.disable_mode",
-                                    message: "Disable mode",
-                                  })
-                                : t({
-                                    id: "personalization.enable_mode",
-                                    message: "Enable mode",
-                                  })
-                            }
-                          />
+                          <p className="mt-1 truncate ui-text-body-sm ui-color-muted">
+                            {instructionsPreview(
+                              personality.instructions.length === 0
+                                ? (defaultInstructionsQuery.data ?? "").split(
+                                    "\n",
+                                  )
+                                : personality.instructions,
+                            )}
+                          </p>
                         </div>
-                      </div>
-                    </div>
-
-                    <p className="-mt-2 truncate ui-text-body-sm ui-color-muted">
-                      {instructionsPreview ??
-                        t({
-                          id: "personalization.no_notes",
-                          message: "No notes yet",
-                        })}
-                    </p>
-
-                    <div className="flex h-6 min-w-0 items-center gap-2">
-                      {appsPreview.length === 0 && sitesPreview.length === 0 ? (
-                        <span className="ui-text-meta ui-color-disabled">
+                        <span className="shrink-0 ui-text-meta ui-color-muted">
                           {t({
-                            id: "personalization.no_targets",
-                            message: "No apps or websites yet",
+                            id: "personalization.global.targets",
+                            message: "All apps and websites",
                           })}
                         </span>
-                      ) : (
-                        <>
-                          {appsPreview.map((app, index) => (
-                            <span
-                              key={`app-preview-${index}-${app || "empty"}`}
-                              title={app}
-                              className="flex"
-                            >
-                              <AppIconBadge
-                                appName={app}
-                                iconPath={
-                                  installedAppByName.get(app.toLowerCase())
-                                    ?.icon_path
+                      </div>
+                    ) : (
+                      <div className="pointer-events-none relative flex flex-1 flex-col">
+                        <div className="flex h-6 items-center justify-between gap-3">
+                          {renamingId === personality.id ? (
+                            <input
+                              autoFocus
+                              value={renameDraft}
+                              aria-label={t({
+                                id: "personalization.modal.edit_name",
+                                message: "Edit mode name",
+                              })}
+                              onChange={(event) =>
+                                setRenameDraft(event.target.value)
+                              }
+                              onBlur={commitRename}
+                              onKeyDown={(event) => {
+                                event.stopPropagation();
+                                if (event.key === "Enter") {
+                                  event.preventDefault();
+                                  commitRename();
                                 }
-                                size="chip"
-                              />
-                            </span>
-                          ))}
-                          {appsPreview.length > 0 &&
-                            sitesPreview.length > 0 && (
-                              <span
-                                className="mx-0.5 h-3.5 w-px shrink-0 bg-border-primary"
-                                aria-hidden="true"
-                              />
-                            )}
-                          {sitesPreview.map((site, index) => (
-                            <span
-                              key={`site-preview-${index}-${site || "empty"}`}
-                              title={site}
-                              className="flex"
-                            >
-                              <WebsiteFavicon
-                                site={site}
-                                iconPath={
-                                  websiteIconBySite[normalizeWebsite(site)]
+                                if (event.key === "Escape") {
+                                  event.preventDefault();
+                                  setRenamingId(null);
                                 }
-                                size="list"
-                              />
-                            </span>
-                          ))}
-                          {hiddenCount > 0 && (
-                            <span className="shrink-0 ui-text-meta ui-color-muted tabular-nums">
-                              +{hiddenCount}
-                            </span>
+                              }}
+                              className="pointer-events-auto block w-full min-w-0 border-0 bg-transparent p-0 ui-text-body-lg-strong ui-color-primary shadow-[inset_0_-1px_0_0_var(--color-border-hover)] outline-hidden"
+                            />
+                          ) : (
+                            <p
+                              className={`truncate ui-text-body-lg-strong ${
+                                personality.enabled
+                                  ? "ui-color-primary"
+                                  : "ui-color-muted"
+                              }`}
+                            >
+                              {modeName}
+                            </p>
                           )}
-                        </>
-                      )}
-                    </div>
+                          <div className="pointer-events-auto shrink-0">
+                            <ToggleSwitch
+                              enabled={personality.enabled}
+                              onToggle={() =>
+                                updatePersonality(personality.id, {
+                                  enabled: !personality.enabled,
+                                })
+                              }
+                              ariaLabel={t({
+                                id: "personalization.mode.toggle",
+                                message: `Use ${personality.name}`,
+                              })}
+                            />
+                          </div>
+                        </div>
+
+                        <p className="mb-5 mt-2 line-clamp-2 min-h-[2lh] ui-text-body-sm ui-color-muted">
+                          {instructionsPreview(personality.instructions) ??
+                            t({
+                              id: "personalization.no_notes",
+                              message: "No notes yet",
+                            })}
+                        </p>
+
+                        <div
+                          className={`mt-auto flex h-6 min-w-0 items-center gap-2 ${
+                            personality.enabled ? "" : "opacity-50"
+                          }`}
+                        >
+                          {appsPreview.length === 0 &&
+                          sitesPreview.length === 0 ? (
+                            <span className="ui-text-meta ui-color-disabled">
+                              {t({
+                                id: "personalization.no_targets",
+                                message: "No apps or websites yet",
+                              })}
+                            </span>
+                          ) : (
+                            <>
+                              {appsPreview.map((app) => (
+                                <span
+                                  key={`app-${app}`}
+                                  title={app}
+                                  className="flex"
+                                >
+                                  <AppIconBadge
+                                    appName={app}
+                                    iconPath={
+                                      installedAppByName.get(app.toLowerCase())
+                                        ?.icon_path
+                                    }
+                                    size="chip"
+                                  />
+                                </span>
+                              ))}
+                              {appsPreview.length > 0 &&
+                                sitesPreview.length > 0 && (
+                                  <span
+                                    className="mx-0.5 h-3.5 w-px shrink-0 bg-border-primary"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                              {sitesPreview.map((site) => (
+                                <span
+                                  key={`site-${site}`}
+                                  title={site}
+                                  className="flex"
+                                >
+                                  <WebsiteFavicon
+                                    site={site}
+                                    iconPath={
+                                      websiteIconBySite[normalizeWebsite(site)]
+                                    }
+                                    size="list"
+                                  />
+                                </span>
+                              ))}
+                              {hiddenCount > 0 && (
+                                <span className="shrink-0 ui-text-meta ui-color-muted tabular-nums">
+                                  +{hiddenCount}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              },
+            )}
           </div>
         </div>
       )}
@@ -765,20 +805,23 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         </div>
       )}
 
-      {activePersonality && (
-        <PersonalityModal
-          key={activePersonality.id}
-          personality={activePersonality}
-          installedApps={installedApps}
-          websiteIconBySite={websiteIconBySite}
-          onClose={() => setActivePersonalityId(null)}
-          onUpdate={(patch) => updatePersonality(activePersonality.id, patch)}
-          onUpdateList={(updater) =>
-            updatePersonalityList(activePersonality.id, updater)
-          }
-          onDelete={() => requestDeleteModeConfirm(activePersonality)}
-        />
-      )}
+      {activePersonality &&
+        (activePersonality.id !== GLOBAL_MODE_ID ||
+          defaultInstructionsQuery.data !== undefined) && (
+          <PersonalityModal
+            key={activePersonality.id}
+            personality={activePersonality}
+            defaultInstructions={defaultInstructionsQuery.data ?? ""}
+            installedApps={installedApps}
+            websiteIconBySite={websiteIconBySite}
+            onClose={() => setActivePersonalityId(null)}
+            onUpdate={(patch) => updatePersonality(activePersonality.id, patch)}
+            onUpdateList={(updater) =>
+              updatePersonalityList(activePersonality.id, updater)
+            }
+            onDelete={() => requestDeleteModeConfirm(activePersonality)}
+          />
+        )}
 
       <AnimatePresence>
         {pendingDeletePersonality && (
@@ -797,7 +840,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
               exit={{ opacity: 0, scale: 0.96, y: 14 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               onClick={(event) => event.stopPropagation()}
-              className="w-[380px] max-w-[92vw] rounded-2xl border border-border-secondary bg-surface-overlay p-5 shadow-2xl"
+              className="w-[380px] max-w-[92vw] rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
               role="alertdialog"
               aria-modal="true"
               aria-labelledby="delete-mode-title"
@@ -821,7 +864,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                 <button
                   type="button"
                   onClick={() => setPendingDeletePersonality(null)}
-                  className="rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-button ui-color-primary hover:bg-surface-elevated transition-colors"
+                  className="rounded-lg px-3 py-2 ui-text-button ui-color-secondary transition-colors hover:text-content-primary"
                 >
                   {t({
                     id: "personalization.cancel",

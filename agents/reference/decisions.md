@@ -5,11 +5,12 @@ These look wrong or redundant but are deliberate. Don't "fix" them. Add one line
 - **Cached mic permission gate** in `pill.rs`. The fresh check can block for minutes; a failed stream start shows the permission toast and refreshes the cache.
 - **The pill shows pre-roll until audio arrives.** It must never look ready before the mic is live.
 - **Hold and Toggle modes stay next to Smart.** Pedals and switch access need deterministic behavior.
-- **Edit Mode is its own toggle, not part of cleanup.** It changes what the words mean.
+- **Edit Mode rides on a shortcut's Clean up switch.** A shortcut without it types the words as spoken, even over a selection, and writing modes never apply to it.
 - **Whole-struct `update_settings`.** See `settings.md`.
 - **Whisper runs with non-speech tokens allowed, plus segment × VAD masking** against hallucinated phrases. Phrase blocklists, audio trimming, `no_speech_prob`, and `avg_logprob` were measured and failed.
 - **Apple Speech is batch-only.** Its streaming output is too bursty for the pill.
 - **Writing features need a license whatever model runs them**, including on-device Apple models.
+- **The cleanup model needs a license or trial.** It installs only with one, and every request checks the license gate again.
 - **Trial expiry degrades to free.** Notices are in-app only, fire only after a dictation, and have a budget. No OS notifications, nothing on a timer or at launch.
 - **No sentiment gate before review asks.** Store policy forbids it.
 - **Unsigned license grants are never trusted**, including ones cached before 1.2.5. A paid user who updates offline sees reconnect until the app is online once.
@@ -19,3 +20,4 @@ These look wrong or redundant but are deliberate. Don't "fix" them. Add one line
 - **CLI writes and the local API check the license at call time**, not only at install.
 - **Windows exits right after `RunEvent::Exit` when no `ExitRequested` came first** (`platform/windows/crash.rs`). Logoff and shutdown end tao's loop from `WM_ENDSESSION`, and tao keeps pumping into the destroyed loop until it panics.
 - **A Windows panic inside tao's event loop exits cleanly once Windows has asked the app to end its session** (`platform/windows/crash.rs`). Store updates and restarts send `WM_ENDSESSION`, which tao handles even while its event handler is running and then panics as re-entrant (`runner.rs:246`).
+- **Website icons for personalization modes come from DuckDuckGo** (`personalization/icons.rs`). Only the domain typed for a mode is sent, when the Personalization pane lists it without a cached icon; local and private hosts are skipped. Many sites have no `/favicon.ico` to fetch directly. A site without an icon is asked again after a week.

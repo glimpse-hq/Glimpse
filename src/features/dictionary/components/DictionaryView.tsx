@@ -24,13 +24,13 @@ import * as dictionaryApi from "../api";
 import {
   setDictionaryEntriesCache,
   setDictionaryReplacementsCache,
-  useReplacements,
 } from "../queries";
 import type { Replacement } from "../../../types";
 
 const normalizeEntry = (value: string) => value.trim();
 const toErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
+// Mirrors MAX_DICTIONARY_ENTRIES in src-tauri/src/dictionary.rs.
 const DICTIONARY_ENTRY_LIMIT = 64;
 
 type QueuedPersistOptions<T> = {
@@ -107,7 +107,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   const shiftHeld = useShiftHeld(isActive);
   const settingsQuery = useSettings(undefined, isActive);
   const modelsQuery = useModelCatalog(isActive);
-  const replacementsQuery = useReplacements(isActive);
 
   const [newEntry, setNewEntry] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -135,14 +134,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   const settings = settingsQuery.data ?? null;
   const models = modelsQuery.data ?? [];
   const entries = settings?.dictionary ?? [];
-  const replacements = replacementsQuery.data ?? [];
-  const bootstrapError =
-    settingsQuery.error ?? modelsQuery.error ?? replacementsQuery.error;
+  const replacements = settings?.replacements ?? [];
+  const bootstrapError = settingsQuery.error ?? modelsQuery.error;
   const loading =
-    isActive &&
-    (settingsQuery.isLoading ||
-      modelsQuery.isLoading ||
-      replacementsQuery.isLoading);
+    isActive && (settingsQuery.isLoading || modelsQuery.isLoading);
 
   const {
     currentRef: entriesRef,

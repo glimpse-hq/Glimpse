@@ -25,7 +25,6 @@ import {
   CaretDown as ChevronDown,
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
-  Copy,
   DotsThreeVertical,
   Export,
   GearSix,
@@ -61,6 +60,7 @@ import {
   sanitizeFileName,
   shouldShowImportProgress,
   formatLibraryName,
+  isLibraryItemBusy,
 } from "./library-utils";
 import {
   resolveSpeechModelLabel,
@@ -69,7 +69,7 @@ import {
 import { useInstalledApps } from "../../personalization/queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
-import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
+import CopyButton from "../../../shared/ui/CopyButton";
 import HoverTip from "../../../shared/ui/HoverTip";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import type {
@@ -83,11 +83,14 @@ import type {
 } from "../../../types";
 import { SPEAKER_COLORS, withSpeakerColors } from "../speakerColors";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { startDragStep } from "../../settings/dragStep";
 
 const MAX_SPEAKERS = 16;
 const FOLLOW_PLAYBACK_KEY = "glimpse.library.follow_playback";
 // Scrollers span the window so the scrollbar sits at its edge; content stays in this column.
 const CONTENT_COLUMN = "mx-auto w-full max-w-3xl px-5";
+const COPY_BUTTON =
+  "flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40";
 const EXPORT_FORMATS: Array<{ value: ExportFormat; needsSegments?: boolean }> =
   [
     { value: "txt" },
@@ -100,9 +103,13 @@ type SpeakerTurn = {
   key: number;
   speaker: Speaker | null;
   text: string;
+  start_ms: number;
+  // A later paragraph of the same turn, shown without the speaker label.
+  continues: boolean;
 };
 
-// Consecutive segments by the same speaker merge into one turn.
+const PARAGRAPH_MIN_CHARS = 400;
+
 type RowMatch = { row: number; occurrence: number };
 
 const findRowMatches = (rows: string[], query: string): RowMatch[] => {
@@ -119,6 +126,7 @@ const findRowMatches = (rows: string[], query: string): RowMatch[] => {
   return matches;
 };
 
+// Same-speaker segments merge into one turn, split into paragraphs at long sentence ends.
 const buildSpeakerTurns = (
   segments: TranscriptSegment[],
   speakerById: Map<string, Speaker>,
@@ -130,10 +138,21 @@ const buildSpeakerTurns = (
     const id = segments[index].speaker_id;
     const speaker = (id && speakerById.get(id)) || null;
     const last = turns[turns.length - 1];
-    if (last && last.speaker === speaker) {
+    const sameSpeaker = !!last && last.speaker === speaker;
+    const continues =
+      sameSpeaker &&
+      last.text.length >= PARAGRAPH_MIN_CHARS &&
+      /[.!?…]["')\]]*$/.test(last.text);
+    if (sameSpeaker && !continues) {
       last.text += ` ${text}`;
     } else {
-      turns.push({ key: index, speaker, text });
+      turns.push({
+        key: index,
+        speaker,
+        text,
+        start_ms: segments[index].start_ms,
+        continues,
+      });
     }
   }
   return turns;
@@ -337,8 +356,6 @@ const LibraryDetail = ({
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const closeDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
-  const { copied: copyConfirmed, copy: copyTranscript } =
-    useCopyToClipboard(1400);
   const [audioDuration, setAudioDuration] = useState(
     item.duration_seconds || 0,
   );
@@ -387,7 +404,6 @@ const LibraryDetail = ({
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const secondaryAudioRef = useRef<HTMLAudioElement | null>(null);
   const trackMutedRef = useRef(trackMuted);
   trackMutedRef.current = trackMuted;
   const tagMenuRef = useRef<HTMLDivElement>(null);
@@ -450,11 +466,7 @@ const LibraryDetail = ({
     [item.speakers],
   );
   const canAddSpeaker = speakers.length < MAX_SPEAKERS;
-  const isBusy =
-    item.status.type === "transcribing" ||
-    item.status.type === "cancelling" ||
-    item.status.type === "pending" ||
-    item.status.type === "importing";
+  const isBusy = isLibraryItemBusy(item.status);
   const detectingSpeakersLabel = t({
     id: "library.modal.detecting_speakers",
     message: "Detecting speakers",
@@ -494,16 +506,19 @@ const LibraryDetail = ({
     });
   }, [item.created_at]);
 
-  const audioUrl = useMemo(
-    () => convertFileSrc(item.audio_path),
-    [item.audio_path],
-  );
-  const secondaryAudioUrl = useMemo(
-    () =>
-      item.secondary_audio_path
-        ? convertFileSrc(item.secondary_audio_path)
-        : null,
-    [item.secondary_audio_path],
+  const hasTracks = Boolean(item.secondary_audio_path);
+  // Recorded tracks are mixed into one stream so they share a clock.
+  const audioUrlFor = useCallback(
+    (muted: { primary: boolean; secondary: boolean }) => {
+      if (!item.secondary_audio_path) return convertFileSrc(item.audio_path);
+      const params = new URLSearchParams();
+      params.append("track", item.audio_path);
+      params.append("track", item.secondary_audio_path);
+      if (muted.primary) params.append("mute", "0");
+      if (muted.secondary) params.append("mute", "1");
+      return `${convertFileSrc("", "playback")}?${params}`;
+    },
+    [item.audio_path, item.secondary_audio_path],
   );
 
   const stopSeekLoop = useCallback(() => {
@@ -525,24 +540,24 @@ const LibraryDetail = ({
   const releaseAudioSource = useCallback(() => {
     stopSeekLoop();
     const audio = audioRef.current;
-    const secondary = secondaryAudioRef.current;
     audioRef.current = null;
-    for (const element of [audio, secondary]) {
-      if (!element) continue;
-      element.pause();
-      element.removeAttribute("src");
-      element.load();
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
     }
     updateIsPlaying(false);
-    return { audio, secondary };
+    return audio;
   }, [stopSeekLoop, updateIsPlaying]);
 
   const setPlaybackRateValue = useCallback((value: number) => {
     playbackRateRef.current = value;
     setPlaybackRate(value);
-    if (audioRef.current) audioRef.current.playbackRate = value;
-    if (secondaryAudioRef.current) {
-      secondaryAudioRef.current.playbackRate = value;
+    const audio = audioRef.current;
+    if (audio) {
+      // A reload resets the rate to the default one.
+      audio.defaultPlaybackRate = value;
+      audio.playbackRate = value;
     }
   }, []);
 
@@ -577,15 +592,6 @@ const LibraryDetail = ({
         if (playing && !isScrubbingRef.current) {
           setAudioCurrentTime(audio.currentTime);
         }
-        // The second track shadows the first; nudge it back if it drifts.
-        const secondary = secondaryAudioRef.current;
-        if (
-          secondary &&
-          playing &&
-          Math.abs(secondary.currentTime - audio.currentTime) > 0.25
-        ) {
-          secondary.currentTime = audio.currentTime;
-        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -611,18 +617,10 @@ const LibraryDetail = ({
     scrubWasPlayingRef.current = false;
     scrubValueRef.current = null;
 
-    const audio = new Audio(audioUrl);
+    const audio = new Audio(audioUrlFor(trackMutedRef.current));
     audio.preload = "auto";
+    audio.defaultPlaybackRate = playbackRateRef.current;
     audio.playbackRate = playbackRateRef.current;
-    audio.muted = trackMutedRef.current.primary;
-    const secondary = secondaryAudioUrl ? new Audio(secondaryAudioUrl) : null;
-    if (secondary) {
-      secondary.preload = "auto";
-      secondary.playbackRate = playbackRateRef.current;
-      secondary.muted = trackMutedRef.current.secondary;
-      secondary.load();
-    }
-    secondaryAudioRef.current = secondary;
 
     const handleReady = () => {
       setAudioDuration(
@@ -645,26 +643,19 @@ const LibraryDetail = ({
     const handlePlay = () => {
       updateIsPlaying(true);
       startSeekLoop();
-      if (secondary) {
-        secondary.currentTime = audio.currentTime;
-        void secondary.play().catch(() => {});
-      }
     };
     const handlePause = () => {
       updateIsPlaying(false);
       stopSeekLoop();
-      secondary?.pause();
     };
     const handleEnded = () => {
       updateIsPlaying(false);
       stopSeekLoop();
-      secondary?.pause();
       if (Number.isFinite(audio.duration)) {
         setAudioCurrentTime(audio.duration);
       }
     };
     const handleSeeked = () => {
-      if (secondary) secondary.currentTime = audio.currentTime;
       if (!isScrubbingRef.current) setAudioCurrentTime(audio.currentTime);
     };
 
@@ -689,18 +680,9 @@ const LibraryDetail = ({
       audio.removeAttribute("src");
       audio.load();
       if (audioRef.current === audio) audioRef.current = null;
-      if (secondary) {
-        secondary.pause();
-        secondary.removeAttribute("src");
-        secondary.load();
-      }
-      if (secondaryAudioRef.current === secondary) {
-        secondaryAudioRef.current = null;
-      }
     };
   }, [
-    audioUrl,
-    secondaryAudioUrl,
+    audioUrlFor,
     item.duration_seconds,
     startSeekLoop,
     stopSeekLoop,
@@ -727,40 +709,13 @@ const LibraryDetail = ({
       event:
         React.MouseEvent<HTMLSpanElement> | React.TouchEvent<HTMLSpanElement>,
     ) => {
-      event.preventDefault();
-      const startX =
-        "touches" in event ? event.touches[0].clientX : event.clientX;
       const startIndex = PLAYBACK_RATES.indexOf(playbackRateRef.current);
-      const initialIndex =
-        startIndex === -1 ? PLAYBACK_RATES.indexOf(1) : startIndex;
-
-      const handleMove = (e: MouseEvent | TouchEvent) => {
-        const currentX =
-          "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
-        const diffX = currentX - startX;
-        const steps = Math.round(diffX / 15);
-
-        const nextIndex = Math.min(
-          PLAYBACK_RATES.length - 1,
-          Math.max(0, initialIndex + steps),
-        );
-
-        if (PLAYBACK_RATES[nextIndex] !== playbackRateRef.current) {
-          setPlaybackRateValue(PLAYBACK_RATES[nextIndex]);
-        }
-      };
-
-      const handleEnd = () => {
-        window.removeEventListener("mousemove", handleMove);
-        window.removeEventListener("mouseup", handleEnd);
-        window.removeEventListener("touchmove", handleMove);
-        window.removeEventListener("touchend", handleEnd);
-      };
-
-      window.addEventListener("mousemove", handleMove);
-      window.addEventListener("mouseup", handleEnd);
-      window.addEventListener("touchmove", handleMove, { passive: false });
-      window.addEventListener("touchend", handleEnd);
+      startDragStep(
+        event,
+        startIndex === -1 ? PLAYBACK_RATES.indexOf(1) : startIndex,
+        PLAYBACK_RATES.length,
+        (index) => setPlaybackRateValue(PLAYBACK_RATES[index]),
+      );
     },
     [setPlaybackRateValue],
   );
@@ -1130,15 +1085,7 @@ const LibraryDetail = ({
     [speakerTurns],
   );
   // Edits and AI cleanup change the transcript but not the segments, so those items keep the text box.
-  const transcriptEdited = useMemo(() => {
-    if (item.transcript_edited) return true;
-    const letters = (text: string) =>
-      text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
-    const segmentText = (item.segments ?? [])
-      .map((segment) => segment.text)
-      .join(" ");
-    return letters(item.transcript ?? "") !== letters(segmentText);
-  }, [item.transcript_edited, item.transcript, item.segments]);
+  const transcriptEdited = item.transcript_edited || item.llm_cleanup_enabled;
   const visibleTurns = useMemo(
     () =>
       hiddenSpeakers.size > 0
@@ -1246,19 +1193,16 @@ const LibraryDetail = ({
     });
   };
 
-  const handleCopy = () => {
-    if (showSpeakerText) {
-      copyTranscript(
-        visibleTurns
+  const copyText = () =>
+    showSpeakerText
+      ? visibleTurns
           .map((turn) =>
-            turn.speaker ? `${turn.speaker.name}: ${turn.text}` : turn.text,
+            turn.speaker && !turn.continues
+              ? `${turn.speaker.name}: ${turn.text}`
+              : turn.text,
           )
-          .join("\n\n"),
-      );
-      return;
-    }
-    if (transcriptDraft.trim()) copyTranscript(transcriptDraft);
-  };
+          .join("\n\n")
+      : transcriptDraft;
 
   const handleTogglePlayback = useCallback(() => {
     const audio = audioRef.current;
@@ -1332,14 +1276,16 @@ const LibraryDetail = ({
   };
 
   const handleToggleTrackMute = (track: "primary" | "secondary") => {
-    setTrackMuted((prev) => {
-      const next = { ...prev, [track]: !prev[track] };
-      if (audioRef.current) audioRef.current.muted = next.primary;
-      if (secondaryAudioRef.current) {
-        secondaryAudioRef.current.muted = next.secondary;
-      }
-      return next;
-    });
+    const next = { ...trackMuted, [track]: !trackMuted[track] };
+    setTrackMuted(next);
+    const audio = audioRef.current;
+    if (!audio) return;
+    // The new mix reloads the stream at the same position.
+    const time = audio.currentTime;
+    const wasPlaying = !audio.paused;
+    audio.src = audioUrlFor(next);
+    audio.currentTime = time;
+    if (wasPlaying) playAudio(audio);
   };
 
   const handleRenameBookmark = async (id: string, label: string) => {
@@ -1389,7 +1335,7 @@ const LibraryDetail = ({
     rediarizing ||
     (item.status.type === "transcribing" && !!item.status.detecting_speakers);
   // The placeholder shows progress itself until text arrives.
-  const footerStatus = transcribingPlaceholder
+  const transcriptStatus = transcribingPlaceholder
     ? null
     : rediarizing
       ? detectingSpeakersLabel
@@ -1975,7 +1921,7 @@ const LibraryDetail = ({
 
   return (
     <div className="flex h-full w-full min-h-0 flex-col">
-      <header className="-mt-5 shrink-0 border-b border-[var(--color-border-primary)] px-5 pt-1.5 pb-3">
+      <header className="-mt-5 shrink-0 px-5 pt-1.5 pb-3">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -2131,19 +2077,16 @@ const LibraryDetail = ({
                 <Search size={14} aria-hidden="true" />
               </button>
 
-              <button
-                onClick={handleCopy}
+              <CopyButton
+                getText={copyText}
+                iconSize={14}
+                resetMs={1400}
                 disabled={!showSpeakerText && !transcriptDraft.trim()}
                 aria-label={t({ id: "library.modal.copy", message: "Copy" })}
                 title={t({ id: "library.modal.copy", message: "Copy" })}
-                className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40 ${
-                  copyConfirmed
-                    ? "ui-color-success"
-                    : "text-content-muted hover:text-content-primary"
-                }`}
-              >
-                {copyConfirmed ? <Check size={14} /> : <Copy size={14} />}
-              </button>
+                className={`${COPY_BUTTON} text-content-muted hover:text-content-primary`}
+                copiedClassName={`${COPY_BUTTON} ui-color-success`}
+              />
 
               <div className="relative" ref={exportMenuRef}>
                 <button
@@ -2819,13 +2762,21 @@ const LibraryDetail = ({
         ) : (
           <div className="relative flex h-full w-full flex-col">
             <div
-              className="pointer-events-none absolute left-0 right-3 bottom-0 h-6 z-10"
+              className="pointer-events-none absolute left-0 right-3 bottom-0 h-10 z-10"
               style={{
                 background:
                   "linear-gradient(to top, var(--color-bg-tertiary), transparent)",
               }}
               aria-hidden="true"
             />
+            <div
+              aria-live="polite"
+              className={`pointer-events-none absolute inset-x-0 bottom-1 z-10 h-4 truncate text-center ui-text-meta tabular-nums ${
+                detectingSpeakers ? "text-local" : "text-content-disabled"
+              }`}
+            >
+              {transcriptStatus}
+            </div>
             {!showSegmentView && bookmarks.length > 0 && (
               <div
                 className={`${CONTENT_COLUMN} max-h-[152px] shrink-0 overflow-y-auto pt-2 pb-1 custom-scrollbar`}
@@ -2834,6 +2785,14 @@ const LibraryDetail = ({
               </div>
             )}
             <div className="relative flex-1 min-h-0">
+              <div
+                className="pointer-events-none absolute left-0 right-3 top-0 h-4 z-10"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, var(--color-bg-tertiary), transparent)",
+                }}
+                aria-hidden="true"
+              />
               {showSegmentView ? (
                 <Virtuoso
                   ref={segmentsVirtuosoRef}
@@ -2852,8 +2811,8 @@ const LibraryDetail = ({
                     entry: { segment: TranscriptSegment; index: number },
                   ) => `${entry.segment.start_ms}-${entry.index}`}
                   components={{
-                    Header: () => <div className="h-2" />,
-                    Footer: () => <div className="h-2" />,
+                    Header: () => <div className="h-4" />,
+                    Footer: () => <div className="h-10" />,
                   }}
                   itemContent={(idx, entry) => {
                     const segment = entry.segment;
@@ -2929,8 +2888,8 @@ const LibraryDetail = ({
                       `${item.id}-chunk-${index}`
                     }
                     components={{
-                      Header: () => <div className="h-2" />,
-                      Footer: () => <div className="h-2" />,
+                      Header: () => <div className="h-4" />,
+                      Footer: () => <div className="h-10" />,
                     }}
                     itemContent={(idx, chunk) => (
                       <div className={`${CONTENT_COLUMN} pb-2`}>
@@ -2968,13 +2927,17 @@ const LibraryDetail = ({
                     turn.key
                   }
                   components={{
-                    Header: () => <div className="h-2" />,
-                    Footer: () => <div className="h-4" />,
+                    Header: () => <div className="h-4" />,
+                    Footer: () => <div className="h-10" />,
                   }}
                   itemContent={(idx, turn) => (
-                    <div className={`${CONTENT_COLUMN} pb-4`}>
+                    <div
+                      className={`${CONTENT_COLUMN} ${
+                        visibleTurns[idx + 1]?.continues ? "pb-2.5" : "pb-4"
+                      }`}
+                    >
                       <div className="px-2">
-                        {turn.speaker && (
+                        {turn.speaker && !turn.continues && (
                           <div
                             onContextMenu={(event) =>
                               turn.speaker &&
@@ -2995,7 +2958,15 @@ const LibraryDetail = ({
                             </span>
                           </div>
                         )}
-                        <p className="select-text">
+                        <p
+                          className="select-text cursor-pointer transition-colors hover:text-content-primary"
+                          onClick={() => {
+                            // Selecting text shouldn't jump playback.
+                            if (window.getSelection()?.isCollapsed !== false) {
+                              handleTimestampClick(turn.start_ms);
+                            }
+                          }}
+                        >
                           {renderHighlightedText(
                             turn.text,
                             activeOccurrence(activeTurnMatch, idx),
@@ -3016,7 +2987,7 @@ const LibraryDetail = ({
                       key={normalizedSearchQuery}
                       ref={transcriptHighlightsRef}
                       aria-hidden="true"
-                      className="pointer-events-none col-start-1 row-start-1 whitespace-pre-wrap [overflow-wrap:break-word] px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body leading-relaxed text-transparent pt-2 pb-4"
+                      className="pointer-events-none col-start-1 row-start-1 whitespace-pre-wrap [overflow-wrap:break-word] px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body leading-relaxed text-transparent pt-4 pb-10"
                     >
                       {textMatchIndexes.map((start, idx) => {
                         const prevEnd =
@@ -3061,7 +3032,7 @@ const LibraryDetail = ({
                         id: "library.modal.transcript_placeholder",
                         message: "Transcript will appear here.",
                       })}
-                      className="col-start-1 row-start-1 w-full resize-none overflow-hidden bg-transparent px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 select-text pt-2 pb-4"
+                      className="col-start-1 row-start-1 w-full resize-none overflow-hidden bg-transparent px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 select-text pt-4 pb-10"
                     />
                   </div>
                 </div>
@@ -3071,7 +3042,7 @@ const LibraryDetail = ({
         )}
       </main>
 
-      <footer className="shrink-0 border-t border-[var(--color-border-primary)] px-5 pt-2.5 pb-1">
+      <footer className="-mb-6 shrink-0 px-5 pt-3 pb-5">
         <div className="flex items-center gap-3">
           <button
             onClick={handleTogglePlayback}
@@ -3168,7 +3139,7 @@ const LibraryDetail = ({
             </button>
           </div>
 
-          {secondaryAudioUrl && (
+          {hasTracks && (
             <>
               <button
                 type="button"
@@ -3295,14 +3266,6 @@ const LibraryDetail = ({
             </AnimatePresence>
           </div>
         </div>
-        <div
-          aria-live="polite"
-          className={`h-4 truncate text-center ui-text-meta tabular-nums ${
-            detectingSpeakers ? "text-local" : "text-content-disabled"
-          }`}
-        >
-          {footerStatus}
-        </div>
       </footer>
 
       <LibraryDeleteDialog
@@ -3310,16 +3273,12 @@ const LibraryDetail = ({
         onCancel={closeDeleteConfirm}
         onConfirm={() => {
           setShowDeleteConfirm(false);
-          const { audio, secondary } = releaseAudioSource();
+          const audio = releaseAudioSource();
           void onDelete().catch(() => {
             if (audio) {
-              audio.src = audioUrl;
+              audio.src = audioUrlFor(trackMutedRef.current);
               audioRef.current = audio;
               audio.load();
-            }
-            if (secondary && secondaryAudioUrl) {
-              secondary.src = secondaryAudioUrl;
-              secondary.load();
             }
           });
         }}

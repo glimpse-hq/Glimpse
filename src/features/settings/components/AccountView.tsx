@@ -9,13 +9,17 @@ import { useEffect, useRef, useState } from "react";
 import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
 import PlanPicker from "../../license/components/PlanPicker";
-import { classifyActivationInput } from "../../license/licenseKeyShape";
+import {
+  classifyActivationInput,
+  LICENSE_KEY_PLACEHOLDER,
+} from "../../license/licenseKeyShape";
 import { useActivationErrorText } from "../../license/useActivationErrorText";
 import {
   openCheckout,
   type ActivationError,
   type LicenseState,
 } from "../../license/api";
+import { SUPPORT_EMAIL } from "../../../shared/lib/links";
 type AccountViewProps = {
   licenseState: LicenseState | null;
   licenseLoading: boolean;
@@ -29,8 +33,6 @@ type AccountViewProps = {
   onActivateLicense: (key: string) => void;
   onDeactivateLicense: () => void;
 };
-
-const SUPPORT_EMAIL = "hello@tryglimpse.cc";
 
 const TRIAL_TOTAL_DAYS = 14;
 
@@ -295,10 +297,7 @@ const AccountView = ({
               autoFocus={checkoutReturned}
               value={licenseKey}
               onChange={(event) => setLicenseKey(event.target.value)}
-              placeholder={t({
-                id: "settings.account.activate.placeholder",
-                message: "GLIMPSE_…",
-              })}
+              placeholder={LICENSE_KEY_PLACEHOLDER}
               aria-label={t({
                 id: "settings.account.activate.input_aria",
                 message: "Activation code",

@@ -66,7 +66,7 @@ and "I mean" as fillers made results worse; the latter deleted intentional words
 Repeated phrases ("I think I think") and non-English hesitations still often
 survive. The holdout totals were seen once before the last variant was tried.
 
-The 10 deterministic cleanup/parser tests live alongside the production code:
+The 11 deterministic cleanup/parser tests live alongside the production code:
 
 ```sh
 cargo test --manifest-path src-tauri/Cargo.toml --lib llm_cleanup::tests

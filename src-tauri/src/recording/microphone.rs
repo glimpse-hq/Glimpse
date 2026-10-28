@@ -42,13 +42,27 @@ pub(crate) fn start(
     on_lost: Box<dyn FnMut() + Send>,
 ) -> Result<MicrophoneCapture> {
     let device = find_input_device(device_id).ok_or(NoMicrophone)?;
+    let config = device.default_input_config();
+    // Activating the default through its virtual device can fail on some
+    // Windows machines while the same microphone opens directly.
+    #[cfg(windows)]
+    let (device, config) = match config {
+        Err(err) => match crate::audio::direct_default_input()
+            .and_then(|direct| Some((direct.default_input_config().ok()?, direct)))
+        {
+            Some((config, direct)) => {
+                tracing::warn!("Default microphone failed to open, opening it directly: {err}");
+                (direct, Ok(config))
+            }
+            None => (device, Err(err)),
+        },
+        config => (device, config),
+    };
+    let config = config.context("No supported input configuration")?;
     let name = device
         .description()
         .map(|desc| desc.name().to_string())
         .unwrap_or_default();
-    let config = device
-        .default_input_config()
-        .context("No supported input configuration")?;
     let format = config.sample_format();
     let stream_config: cpal::StreamConfig = config.into();
     let sink = make_sink(stream_config.sample_rate);

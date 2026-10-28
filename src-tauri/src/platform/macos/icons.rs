@@ -1,13 +1,15 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
+use objc2::AnyThread;
+use objc2_app_kit::{NSBitmapImageFileType, NSBitmapImageRep, NSImage, NSWorkspace};
+use objc2_foundation::{NSDictionary, NSPoint, NSRect, NSSize, NSString};
 use tauri::AppHandle;
 
 use crate::AppRuntime;
-use crate::personalization::icons::{
-    InstalledApp, app_icon_cache_dir, icon_cache_file_path, should_refresh_icon,
-};
+use crate::personalization::icons::{InstalledApp, app_icon_cache_dir, icon_cache_file_path};
+
+const APP_ICON_POINTS: f64 = 32.0;
 
 fn is_blacklisted_app(name: &str) -> bool {
     let lowered = name.to_lowercase();
@@ -44,7 +46,7 @@ fn collect_apps(
     apps: &mut Vec<InstalledApp>,
     seen: &mut HashSet<String>,
     icon_cache_dir: Option<&Path>,
-    pending_icon_warmup: &mut Vec<(PathBuf, String)>,
+    pending_icon_warmup: &mut Vec<PathBuf>,
 ) {
     if depth == 0 {
         return;
@@ -84,7 +86,7 @@ fn collect_apps(
                     if cached_path.exists() {
                         Some(cached_path.to_string_lossy().to_string())
                     } else {
-                        pending_icon_warmup.push((path.clone(), name.clone()));
+                        pending_icon_warmup.push(path.clone());
                         None
                     }
                 });
@@ -110,98 +112,38 @@ fn collect_apps(
     }
 }
 
-fn declared_bundle_icon(app_bundle_path: &Path) -> Option<PathBuf> {
-    let info_plist = app_bundle_path.join("Contents").join("Info.plist");
-    let resources_dir = app_bundle_path.join("Contents").join("Resources");
-    let output = Command::new("/usr/libexec/PlistBuddy")
-        .args(["-c", "Print :CFBundleIconFile"])
-        .arg(&info_plist)
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-
-    let icon_name = String::from_utf8(output.stdout).ok()?.trim().to_string();
-    if icon_name.is_empty() {
-        return None;
-    }
-
-    let icon_path = resources_dir.join(&icon_name);
-    if icon_path.exists() {
-        return Some(icon_path);
-    }
-
-    let icon_path = resources_dir.join(format!("{icon_name}.icns"));
-    icon_path.exists().then_some(icon_path)
+/// PNG of an app icon's best representation for 32 points.
+pub(crate) fn icon_png(icon: &NSImage) -> Option<Vec<u8>> {
+    let mut rect = NSRect::new(
+        NSPoint::new(0.0, 0.0),
+        NSSize::new(APP_ICON_POINTS, APP_ICON_POINTS),
+    );
+    let cg_image = unsafe { icon.CGImageForProposedRect_context_hints(&mut rect, None, None) }?;
+    let rep = NSBitmapImageRep::initWithCGImage(NSBitmapImageRep::alloc(), &cg_image);
+    let png = unsafe {
+        rep.representationUsingType_properties(NSBitmapImageFileType::PNG, &NSDictionary::new())
+    }?;
+    Some(png.to_vec())
 }
 
-fn fallback_bundle_icon(app_bundle_path: &Path, app_name: &str) -> Option<PathBuf> {
-    let resources_dir = app_bundle_path.join("Contents").join("Resources");
-    let app_name = app_name.to_lowercase();
-
-    for candidate in [
-        format!("{app_name}.icns"),
-        "AppIcon.icns".to_string(),
-        "app.icns".to_string(),
-    ] {
-        let path = resources_dir.join(candidate);
-        if path.exists() {
-            return Some(path);
-        }
-    }
-
-    std::fs::read_dir(resources_dir)
-        .ok()?
-        .flatten()
-        .map(|entry| entry.path())
-        .find(|path| {
-            path.extension()
-                .and_then(|ext| ext.to_str())
-                .map(|ext| ext.eq_ignore_ascii_case("icns"))
-                .unwrap_or(false)
-        })
+// NSWorkspace also finds icons that live only in the bundle's Assets.car.
+fn cache_app_icon(app_bundle_path: &Path, cache_dir: &Path) -> Option<()> {
+    let png = objc2::rc::autoreleasepool(|_| {
+        let path = NSString::from_str(&app_bundle_path.to_string_lossy());
+        let icon = NSWorkspace::sharedWorkspace().iconForFile(&path);
+        icon_png(&icon)
+    })?;
+    std::fs::write(icon_cache_file_path(app_bundle_path, cache_dir), png).ok()
 }
 
-fn pick_bundle_icon(app_bundle_path: &Path, app_name: &str) -> Option<PathBuf> {
-    declared_bundle_icon(app_bundle_path)
-        .or_else(|| fallback_bundle_icon(app_bundle_path, app_name))
-}
-
-fn ensure_cached_icon(app_bundle_path: &Path, app_name: &str, cache_dir: &Path) -> Option<PathBuf> {
-    let source_icon = pick_bundle_icon(app_bundle_path, app_name)?;
-    let cached_icon = icon_cache_file_path(app_bundle_path, cache_dir);
-
-    if should_refresh_icon(&source_icon, &cached_icon) {
-        let status = Command::new("/usr/bin/sips")
-            .arg("-s")
-            .arg("format")
-            .arg("png")
-            .arg("-z")
-            .arg("64")
-            .arg("64")
-            .arg(&source_icon)
-            .arg("--out")
-            .arg(&cached_icon)
-            .status()
-            .ok()?;
-
-        if !status.success() || !cached_icon.exists() {
-            return None;
-        }
-    }
-
-    Some(cached_icon)
-}
-
-fn warm_icon_cache_in_background(pending: Vec<(PathBuf, String)>, cache_dir: PathBuf) {
+fn warm_icon_cache_in_background(pending: Vec<PathBuf>, cache_dir: PathBuf) {
     if pending.is_empty() {
         return;
     }
 
     std::thread::spawn(move || {
-        for (app_bundle_path, app_name) in pending {
-            let _ = ensure_cached_icon(&app_bundle_path, &app_name, &cache_dir);
+        for app_bundle_path in pending {
+            let _ = cache_app_icon(&app_bundle_path, &cache_dir);
         }
     });
 }

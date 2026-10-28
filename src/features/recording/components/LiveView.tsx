@@ -14,20 +14,22 @@ import {
   BookmarkSimple,
   CaretDown,
   CaretUp,
-  Check,
-  Copy,
+  CircleNotch,
   DotsSix,
   GearSix,
   Microphone,
+  MicrophoneSlash,
   Pause,
   Play,
   SpeakerHigh,
+  SpeakerSlash,
   Stop,
   Warning,
   X,
 } from "@phosphor-icons/react";
 import * as recordingApi from "../api";
 import { useRecordingSession } from "../useRecordingSession";
+import BookmarkNoteInput from "./BookmarkNoteInput";
 import { useSilenceWarning } from "../useSilenceWarning";
 import { useLiveTranscript } from "../useLiveTranscript";
 import { useLivePrefs, type LivePrefs, type LiveTextSize } from "../livePrefs";
@@ -36,13 +38,14 @@ import { formatTimestamp } from "../../library/components/library-utils";
 import SpeakerContextMenu from "../../library/components/SpeakerContextMenu";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
-import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
+import CopyButton from "../../../shared/ui/CopyButton";
 import { getExpandedTextSegments } from "../../../shared/lib/wordReveal";
 import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import type { Bookmark, LiveSegment } from "../../../types";
 import { detectAppPlatform } from "../../../platform/service";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { DismissButton } from "./DismissButton";
 
 const NATIVE_FRAME = detectAppPlatform() === "windows";
 
@@ -136,21 +139,26 @@ const RevealText = ({
   );
 };
 
+// A source in the recording toggles on and off when clicked.
 const SourceLevel = ({
   icon,
   level,
   on,
+  off,
+  label,
+  onToggle,
 }: {
   icon: ReactNode;
   level: number;
   on: boolean;
+  off: boolean;
+  label: string;
+  onToggle: () => void;
 }) => {
-  const lit = on ? Math.min(METER_BARS, Math.round(level * METER_BARS)) : 0;
-  return (
-    <div
-      className={`flex w-12 items-center gap-1.5 text-content-muted ${on ? "" : "opacity-35"}`}
-      aria-hidden="true"
-    >
+  const lit =
+    on && !off ? Math.min(METER_BARS, Math.round(level * METER_BARS)) : 0;
+  const content = (
+    <>
       {icon}
       <span className="flex h-3 items-end gap-[2px]">
         {Array.from({ length: METER_BARS }, (_, index) => (
@@ -164,7 +172,28 @@ const SourceLevel = ({
           />
         ))}
       </span>
-    </div>
+    </>
+  );
+  if (!on) {
+    return (
+      <div
+        className="flex w-12 items-center gap-1.5 text-content-muted opacity-35"
+        aria-hidden="true"
+      >
+        {content}
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={label}
+      aria-pressed={!off}
+      className={`-mx-1.5 -my-1 flex w-15 items-center gap-1.5 rounded-md px-1.5 py-1 text-content-muted transition-colors hover:bg-surface-interactive hover:text-content-primary ${off ? "opacity-35" : ""}`}
+    >
+      {content}
+    </button>
   );
 };
 
@@ -177,12 +206,6 @@ const BookmarkRow = ({
   autoFocus: boolean;
   onCommit: (label: string) => void;
 }) => {
-  const { t } = useLingui();
-  const [draft, setDraft] = useState(bookmark.label ?? "");
-  const commit = () => {
-    const value = draft.trim();
-    if (value !== (bookmark.label ?? "")) onCommit(value);
-  };
   return (
     <li className="flex h-8 items-center gap-2">
       <span className="flex w-2 shrink-0 justify-center">
@@ -193,18 +216,10 @@ const BookmarkRow = ({
           aria-hidden="true"
         />
       </span>
-      <input
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === "Escape") {
-            event.preventDefault();
-            event.currentTarget.blur();
-          }
-        }}
-        placeholder={t({ id: "record.bookmark.note", message: "Add a note" })}
+      <BookmarkNoteInput
+        bookmark={bookmark}
         autoFocus={autoFocus}
+        onCommit={onCommit}
         className="min-w-0 flex-1 bg-transparent ui-text-label text-content-secondary outline-hidden placeholder:text-content-disabled focus:text-content-primary"
       />
       <span className="shrink-0 ui-text-label tabular-nums text-content-muted">
@@ -314,7 +329,6 @@ const LiveView = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [following, setFollowing] = useState(true);
   const [focusBookmarkId, setFocusBookmarkId] = useState<string | null>(null);
-  const { copied, copy } = useCopyToClipboard();
   const [compact, setCompact] = useState(false);
   const [speakerMenu, setSpeakerMenu] = useState<{
     id: string;
@@ -346,7 +360,13 @@ const LiveView = () => {
 
   const microphoneOn = Boolean(state.sources.microphone);
   const systemOn = Boolean(state.sources.system_audio);
-  const silenceWarning = useSilenceWarning(state);
+  const { warning: silenceWarning, dismiss: dismissSilenceWarning } =
+    useSilenceWarning(state);
+  const catchingUp = transcript.status === "catching_up";
+  const catchingUpLabel = t({
+    id: "live.status.catching_up",
+    message: "Catching up",
+  });
 
   // The panel eases inside the window; the window itself only resizes while
   // the change is invisible (after collapsing, before expanding).
@@ -517,6 +537,19 @@ const LiveView = () => {
     message: "Couldn't save the speakers.",
   });
 
+  const handleToggleSource = (source: recordingApi.RecordingSource) => {
+    const off =
+      source === "microphone" ? state.microphone_off : state.system_audio_off;
+    recordingApi.setRecordingSourceOff(source, !off).catch(
+      failWith(
+        t({
+          id: "record.source_failed",
+          message: "Couldn't change what's being recorded.",
+        }),
+      ),
+    );
+  };
+
   const handleTogglePause = () => {
     (paused
       ? recordingApi.resumeRecordingSession()
@@ -552,16 +585,14 @@ const LiveView = () => {
       .catch(failWith(bookmarkFailedMessage));
   };
 
-  const handleCopy = () => {
-    const text = turns
+  const copyText = () =>
+    turns
       .map((turn) => {
         const name = speakerById.get(turn.speakerId)?.name ?? turn.speakerId;
         const words = turn.segments.map((segment) => segment.text).join(" ");
         return `${name}: ${words}`;
       })
       .join("\n\n");
-    void copy(text);
-  };
 
   const handleStop = () => {
     recordingApi.finishFromLiveView().catch(
@@ -790,16 +821,21 @@ const LiveView = () => {
               className="shrink-0 text-[var(--color-interactive)]"
               aria-label={silenceWarning}
             />
+          ) : compact && catchingUp ? (
+            <CircleNotch
+              size={13}
+              weight="bold"
+              className="shrink-0 animate-spin text-[var(--color-success)]"
+              aria-label={catchingUpLabel}
+            />
           ) : (
             <span
               aria-live="polite"
               className="pointer-events-none truncate ui-text-label text-content-muted"
             >
-              {transcript.status === "catching_up"
-                ? t({ id: "live.status.catching_up", message: "Catching up" })
-                : paused
-                  ? t({ id: "live.status.paused", message: "Paused" })
-                  : null}
+              {paused
+                ? t({ id: "live.status.paused", message: "Paused" })
+                : null}
             </span>
           )}
           <div className="ml-auto flex items-center">
@@ -809,18 +845,16 @@ const LiveView = () => {
               </div>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={handleCopy}
+                <CopyButton
+                  getText={copyText}
+                  iconSize={15}
                   disabled={turns.length === 0}
                   aria-label={t({
                     id: "live.copy",
                     message: "Copy transcript",
                   })}
                   className={iconButton}
-                >
-                  {copied ? <Check size={15} /> : <Copy size={15} />}
-                </button>
+                />
                 <button
                   type="button"
                   onClick={() => setMenuOpen((open) => !open)}
@@ -896,13 +930,14 @@ const LiveView = () => {
             <AnimatePresence>
               {silenceWarning && (
                 <motion.div
+                  key="silence"
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.15 }}
                   role="status"
                   title={silenceWarning}
-                  className="ui-surface-menu absolute left-1/2 top-2 flex h-7 max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1.5 rounded-full border-[color-mix(in_srgb,var(--color-interactive)_35%,var(--border-strong))]! bg-[color-mix(in_srgb,var(--color-interactive)_10%,var(--surface-floating))]! px-3 ui-text-label font-medium text-content-primary"
+                  className="ui-surface-menu absolute left-1/2 -top-1 flex h-7 max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1.5 rounded-full border-[color-mix(in_srgb,var(--color-interactive)_35%,var(--border-strong))]! bg-[color-mix(in_srgb,var(--color-interactive)_10%,var(--surface-floating))]! pr-1 pl-3 ui-text-label font-medium text-content-primary"
                 >
                   <Warning
                     size={12}
@@ -910,6 +945,25 @@ const LiveView = () => {
                     className="shrink-0 text-[var(--color-interactive)]"
                   />
                   <span className="min-w-0 truncate">{silenceWarning}</span>
+                  <DismissButton onClick={dismissSilenceWarning} />
+                </motion.div>
+              )}
+              {!silenceWarning && catchingUp && (
+                <motion.div
+                  key="catching-up"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  role="status"
+                  className="ui-surface-menu absolute left-1/2 -top-1 flex h-7 max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1.5 rounded-full border-[color-mix(in_srgb,var(--color-success)_35%,var(--border-strong))]! bg-[color-mix(in_srgb,var(--color-success)_10%,var(--surface-floating))]! px-3 ui-text-label font-medium text-content-primary"
+                >
+                  <CircleNotch
+                    size={12}
+                    weight="bold"
+                    className="shrink-0 animate-spin text-[var(--color-success)]"
+                  />
+                  <span className="min-w-0 truncate">{catchingUpLabel}</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -933,18 +987,42 @@ const LiveView = () => {
 
           <footer className="flex h-16 shrink-0 items-center gap-3 px-4">
             <SourceLevel
-              icon={<Microphone size={12} />}
+              icon={
+                state.microphone_off ? (
+                  <MicrophoneSlash size={12} />
+                ) : (
+                  <Microphone size={12} />
+                )
+              }
               level={paused ? 0 : state.levels.microphone}
               on={microphoneOn}
+              off={state.microphone_off}
+              label={t({
+                id: "record.setup.microphone",
+                message: "Microphone",
+              })}
+              onToggle={() => handleToggleSource("microphone")}
             />
             <div className="flex flex-1 items-center justify-center gap-3">
               {renderControls(false)}
             </div>
             <div className="flex w-12 justify-end">
               <SourceLevel
-                icon={<SpeakerHigh size={12} />}
+                icon={
+                  state.system_audio_off ? (
+                    <SpeakerSlash size={12} />
+                  ) : (
+                    <SpeakerHigh size={12} />
+                  )
+                }
                 level={paused ? 0 : state.levels.system_audio}
                 on={systemOn}
+                off={state.system_audio_off}
+                label={t({
+                  id: "record.setup.system_audio",
+                  message: "System Audio",
+                })}
+                onToggle={() => handleToggleSource("system_audio")}
               />
             </div>
           </footer>

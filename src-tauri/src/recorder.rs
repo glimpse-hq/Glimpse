@@ -266,7 +266,8 @@ impl PendingWriter {
             .spawn(move || {
                 let mut cursor = 0usize;
                 let mut stopping = false;
-                loop {
+                let mut written = Ok(());
+                'write: loop {
                     let (chunk, has_more) = {
                         let buf = buffer.lock();
                         if cursor < buf.len() {
@@ -279,10 +280,16 @@ impl PendingWriter {
                         }
                     };
                     for sample in &chunk {
-                        let _ = writer.write_sample(*sample);
+                        written = writer.write_sample(*sample);
+                        if written.is_err() {
+                            break 'write;
+                        }
                     }
                     if !chunk.is_empty() {
-                        let _ = writer.flush();
+                        written = writer.flush();
+                        if written.is_err() {
+                            break;
+                        }
                     }
                     if has_more {
                         continue;
@@ -292,7 +299,9 @@ impl PendingWriter {
                     }
                     stopping = stop_requested(&stopped, PENDING_WRITE_INTERVAL);
                 }
-                let _ = writer.finalize();
+                if let Err(err) = written.and_then(|()| writer.finalize()) {
+                    tracing::error!("Crash recovery WAV write failed: {err}");
+                }
             })
             .map_err(|err| anyhow!("Failed to spawn pending writer thread: {err}"))?;
 
@@ -572,6 +581,48 @@ impl RecorderCore {
         }
 
         let device = crate::audio::find_input_device(device_id.as_deref()).ok_or(NoInputDevice)?;
+        let selected_id = device.id().ok();
+        let result = match self.open(device, pending_dir.clone(), monitor_only) {
+            // A selected microphone can still be listed but fail to open, like
+            // AirPods that just disconnected; the default input stands in.
+            Err(err) if device_id.is_some() => {
+                match crate::audio::find_input_device(None)
+                    .filter(|default| default.id().ok() != selected_id)
+                {
+                    Some(default) => {
+                        tracing::warn!(
+                            "Selected microphone failed to open, using the default: {err:#}"
+                        );
+                        self.open(default, pending_dir.clone(), monitor_only)
+                    }
+                    None => Err(err),
+                }
+            }
+            result => result,
+        };
+        // Activating the default through its virtual device can fail on some
+        // Windows machines while the same microphone opens directly.
+        #[cfg(windows)]
+        if let Err(err) = &result
+            && let Some(direct) = crate::audio::direct_default_input()
+        {
+            tracing::warn!("Default microphone failed to open, opening it directly: {err:#}");
+            match self.open(direct, pending_dir, monitor_only) {
+                Ok(opened) => return Ok(opened),
+                Err(direct_err) => {
+                    tracing::warn!("Direct microphone open failed too: {direct_err:#}");
+                }
+            }
+        }
+        result
+    }
+
+    fn open(
+        &mut self,
+        device: cpal::Device,
+        pending_dir: Option<PathBuf>,
+        monitor_only: bool,
+    ) -> Result<(DateTime<Local>, String)> {
         let device_name = device
             .description()
             .map(|desc| desc.name().to_string())
@@ -764,16 +815,18 @@ pub(crate) const MIN_RMS_ENERGY: f32 = 0.0002;
 const MIN_SPEECH_PERCENTAGE: f32 = 3.0;
 
 pub fn validate_recording(recording: &CompletedRecording) -> Result<(), RecordingRejectionReason> {
-    if recording.samples.is_empty() {
-        return Err(RecordingRejectionReason::EmptyBuffer);
-    }
-
+    // A tap usually ends before the microphone delivers anything, so it is
+    // short, not a silent microphone.
     let duration_ms = (recording.ended_at - recording.started_at).num_milliseconds();
     if duration_ms < MIN_RECORDING_DURATION_MS {
         return Err(RecordingRejectionReason::TooShort {
             duration_ms,
             min_ms: MIN_RECORDING_DURATION_MS,
         });
+    }
+
+    if recording.samples.is_empty() {
+        return Err(RecordingRejectionReason::EmptyBuffer);
     }
 
     let rms = calculate_rms_i16(&recording.samples);

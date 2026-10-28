@@ -13,12 +13,9 @@ use std::sync::OnceLock;
 const PBKDF2_ITERATIONS: u32 = 100_000;
 const NONCE_SIZE: usize = 12;
 const SALT: &[u8] = b"glimpse_api_key_v1";
-#[cfg(target_os = "windows")]
-pub(crate) const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 static CACHED_KEY: OnceLock<(String, [u8; 32])> = OnceLock::new();
-#[cfg(target_os = "windows")]
-static WINDOWS_CACHED_HARDWARE_UUID: OnceLock<Option<String>> = OnceLock::new();
+static CACHED_HARDWARE_UUID: OnceLock<Option<String>> = OnceLock::new();
 
 fn get_or_derive_key(hardware_uuid: &str) -> [u8; 32] {
     if let Some((cached_uuid, cached_key)) = CACHED_KEY.get() {
@@ -33,8 +30,14 @@ fn get_or_derive_key(hardware_uuid: &str) -> [u8; 32] {
     key
 }
 
-#[cfg(target_os = "macos")]
 pub fn get_hardware_uuid() -> Option<String> {
+    CACHED_HARDWARE_UUID
+        .get_or_init(query_hardware_uuid)
+        .clone()
+}
+
+#[cfg(target_os = "macos")]
+fn query_hardware_uuid() -> Option<String> {
     let output = Command::new("/usr/sbin/ioreg")
         .args(["-rd1", "-c", "IOPlatformExpertDevice"])
         .output()
@@ -52,18 +55,11 @@ pub fn get_hardware_uuid() -> Option<String> {
 }
 
 #[cfg(target_os = "windows")]
-pub fn get_hardware_uuid() -> Option<String> {
-    WINDOWS_CACHED_HARDWARE_UUID
-        .get_or_init(query_windows_hardware_uuid)
-        .clone()
-}
-
-#[cfg(target_os = "windows")]
-fn query_windows_hardware_uuid() -> Option<String> {
+fn query_hardware_uuid() -> Option<String> {
     // Absolute paths: a lookalike earlier on PATH could report any UUID.
     let system = windows_system_directory()?;
     let output = Command::new(system.join(r"WindowsPowerShell\v1.0\powershell.exe"))
-        .creation_flags(CREATE_NO_WINDOW)
+        .creation_flags(crate::platform::windows::CREATE_NO_WINDOW)
         .args([
             "-NoProfile",
             "-NonInteractive",
@@ -83,7 +79,7 @@ fn query_windows_hardware_uuid() -> Option<String> {
     }
 
     let output = Command::new(system.join(r"wbem\wmic.exe"))
-        .creation_flags(CREATE_NO_WINDOW)
+        .creation_flags(crate::platform::windows::CREATE_NO_WINDOW)
         .args(["csproduct", "get", "uuid"])
         .output()
         .ok()?;

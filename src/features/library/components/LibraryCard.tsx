@@ -1,5 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
-import { memo, useRef, useState } from "react";
+import {
+  memo,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   WarningCircle as AlertCircle,
@@ -18,6 +25,7 @@ import {
   shouldShowImportProgress,
   formatLibraryName,
   describeAudioSources,
+  isLibraryItemBusy,
 } from "./library-utils";
 import { formatBytes } from "../../../shared/lib/format";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
@@ -301,144 +309,19 @@ const LibraryCard = ({
             </div>
 
             <div className="flex items-center -mr-1 -mt-1 overflow-visible h-6">
-              <div
-                ref={menuRef}
-                data-no-press
-                className="flex relative items-center justify-center"
-              >
-                <button
-                  data-no-press
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    if (shiftHeld) {
-                      handleQuickDelete();
-                    } else {
-                      setMenuOpen((prev) => !prev);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (e.repeat) return;
-                      if (shiftHeld) {
-                        handleQuickDelete();
-                      } else {
-                        setMenuOpen((prev) => !prev);
-                      }
-                    }
-                  }}
-                  onKeyUp={(e) => e.stopPropagation()}
-                  className={`p-1 ml-1 rounded transition-colors duration-200 outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-hover)] flex items-center justify-center ${
-                    shiftHeld
-                      ? "ui-color-error hover:bg-[var(--color-error)]/10"
-                      : menuOpen
-                        ? "ui-color-primary bg-[var(--color-bg-elevated)]"
-                        : "ui-color-muted hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]"
-                  }`}
-                  aria-label={t({
-                    id: "library.card.more_options",
-                    message: "More options",
-                  })}
-                >
-                  {shiftHeld ? (
-                    <Trash2 size={14} className="shrink-0 transform-gpu" />
-                  ) : (
-                    <MoreHorizontal
-                      size={14}
-                      className="shrink-0 transform-gpu"
-                    />
-                  )}
-                </button>
-                <AnimatePresence>
-                  {menuOpen && (
-                    <motion.div
-                      ref={menuPanelRef}
-                      role="menu"
-                      data-no-press
-                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                      transition={{ duration: 0.12 }}
-                      className="absolute right-0 top-full mt-2 z-[100] min-w-[160px] rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl shadow-[var(--color-shadow-soft-50)] overflow-hidden"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onStartNameEdit(item);
-                        }}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
-                      >
-                        <Pencil size={12} className="ui-color-muted" />
-                        <span>
-                          {t({ id: "library.card.rename", message: "Rename" })}
-                        </span>
-                      </button>
-
-                      {status.type === "transcribing" ||
-                      status.type === "cancelling" ||
-                      status.type === "pending" ||
-                      status.type === "importing" ? (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={handleCancel}
-                          className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
-                        >
-                          <X size={12} className="ui-color-warning" />
-                          <span>
-                            {t({
-                              id: "library.card.cancel",
-                              message: "Cancel",
-                            })}
-                          </span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={handleRetry}
-                          className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
-                        >
-                          <RotateCw size={12} className="ui-color-cloud" />
-                          <span>
-                            {status.type === "error"
-                              ? t({
-                                  id: "library.card.retry",
-                                  message: "Retry",
-                                })
-                              : t({
-                                  id: "library.card.retranscribe",
-                                  message: "Retranscribe",
-                                })}
-                          </span>
-                        </button>
-                      )}
-
-                      <div className="h-px bg-[var(--color-border-secondary)] mx-2 my-1" />
-
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={handleDelete}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-[var(--color-error)]/10 transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-error)]/10"
-                      >
-                        <Trash2 size={12} />
-                        <span>
-                          {t({ id: "library.card.delete", message: "Delete" })}
-                        </span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <LibraryCardMenu
+                item={item}
+                open={menuOpen}
+                setOpen={setMenuOpen}
+                menuRef={menuRef}
+                panelRef={menuPanelRef}
+                shiftHeld={shiftHeld}
+                onQuickDelete={handleQuickDelete}
+                onRename={() => onStartNameEdit(item)}
+                onCancel={handleCancel}
+                onRetry={handleRetry}
+                onDelete={handleDelete}
+              />
             </div>
           </div>
 
@@ -974,138 +857,176 @@ const LibraryCard = ({
         {createdAtLabel}
       </span>
 
-      <div
-        ref={menuRef}
+      <LibraryCardMenu
+        item={item}
+        open={menuOpen}
+        setOpen={setMenuOpen}
+        menuRef={menuRef}
+        panelRef={menuPanelRef}
+        shiftHeld={shiftHeld}
+        onQuickDelete={handleQuickDelete}
+        onRename={() => onStartNameEdit(item)}
+        onCancel={handleCancel}
+        onRetry={handleRetry}
+        onDelete={handleDelete}
+      />
+    </div>
+  );
+};
+
+type LibraryCardMenuProps = {
+  item: LibraryItem;
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  menuRef: RefObject<HTMLDivElement | null>;
+  panelRef: RefObject<HTMLDivElement | null>;
+  shiftHeld: boolean;
+  onQuickDelete: () => void;
+  onRename: () => void;
+  onCancel: () => void;
+  onRetry: () => void;
+  onDelete: () => void;
+};
+
+const LibraryCardMenu = ({
+  item,
+  open,
+  setOpen,
+  menuRef,
+  panelRef,
+  shiftHeld,
+  onQuickDelete,
+  onRename,
+  onCancel,
+  onRetry,
+  onDelete,
+}: LibraryCardMenuProps) => {
+  const { t } = useLingui();
+  return (
+    <div
+      ref={menuRef}
+      data-no-press
+      className="flex relative items-center justify-center"
+    >
+      <button
         data-no-press
-        className="flex relative items-center justify-center"
-      >
-        <button
-          data-no-press
-          onPointerDown={(e) => {
-            e.stopPropagation();
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (shiftHeld) {
+            onQuickDelete();
+          } else {
+            setOpen((prev) => !prev);
+          }
+        }}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
+            if (e.repeat) return;
             if (shiftHeld) {
-              handleQuickDelete();
+              onQuickDelete();
             } else {
-              setMenuOpen((prev) => !prev);
+              setOpen((prev) => !prev);
             }
-          }}
-          onKeyDown={(e) => {
-            e.stopPropagation();
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              if (e.repeat) return;
-              if (shiftHeld) {
-                handleQuickDelete();
-              } else {
-                setMenuOpen((prev) => !prev);
-              }
-            }
-          }}
-          onKeyUp={(e) => e.stopPropagation()}
-          className={`p-1 ml-1 rounded transition-colors duration-200 outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-hover)] flex items-center justify-center ${
-            shiftHeld
-              ? "ui-color-error hover:bg-[var(--color-error)]/10"
-              : menuOpen
-                ? "ui-color-primary bg-[var(--color-bg-elevated)]"
-                : "ui-color-muted hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]"
-          }`}
-          aria-label={t({
-            id: "library.card.more_options",
-            message: "More options",
-          })}
-        >
-          {shiftHeld ? (
-            <Trash2 size={14} className="shrink-0 transform-gpu" />
-          ) : (
-            <MoreHorizontal size={14} className="shrink-0 transform-gpu" />
-          )}
-        </button>
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              ref={menuPanelRef}
-              role="menu"
-              data-no-press
-              initial={{ opacity: 0, scale: 0.95, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -4 }}
-              transition={{ duration: 0.12 }}
-              className="absolute right-0 top-full mt-2 z-[100] min-w-[160px] rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl shadow-[var(--color-shadow-soft-50)] overflow-hidden"
-              onClick={(event) => event.stopPropagation()}
+          }
+        }}
+        onKeyUp={(e) => e.stopPropagation()}
+        className={`p-1 ml-1 rounded transition-colors duration-200 outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-hover)] flex items-center justify-center ${
+          shiftHeld
+            ? "ui-color-error hover:bg-[var(--color-error)]/10"
+            : open
+              ? "ui-color-primary bg-[var(--color-bg-elevated)]"
+              : "ui-color-muted hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]"
+        }`}
+        aria-label={t({
+          id: "library.card.more_options",
+          message: "More options",
+        })}
+      >
+        {shiftHeld ? (
+          <Trash2 size={14} className="shrink-0 transform-gpu" />
+        ) : (
+          <MoreHorizontal size={14} className="shrink-0 transform-gpu" />
+        )}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            ref={panelRef}
+            role="menu"
+            data-no-press
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="absolute right-0 top-full mt-2 z-[100] min-w-[160px] rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl shadow-[var(--color-shadow-soft-50)] overflow-hidden"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onRename();
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
             >
+              <Pencil size={12} className="ui-color-muted" />
+              <span>{t({ id: "library.card.rename", message: "Rename" })}</span>
+            </button>
+
+            {isLibraryItemBusy(item.status) ? (
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onStartNameEdit(item);
-                }}
+                onClick={onCancel}
                 className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
               >
-                <Pencil size={12} className="ui-color-muted" />
+                <X size={12} className="ui-color-warning" />
                 <span>
-                  {t({ id: "library.card.rename", message: "Rename" })}
+                  {t({ id: "library.card.cancel", message: "Cancel" })}
                 </span>
               </button>
-
-              {status.type === "transcribing" ||
-              status.type === "cancelling" ||
-              status.type === "pending" ||
-              status.type === "importing" ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={handleCancel}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
-                >
-                  <X size={12} className="ui-color-warning" />
-                  <span>
-                    {t({ id: "library.card.cancel", message: "Cancel" })}
-                  </span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={handleRetry}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
-                >
-                  <RotateCw size={12} className="ui-color-cloud" />
-                  <span>
-                    {status.type === "error"
-                      ? t({
-                          id: "library.card.retry",
-                          message: "Retry",
-                        })
-                      : t({
-                          id: "library.card.retranscribe",
-                          message: "Retranscribe",
-                        })}
-                  </span>
-                </button>
-              )}
-
-              <div className="h-px bg-[var(--color-border-secondary)] mx-2 my-1" />
-
+            ) : (
               <button
                 type="button"
                 role="menuitem"
-                onClick={handleDelete}
-                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-[var(--color-error)]/10 transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-error)]/10"
+                onClick={onRetry}
+                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-bg-elevated)]"
               >
-                <Trash2 size={12} />
+                <RotateCw size={12} className="ui-color-cloud" />
                 <span>
-                  {t({ id: "library.card.delete", message: "Delete" })}
+                  {item.status.type === "error"
+                    ? t({
+                        id: "library.card.retry",
+                        message: "Retry",
+                      })
+                    : t({
+                        id: "library.card.retranscribe",
+                        message: "Retranscribe",
+                      })}
                 </span>
               </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            )}
+
+            <div className="h-px bg-[var(--color-border-secondary)] mx-2 my-1" />
+
+            <button
+              type="button"
+              role="menuitem"
+              onClick={onDelete}
+              className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-[var(--color-error)]/10 transition-colors focus-visible:outline-none focus-visible:bg-[var(--color-error)]/10"
+            >
+              <Trash2 size={12} />
+              <span>{t({ id: "library.card.delete", message: "Delete" })}</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

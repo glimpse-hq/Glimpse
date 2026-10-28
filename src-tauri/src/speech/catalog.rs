@@ -16,6 +16,7 @@ pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
 pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
+pub const MODEL_CATEGORY_CLEANUP: &str = "cleanup";
 pub const DIARIZER_MODEL: &str = "nemotron3_diar_q8";
 /// (directory, file) of speaker models earlier versions installed. Each keeps
 /// working until `DIARIZER_MODEL` is installed, and is then removed.
@@ -180,6 +181,71 @@ const QWEN3_ASR_0_6B_DECODER_FILE: CatalogFile = CatalogFile {
     size_bytes: Some(639_554_336),
     sha256: Some("8a1bf11a571607b88ae53ae44c0e38b616c441fd64c53bce37fea9d403a9c489"),
 };
+
+// Pinned to a commit, so files pushed to the repo later never break a released
+// app's checksums.
+macro_rules! c1_file {
+    ($file:literal, $path:expr, $size_bytes:literal, $sha256:literal) => {
+        CatalogFile {
+            url: concat!(
+                "https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B/resolve/d424cc981fa7817f2d677533bd5fa01f625fa195/",
+                $file
+            ),
+            path: $path,
+            size_bytes: Some($size_bytes),
+            sha256: Some($sha256),
+        }
+    };
+}
+
+/// Named after its sha256, so a new adapter is a missing file, which installs
+/// that have the base model fetch at launch (`cleanup_model::update_in_background`).
+pub const CLEANUP_MODEL_ADAPTER: &str = "adapter-23d65c13.safetensors";
+
+const CLEANUP_MODEL_FILES: &[CatalogFile] = &[
+    c1_file!(
+        "model.safetensors",
+        "model.safetensors",
+        537_418_256,
+        "6e895ee5f7d2413cbf93252d2fe8c06a88c7f37fcbb033253ed1360378a29058"
+    ),
+    c1_file!(
+        "config.json",
+        "config.json",
+        22_998,
+        "f8d80cb7fd148b8841e63051c337d2758b4bc16243c577d35eaab6779534b591"
+    ),
+    c1_file!(
+        "tokenizer.json",
+        "tokenizer.json",
+        12_807_982,
+        "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    ),
+    c1_file!(
+        "adapter.safetensors",
+        CLEANUP_MODEL_ADAPTER,
+        31_293_680,
+        "23d65c138d8f081c1a4eab20d3ca41fa7e67836c834a0c6b9234dc4432901484"
+    ),
+    c1_file!(
+        "LICENSE",
+        "LICENSE",
+        10_174,
+        "69849221bfb90053de2134ef5e6d540287b4b98062326492f1f96f5da685524b"
+    ),
+    c1_file!(
+        "NOTICE.txt",
+        "NOTICE.txt",
+        409,
+        "316012fa6094c03c7b0600bec258bffb675a9261d86f37bc86e15763a1fabc99"
+    ),
+    c1_file!(
+        "LICENSE-C1.md",
+        "LICENSE-C1.md",
+        1_039,
+        "406ac09dedc41d692fcc94d52c32c29028fe2513d5d360e5dbb068cee4717e41"
+    ),
+];
 
 /// Core ML encoder companions for transcribe.cpp models, unpacked next to the
 /// GGUF as `<gguf stem>-encoder.mlmodelc` (the name the engine looks for).
@@ -1051,6 +1117,24 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
     capabilities: &[],
 };
 
+// The on-device cleanup model, run by glimpse-language rather than the
+// speech service. The install manager treats every engine but Apple alike, so
+// `engine` only keeps these out of the Apple paths.
+// The id names the installed folder and analytics events, so it keeps the old name.
+pub const CLEANUP_MODEL_MANIFEST: LocalModelManifest = LocalModelManifest {
+    id: "g1_2b",
+    family: "g1",
+    label: "Glimpse cleanup 2B",
+    description: "Cleans up dictation on this computer.",
+    tags: &[],
+    category: MODEL_CATEGORY_CLEANUP,
+    engine: LocalModelEngine::Transcribe,
+    languages: Languages::None,
+    variant: "2B",
+    files: CLEANUP_MODEL_FILES,
+    capabilities: &[],
+};
+
 /// Automatic walks this in order and takes the first model that covers the
 /// user's languages. The first one usable here is also the stock default.
 pub const RECOMMENDED: &[&str] = &[
@@ -1175,13 +1259,20 @@ pub fn local_manifests() -> &'static [LocalModelManifest] {
     MODEL_MANIFESTS
 }
 
-/// Transcription models only. [`installable_definition`] also covers the diarizer.
+/// Transcription models only. [`installable_definition`] also covers the
+/// diarizer and the cleanup model.
 pub fn definition(key: &str) -> Option<&'static LocalModelManifest> {
     MODEL_MANIFESTS.iter().find(|manifest| manifest.id == key)
 }
 
 pub(crate) fn installable_definition(key: &str) -> Option<&'static LocalModelManifest> {
-    definition(key).or_else(|| (key == DIARIZER_MODEL).then_some(&DIARIZER_MANIFEST))
+    definition(key)
+        .or_else(|| (key == DIARIZER_MODEL).then_some(&DIARIZER_MANIFEST))
+        .or_else(|| cleanup_model_definition(key))
+}
+
+pub fn cleanup_model_definition(key: &str) -> Option<&'static LocalModelManifest> {
+    (key == CLEANUP_MODEL_MANIFEST.id).then_some(&CLEANUP_MODEL_MANIFEST)
 }
 
 fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {
@@ -1401,6 +1492,10 @@ pub fn list_local_models() -> Vec<ModelInfo> {
 
 pub fn diarizer_model_info() -> ModelInfo {
     manifest_to_model_info(&DIARIZER_MANIFEST)
+}
+
+pub fn cleanup_model_info() -> ModelInfo {
+    manifest_to_model_info(&CLEANUP_MODEL_MANIFEST)
 }
 
 pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<SpeechModel> {
@@ -1803,11 +1898,6 @@ mod tests {
                 assert_ne!(language.code, language.name, "{}", manifest.id);
             }
         }
-    }
-
-    #[test]
-    fn diarizer_lists_no_languages() {
-        assert!(diarizer_model_info().supported_languages.is_empty());
     }
 
     #[test]

@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::BufWriter,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicU8, Ordering},
@@ -48,10 +48,10 @@ impl TrackInput {
 
 /// A 16 kHz copy of what a track writes, on the track's timeline, for live
 /// transcription. Collects nothing until enabled.
-#[derive(Default)]
 pub(crate) struct LiveTap {
     enabled: AtomicBool,
     feed: Mutex<Option<LiveFeed>>,
+    path: PathBuf,
 }
 
 struct LiveFeed {
@@ -67,6 +67,17 @@ impl LiveTap {
         if !enabled {
             *self.feed.lock() = None;
         }
+    }
+
+    /// The 16 kHz index `take` continues from, once audio arrived after enabling.
+    pub(crate) fn next_start(&self) -> Option<u64> {
+        self.feed.lock().as_ref().map(|feed| feed.start)
+    }
+
+    /// 16 kHz samples from `from` up to `to` of what the track has written
+    /// before the tap was enabled, as far as the file holds them.
+    pub(crate) fn read_written(&self, from: u64, to: u64) -> Result<Vec<f32>> {
+        read_live(&self.path, from, to)
     }
 
     /// Samples since the last call and the 16 kHz index of the first. The
@@ -152,7 +163,11 @@ impl TrackWriter {
             .with_context(|| format!("Failed to create {}", path.display()))?;
         let writer = hound::WavWriter::new(BufWriter::new(file), spec)
             .map_err(|err| anyhow!("WAV init failed: {err}"))?;
-        let tap = Arc::new(LiveTap::default());
+        let tap = Arc::new(LiveTap {
+            enabled: AtomicBool::new(false),
+            feed: Mutex::new(None),
+            path: path.clone(),
+        });
         let mut output = TrackOutput {
             writer,
             written: 0,
@@ -305,6 +320,38 @@ impl TrackWriter {
 
 type Writer = hound::WavWriter<BufWriter<fs::File>>;
 
+// Reads up to the length in the header, which the writer refreshes each second.
+fn read_live(path: &Path, from: u64, to: u64) -> Result<Vec<f32>> {
+    let mut reader = hound::WavReader::open(path).map_err(|err| anyhow!("{err}"))?;
+    let rate = reader.spec().sample_rate as u64;
+    let to = to.min(reader.len() as u64 * LIVE_RATE as u64 / rate);
+    if to <= from {
+        return Ok(Vec::new());
+    }
+    let first = from * rate / LIVE_RATE as u64;
+    let last = (to * rate)
+        .div_ceil(LIVE_RATE as u64)
+        .min(reader.len() as u64);
+    reader.seek(first as u32).map_err(|err| anyhow!("{err}"))?;
+    let samples = reader
+        .samples::<i16>()
+        .take((last - first) as usize)
+        .map(|sample| sample.map(|value| value as f32 / i16::MAX as f32))
+        .collect::<Result<Vec<f32>, _>>()
+        .map_err(|err| anyhow!("{err}"))?;
+    let count = (to - from) as usize;
+    let mut out = Vec::with_capacity(count);
+    match RateConverter::for_source(rate as u32, LIVE_RATE, 0)? {
+        Some(mut converter) => {
+            converter.push(&samples, &mut out)?;
+            converter.flush(count as u64, &mut out)?;
+        }
+        None => out = samples,
+    }
+    out.resize(count, 0.0);
+    Ok(out)
+}
+
 /// Keeps the io error as the source so a full disk can be recognised.
 fn wav_error(err: hound::Error) -> anyhow::Error {
     match err {
@@ -323,7 +370,7 @@ struct TrackOutput {
 }
 
 /// Where a `RateConverter` writes its output.
-trait SampleSink {
+pub(super) trait SampleSink {
     fn write(&mut self, samples: &[f32]) -> Result<()>;
 }
 
@@ -372,7 +419,7 @@ impl TrackOutput {
 
 /// Streaming anti-aliased rate converter. The resampler's startup delay is
 /// dropped, so output frame `n` is source time `n / out_rate`.
-struct RateConverter {
+pub(super) struct RateConverter {
     resampler: Fft<f32>,
     pending: Vec<f32>,
     scratch: Vec<f32>,
@@ -384,7 +431,7 @@ impl RateConverter {
     /// `None` when the source already runs at the stored rate. A replacement
     /// microphone can run below it, so this also upsamples. `emitted` starts at
     /// the file position so `flush` targets stay absolute.
-    fn for_source(in_rate: u32, out_rate: u32, emitted: u64) -> Result<Option<Self>> {
+    pub(super) fn for_source(in_rate: u32, out_rate: u32, emitted: u64) -> Result<Option<Self>> {
         if in_rate == out_rate {
             return Ok(None);
         }
@@ -408,7 +455,7 @@ impl RateConverter {
         }))
     }
 
-    fn push(&mut self, samples: &[f32], output: &mut impl SampleSink) -> Result<()> {
+    pub(super) fn push(&mut self, samples: &[f32], output: &mut impl SampleSink) -> Result<()> {
         self.pending.extend_from_slice(samples);
         self.drain(output, u64::MAX)
     }
@@ -426,8 +473,14 @@ impl RateConverter {
         Ok(())
     }
 
+    /// Output frames per FFT block. A converter started on a block boundary
+    /// matches a straight run from one block onward.
+    pub(super) fn block_frames(&self) -> u64 {
+        2 * self.resampler.output_delay() as u64
+    }
+
     /// Pushes zeros through until `total` frames have come out, then stops.
-    fn flush(&mut self, total: u64, output: &mut impl SampleSink) -> Result<()> {
+    pub(super) fn flush(&mut self, total: u64, output: &mut impl SampleSink) -> Result<()> {
         while self.emitted < total {
             let chunk = self.resampler.input_frames_next();
             if self.pending.len() < chunk {

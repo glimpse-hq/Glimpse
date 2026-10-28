@@ -11,7 +11,7 @@ import {
   SHARE_STYLES,
   canvasToPngBytes,
   drawShareCard,
-  preloadShareFonts,
+  preloadShareAssets,
   type ShareCardData,
 } from "./shareCard";
 
@@ -51,8 +51,8 @@ const ShareCardModal = ({
       drawShareCard(canvasRef.current, SHARE_STYLES[styleIndex], data);
     };
     paint();
-    // Repaint once webfonts land so the first open is not drawn in a fallback.
-    void preloadShareFonts().then(paint);
+    // Repaint once the local fonts and artwork are ready.
+    void preloadShareAssets().then(paint).catch(paint);
     return () => {
       cancelled = true;
     };
@@ -84,6 +84,8 @@ const ShareCardModal = ({
         filters: [{ name: "PNG", extensions: ["png"] }],
       });
       if (!path) return;
+      await preloadShareAssets();
+      drawShareCard(canvas, SHARE_STYLES[styleIndex], data);
       const bytes = await canvasToPngBytes(canvas);
       await invoke("save_share_image", { path, bytes: Array.from(bytes) });
     } catch (err) {
@@ -94,6 +96,8 @@ const ShareCardModal = ({
   const copyImage = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return false;
+    await preloadShareAssets();
+    drawShareCard(canvas, SHARE_STYLES[styleIndex], data);
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/png"),
     );

@@ -33,6 +33,7 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "record.resume" => record_resume(app),
         "record.bookmark" => record_bookmark(app),
         "record.finish" => record_finish(app, &request.args),
+        "record.live" => record_live(app, &request.args),
         other => Err(format!("Unknown command: {other}")),
     };
     match result {
@@ -75,6 +76,7 @@ fn dictionary_add(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
     let mut words = state.current_settings_unmasked().dictionary;
     words.extend(additions);
     let saved = crate::dictionary::set_dictionary(words, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "words": saved }))
 }
 
@@ -90,6 +92,7 @@ fn dictionary_remove(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value,
         .filter(|word| !lowered.contains(&word.to_lowercase()))
         .collect();
     let saved = crate::dictionary::set_dictionary(words, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "words": saved }))
 }
 
@@ -102,6 +105,7 @@ fn replacements_add(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, 
     replacements.retain(|r| !r.from.eq_ignore_ascii_case(&from));
     replacements.push(Replacement { from, to });
     let saved = crate::dictionary::set_replacements(replacements, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "replacements": saved }))
 }
 
@@ -116,6 +120,7 @@ fn replacements_remove(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Valu
         .filter(|r| !r.from.eq_ignore_ascii_case(&from))
         .collect();
     let saved = crate::dictionary::set_replacements(replacements, app.clone(), state)?;
+    notify_settings_changed(app);
     Ok(json!({ "replacements": saved }))
 }
 
@@ -326,6 +331,10 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
     }
 
     let local_only = args.get("local").and_then(Value::as_bool).unwrap_or(false);
+    let timestamps = args
+        .get("timestamps")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
     let model_id = match args.get("model").and_then(Value::as_str) {
         Some(model) if local_only && crate::remote_speech::is_remote_model(model) => {
             return Err("--local can't be used with a cloud model.".to_string());
@@ -370,7 +379,7 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
         &model_id,
         &audio.wav_path,
         &settings.local_model,
-        false,
+        timestamps,
         || false,
         |success| success,
         || async {
@@ -387,7 +396,11 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
                 audio.sample_rate,
                 &dictionary,
                 Some(&settings.language),
-                glimpse_speech::TimestampGranularity::Segment,
+                if timestamps {
+                    glimpse_speech::TimestampGranularity::Word
+                } else {
+                    glimpse_speech::TimestampGranularity::Segment
+                },
             )
         },
     ));
@@ -448,13 +461,30 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
         },
     );
 
-    Ok(json!({
+    let mut out = json!({
         "text": text,
         "speech_model": speech_model,
         "llm_cleaned": llm_cleaned,
         "word_count": word_count,
         "duration_seconds": duration_seconds,
-    }))
+        "processing_seconds": started.elapsed().as_secs_f32(),
+        "language": success.language,
+    });
+    if timestamps {
+        out["segments"] = json!(success.segments.as_deref().map(timings));
+        out["words"] = json!(success.words.as_deref().map(timings));
+    }
+    Ok(out)
+}
+
+fn timings(segments: &[glimpse_speech::TranscriptionSegment]) -> Vec<Value> {
+    crate::library::convert_segments_to_ms(segments)
+        .into_iter()
+        .filter(|segment| !segment.text.is_empty())
+        .map(|segment| {
+            json!({ "start_ms": segment.start_ms, "end_ms": segment.end_ms, "text": segment.text })
+        })
+        .collect()
 }
 
 fn record_state_json(state: &crate::recording::RecordingSessionState) -> Value {
@@ -543,6 +573,50 @@ fn record_finish(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, Str
     Ok(json!({ "item": { "id": item.id, "name": item.name } }))
 }
 
+/// Settled live segments of the current recording, with speaker names.
+/// Asking turns on live transcription for the rest of the recording and
+/// shows `client` as following it.
+fn record_live(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
+    let state = app.state::<AppState>();
+    require_license(&state)?;
+    let follower = args
+        .get("client")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let Some((started_at, live)) = crate::recording::follow_live_transcript(app, follower) else {
+        return Ok(json!({ "status": "idle" }));
+    };
+    let session = state.recording().state();
+    let speaker = |id: &str| {
+        live.speakers
+            .iter()
+            .find(|speaker| speaker.id == id)
+            .map_or_else(|| id.to_string(), |speaker| speaker.name.clone())
+    };
+    let segments: Vec<Value> = live
+        .segments
+        .iter()
+        .filter(|segment| segment.settled && !segment.text.trim().is_empty())
+        .map(|segment| {
+            json!({
+                "id": segment.id,
+                "start_ms": segment.start_ms,
+                "end_ms": segment.end_ms,
+                "speaker": speaker(&segment.speaker_id),
+                "text": segment.text.trim(),
+            })
+        })
+        .collect();
+    Ok(json!({
+        "status": session.status,
+        "started_at": started_at.to_rfc3339(),
+        "elapsed_ms": session.elapsed_ms,
+        "live": live.status,
+        "speaking": live.active_speaker_id.is_some(),
+        "segments": segments,
+    }))
+}
+
 static NEXT_DECODE_TEMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// Decoded samples plus a WAV file to upload to a cloud provider. A WAV made
@@ -596,4 +670,10 @@ fn active_model(settings: &crate::settings::UserSettings) -> String {
     } else {
         settings.local_model.clone()
     }
+}
+
+// The CLI writes outside any window, so open windows need the change pushed.
+fn notify_settings_changed(app: &AppHandle<AppRuntime>) {
+    let state = app.state::<AppState>();
+    state.emit_settings_changed(app, &state.current_settings_unmasked());
 }

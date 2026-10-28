@@ -11,7 +11,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     AppRuntime, AppState, EVENT_TRANSCRIPTION_COMPLETE, EVENT_TRANSCRIPTION_ERROR,
-    TranscriptionCompletePayload, TranscriptionErrorPayload, accessibility_context,
+    TranscriptionCompletePayload, TranscriptionErrorPayload,
+    accessibility_context::ActiveContext,
     analytics::{self, Activity},
     assistive, auto_dictionary, dictionary, llm_cleanup, mode_context, model_manager,
     model_manager::{MODEL_CAPABILITY_DICTIONARY, model_supports_capability},
@@ -38,9 +39,10 @@ enum ProcessTranscriptOutcome {
 
 struct ProcessTranscriptInput<'a> {
     raw_transcript: String,
-    pending_selected_text: Option<String>,
+    pending_selected_text: Option<&'a str>,
     settings: &'a UserSettings,
     active_mode: Option<&'a Personality>,
+    active_context: Option<&'a ActiveContext>,
     auto_paste: bool,
     log_context: Option<&'a str>,
     cancel_token: Option<&'a CancellationToken>,
@@ -187,7 +189,8 @@ fn watch_for_stall(
         while matches!(
             analytics::activity(),
             Activity::ModelLoading | Activity::Llm
-        ) {
+        ) || app.state::<AppState>().local_transcriber().is_loading()
+        {
             tokio::time::sleep(Duration::from_secs_f32(limit)).await;
             if finished.load(Ordering::Relaxed) {
                 return;
@@ -201,19 +204,26 @@ fn watch_for_stall(
             .release_pending_path(&recovery.audio_path);
         emit_transcription_error_inner(
             &app,
-            "Transcription timed out".to_string(),
-            None,
-            "stall",
-            audio_seconds,
-            "microphone",
-            Some(recovery.audio_path.display().to_string()),
-            recovery.pending_path.as_deref(),
-            true,
-            recovery.temporary,
-            true,
+            TranscriptionFailure {
+                message: "Transcription timed out".to_string(),
+                message_key: None,
+                reason: None,
+                stage: "stall",
+                audio_duration_seconds: audio_seconds,
+                audio_path: Some(recovery.audio_path.display().to_string()),
+                pending_path: recovery.pending_path.as_deref(),
+                reset_state: true,
+                temporary: recovery.temporary,
+                show_toast: true,
+            },
         );
     });
     StallWatch(done)
+}
+
+/// The frontmost app for mode matching, read once per dictation.
+fn dictation_context(cleanup_enabled: bool) -> Option<ActiveContext> {
+    cleanup_enabled.then(mode_context::active_context).flatten()
 }
 
 /// Puts back the activity from before a step, unless a cancel already moved it on.
@@ -250,12 +260,12 @@ pub(crate) fn queue_transcription(
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
 
-        let auto_paste = auto_paste && transcription_api::auto_paste_enabled();
-
         tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
-        accessibility_context::log_active_context();
 
-        let active_mode = mode_context::resolve_active_personality(&settings);
+        // Read while transcribing, so it never delays the paste.
+        let cleanup_enabled = settings.cleanup_enabled;
+        let context_task =
+            async_runtime::spawn_blocking(move || dictation_context(cleanup_enabled));
         let model_id = speech::selected_model(&settings);
         let use_remote = remote_speech::is_remote_model(&model_id);
         let _stall_watch = watch_for_stall(
@@ -296,16 +306,22 @@ pub(crate) fn queue_transcription(
         )
         .await;
         let asr_seconds = transcription_started_at.elapsed().as_secs_f32();
+        let active_context = context_task.await.ok().flatten();
+        let active_mode =
+            mode_context::resolve_active_personality(&settings, active_context.as_ref());
+        let abort = || {
+            abort_transcription(
+                &app_handle,
+                &saved_for_task.path,
+                saved_for_task.pending_path.as_deref(),
+                false,
+            )
+        };
 
         match result {
             Ok(result) => {
                 if is_cancelled() {
-                    abort_transcription(
-                        &app_handle,
-                        &saved_for_task.path,
-                        saved_for_task.pending_path.as_deref(),
-                        false,
-                    );
+                    abort();
                     return;
                 }
 
@@ -322,12 +338,7 @@ pub(crate) fn queue_transcription(
                 }
 
                 if is_cancelled() {
-                    abort_transcription(
-                        &app_handle,
-                        &saved_for_task.path,
-                        saved_for_task.pending_path.as_deref(),
-                        false,
-                    );
+                    abort();
                     return;
                 }
 
@@ -335,17 +346,18 @@ pub(crate) fn queue_transcription(
                 if is_edit && !llm_cleanup::is_llm_available(&settings) {
                     emit_transcription_error_inner(
                         &app_handle,
-                        "Edit mode requires a selected language model. Choose one in Settings -> Models."
-                            .to_string(),
-                        None,
-                        "edit_mode",
-                        audio_duration_seconds,
-                        "microphone",
-                        Some(saved_for_task.path.display().to_string()),
-                        saved_for_task.pending_path.as_deref(),
-                        true,
-                        temporary,
-                        true,
+                        TranscriptionFailure {
+                            message: "Edit mode requires a selected language model".to_string(),
+                            message_key: Some("native.error.edit_needs_writing_model"),
+                            reason: None,
+                            stage: "edit_mode",
+                            audio_duration_seconds,
+                            audio_path: Some(saved_for_task.path.display().to_string()),
+                            pending_path: saved_for_task.pending_path.as_deref(),
+                            reset_state: true,
+                            temporary,
+                            show_toast: true,
+                        },
                     );
                     app_handle
                         .state::<AppState>()
@@ -358,9 +370,10 @@ pub(crate) fn queue_transcription(
                     &http,
                     ProcessTranscriptInput {
                         raw_transcript: raw_transcript.clone(),
-                        pending_selected_text,
+                        pending_selected_text: pending_selected_text.as_deref(),
                         settings: &settings,
                         active_mode: active_mode.as_ref(),
+                        active_context: active_context.as_ref(),
                         auto_paste,
                         log_context: None,
                         cancel_token: Some(&cancel_token),
@@ -382,23 +395,13 @@ pub(crate) fn queue_transcription(
                         return;
                     }
                     ProcessTranscriptOutcome::Cancelled => {
-                        abort_transcription(
-                            &app_handle,
-                            &saved_for_task.path,
-                            saved_for_task.pending_path.as_deref(),
-                            false,
-                        );
+                        abort();
                         return;
                     }
                 };
 
                 if is_cancelled() {
-                    abort_transcription(
-                        &app_handle,
-                        &saved_for_task.path,
-                        saved_for_task.pending_path.as_deref(),
-                        false,
-                    );
+                    abort();
                     return;
                 }
 
@@ -410,7 +413,7 @@ pub(crate) fn queue_transcription(
                     result.language.as_deref(),
                 )
                 .with_origin(origin, is_edit);
-                let metadata = build_transcription_metadata(TranscriptionMetadataInput {
+                let mut metadata = build_transcription_metadata(TranscriptionMetadataInput {
                     saved: &saved_for_task,
                     settings: &settings,
                     final_text: &processed.final_transcript,
@@ -419,6 +422,10 @@ pub(crate) fn queue_transcription(
                     mode: active_mode.as_ref(),
                     speech_model: result.speech_model,
                 });
+                metadata.edit_instruction = pending_selected_text
+                    .as_ref()
+                    .map(|_| raw_transcript.clone());
+                metadata.selected_text = pending_selected_text;
 
                 emit_transcription_complete_with_cleanup(
                     &app_handle,
@@ -457,16 +464,18 @@ pub(crate) fn queue_transcription(
                 let show_toast = !is_remote_fallback_unavailable(&err);
                 emit_transcription_error_inner(
                     &app_handle,
-                    format!("Transcription failed: {err}"),
-                    Some(analytics::error_detail(&err)),
-                    "transcription",
-                    audio_duration_seconds,
-                    "microphone",
-                    Some(saved_for_task.path.display().to_string()),
-                    saved_for_task.pending_path.as_deref(),
-                    true,
-                    temporary,
-                    show_toast,
+                    TranscriptionFailure {
+                        message: format!("Transcription failed: {err}"),
+                        message_key: None,
+                        reason: Some(analytics::error_detail(&err)),
+                        stage: "transcription",
+                        audio_duration_seconds,
+                        audio_path: Some(saved_for_task.path.display().to_string()),
+                        pending_path: saved_for_task.pending_path.as_deref(),
+                        reset_state: true,
+                        temporary,
+                        show_toast,
+                    },
                 );
                 app_handle
                     .state::<AppState>()
@@ -631,7 +640,8 @@ async fn transcribe_recovered_recording(
     let transcription_started_at = Instant::now();
     let audio_duration_seconds = compute_audio_duration_seconds(saved);
     let http = app.state::<AppState>().http();
-    let active_mode = mode_context::resolve_active_personality(settings);
+    let active_context = dictation_context(settings.cleanup_enabled);
+    let active_mode = mode_context::resolve_active_personality(settings, active_context.as_ref());
     let model_id = speech::selected_model(settings);
     let use_remote = remote_speech::is_remote_model(&model_id);
 
@@ -653,16 +663,18 @@ async fn transcribe_recovered_recording(
         Err(err) => {
             emit_transcription_error_inner(
                 app,
-                format!("Transcription failed: {err}"),
-                Some(analytics::error_detail(&err)),
-                "transcription",
-                audio_duration_seconds,
-                "microphone",
-                Some(saved.path.display().to_string()),
-                saved.pending_path.as_deref(),
-                false,
-                false,
-                true,
+                TranscriptionFailure {
+                    message: format!("Transcription failed: {err}"),
+                    message_key: None,
+                    reason: Some(analytics::error_detail(&err)),
+                    stage: "transcription",
+                    audio_duration_seconds,
+                    audio_path: Some(saved.path.display().to_string()),
+                    pending_path: saved.pending_path.as_deref(),
+                    reset_state: false,
+                    temporary: false,
+                    show_toast: true,
+                },
             );
             return Err(err);
         }
@@ -683,6 +695,7 @@ async fn transcribe_recovered_recording(
             pending_selected_text: None,
             settings,
             active_mode: active_mode.as_ref(),
+            active_context: active_context.as_ref(),
             auto_paste: false,
             log_context: Some("recovery"),
             cancel_token: None,
@@ -780,6 +793,7 @@ async fn process_transcript_text(
         pending_selected_text,
         settings,
         active_mode,
+        active_context,
         auto_paste,
         log_context,
         cancel_token,
@@ -792,7 +806,7 @@ async fn process_transcript_text(
     let is_edit_mode = pending_selected_text.is_some();
     let llm_kind = if is_edit_mode { "edit" } else { "cleanup" };
     let llm_available = llm_cleanup::is_llm_available(settings);
-    let should_refine_transcript = llm_cleanup::should_refine_transcript(settings, active_mode);
+    let should_refine_transcript = llm_cleanup::should_refine_transcript(settings);
     let llm_needed = is_edit_mode || should_refine_transcript;
     let preflight_unavailable =
         llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
@@ -820,7 +834,7 @@ async fn process_transcript_text(
         } else {
             crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
         }
-        let outcome = if let Some(ref selected) = pending_selected_text {
+        let outcome = if let Some(selected) = pending_selected_text {
             match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
                 Ok(edited) => (edited, true),
                 Err(err) => {
@@ -845,12 +859,18 @@ async fn process_transcript_text(
                         ),
                     );
                     llm_failure = Some(err);
-                    (selected.clone(), false)
+                    (selected.to_owned(), false)
                 }
             }
         } else {
-            match llm_cleanup::cleanup_transcription(http, &raw_transcript, settings, active_mode)
-                .await
+            match llm_cleanup::cleanup_transcription_with_context(
+                http,
+                &raw_transcript,
+                settings,
+                active_mode,
+                active_context,
+            )
+            .await
             {
                 Ok(cleaned) => (cleaned, true),
                 Err(err) if llm_cleanup::is_input_unsuitable(&err) => {
@@ -918,7 +938,7 @@ async fn process_transcript_text(
     let mut insert_latency_seconds = None;
     if auto_paste && !final_transcript.trim().is_empty() {
         analytics::set_activity(Activity::Inserting);
-        let can_read_field = !is_edit_mode && cfg!(any(target_os = "macos", target_os = "windows"));
+        let can_read_field = !is_edit_mode;
         let selected_model = speech::selected_model(settings);
         let selected_model_supports_dictionary = remote_speech::is_remote_model(&selected_model)
             || model_supports_capability(&selected_model, MODEL_CAPABILITY_DICTIONARY);
@@ -946,6 +966,13 @@ async fn process_transcript_text(
                     match_insertion_capitalization(&transcript_to_paste, &snapshot.value)
                 })
                 .unwrap_or(transcript_to_paste);
+            if token_for_paste
+                .as_ref()
+                .is_some_and(|token| token.is_cancelled())
+                || app_for_paste.state::<AppState>().is_cancelled()
+            {
+                return None;
+            }
             let result = assistive::paste_text(&text);
             Some((result, pre_paste_snapshot, text))
         })
@@ -966,6 +993,9 @@ async fn process_transcript_text(
                         settings.dictionary.clone(),
                         settings.auto_dictionary_ignored.clone(),
                         selected_model,
+                        llm_cleaned
+                            .then(|| llm_cleanup::resolved_model_label(settings))
+                            .flatten(),
                     );
                 }
             }
@@ -1034,7 +1064,6 @@ pub(crate) fn retry_transcription_async(
     let retry_id = original_id.clone();
     let (saved_mode_id, saved_mode_name) = saved_mode;
 
-    // Look up the saved personality (if it still exists and is enabled)
     let saved_personality = saved_mode_id.as_ref().and_then(|id| {
         settings
             .personalities
@@ -1114,8 +1143,7 @@ pub(crate) fn retry_transcription_async(
                     return;
                 }
 
-                let should_refine_transcript =
-                    llm_cleanup::should_refine_transcript(&settings, saved_personality.as_ref());
+                let should_refine_transcript = llm_cleanup::should_refine_transcript(&settings);
                 let preflight_unavailable = should_refine_transcript
                     && matches!(llm_cleanup::cached_preflight_available(), Some(false));
                 let should_use_llm = should_refine_transcript && !preflight_unavailable;
@@ -1188,6 +1216,7 @@ pub(crate) fn retry_transcription_async(
                     synced: false,
                     mode_id: saved_mode_id.clone(),
                     mode_name: saved_mode_name.clone(),
+                    ..Default::default()
                 };
 
                 let raw_text = if llm_cleaned {
@@ -1234,6 +1263,7 @@ pub(crate) fn retry_transcription_async(
                         word_count: metadata.word_count,
                         audio_source: "microphone",
                         retry: true,
+                        llm_model: metadata.llm_model.as_deref().map(analytics::llm_model_id),
                         ..Default::default()
                     },
                 );
@@ -1258,16 +1288,18 @@ pub(crate) fn retry_transcription_async(
                 let show_toast = !is_remote_fallback_unavailable(&err);
                 emit_transcription_error_inner(
                     &app_handle,
-                    format!("Transcription failed: {err}"),
-                    Some(analytics::error_detail(&err)),
-                    "transcription",
-                    audio_duration_seconds,
-                    "microphone",
-                    None,
-                    None,
-                    false,
-                    false,
-                    show_toast,
+                    TranscriptionFailure {
+                        message: format!("Transcription failed: {err}"),
+                        message_key: None,
+                        reason: Some(analytics::error_detail(&err)),
+                        stage: "transcription",
+                        audio_duration_seconds,
+                        audio_path: None,
+                        pending_path: None,
+                        reset_state: false,
+                        temporary: false,
+                        show_toast,
+                    },
                 );
             }
         }
@@ -1307,6 +1339,7 @@ fn emit_transcription_complete_with_cleanup(
             asr_seconds: stats.asr_seconds,
             llm_seconds: stats.llm_seconds,
             llm_outcome: stats.llm_outcome,
+            llm_model: metadata.llm_model.as_deref().map(analytics::llm_model_id),
             insert_latency_seconds: stats.insert_latency_seconds,
             trigger: stats.trigger,
             action: stats.action,
@@ -1589,26 +1622,39 @@ fn emit_auto_paste_error(
             message,
             auto_dismiss: Some(true),
             duration: Some(3000),
-            mode: Some("local".into()),
             ..Default::default()
         },
     );
 }
 
-#[allow(clippy::too_many_arguments)]
-fn emit_transcription_error_inner(
-    app: &AppHandle<AppRuntime>,
+struct TranscriptionFailure<'a> {
     message: String,
+    // Native string to show; guessed from `message` when None.
+    message_key: Option<&'static str>,
     reason: Option<analytics::ErrorDetail>,
-    stage: &str,
+    stage: &'static str,
     audio_duration_seconds: f32,
-    audio_source: &str,
+    // None for a retry, whose audio belongs to the existing record.
     audio_path: Option<String>,
-    pending_path: Option<&Path>,
+    pending_path: Option<&'a Path>,
     reset_state: bool,
     temporary: bool,
     show_toast: bool,
-) {
+}
+
+fn emit_transcription_error_inner(app: &AppHandle<AppRuntime>, failure: TranscriptionFailure) {
+    let TranscriptionFailure {
+        message,
+        message_key,
+        reason,
+        stage,
+        audio_duration_seconds,
+        audio_path,
+        pending_path,
+        reset_state,
+        temporary,
+        show_toast,
+    } = failure;
     let reason = reason.unwrap_or_else(|| analytics::classify_failure_reason(&message).into());
     let state = app.state::<AppState>();
     let settings = state.current_settings();
@@ -1619,18 +1665,19 @@ fn emit_transcription_error_inner(
         &resolve_speech_model_label(&settings),
         reason,
         Some(audio_duration_seconds),
-        audio_source,
+        "microphone",
     );
 
-    let toast_message = format_transcription_error(app, &message);
+    let toast_message = toast::native(
+        app,
+        message_key.unwrap_or_else(|| transcription_error_key(&message)),
+    );
     let metadata = storage::TranscriptionMetadata {
         speech_model: resolve_speech_model_label(&settings),
         audio_duration_seconds,
         ..Default::default()
     };
 
-    // A retry passes no path: its audio belongs to the existing record, so it
-    // is neither saved again nor deleted.
     if let Some(audio_path) = audio_path {
         if temporary {
             let _ = std::fs::remove_file(&audio_path);
@@ -1673,7 +1720,6 @@ fn emit_transcription_error_inner(
             toast::Payload {
                 toast_type: "error".to_string(),
                 message: toast_message,
-                mode: Some("local".into()),
                 ..Default::default()
             },
         );
@@ -1686,9 +1732,9 @@ fn emit_transcription_error_inner(
     }
 }
 
-fn format_transcription_error(app: &AppHandle<AppRuntime>, message: &str) -> String {
+fn transcription_error_key(message: &str) -> &'static str {
     let msg_lower = message.to_lowercase();
-    let key = if msg_lower.contains("not fully installed") || msg_lower.contains("missing:") {
+    if msg_lower.contains("not fully installed") || msg_lower.contains("missing:") {
         "native.error.no_model_installed"
     } else if msg_lower.contains("model not found") || msg_lower.contains("no model") {
         "native.error.no_model_selected"
@@ -1702,8 +1748,7 @@ fn format_transcription_error(app: &AppHandle<AppRuntime>, message: &str) -> Str
         "native.error.pasted_to_clipboard"
     } else {
         "native.error.transcription_failed"
-    };
-    toast::native(app, key)
+    }
 }
 
 struct TranscriptionMetadataInput<'a> {
@@ -1743,6 +1788,7 @@ fn build_transcription_metadata(
         synced,
         mode_id: mode.map(|m| m.id.clone()),
         mode_name: mode.map(|m| m.name.clone()),
+        ..Default::default()
     }
 }
 
@@ -2234,8 +2280,9 @@ pub(crate) fn finalize_streaming_transcription(
         let transcription_started_at = Instant::now();
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
-        let auto_paste = auto_paste && transcription_api::auto_paste_enabled();
-        let active_mode = mode_context::resolve_active_personality(&settings);
+        let active_context = dictation_context(settings.cleanup_enabled);
+        let active_mode =
+            mode_context::resolve_active_personality(&settings, active_context.as_ref());
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
         let _stall_watch = watch_for_stall(
             &app_handle,
@@ -2273,9 +2320,10 @@ pub(crate) fn finalize_streaming_transcription(
             &http,
             ProcessTranscriptInput {
                 raw_transcript: raw_transcript.clone(),
-                pending_selected_text,
+                pending_selected_text: pending_selected_text.as_deref(),
                 settings: &settings,
                 active_mode: active_mode.as_ref(),
+                active_context: active_context.as_ref(),
                 auto_paste,
                 log_context: Some("streaming"),
                 cancel_token: Some(&cancel_token),
@@ -2327,6 +2375,10 @@ pub(crate) fn finalize_streaming_transcription(
             synced: false,
             mode_id: active_mode.as_ref().map(|m| m.id.clone()),
             mode_name: active_mode.as_ref().map(|m| m.name.clone()),
+            edit_instruction: pending_selected_text
+                .as_ref()
+                .map(|_| raw_transcript.clone()),
+            selected_text: pending_selected_text,
         };
 
         crate::pill::collapse_expanded_pill(&app_handle);

@@ -18,11 +18,10 @@ pub struct Payload {
     #[serde(rename = "autoDismiss")]
     pub auto_dismiss: Option<bool>,
     pub duration: Option<u64>,
-    #[serde(rename = "retryId")]
-    pub retry_id: Option<String>,
-    #[serde(rename = "mode")]
-    pub mode: Option<String>,
     pub action: Option<String>,
+    // Arguments for both action commands.
+    #[serde(rename = "actionArgs")]
+    pub action_args: Option<serde_json::Value>,
     #[serde(rename = "actionLabel")]
     pub action_label: Option<String>,
     #[serde(rename = "secondaryAction")]

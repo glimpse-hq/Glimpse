@@ -266,6 +266,9 @@ fn map_status(
 pub fn list_models() -> Vec<ModelInfo> {
     let mut models = super::catalog::list_local_models();
     models.push(super::catalog::diarizer_model_info());
+    if crate::cleanup_model::supported() {
+        models.push(super::catalog::cleanup_model_info());
+    }
     models
 }
 
@@ -344,6 +347,9 @@ pub async fn download_model_now(
     ane: Option<bool>,
 ) -> Result<ModelStatus, String> {
     let state = app.state::<crate::AppState>();
+    if super::catalog::cleanup_model_definition(&model).is_some() {
+        crate::license::require_license_gate(&state.settings_store, "on-device cleanup")?;
+    }
     let manager =
         model_manager(&app).map_err(|err| download_failed(&app, &model, "resolve", err))?;
     let ane = ane.unwrap_or_else(|| super::catalog::ane_encoder_dir(&model).is_some());
@@ -466,6 +472,8 @@ pub async fn download_model_now(
         super::compile_ane_encoder(&app, status.id.clone());
     } else if definition(&model).is_some() {
         super::warm_model(&app, status.id.clone());
+    } else if super::catalog::cleanup_model_definition(&model).is_some() {
+        crate::cleanup_model::finish_install();
     }
 
     let settings = state.current_settings();
@@ -644,6 +652,9 @@ pub async fn delete_model(
                 tracing::error!("[speech] delete {model} failed: {err:#}");
                 format!("{err:#}")
             });
+        if super::catalog::cleanup_model_definition(&model).is_some() {
+            crate::cleanup_model::refresh_installed();
+        }
         refresh_model_readiness(&handle, &model);
         result
     })
@@ -798,6 +809,7 @@ mod catalog_only_resolver_tests {
         SpeechService::new(SpeechConfig {
             resolver,
             model_cache_dir: dir.to_path_buf(),
+            loose_paths: false,
         })
     }
 

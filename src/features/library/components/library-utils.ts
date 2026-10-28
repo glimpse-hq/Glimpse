@@ -1,6 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { i18n } from "../../../i18n";
-import type { AudioSources } from "../../../types";
+import type { AudioSources, LibraryItemStatus } from "../../../types";
 
 export const SUPPORTED_EXTENSIONS = [
   "wav",
@@ -163,6 +163,13 @@ export const formatImportErrorMessage = (rawMessage: string) => {
   );
 };
 
+// Queued or running, so it can be cancelled.
+export const isLibraryItemBusy = (status: LibraryItemStatus) =>
+  status.type === "transcribing" ||
+  status.type === "cancelling" ||
+  status.type === "pending" ||
+  status.type === "importing";
+
 export const formatDeleteErrorMessage = (rawMessage: string) => {
   const message = rawMessage.trim();
   if (!message) {
@@ -210,16 +217,6 @@ export const formatDeleteErrorMessage = (rawMessage: string) => {
       msg({
         id: "library.delete_error.invalid_path",
         message: "Couldn't delete this item due to an invalid file path.",
-      }),
-    );
-  }
-
-  if (lower.includes("move the audio to the trash")) {
-    return i18n._(
-      msg({
-        id: "library.delete_error.trash_failed",
-        message:
-          "Couldn't move the audio to the Trash or Recycle Bin, so nothing was deleted.",
       }),
     );
   }

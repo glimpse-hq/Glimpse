@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
@@ -23,6 +24,8 @@ pub struct LocalTranscriber {
     // (library, non-streaming dictation) can't interleave on the shared model
     // runtime and clobber the streaming transcript buffer.
     exclusive: Mutex<()>,
+    // A dictation can wait on `exclusive` behind a load it didn't start.
+    loading: AtomicBool,
 }
 
 impl LocalTranscriber {
@@ -31,11 +34,13 @@ impl LocalTranscriber {
             service: SpeechService::new(SpeechConfig {
                 resolver: crate::model_manager::local_resolver(model_cache_dir.clone()),
                 model_cache_dir,
+                loose_paths: false,
             }),
             last_used: Mutex::new(None),
             idle_wait: Condvar::new(),
             warm_in_flight: Mutex::new(None),
             exclusive: Mutex::new(()),
+            loading: AtomicBool::new(false),
         }
     }
 
@@ -104,8 +109,10 @@ impl LocalTranscriber {
         let previous_activity = analytics::activity();
         if !was_loaded {
             analytics::set_activity(Activity::ModelLoading);
+            self.loading.store(true, Ordering::Relaxed);
         }
         let result = self.service.preload_and_warm(&model.key);
+        self.loading.store(false, Ordering::Relaxed);
         // A dictation step that started meanwhile keeps its own activity.
         if analytics::activity() == Activity::ModelLoading {
             analytics::set_activity(previous_activity);
@@ -149,6 +156,11 @@ impl LocalTranscriber {
             *warm_in_flight = None;
         }
         result
+    }
+
+    /// Whether a model load is running, whoever started it.
+    pub fn is_loading(&self) -> bool {
+        self.loading.load(Ordering::Relaxed)
     }
 
     pub fn loaded_model_id(&self) -> Option<String> {
@@ -258,6 +270,8 @@ impl LocalTranscriber {
     ) -> Result<glimpse_speech::Transcription> {
         let was_loaded = self.service.is_loaded();
         let started = Instant::now();
+        // The service loads the model first when it isn't loaded.
+        self.loading.store(!was_loaded, Ordering::Relaxed);
         let response = self.service.transcribe(TranscribeRequest {
             audio: AudioInput::PcmI16 {
                 samples: samples.to_vec(),
@@ -269,7 +283,9 @@ impl LocalTranscriber {
             dictionary: dictionary.to_vec(),
             timestamps: granularity.is_some(),
             timestamp_granularity: granularity,
-        })?;
+        });
+        self.loading.store(false, Ordering::Relaxed);
+        let response = response?;
         tracing::info!(
             "[LocalTranscriber] transcribe took {:.2}s (audio {:.2}s, was_loaded={})",
             started.elapsed().as_secs_f32(),
@@ -330,10 +346,16 @@ impl StreamingGuard<'_> {
 
     /// Language and vocabulary for the next streaming session, for engines
     /// that take per-session configuration.
-    pub fn configure(&self, model: &ReadyModel, language: Option<String>, dictionary: Vec<String>) {
+    pub fn configure(
+        &self,
+        model: &ReadyModel,
+        language: Option<String>,
+        dictionary: Vec<String>,
+    ) -> Result<()> {
         self.transcriber
             .service
-            .streaming_configure(&model.key, language, dictionary);
+            .streaming_configure(&model.key, language, dictionary)?;
+        Ok(())
     }
 
     pub fn transcribe_chunk(&self, model: &ReadyModel, chunk: &[f32]) -> Result<String> {

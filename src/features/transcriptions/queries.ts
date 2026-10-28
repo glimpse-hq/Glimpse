@@ -188,23 +188,27 @@ export function useRetryTranscription(enabled: boolean = true) {
     // Cleanup errors belong to a cleanup retry, not a transcription one.
     listen<CompletePayload>("transcription:complete", (event) => {
       if (!cancelled) clearRetrying(event.payload?.record?.id);
-    }).then((fn) => {
-      if (cancelled) void Promise.resolve(fn()).catch(() => {});
-      else unlisteners.push(fn);
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlisteners.push(fn);
+      })
+      .catch(() => {});
 
     listen<ErrorPayload>("transcription:error", (event) => {
       if (!cancelled && event.payload?.stage !== "llm_cleanup") {
         clearRetrying();
       }
-    }).then((fn) => {
-      if (cancelled) void Promise.resolve(fn()).catch(() => {});
-      else unlisteners.push(fn);
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlisteners.push(fn);
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
-      unlisteners.forEach((fn) => void Promise.resolve(fn()).catch(() => {}));
+      unlisteners.forEach((fn) => fn());
     };
   }, [shouldListen]);
 
@@ -242,10 +246,12 @@ export function useRetryLlmCleanup() {
       const id = event.payload?.record?.id;
       if (cancelled || !id) return;
       setCleaningIds((prev) => prev.filter((entry) => entry !== id));
-    }).then((fn) => {
-      if (cancelled) void Promise.resolve(fn()).catch(() => {});
-      else unlisteners.push(fn);
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlisteners.push(fn);
+      })
+      .catch(() => {});
 
     listen<ErrorPayload>("transcription:error", (event) => {
       if (cancelled || event.payload?.stage !== "llm_cleanup") return;
@@ -259,14 +265,16 @@ export function useRetryLlmCleanup() {
           message: "Couldn't clean up the transcription.",
         }),
       );
-    }).then((fn) => {
-      if (cancelled) void Promise.resolve(fn()).catch(() => {});
-      else unlisteners.push(fn);
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlisteners.push(fn);
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
-      unlisteners.forEach((fn) => void Promise.resolve(fn()).catch(() => {}));
+      unlisteners.forEach((fn) => fn());
     };
   }, [t]);
 

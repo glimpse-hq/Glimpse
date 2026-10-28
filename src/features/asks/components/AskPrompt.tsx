@@ -17,7 +17,8 @@ export default function AskPrompt({ active }: AskPromptProps) {
   const queryClient = useQueryClient();
   const { data } = useAskPrompt(active);
   const [resolving, setResolving] = useState(false);
-  const seenRef = useRef(false);
+  // The ask kind already marked seen; a later ask in the same session differs.
+  const seenRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,18 +44,19 @@ export default function AskPrompt({ active }: AskPromptProps) {
   }, [queryClient]);
 
   useEffect(() => {
-    if (!active || !data?.kind || seenRef.current) return;
+    const kind = data?.kind;
+    if (!active || !kind || seenRef.current === kind) return;
 
     let cancelled = false;
     const window = getCurrentWindow();
 
     const markIfVisible = async () => {
-      if (cancelled || seenRef.current) return;
+      if (cancelled || seenRef.current === kind) return;
       if (document.visibilityState !== "visible") return;
       if (!(await window.isVisible().catch(() => false))) return;
-      seenRef.current = true;
+      seenRef.current = kind;
       void asksApi.markAskPromptSeen().catch(() => {
-        seenRef.current = false;
+        seenRef.current = null;
       });
     };
 

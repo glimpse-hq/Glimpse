@@ -13,6 +13,7 @@ export type AutoDeleteTarget = "audio" | "transcripts";
 export type LlmProvider =
   | "none"
   | "apple"
+  | "bonsai"
   | "lmstudio"
   | "ollama"
   | "openai"
@@ -99,6 +100,8 @@ export type StoredSettings = {
   llm_endpoint: string;
   llm_api_key: string;
   llm_model: string;
+  llm_service_provider: string;
+  llm_auto: boolean;
   dictionary: string[];
   auto_dictionary_enabled: boolean;
   auto_dictionary_ignored: string[];

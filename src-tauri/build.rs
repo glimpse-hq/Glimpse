@@ -222,7 +222,7 @@ fn main() {
         }
     }
 
-    // Swift rpath for glimpse-speech's Apple shim. FoundationModels must stay
+    // Swift rpath for glimpse-language's Apple shim. FoundationModels must stay
     // weak-linked: a hard link aborts launch below macOS 26 (app supports 14+).
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos")
         && std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("aarch64")

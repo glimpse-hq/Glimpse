@@ -33,6 +33,21 @@ export async function checkModelStatus(model: string): Promise<ModelStatus> {
   return invoke<ModelStatus>("check_model_status", { model });
 }
 
+export async function downloadModel(
+  model: string,
+  ane?: boolean,
+): Promise<ModelStatus> {
+  return invoke<ModelStatus>("download_model", { model, ane });
+}
+
+export async function deleteModel(model: string): Promise<ModelStatus> {
+  return invoke<ModelStatus>("delete_model", { model });
+}
+
+export async function cancelDownload(model: string): Promise<void> {
+  await invoke("cancel_download", { model });
+}
+
 export async function getLocalApiStatus(): Promise<LocalApiStatus> {
   return invoke<LocalApiStatus>("get_local_api_status");
 }

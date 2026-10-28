@@ -1,5 +1,5 @@
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTauriEvent } from "../../shared/hooks/useTauriEvent";
 import type {
   AudioSpectrumPayload,
   PillHoverPayload,
@@ -85,63 +85,33 @@ export function usePillState() {
     applyStatus("idle");
   }, [applyStatus]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const unlisteners: UnlistenFn[] = [];
+  useEffect(() => clearErrorFlashTimer, [clearErrorFlashTimer]);
 
-    const register = <TPayload>(
-      event: string,
-      handler: (payload: TPayload) => void,
-    ) => {
-      listen<TPayload>(event, ({ payload }) => {
-        if (!cancelled) {
-          handler(payload);
-        }
-      })
-        .then((unlisten) => {
-          if (cancelled) {
-            unlisten();
-          } else {
-            unlisteners.push(unlisten);
-          }
-        })
-        .catch((error) => {
-          console.error(`Failed to listen for ${event}`, error);
-        });
-    };
+  useTauriEvent<PillStatePayload>("pill:state", ({ status }) => {
+    applyStatus(status);
+  });
 
-    register<PillStatePayload>("pill:state", ({ status }) => {
-      applyStatus(status);
-    });
+  useTauriEvent<AudioSpectrumPayload>("audio:spectrum", ({ bins }) => {
+    if (statusRef.current !== "listening") return;
+    const buffer = spectrumBinsRef.current;
+    if (bins.length === buffer.length) {
+      buffer.set(bins);
+    } else {
+      spectrumBinsRef.current = new Uint8Array(bins);
+    }
+    lastSpectrumAtRef.current = performance.now();
+  });
 
-    register<AudioSpectrumPayload>("audio:spectrum", ({ bins }) => {
-      if (statusRef.current !== "listening") return;
-      const buffer = spectrumBinsRef.current;
-      if (bins.length === buffer.length) {
-        buffer.set(bins);
-      } else {
-        spectrumBinsRef.current = new Uint8Array(bins);
-      }
-      lastSpectrumAtRef.current = performance.now();
-    });
+  useTauriEvent<PillModePayload>("pill:mode", ({ expanded, text, tone }) => {
+    if (statusRef.current === "idle") return;
+    setIsExpanded(expanded);
+    setExpandedText(expanded ? (text ?? "") : "");
+    setPillTone(tone ?? "default");
+  });
 
-    register<PillModePayload>("pill:mode", ({ expanded, text, tone }) => {
-      if (statusRef.current === "idle") return;
-      setIsExpanded(expanded);
-      setExpandedText(expanded ? (text ?? "") : "");
-      setPillTone(tone ?? "default");
-    });
-
-    register<PillHoverPayload>("pill:hover", ({ hovering }) => {
-      setIsHovered(hovering);
-    });
-
-    return () => {
-      cancelled = true;
-      clearErrorFlashTimer();
-      unlisteners.forEach((unlisten) => unlisten());
-    };
-  }, [applyStatus, clearErrorFlashTimer]);
+  useTauriEvent<PillHoverPayload>("pill:hover", ({ hovering }) => {
+    setIsHovered(hovering);
+  });
 
   return {
     pillStatus,
