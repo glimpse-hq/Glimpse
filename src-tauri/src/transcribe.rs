@@ -222,11 +222,8 @@ fn watch_for_stall(
 }
 
 /// The frontmost app for mode matching, read once per dictation.
-fn dictation_context(settings: &UserSettings) -> Option<ActiveContext> {
-    settings
-        .cleanup_enabled
-        .then(mode_context::active_context)
-        .flatten()
+fn dictation_context(cleanup_enabled: bool) -> Option<ActiveContext> {
+    cleanup_enabled.then(mode_context::active_context).flatten()
 }
 
 /// Puts back the activity from before a step, unless a cancel already moved it on.
@@ -265,9 +262,10 @@ pub(crate) fn queue_transcription(
 
         tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
 
-        let active_context = dictation_context(&settings);
-        let active_mode =
-            mode_context::resolve_active_personality(&settings, active_context.as_ref());
+        // Read while transcribing, so it never delays the paste.
+        let cleanup_enabled = settings.cleanup_enabled;
+        let context_task =
+            async_runtime::spawn_blocking(move || dictation_context(cleanup_enabled));
         let model_id = speech::selected_model(&settings);
         let use_remote = remote_speech::is_remote_model(&model_id);
         let _stall_watch = watch_for_stall(
@@ -308,6 +306,9 @@ pub(crate) fn queue_transcription(
         )
         .await;
         let asr_seconds = transcription_started_at.elapsed().as_secs_f32();
+        let active_context = context_task.await.ok().flatten();
+        let active_mode =
+            mode_context::resolve_active_personality(&settings, active_context.as_ref());
         let abort = || {
             abort_transcription(
                 &app_handle,
@@ -639,7 +640,7 @@ async fn transcribe_recovered_recording(
     let transcription_started_at = Instant::now();
     let audio_duration_seconds = compute_audio_duration_seconds(saved);
     let http = app.state::<AppState>().http();
-    let active_context = dictation_context(settings);
+    let active_context = dictation_context(settings.cleanup_enabled);
     let active_mode = mode_context::resolve_active_personality(settings, active_context.as_ref());
     let model_id = speech::selected_model(settings);
     let use_remote = remote_speech::is_remote_model(&model_id);
@@ -2279,7 +2280,7 @@ pub(crate) fn finalize_streaming_transcription(
         let transcription_started_at = Instant::now();
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
-        let active_context = dictation_context(&settings);
+        let active_context = dictation_context(settings.cleanup_enabled);
         let active_mode =
             mode_context::resolve_active_personality(&settings, active_context.as_ref());
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);

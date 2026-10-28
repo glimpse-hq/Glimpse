@@ -51,10 +51,13 @@ fn app_matches(active_app_name: &str, configured_app_name: &str) -> bool {
 }
 
 fn mode_matches(mode: &Personality, context: &ActiveContext) -> bool {
-    let app_match = mode
-        .apps
-        .iter()
-        .any(|app| app_matches(&context.app_name, app));
+    let app_match = mode.apps.iter().any(|app| {
+        app_matches(&context.app_name, app)
+            || context
+                .process_name
+                .as_deref()
+                .is_some_and(|name| app_matches(name, app))
+    });
     let site_match = if let Some(url) = context.url.as_ref() {
         mode.websites.iter().any(|site| site_matches(url, site))
     } else {

@@ -4,6 +4,8 @@ pub(crate) const AX_MESSAGING_TIMEOUT_SECS: f32 = 2.0;
 
 pub struct ActiveContext {
     pub app_name: String,
+    /// The exe name on Windows, matched alongside `app_name`.
+    pub process_name: Option<String>,
     pub window_title: String,
     pub url: Option<String>,
 }
@@ -114,6 +116,7 @@ mod macos {
 
         Some(ActiveContext {
             app_name,
+            process_name: None,
             window_title,
             url,
         })
@@ -129,19 +132,62 @@ pub use macos::get_active_context;
 mod windows_context {
     use super::ActiveContext;
     use std::path::Path;
-    use windows::Win32::Foundation::{CloseHandle, HWND};
+    use std::sync::mpsc;
+    use std::time::Duration;
+    use windows::Win32::Foundation::{CloseHandle, HWND, LPARAM};
+    use windows::Win32::System::Com::{
+        CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
+        CoUninitialize,
+    };
     use windows::Win32::System::Threading::{
         OpenProcess, PROCESS_NAME_FORMAT, PROCESS_QUERY_LIMITED_INFORMATION,
         QueryFullProcessImageNameW,
     };
-    use windows::Win32::UI::WindowsAndMessaging::{
-        GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
+    use windows::Win32::System::Variant::VARIANT;
+    use windows::Win32::UI::Accessibility::{
+        CUIAutomation8, IUIAutomation, IUIAutomation2, IUIAutomationValuePattern,
+        TreeScope_Descendants, UIA_AutomationIdPropertyId, UIA_ClassNamePropertyId,
+        UIA_ValuePatternId,
     };
-    use windows::core::PWSTR;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        EnumChildWindows, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW,
+        GetWindowThreadProcessId,
+    };
+    use windows::core::{BOOL, Interface, PWSTR};
+
+    // Reading a browser's address bar must never hold up a dictation.
+    const URL_DEADLINE: Duration = Duration::from_millis(150);
+
+    // Browsers whose address bar we read. Other apps match by name only, since
+    // walking their accessibility tree can slow apps built on Chromium.
+    const BROWSERS: &[&str] = &[
+        "arc",
+        "brave",
+        "chrome",
+        "chromium",
+        "comet",
+        "firefox",
+        "floorp",
+        "librewolf",
+        "msedge",
+        "opera",
+        "thorium",
+        "vivaldi",
+        "waterfox",
+        "zen",
+    ];
 
     fn foreground_window() -> Option<HWND> {
         let hwnd = unsafe { GetForegroundWindow() };
         if hwnd.is_invalid() { None } else { Some(hwnd) }
+    }
+
+    fn window_pid(hwnd: HWND) -> u32 {
+        let mut pid = 0u32;
+        unsafe {
+            GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        }
+        pid
     }
 
     fn window_title(hwnd: HWND) -> String {
@@ -178,7 +224,7 @@ mod windows_context {
         Some(String::from_utf16_lossy(&buffer[..size as usize]))
     }
 
-    fn app_name_from_path(path: &str) -> String {
+    fn exe_stem(path: &str) -> String {
         Path::new(path)
             .file_stem()
             .and_then(|stem| stem.to_str())
@@ -187,24 +233,102 @@ mod windows_context {
             .to_string()
     }
 
+    // Store apps draw inside ApplicationFrameHost; the app is the child window's process.
+    fn hosted_app_pid(hwnd: HWND, host_pid: u32) -> Option<u32> {
+        unsafe extern "system" fn visit(child: HWND, lparam: LPARAM) -> BOOL {
+            let found = unsafe { &mut *(lparam.0 as *mut (u32, u32)) };
+            let pid = window_pid(child);
+            if pid != 0 && pid != found.0 {
+                found.1 = pid;
+                return BOOL(0);
+            }
+            BOOL(1)
+        }
+        let mut found = (host_pid, 0u32);
+        unsafe {
+            let _ = EnumChildWindows(
+                Some(hwnd),
+                Some(visit),
+                LPARAM(&mut found as *mut (u32, u32) as isize),
+            );
+        }
+        (found.1 != 0).then_some(found.1)
+    }
+
+    fn browser_url(hwnd: HWND) -> Option<String> {
+        let raw = hwnd.0 as isize;
+        let (tx, rx) = mpsc::channel();
+        // Abandoned on timeout; a hung browser can't block the caller.
+        std::thread::spawn(move || {
+            let _ = tx.send(read_address_bar(HWND(raw as *mut _)));
+        });
+        rx.recv_timeout(URL_DEADLINE).ok().flatten()
+    }
+
+    fn read_address_bar(hwnd: HWND) -> Option<String> {
+        unsafe {
+            CoInitializeEx(None, COINIT_MULTITHREADED).ok().ok()?;
+            let value = query_address_bar(hwnd).ok();
+            CoUninitialize();
+            value.filter(|value| !value.trim().is_empty())
+        }
+    }
+
+    unsafe fn query_address_bar(hwnd: HWND) -> windows::core::Result<String> {
+        unsafe {
+            let uia: IUIAutomation = CoCreateInstance(&CUIAutomation8, None, CLSCTX_INPROC_SERVER)?;
+            if let Ok(uia2) = uia.cast::<IUIAutomation2>() {
+                let timeout = URL_DEADLINE.as_millis() as u32;
+                let _ = uia2.SetConnectionTimeout(timeout);
+                let _ = uia2.SetTransactionTimeout(timeout);
+            }
+            let window = uia.ElementFromHandle(hwnd)?;
+            // Chromium's omnibox, and Firefox's address bar.
+            let chromium = uia.CreatePropertyCondition(
+                UIA_ClassNamePropertyId,
+                &VARIANT::from("OmniboxViewViews"),
+            )?;
+            let firefox = uia.CreatePropertyCondition(
+                UIA_AutomationIdPropertyId,
+                &VARIANT::from("urlbar-input"),
+            )?;
+            let condition = uia.CreateOrCondition(&chromium, &firefox)?;
+            let bar = window.FindFirst(TreeScope_Descendants, &condition)?;
+            let pattern: IUIAutomationValuePattern = bar.GetCurrentPatternAs(UIA_ValuePatternId)?;
+            Ok(pattern.CurrentValue()?.to_string())
+        }
+    }
+
     pub fn get_active_context() -> Option<ActiveContext> {
         let hwnd = foreground_window()?;
-        let mut pid = 0u32;
-        unsafe {
-            GetWindowThreadProcessId(hwnd, Some(&mut pid));
-        }
+        let pid = window_pid(hwnd);
         if pid == 0 {
             return None;
         }
+        let mut path = process_image_path(pid)?;
+        if exe_stem(&path).eq_ignore_ascii_case("ApplicationFrameHost")
+            && let Some(app_pid) = hosted_app_pid(hwnd, pid)
+            && let Some(app_path) = process_image_path(app_pid)
+        {
+            path = app_path;
+        }
 
-        let app_name = process_image_path(pid)
-            .map(|path| app_name_from_path(&path))
-            .filter(|name| !name.is_empty())?;
+        let process_name = exe_stem(&path);
+        if process_name.is_empty() {
+            return None;
+        }
+        let app_name = crate::platform::windows::file_description(Path::new(&path))
+            .unwrap_or_else(|| process_name.clone());
+        let is_browser = BROWSERS
+            .iter()
+            .any(|browser| process_name.eq_ignore_ascii_case(browser));
+        let url = if is_browser { browser_url(hwnd) } else { None };
 
         Some(ActiveContext {
             app_name,
+            process_name: Some(process_name),
             window_title: window_title(hwnd),
-            url: None,
+            url,
         })
     }
 }

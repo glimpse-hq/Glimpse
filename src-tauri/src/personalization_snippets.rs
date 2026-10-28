@@ -264,6 +264,7 @@ mod tests {
     fn extracts_host_from_active_context() {
         let context = ActiveContext {
             app_name: "Safari".to_string(),
+            process_name: None,
             window_title: "https://www.example.com/path".to_string(),
             url: None,
         };
