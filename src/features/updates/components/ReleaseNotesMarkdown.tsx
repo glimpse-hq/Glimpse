@@ -38,7 +38,7 @@ function MarkdownListItem({ children }: { children?: ReactNode }) {
   }
   return (
     <li className="flex items-start gap-3 ui-text-body leading-relaxed ui-color-secondary">
-      <span className="ui-color-warning-strong mt-1 ui-text-meta">●</span>
+      <span className="ui-color-muted mt-1 ui-text-meta">●</span>
       <span className="min-w-0 flex-1">{children}</span>
     </li>
   );
