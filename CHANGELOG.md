@@ -1,3 +1,9 @@
+1.4.1
+
+### Fixes
+
+- Cleanup is now on for your shortcuts after setup, so the cleanup model that downloads during setup actually cleans up your dictation.
+
 1.4.0
 
 ## New Models

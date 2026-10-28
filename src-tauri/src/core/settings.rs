@@ -232,10 +232,31 @@ pub(crate) fn complete_onboarding(
     let mut settings = state.current_settings_unmasked();
     settings.onboarding_completed = true;
     settings.local_model_auto = crate::speech::catalog::is_recommended(&settings);
+    // Onboarding installs the cleanup model for licensed and trial users; it runs once installed.
+    let cleanup_on = crate::license::license_gate_active(&state.settings_store)
+        && crate::cleanup_model::supported();
+    if cleanup_on {
+        settings.llm_enabled = true;
+        for binding in settings
+            .shortcut_bindings
+            .smart
+            .iter_mut()
+            .chain(settings.shortcut_bindings.hold.iter_mut())
+            .chain(settings.shortcut_bindings.toggle.iter_mut())
+        {
+            binding.cleanup_enabled = true;
+        }
+    }
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
+    if cleanup_on {
+        state.request_preflight_refresh();
+        if let Err(err) = pill::register_shortcuts(app) {
+            tracing::warn!("[onboarding] shortcut registration failed: {err}");
+        }
+    }
     state.emit_settings_changed(app, &next);
 
     let smart_shortcut = next
