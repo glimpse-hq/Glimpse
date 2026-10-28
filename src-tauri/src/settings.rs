@@ -779,19 +779,23 @@ pub fn canonicalize_app_locale_or_default(value: &str) -> String {
     canonicalize_app_locale(value).unwrap_or_else(default_app_locale)
 }
 
-/// Decrypts a stored key. On failure the ciphertext is kept so `save` writes it back untouched.
-/// The server or cloud provider to remember: the active one when it is a
-/// service, otherwise the stored one. Settings from 1.3.6 and earlier store
-/// none, and saves that omit the field send an empty one.
-pub(crate) fn llm_service_provider_for(stored: String, active: &str) -> String {
+/// The server or cloud provider to remember: the one given, or when that is
+/// empty, the active provider if it is a service. Settings from 1.3.6 and
+/// earlier store none, and saves that omit the field send an empty one.
+pub(crate) fn llm_service_provider_for(given: String, active: &str) -> String {
     let active = active.trim();
-    if active.is_empty() || active == "none" || crate::llm_cleanup::is_on_device_provider(active) {
-        stored
+    if !given.trim().is_empty()
+        || active.is_empty()
+        || active == "none"
+        || crate::llm_cleanup::is_on_device_provider(active)
+    {
+        given
     } else {
         active.to_string()
     }
 }
 
+/// Decrypts a stored key. On failure the ciphertext is kept so `save` writes it back untouched.
 fn decrypt_stored_setting(encrypted: String, label: &str, cache: &Mutex<Option<String>>) -> String {
     if encrypted.is_empty() {
         *cache.lock() = None;
@@ -1476,11 +1480,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn remembers_the_active_service_provider() {
+    fn remembers_the_chosen_service_provider() {
         assert_eq!(llm_service_provider_for(String::new(), "openai"), "openai");
         assert_eq!(
             llm_service_provider_for("ollama".to_string(), "openai"),
-            "openai"
+            "ollama"
         );
         assert_eq!(
             llm_service_provider_for("ollama".to_string(), "bonsai"),
