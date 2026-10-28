@@ -278,6 +278,9 @@ struct Shared {
     emitter_running: AtomicBool,
     live: live::LiveState,
     follower: Mutex<Option<(String, Instant)>>,
+    // The last saved recording's live transcript, so agents following it
+    // still get the words that settled as it finished.
+    finished: Mutex<Option<(DateTime<Local>, live::LiveTranscript, Instant)>>,
     // Sources the user turned off mid-recording. They record silence.
     microphone_off: AtomicBool,
     system_off: Arc<AtomicBool>,
@@ -362,7 +365,11 @@ impl Shared {
         }
     }
 
-    fn reset(&self) {
+    fn reset(&self, keep_transcript: bool) {
+        let started_at = *self.started_at.lock();
+        *self.finished.lock() = started_at
+            .filter(|_| keep_transcript)
+            .map(|at| (at, self.live.last(), Instant::now()));
         *self.status.lock() = Status::Idle;
         *self.clock.lock() = None;
         self.paused.store(false, Ordering::Relaxed);
@@ -453,6 +460,7 @@ impl Default for RecordingManager {
             emitter_running: AtomicBool::new(false),
             live: live::LiveState::default(),
             follower: Mutex::new(None),
+            finished: Mutex::new(None),
             microphone_off: AtomicBool::new(false),
             system_off: Arc::new(AtomicBool::new(false)),
         });
@@ -1666,7 +1674,7 @@ pub async fn discard_recording_session(app: AppHandle<AppRuntime>) -> RecordingS
     .await;
     let state = app.state::<AppState>();
     let manager = state.recording();
-    manager.shared.reset();
+    manager.shared.reset(false);
     manager.shared.live.publish(&app, false);
     if let Some(summary) = summary {
         analytics::set_activity(Activity::Idle);
@@ -1713,7 +1721,7 @@ pub async fn finish_recording_session(
     .await
     .map_err(|err| err.to_string())?;
 
-    manager.shared.reset();
+    manager.shared.reset(true);
     manager.shared.live.publish(&app, false);
     analytics::set_activity(Activity::Idle);
     match &result {
@@ -1737,6 +1745,9 @@ pub fn get_live_transcript(app: AppHandle<AppRuntime>) -> LiveTranscript {
     app.state::<AppState>().recording().shared.live.last()
 }
 
+// How long a saved recording's live transcript stays readable by agents.
+const FINISHED_TRANSCRIPT_TTL: Duration = Duration::from_secs(120);
+
 /// The live transcript and session start for `follower`, an agent following
 /// the recording. Turns live transcription on while recording, as the live view does.
 pub fn follow_live_transcript(
@@ -1745,7 +1756,14 @@ pub fn follow_live_transcript(
 ) -> Option<(DateTime<Local>, LiveTranscript)> {
     let state = app.state::<AppState>();
     let shared = &state.recording().shared;
-    let started_at = (*shared.started_at.lock())?;
+    let Some(started_at) = *shared.started_at.lock() else {
+        return shared
+            .finished
+            .lock()
+            .as_ref()
+            .filter(|(_, _, saved)| saved.elapsed() < FINISHED_TRANSCRIPT_TTL)
+            .map(|(started_at, transcript, _)| (*started_at, transcript.clone()));
+    };
     let session = shared.state();
     if matches!(session.status, "recording" | "paused") && !session.finish_requested {
         shared.live.set_requested(true);

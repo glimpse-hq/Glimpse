@@ -232,13 +232,10 @@ struct LiveCursor {
     session: Option<String>,
     delivered: HashSet<String>,
     ended: bool,
-    // The recording's latest snapshot; finishing clears the live one.
-    last: Option<Value>,
 }
 
 impl LiveCursor {
-    /// Settled segments not returned yet, including the last ones of a recording
-    /// that just finished. A new recording starts over.
+    /// Settled segments not returned yet. A new recording starts over.
     fn pending(&mut self, snapshot: &Value) -> Vec<LiveSegment> {
         if let Some(started_at) = snapshot["started_at"].as_str()
             && self.session.as_deref() != Some(started_at)
@@ -248,13 +245,7 @@ impl LiveCursor {
                 ..Default::default()
             };
         }
-        let source = if snapshot["started_at"].is_string() {
-            self.last = Some(snapshot.clone());
-            snapshot
-        } else {
-            self.last.as_ref().unwrap_or(snapshot)
-        };
-        live_segments(source)
+        live_segments(snapshot)
             .into_iter()
             .filter(|segment| !self.delivered.contains(&segment.id))
             .collect()
