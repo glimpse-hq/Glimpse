@@ -647,7 +647,8 @@ fn ensure_packaged_icon(app_id: &str, cache_dir: &Path) -> Option<PathBuf> {
 
 // Start menu shortcut names by target exe, so a running app maps back to the
 // name the picker showed ("Command Prompt" for cmd.exe).
-static SHORTCUT_NAMES: Mutex<Option<(Instant, HashMap<String, Vec<String>>)>> = Mutex::new(None);
+type ShortcutNames = HashMap<String, Vec<String>>;
+static SHORTCUT_NAMES: Mutex<Option<(Instant, ShortcutNames)>> = Mutex::new(None);
 const SHORTCUT_NAMES_TTL: Duration = Duration::from_secs(300);
 
 /// The names the app picker lists for a running app: its Start menu shortcut
@@ -673,8 +674,8 @@ pub(crate) fn picker_names(exe_path: &Path, app_id: Option<&str>) -> Vec<String>
     names
 }
 
-fn shortcut_names_by_target() -> HashMap<String, Vec<String>> {
-    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+fn shortcut_names_by_target() -> ShortcutNames {
+    let mut map = ShortcutNames::new();
     let mut stack = windows_start_menu_roots();
     while let Some(dir) = stack.pop() {
         let Ok(entries) = std::fs::read_dir(&dir) else {
