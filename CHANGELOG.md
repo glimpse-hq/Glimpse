@@ -53,6 +53,7 @@
 - Filtering the Library by a tag no longer also matches tags that differ only by an underscore or percent sign.
 - Words and replacements added with `glimpse dictionary` and `glimpse replacements` show up in open windows right away.
 - You can clear the API server's port field and type a new one without it snapping back.
+- File and storage sizes on Mac match Finder.
 - The Microsoft Store version cleans up the working files of failed imports and finished recordings.
 
 1.3.6
