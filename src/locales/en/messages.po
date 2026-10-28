@@ -1201,7 +1201,7 @@ msgstr "{0} saved"
 #. placeholder {0}: closedApps.length
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.closed_many"
-msgstr "{0, plural, one {# selected app isn't running, so it won't be recorded.} other {# selected apps aren't running, so they won't be recorded.}}"
+msgstr "{0, plural, one {# selected app isn't playing audio, so it won't be recorded.} other {# selected apps aren't playing audio, so they won't be recorded.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.transcriptCount
@@ -1264,7 +1264,7 @@ msgstr "{0} I never spent typing. @try_glimpse_app"
 #. placeholder {0}: closedApps[0].name
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.closed_one"
-msgstr "{0} isn't running, so it won't be recorded."
+msgstr "{0} isn't playing audio, so it won't be recorded."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: filteredEntries.length
@@ -4876,7 +4876,7 @@ msgstr "Not installed"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.not_running"
-msgstr "Not running"
+msgstr "Not playing audio"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx

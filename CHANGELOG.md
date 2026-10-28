@@ -44,6 +44,9 @@
 - Library transcripts with detected speakers always show as speaker paragraphs, instead of sometimes falling back to plain text.
 - Copying or exporting a transcript with detected speakers keeps the same order as the speaker view.
 - Personalization modes apply again on Mac, and Edit mode finds the text you selected. Glimpse couldn't tell which app was in front on recent macOS versions.
+- Website modes work on Windows in Chrome, Edge, Brave, Opera, Vivaldi, Arc and Firefox, and app modes recognize apps like Word, Outlook, Teams and Edge.
+- On Windows, Store and system apps like Terminal and Microsoft Store can be added to modes.
+- The Record screen says an app isn't playing audio instead of saying it isn't running.
 - With cleanup on, text pastes sooner, especially when the app you're dictating into is slow to respond.
 - If saving a finished Library transcription fails, Glimpse keeps your previous transcript and shows an error instead of reporting success.
 - Running setup again from Settings no longer resets your shortcuts, cleanup, Auto Dictionary and auto-update settings.

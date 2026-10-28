@@ -889,7 +889,10 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           <AppWindow size={14} className="shrink-0 text-content-muted" />
         ),
         detail: isClosed(app)
-          ? t({ id: "record.setup.apps.not_running", message: "Not running" })
+          ? t({
+              id: "record.setup.apps.not_running",
+              message: "Not playing audio",
+            })
           : undefined,
         selected:
           choices.systemAudio &&
@@ -987,14 +990,14 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           {closedApps.length === 1
             ? t({
                 id: "record.setup.apps.closed_one",
-                message: `${closedApps[0].name} isn't running, so it won't be recorded.`,
+                message: `${closedApps[0].name} isn't playing audio, so it won't be recorded.`,
               })
             : t({
                 id: "record.setup.apps.closed_many",
                 message: plural(closedApps.length, {
-                  one: "# selected app isn't running, so it won't be recorded.",
+                  one: "# selected app isn't playing audio, so it won't be recorded.",
                   other:
-                    "# selected apps aren't running, so they won't be recorded.",
+                    "# selected apps aren't playing audio, so they won't be recorded.",
                 }),
               })}
         </span>
