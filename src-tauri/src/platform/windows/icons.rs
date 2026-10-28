@@ -482,14 +482,181 @@ fn ensure_cached_icon(shortcut_path: &Path, cache_dir: &Path) -> Option<PathBuf>
     wrote_icon.then_some(cached_icon)
 }
 
-fn warm_icon_cache_in_background(pending: Vec<PathBuf>, cache_dir: PathBuf) {
-    if pending.is_empty() {
+// Store and system apps like Terminal, Calculator and Microsoft Store have no
+// Start menu shortcut; the shell's Apps folder lists them by app ID.
+fn collect_packaged_apps(
+    apps: &mut Vec<InstalledApp>,
+    seen: &mut HashSet<String>,
+    icon_cache_dir: Option<&Path>,
+    pending_icon_warmup: &mut Vec<String>,
+) {
+    use windows::Win32::Foundation::S_OK;
+    use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
+    use windows::Win32::UI::Shell::{
+        BHID_EnumItems, FOLDERID_AppsFolder, IEnumShellItems, IShellItem, KF_FLAG_DEFAULT,
+        SHGetKnownFolderItem, SIGDN_NORMALDISPLAY, SIGDN_PARENTRELATIVEPARSING,
+    };
+
+    let hr = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+    let should_uninitialize = hr == S_OK;
+    (|| -> Option<()> {
+        let folder: IShellItem =
+            unsafe { SHGetKnownFolderItem(&FOLDERID_AppsFolder, KF_FLAG_DEFAULT, None).ok()? };
+        let items: IEnumShellItems = unsafe { folder.BindToHandler(None, &BHID_EnumItems).ok()? };
+        loop {
+            let mut slot = [None];
+            let mut fetched = 0u32;
+            if unsafe { items.Next(&mut slot, Some(&mut fetched)) }.is_err() || fetched == 0 {
+                break;
+            }
+            let Some(item) = slot[0].take() else {
+                break;
+            };
+            // Packaged app IDs look like "Microsoft.WindowsTerminal_8wekyb3d8bbwe!App";
+            // desktop apps already come from their shortcuts.
+            let Some(app_id) = shell_item_name(&item, SIGDN_PARENTRELATIVEPARSING) else {
+                continue;
+            };
+            if !app_id.contains('!') {
+                continue;
+            }
+            let Some(name) = shell_item_name(&item, SIGDN_NORMALDISPLAY) else {
+                continue;
+            };
+            let name = name.trim();
+            if name.is_empty() || is_blacklisted_shortcut(name) || !seen.insert(name.to_lowercase())
+            {
+                continue;
+            }
+            let path = packaged_app_path(&app_id);
+            let icon_path = icon_cache_dir.and_then(|cache_dir| {
+                let cached = icon_cache_file_path(Path::new(&path), cache_dir);
+                if cached.exists() {
+                    Some(cached.to_string_lossy().to_string())
+                } else {
+                    pending_icon_warmup.push(app_id.clone());
+                    None
+                }
+            });
+            apps.push(InstalledApp {
+                name: name.to_string(),
+                path,
+                icon_path,
+            });
+        }
+        Some(())
+    })();
+    if should_uninitialize {
+        unsafe { CoUninitialize() };
+    }
+}
+
+fn packaged_app_path(app_id: &str) -> String {
+    format!("shell:AppsFolder\\{app_id}")
+}
+
+fn shell_item_name(
+    item: &windows::Win32::UI::Shell::IShellItem,
+    kind: windows::Win32::UI::Shell::SIGDN,
+) -> Option<String> {
+    use windows::Win32::System::Com::CoTaskMemFree;
+    unsafe {
+        let name = item.GetDisplayName(kind).ok()?;
+        let text = name.to_string().ok();
+        CoTaskMemFree(Some(name.0 as *const _));
+        text
+    }
+}
+
+fn ensure_packaged_icon(app_id: &str, cache_dir: &Path) -> Option<PathBuf> {
+    use std::ffi::c_void;
+    use windows::Win32::Foundation::{S_OK, SIZE};
+    use windows::Win32::Graphics::Gdi::{
+        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleDC, DIB_RGB_COLORS, DeleteDC,
+        DeleteObject, GetDIBits,
+    };
+    use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
+    use windows::Win32::UI::Shell::{
+        IShellItem, IShellItemImageFactory, SHCreateItemFromParsingName, SIIGBF_ICONONLY,
+    };
+    use windows::core::{HSTRING, Interface};
+
+    let path = packaged_app_path(app_id);
+    let cached = icon_cache_file_path(Path::new(&path), cache_dir);
+    if cached.exists() {
+        return Some(cached);
+    }
+
+    let hr = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+    let should_uninitialize = hr == S_OK;
+    let pixels = (|| -> Option<Vec<u8>> {
+        let item: IShellItem =
+            unsafe { SHCreateItemFromParsingName(&HSTRING::from(path.as_str()), None).ok()? };
+        let factory: IShellItemImageFactory = item.cast().ok()?;
+        let size = SIZE {
+            cx: WINDOWS_ICON_SIZE,
+            cy: WINDOWS_ICON_SIZE,
+        };
+        let bitmap = unsafe { factory.GetImage(size, SIIGBF_ICONONLY).ok()? };
+        let mut info = BITMAPINFO {
+            bmiHeader: BITMAPINFOHEADER {
+                biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                biWidth: WINDOWS_ICON_SIZE,
+                biHeight: -WINDOWS_ICON_SIZE,
+                biPlanes: 1,
+                biBitCount: 32,
+                biCompression: BI_RGB.0,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let mut pixels = vec![0u8; (WINDOWS_ICON_SIZE * WINDOWS_ICON_SIZE * 4) as usize];
+        let dc = unsafe { CreateCompatibleDC(None) };
+        let rows = unsafe {
+            GetDIBits(
+                dc,
+                bitmap,
+                0,
+                WINDOWS_ICON_SIZE as u32,
+                Some(pixels.as_mut_ptr() as *mut c_void),
+                &mut info,
+                DIB_RGB_COLORS,
+            )
+        };
+        unsafe {
+            let _ = DeleteDC(dc);
+            let _ = DeleteObject(bitmap.into());
+        }
+        (rows == WINDOWS_ICON_SIZE).then_some(pixels)
+    })();
+    if should_uninitialize {
+        unsafe { CoUninitialize() };
+    }
+
+    write_bgra_png(
+        &cached,
+        WINDOWS_ICON_SIZE as u32,
+        WINDOWS_ICON_SIZE as u32,
+        &pixels?,
+    )?;
+    Some(cached)
+}
+
+fn warm_icon_cache_in_background(
+    pending: Vec<PathBuf>,
+    pending_packaged: Vec<String>,
+    cache_dir: PathBuf,
+) {
+    if pending.is_empty() && pending_packaged.is_empty() {
         return;
     }
 
     std::thread::spawn(move || {
         for shortcut_path in pending {
             let _ = ensure_cached_icon(&shortcut_path, &cache_dir);
+        }
+        for app_id in pending_packaged {
+            let _ = ensure_packaged_icon(&app_id, &cache_dir);
         }
     });
 }
@@ -509,10 +676,17 @@ pub fn list_installed_apps(app: &AppHandle<AppRuntime>) -> Result<Vec<InstalledA
             &mut pending_icon_warmup,
         );
     }
+    let mut pending_packaged = Vec::new();
+    collect_packaged_apps(
+        &mut apps,
+        &mut seen,
+        icon_cache_dir.as_deref(),
+        &mut pending_packaged,
+    );
 
     apps.sort_by_key(|app| app.name.to_lowercase());
     if let Some(cache_dir) = icon_cache_dir {
-        warm_icon_cache_in_background(pending_icon_warmup, cache_dir);
+        warm_icon_cache_in_background(pending_icon_warmup, pending_packaged, cache_dir);
     }
     Ok(apps)
 }
