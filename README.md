@@ -80,7 +80,7 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 | ------------ | ----------------- | ----------------------------------------- |
 | **Solo**     | $25 one-time      | You, on 1 device                          |
 | **Plus**     | $39 one-time      | You, on up to 3 devices                   |
-| **Business** | $48 / seat / year | Work use, one seat per person, one device |
+| **Business** | $60 / seat / year | Work use, one seat per person, one device |
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 
