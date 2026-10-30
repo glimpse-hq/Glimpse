@@ -125,6 +125,10 @@ export const NATIVE_MENU_STRINGS = [
     message: "{subject} is unreachable.",
   }),
   msg({
+    id: "native.provider.cleanup_language_unsupported",
+    message: "The cleanup model doesn't support this language yet.",
+  }),
+  msg({
     id: "native.provider.fallback_local",
     message: "Using your local model instead.",
   }),

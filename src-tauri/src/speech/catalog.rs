@@ -1221,7 +1221,8 @@ pub const CLEANUP_MODEL_MANIFEST: LocalModelManifest = LocalModelManifest {
     tags: &[],
     category: MODEL_CATEGORY_CLEANUP,
     engine: LocalModelEngine::Transcribe,
-    languages: Languages::None,
+    // Trained on the Parakeet V3 languages.
+    languages: Languages::ParakeetV3,
     variant: "2B",
     files: CLEANUP_MODEL_FILES,
     capabilities: &[],
@@ -1272,6 +1273,14 @@ pub(crate) fn user_languages(settings: &UserSettings) -> Vec<String> {
         }
     }
     languages
+}
+
+/// Whether the cleanup model was trained on `language`, a code like "ja" or "pt-BR".
+pub(crate) fn cleanup_model_supports(language: &str) -> bool {
+    let code = base_language(language);
+    supported_languages(&CLEANUP_MODEL_MANIFEST)
+        .iter()
+        .any(|supported| supported.code == code)
 }
 
 pub(crate) fn covers(manifest: &LocalModelManifest, languages: &[String]) -> usize {

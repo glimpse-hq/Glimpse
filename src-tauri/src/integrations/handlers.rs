@@ -428,9 +428,16 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
         .and_then(Value::as_bool)
         .unwrap_or(settings.cleanup_enabled);
     let mut llm_cleaned = false;
-    if want_cleanup && crate::llm_cleanup::is_llm_available(&settings) {
+    let routed = crate::llm_cleanup::settings_for_language(&settings, success.language.as_deref());
+    if want_cleanup
+        && let Some(llm_settings) = routed.as_deref()
+        && crate::llm_cleanup::is_llm_available(llm_settings)
+    {
         match tauri::async_runtime::block_on(crate::llm_cleanup::cleanup_transcription(
-            &http, &text, &settings, None,
+            &http,
+            &text,
+            llm_settings,
+            None,
         )) {
             Ok(cleaned) => {
                 text = cleaned;

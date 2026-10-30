@@ -156,7 +156,7 @@ describe("transcription languages", () => {
     ];
     const parakeet = model({ supported_languages: langs("en") });
     const options = buildActiveTranscriptionLanguageOptions(
-      parakeet,
+      [parakeet],
       all,
       false,
       "Auto",
@@ -172,7 +172,7 @@ describe("transcription languages", () => {
     expect(options[2]).toMatchObject({ isHeader: true, prominentHeader: true });
 
     const remote = buildActiveTranscriptionLanguageOptions(
-      parakeet,
+      [parakeet],
       all,
       true,
       "Auto",
