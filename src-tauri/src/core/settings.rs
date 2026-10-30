@@ -232,10 +232,31 @@ pub(crate) fn complete_onboarding(
     let mut settings = state.current_settings_unmasked();
     settings.onboarding_completed = true;
     settings.local_model_auto = crate::speech::catalog::is_recommended(&settings);
+    // Onboarding installs the cleanup model for licensed and trial users; it runs once installed.
+    let cleanup_on = crate::license::license_gate_active(&state.settings_store)
+        && crate::cleanup_model::supported();
+    if cleanup_on {
+        settings.llm_enabled = true;
+        for binding in settings
+            .shortcut_bindings
+            .smart
+            .iter_mut()
+            .chain(settings.shortcut_bindings.hold.iter_mut())
+            .chain(settings.shortcut_bindings.toggle.iter_mut())
+        {
+            binding.cleanup_enabled = true;
+        }
+    }
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
+    if cleanup_on {
+        state.request_preflight_refresh();
+        if let Err(err) = pill::register_shortcuts(app) {
+            tracing::warn!("[onboarding] shortcut registration failed: {err}");
+        }
+    }
     state.emit_settings_changed(app, &next);
 
     let smart_shortcut = next
@@ -301,6 +322,8 @@ pub(crate) fn update_settings(
     let license_active = crate::license::license_gate_active(&state.settings_store);
     let active_license = crate::license::active_license_gate(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
+
+    let models_dir = crate::speech::install::model_cache_dir(app).ok();
 
     let requested_auto_launch_enabled = args.auto_launch_enabled;
     let launch_changed = previous.auto_launch_enabled != requested_auto_launch_enabled;
@@ -388,6 +411,16 @@ pub(crate) fn update_settings(
         next.local_api_model = args.local_api_model;
         next.local_api_host = crate::settings::canonicalize_local_api_host(&args.local_api_host);
         next.local_api_cors = args.local_api_cors;
+        // On Automatic a new language switches at once to an installed model
+        // that covers it; follow_model_upgrade below downloads one otherwise.
+        if follows_new_languages(prev, next)
+            && let Some(target) = crate::speech::catalog::model_upgrade_target(next)
+            && models_dir
+                .as_deref()
+                .is_some_and(|dir| crate::speech::install::check_model_installed_at(dir, target))
+        {
+            next.local_model = target.to_string();
+        }
     });
 
     let (prev, next) = match result {
@@ -429,6 +462,9 @@ pub(crate) fn update_settings(
     }
 
     state.emit_settings_changed(app, &next);
+    if follows_new_languages(&prev, &next) {
+        crate::speech::follow_model_upgrade(app);
+    }
 
     analytics::track_settings_changes(app, &prev, &next);
 
@@ -453,6 +489,12 @@ pub(crate) fn update_settings(
         settings: state.settings_for_response(next),
         shortcut_error,
     })
+}
+
+/// Automatic is on and the languages it picks the model for changed.
+fn follows_new_languages(prev: &UserSettings, next: &UserSettings) -> bool {
+    use crate::speech::catalog::user_languages;
+    next.local_model_auto && user_languages(prev) != user_languages(next)
 }
 
 #[cfg(test)]

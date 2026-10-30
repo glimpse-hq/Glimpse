@@ -1,11 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
 import { type ReactNode } from "react";
-import {
-  SpinnerGap as Loader2,
-  PencilSimple,
-  CaretRight,
-} from "@phosphor-icons/react";
+import { SpinnerGap as Loader2, PencilSimple } from "@phosphor-icons/react";
 import { shortcutDisplayParts } from "../../../shared/lib/shortcuts";
 import { useInputDevices } from "../../settings/queries";
 import { Dropdown } from "../../../shared/ui/Dropdown";
@@ -22,8 +18,8 @@ interface ReadyStepProps {
   stepMotionProps: StepMotionProps;
   smartShortcut: string;
   onSetShortcut: (shortcut: string) => void;
-  modelLabel: string | null;
-  onEditModel: () => void;
+  speechModelError: string | null;
+  onRetrySpeechModel: () => void;
   microphoneDevice: string | null;
   onSetMicrophoneDevice: (device: string | null) => void;
   autoLaunch: boolean;
@@ -37,8 +33,8 @@ export function ReadyStep({
   stepMotionProps,
   smartShortcut,
   onSetShortcut,
-  modelLabel,
-  onEditModel,
+  speechModelError,
+  onRetrySpeechModel,
   microphoneDevice,
   onSetMicrophoneDevice,
   autoLaunch,
@@ -61,30 +57,69 @@ export function ReadyStep({
       stepKey="done"
       motionProps={stepMotionProps}
       footer={
-        <button
-          type="button"
-          onClick={onComplete}
-          disabled={isCompleting}
-          aria-busy={isCompleting}
-          className={PRIMARY_BUTTON_CLASS}
-        >
-          {isCompleting ? (
-            <>
-              <Loader2 size={14} className="animate-spin" />
-              {t({ id: "onboarding.done.saving", message: "Saving..." })}
-            </>
-          ) : (
-            t({ id: "onboarding.done.cta", message: "Start dictating" })
-          )}
-        </button>
+        <>
+          <button
+            // One button per action, so a double click on Retry can't also
+            // press Start dictating.
+            key={speechModelError ? "retry" : "start"}
+            type="button"
+            onClick={speechModelError ? onRetrySpeechModel : onComplete}
+            disabled={isCompleting}
+            aria-busy={isCompleting}
+            className={PRIMARY_BUTTON_CLASS}
+          >
+            {isCompleting ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                {t({ id: "onboarding.done.saving", message: "Saving..." })}
+              </>
+            ) : speechModelError ? (
+              t({
+                id: "onboarding.speech_model_retry",
+                message: "Retry download",
+              })
+            ) : (
+              t({ id: "onboarding.done.cta", message: "Start dictating" })
+            )}
+          </button>
+          <div className="flex min-h-5 items-center justify-center">
+            {speechModelError ? (
+              <button
+                type="button"
+                onClick={onComplete}
+                disabled={isCompleting}
+                className="ui-text-body-sm text-content-muted transition-colors hover:text-content-primary disabled:pointer-events-none"
+              >
+                {t({ id: "onboarding.first_dictation.later", message: "Skip" })}
+              </button>
+            ) : completionError ? (
+              <p role="status" className="ui-text-meta text-error">
+                {completionError}
+              </p>
+            ) : null}
+          </div>
+        </>
       }
     >
       <OnboardingHeader
-        title={t({ id: "onboarding.done.title", message: "You're set" })}
-        subtitle={t({
-          id: "onboarding.done.subtitle",
-          message: "Press your shortcut in any app to dictate.",
-        })}
+        title={
+          speechModelError
+            ? t({
+                id: "onboarding.downloads.failed",
+                message: "Download failed",
+              })
+            : t({ id: "onboarding.done.title", message: "You're set" })
+        }
+        subtitle={
+          speechModelError ? (
+            <span role="status">{completionError ?? speechModelError}</span>
+          ) : (
+            t({
+              id: "onboarding.done.subtitle.v2",
+              message: "You can change these later in Settings.",
+            })
+          )
+        }
       />
 
       <div className="w-full divide-y divide-border-secondary border-y border-border-secondary text-left">
@@ -133,29 +168,6 @@ export function ReadyStep({
             />
           </button>
         </Row>
-
-        {modelLabel ? (
-          <Row
-            label={t({
-              id: "onboarding.done.recap.model.v2",
-              message: "Speech model",
-            })}
-          >
-            <button
-              type="button"
-              onClick={onEditModel}
-              className="group flex min-w-0 max-w-[16rem] items-center justify-end gap-1.5"
-            >
-              <span className="truncate ui-text-body-sm-strong text-content-primary">
-                {modelLabel}
-              </span>
-              <CaretRight
-                size={12}
-                className="shrink-0 text-content-disabled transition-colors group-hover:text-content-secondary"
-              />
-            </button>
-          </Row>
-        ) : null}
 
         <Row
           label={t({
@@ -221,10 +233,6 @@ export function ReadyStep({
           </span>
         </button>
       </div>
-
-      {completionError ? (
-        <p className="mt-4 ui-text-meta text-error">{completionError}</p>
-      ) : null}
     </OnboardingStep>
   );
 }

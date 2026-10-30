@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence } from "framer-motion";
+import { Broom } from "@phosphor-icons/react";
 import {
   CLOUD_PROVIDERS,
   getProviderPreset,
@@ -8,7 +9,16 @@ import {
   type LlmProviderPreset,
 } from "../../../shared/lib/llmProviders";
 import type { DownloadEvent, LlmProvider } from "../../../types";
-import { useCleanupModel, useFetchLlmModels } from "../models-queries";
+import {
+  useCleanupModel,
+  useFetchLlmModels,
+  useModelRecommendation,
+} from "../models-queries";
+import { useSettings } from "../queries";
+import {
+  languageName,
+  languageSupportedByModel,
+} from "../../../shared/lib/transcriptionLanguages";
 import ModelRow, { type ModelRowState } from "./ModelRow";
 import ProviderCard from "./ProviderCard";
 import ProviderSheet, {
@@ -39,6 +49,8 @@ type LanguageModelListProps = {
   setLlmServiceProvider: (value: string) => void;
   llmAuto: boolean;
   setLlmAuto: (value: boolean) => void;
+  cleanupOffEverywhere: boolean;
+  onOpenShortcuts: () => void;
   licenseGateActive: boolean;
   downloadState: Record<string, DownloadEvent>;
   onDownload: (modelKey: string, ane?: boolean) => void;
@@ -71,12 +83,16 @@ const LanguageModelList = ({
   setLlmServiceProvider,
   llmAuto,
   setLlmAuto,
+  cleanupOffEverywhere,
+  onOpenShortcuts,
   licenseGateActive,
   downloadState,
   onDownload,
 }: LanguageModelListProps) => {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const cleanupModel = useCleanupModel().data;
+  const dictationLanguage = useSettings().data?.language ?? "";
+  const userLanguages = useModelRecommendation().data?.languages;
   const cleanupDownload = cleanupModel
     ? downloadState[cleanupModel.key]
     : undefined;
@@ -177,6 +193,26 @@ const LanguageModelList = ({
               message: "Not supported",
             })
           : null;
+  // Like the backend: the dictation language, or on Auto the user's
+  // languages, one of which the cleanup model has to know.
+  const cleanupLanguages = dictationLanguage
+    ? [dictationLanguage.split("-")[0]]
+    : (userLanguages ?? []);
+  const missingLanguage =
+    cleanupModel &&
+    cleanupLanguages.length > 0 &&
+    !cleanupLanguages.some((code) =>
+      languageSupportedByModel(cleanupModel, code),
+    )
+      ? languageName(cleanupLanguages[0], i18n.locale)
+      : null;
+  const cleanupLanguageNote = missingLanguage
+    ? t({
+        id: "settings.models.language.cleanup_language_unsupported",
+        message: `Glimpse C1 doesn't support ${missingLanguage} yet.`,
+      })
+    : null;
+  const cleanupModelSelected = isActive("bonsai") || chosenButBlocked("bonsai");
   const cleanupModelFacts = [
     t({
       id: "settings.models.language.g1_description",
@@ -252,10 +288,13 @@ const LanguageModelList = ({
           facts={
             chosenButBlocked("bonsai") && cleanupModelBlocker
               ? cleanupModelBlocker
-              : withNote("bonsai", cleanupModelFacts)
+              : cleanupModelSelected && cleanupLanguageNote
+                ? cleanupLanguageNote
+                : withNote("bonsai", cleanupModelFacts)
           }
           factsWarning={
-            chosenButBlocked("bonsai") && Boolean(cleanupModelBlocker)
+            (chosenButBlocked("bonsai") && Boolean(cleanupModelBlocker)) ||
+            (cleanupModelSelected && cleanupLanguageNote !== null)
           }
           state={
             isActive("bonsai")
@@ -301,6 +340,32 @@ const LanguageModelList = ({
           }
         />
       )}
+      <p
+        aria-live="polite"
+        className="col-span-3 mt-3 flex min-h-5 items-center gap-1.5 px-2.5 ui-text-meta ui-color-muted"
+      >
+        {licenseGateActive && cleanupOffEverywhere && (
+          <>
+            <Broom size={13} aria-hidden="true" className="shrink-0" />
+            <span>
+              {t({
+                id: "settings.models.cleanup_off",
+                message: "Cleanup is off for all your shortcuts.",
+              })}{" "}
+              <button
+                type="button"
+                onClick={onOpenShortcuts}
+                className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
+              >
+                {t({
+                  id: "settings.models.cleanup_off.shortcuts",
+                  message: "Shortcuts",
+                })}
+              </button>
+            </span>
+          </>
+        )}
+      </p>
       <AnimatePresence>
         {sheetOpen && (
           <ProviderSheet

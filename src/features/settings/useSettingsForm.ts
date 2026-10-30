@@ -31,6 +31,7 @@ import { useLicenseGate, useLicenseState } from "../license/queries";
 import {
   buildActiveTranscriptionLanguageOptions,
   collectAllTranscriptionLanguages,
+  languageSupportedByAny,
   languageSupportedByModel,
 } from "../../shared/lib/transcriptionLanguages";
 import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
@@ -54,6 +55,7 @@ import {
   useCliInstallStatus,
   useDiarizerModel,
   useModelCatalog,
+  useModelRecommendation,
   useModelStatuses,
 } from "./models-queries";
 import type {
@@ -535,6 +537,22 @@ export function useSettingsForm({
     () => modelCatalog.find((model) => model.key === localModel),
     [modelCatalog, localModel],
   );
+  const localModelAuto = settingsQuery.data?.local_model_auto ?? false;
+  const recommendedModelKeys = useModelRecommendation().data?.recommended;
+  // On Automatic the model follows the language, so any language a
+  // recommended model covers can be chosen. Empty until known, so nothing
+  // resets the language meanwhile.
+  const languageModels = useMemo(
+    () =>
+      localModelAuto && !recommendedModelKeys
+        ? []
+        : modelCatalog.filter(
+            (model) =>
+              model.key === localModel ||
+              (localModelAuto && recommendedModelKeys?.includes(model.key)),
+          ),
+    [modelCatalog, localModel, localModelAuto, recommendedModelKeys],
+  );
   const autoTranscriptionLanguageLabel = i18n._(
     msg({
       id: "transcription.language.auto",
@@ -576,7 +594,7 @@ export function useSettingsForm({
   const displayedLanguageOptions = useMemo(
     () =>
       buildActiveTranscriptionLanguageOptions(
-        activeLocalModel,
+        languageModels,
         allTranscriptionLanguages,
         remoteSpeechActive,
         autoTranscriptionLanguageLabel,
@@ -584,7 +602,7 @@ export function useSettingsForm({
         unsupportedTranscriptionLanguageDescription,
       ),
     [
-      activeLocalModel,
+      languageModels,
       allTranscriptionLanguages,
       remoteSpeechActive,
       autoTranscriptionLanguageLabel,
@@ -610,12 +628,12 @@ export function useSettingsForm({
     if (loading || !language) return;
     if (
       !remoteSpeechActive &&
-      activeLocalModel &&
-      !languageSupportedByModel(activeLocalModel, language)
+      languageModels.length > 0 &&
+      !languageSupportedByAny(languageModels, language)
     ) {
       setLanguage("");
     }
-  }, [activeLocalModel, language, loading, remoteSpeechActive]);
+  }, [languageModels, language, loading, remoteSpeechActive]);
 
   const buildSettingsArgs = useCallback(
     (overrides: SaveSettingsOverrides = {}): settingsApi.UpdateSettingsArgs => {
@@ -645,14 +663,14 @@ export function useSettingsForm({
         llmProvider,
         llmEndpoint,
       );
-      const modelToValidate = overrides.localModel
-        ? modelCatalog.find((model) => model.key === overrides.localModel)
-        : activeLocalModel;
+      const modelsToValidate = overrides.localModel
+        ? modelCatalog.filter((model) => model.key === overrides.localModel)
+        : languageModels;
       const persistedLanguage =
         overrides.language ??
         (!remoteSpeechActive &&
-        modelToValidate &&
-        !languageSupportedByModel(modelToValidate, language)
+        modelsToValidate.length > 0 &&
+        !languageSupportedByAny(modelsToValidate, language)
           ? ""
           : language);
 
@@ -722,7 +740,7 @@ export function useSettingsForm({
       toggleShortcut,
       transcriptionMode,
       localModel,
-      activeLocalModel,
+      languageModels,
       remoteSpeechEnabled,
       remoteSpeechActive,
       remoteSpeechProvider,
@@ -1286,6 +1304,13 @@ export function useSettingsForm({
     [discardInvalidShortcutDraft, updateShortcutBindings],
   );
 
+  const assignedBindings = Object.values(shortcutBindings)
+    .flat()
+    .filter((binding) => binding.shortcut.trim() !== "");
+  const cleanupOffEverywhere =
+    assignedBindings.length > 0 &&
+    !assignedBindings.some((binding) => binding.cleanup_enabled);
+
   const addShortcutBinding = useCallback(
     (mode: ShortcutMode) => {
       clearPendingSettingsSave();
@@ -1750,6 +1775,7 @@ export function useSettingsForm({
     addShortcutBinding,
     removeShortcutBinding,
     moveShortcutBinding,
+    cleanupOffEverywhere,
 
     llmProvider,
     setLlmProvider,

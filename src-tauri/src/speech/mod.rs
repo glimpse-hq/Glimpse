@@ -165,7 +165,8 @@ pub(crate) fn upgrade_retired_diarizers(app: &AppHandle<AppRuntime>) {
     });
 }
 
-/// Turning Automatic off keeps the current model and stops a switch in progress.
+/// Turning Automatic on selects the recommendation at once when it's installed.
+/// Turning it off keeps the current model and stops a switch in progress.
 #[tauri::command]
 pub(crate) fn set_local_model_auto(
     app: AppHandle<AppRuntime>,
@@ -177,6 +178,13 @@ pub(crate) fn set_local_model_auto(
         state.cancel_download(target);
     }
     settings.local_model_auto = enabled;
+    if let Some(target) = catalog::model_upgrade_target(&settings)
+        && enabled
+        && install::check_model_status(app.clone(), target.to_string())
+            .is_ok_and(|status| status.installed)
+    {
+        settings.local_model = target.to_string();
+    }
     menu::persist_menu_settings(&app, settings).ok_or("Failed to save settings")?;
     follow_model_upgrade(&app);
     Ok(())
@@ -213,7 +221,7 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
             tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         }
 
-        // Switch only to a model that loads: the old one is deleted below, so a
+        // Switch only to a model that loads: a retiring one is deleted below, so a
         // failure here keeps it and retries on the next launch.
         let loader = app.clone();
         let loaded = tauri::async_runtime::spawn_blocking(move || {
@@ -265,7 +273,9 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
                 ..Default::default()
             },
         );
-        if previous != saved.local_api_model
+        // Only a retiring model is removed; models the user downloaded stay.
+        if catalog::successor_of(&previous) == Some(target)
+            && previous != saved.local_api_model
             && let Err(err) = install::delete_model(app.clone(), previous.clone()).await
         {
             tracing::warn!("[speech] could not remove {previous}: {err}");

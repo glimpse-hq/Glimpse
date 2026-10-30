@@ -8,6 +8,7 @@ import AccountTab from "./tabs/AccountTab";
 import GeneralTab from "./tabs/GeneralTab";
 import LocalApiTab from "./tabs/LocalApiTab";
 import LockedFeature from "../../license/components/LockedFeature";
+import { useLicenseState } from "../../license/queries";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
 import type { PurchaseSource } from "../../license/purchaseConfig";
@@ -40,7 +41,27 @@ const SettingsScreen = ({
     onLicenseKeyFocused?.();
   }, [onLicenseKeyFocused]);
   const form = useSettingsForm({ pane, active, onClose });
+  const licenseLoading = useLicenseState().isLoading;
   const localApiLocked = !form.activeLicense;
+
+  // Same frame as the locked main views: no pane header, app type scale.
+  if (pane === "api" && (licenseLoading || localApiLocked)) {
+    return (
+      <div className="flex flex-1 flex-col min-h-0 px-8 pb-6">
+        {!licenseLoading && (
+          <div className="flex min-h-0 flex-1 flex-col pt-8">
+            <LockedFeature
+              feature="api"
+              onEnterKey={() => {
+                setApiLicenseKeyFocus(true);
+                onPaneChange("account");
+              }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="settings-typescale flex flex-1 flex-col min-h-0">
@@ -140,6 +161,8 @@ const SettingsScreen = ({
                 setLlmServiceProvider={form.setLlmServiceProvider}
                 llmAuto={form.llmAuto}
                 setLlmAuto={form.setLlmAuto}
+                cleanupOffEverywhere={form.cleanupOffEverywhere}
+                onOpenShortcuts={() => onPaneChange("general")}
                 licenseGateActive={form.licenseGateActive}
                 setLocalModel={form.setLocalModel}
                 handleDownload={form.handleDownload}
@@ -204,18 +227,7 @@ const SettingsScreen = ({
               />
             )}
 
-            {pane === "api" && localApiLocked && (
-              <LockedFeature
-                key="api-locked"
-                feature="api"
-                onEnterKey={() => {
-                  setApiLicenseKeyFocus(true);
-                  onPaneChange("account");
-                }}
-              />
-            )}
-
-            {pane === "api" && !localApiLocked && (
+            {pane === "api" && (
               <LocalApiTab
                 key="api"
                 modelCatalog={form.modelCatalog}

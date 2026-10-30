@@ -73,6 +73,11 @@ pub(crate) fn retry_llm_cleanup(
     if !llm_cleanup::is_llm_available(&settings) {
         return Err("Choose a language model in Settings -> Models.".to_string());
     }
+    // Saved entries don't store their language, so the current setting can't block them.
+    let settings = match llm_cleanup::settings_for_language(&settings, None) {
+        Some(chosen) => chosen.into_owned(),
+        None => settings.clone(),
+    };
     let llm_model = llm_cleanup::resolved_model_label(&settings);
     crate::analytics::dictation::track_cleanup_action(
         app,

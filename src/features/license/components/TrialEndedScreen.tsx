@@ -11,6 +11,8 @@ import {
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -19,10 +21,12 @@ import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 import { useTauriEvent } from "../../../shared/hooks/useTauriEvent";
 import {
   dismissTrialEndedScreen,
-  openCheckout,
+  trackTrialEndedChoice,
+  type TrialEndedChoice,
   type TrialEndedScreen as Summary,
 } from "../api";
-import { licenseKeys } from "../queries";
+import { pricingUrlFor } from "../purchaseConfig";
+import { licenseKeys, usePlanPrice } from "../queries";
 
 type TrialEndedScreenProps = {
   summary: Summary;
@@ -34,6 +38,8 @@ type TrialEndedScreenProps = {
 const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
   const { t } = useLingui();
   const queryClient = useQueryClient();
+  // The pricing page offers every plan, so the button shows the lowest price.
+  const startingPrice = usePlanPrice("solo");
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmingFree, setConfirmingFree] = useState(false);
@@ -45,6 +51,32 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
       () => {},
     );
   }, []);
+
+  const chosenRef = useRef(new Set<TrialEndedChoice>());
+  const choose = useCallback((choice: TrialEndedChoice) => {
+    if (chosenRef.current.has(choice)) return;
+    chosenRef.current.add(choice);
+    void trackTrialEndedChoice(choice).catch(() => {});
+  }, []);
+
+  // Closing the window leaves the screen unanswered; it shows again next time.
+  useEffect(() => {
+    let cancelled = false;
+    let unlisten: (() => void) | undefined;
+    getCurrentWindow()
+      .listen("tauri://close-requested", () => {
+        if (chosenRef.current.size === 0) choose("closed");
+      })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlisten = fn;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, [choose]);
 
   // Continuing for free also removes the models only paid features use.
   const dismiss = useCallback(
@@ -63,10 +95,11 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
   useTauriEvent("license:checkout-returned", () => dismiss(false));
 
   const buy = async () => {
+    choose("buy");
     setError(null);
     setOpening(true);
     try {
-      await openCheckout({ tier: "plus", source: "trial_ended" });
+      await openUrl(pricingUrlFor("trial_ended"));
     } catch (err) {
       setError(String(err));
     } finally {
@@ -157,24 +190,33 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
             disabled={opening}
             className="ui-button-primary flex h-10 w-full items-center justify-center gap-2 rounded-lg ui-text-body-sm"
           >
-            {t({ id: "trial_ended.get_plus", message: "Get Glimpse Plus" })}
-            {opening ? (
-              <CircleNotch
-                size={13}
-                className="animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <ArrowUpRight size={13} aria-hidden="true" />
-            )}
+            {t({
+              id: "trial_ended.unlock.v4",
+              message: "Unlock everything",
+            })}
+            <span className="flex items-center gap-2 ui-text-meta tabular-nums opacity-70">
+              {startingPrice}
+              {opening ? (
+                <CircleNotch
+                  size={13}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <ArrowUpRight size={13} aria-hidden="true" />
+              )}
+            </span>
           </button>
           <button
             type="button"
-            onClick={() =>
-              installedModels.length > 0
-                ? setConfirmingFree(true)
-                : dismiss(true)
-            }
+            onClick={() => {
+              if (installedModels.length > 0) {
+                setConfirmingFree(true);
+                return;
+              }
+              choose("continue_free");
+              dismiss(true);
+            }}
             className="flex h-10 w-full items-center justify-center rounded-lg bg-[var(--surface-interactive)] ui-text-body-sm ui-color-primary transition-colors hover:bg-[var(--surface-interactive-strong)]"
           >
             {t({
@@ -185,6 +227,7 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
           <button
             type="button"
             onClick={() => {
+              choose("enter_key");
               dismiss(false);
               onEnterKey();
             }}
@@ -259,6 +302,7 @@ const TrialEndedScreen = ({ summary, onEnterKey }: TrialEndedScreenProps) => {
                     type="button"
                     onClick={() => {
                       setConfirmingFree(false);
+                      choose("continue_free");
                       dismiss(true);
                     }}
                     className="h-9 rounded-lg bg-[var(--surface-interactive)] ui-text-body-sm font-medium text-error transition-colors hover:bg-[var(--surface-interactive-strong)]"

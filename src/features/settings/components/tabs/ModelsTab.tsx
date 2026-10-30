@@ -36,6 +36,10 @@ import {
 import { setLocalModelAuto } from "../../models-api";
 import { showErrorToast } from "../../../../shared/lib/errorToast";
 import { useSettings } from "../../queries";
+import {
+  languageName,
+  languageSupportedByModel,
+} from "../../../../shared/lib/transcriptionLanguages";
 import type {
   DownloadEvent,
   LlmProvider,
@@ -73,6 +77,8 @@ type ModelsTabProps = {
   setLlmServiceProvider: (value: string) => void;
   llmAuto: boolean;
   setLlmAuto: (value: boolean) => void;
+  cleanupOffEverywhere: boolean;
+  onOpenShortcuts: () => void;
   licenseGateActive: boolean;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
@@ -85,6 +91,8 @@ const InstalledModelRow = ({
   active,
   fallback,
   automatic,
+  recommended,
+  unsupportedLanguage,
   aneInstalled,
   shiftHeld,
   onUse,
@@ -94,6 +102,9 @@ const InstalledModelRow = ({
   active: boolean;
   fallback: boolean;
   automatic: boolean;
+  recommended: boolean;
+  /** The dictation language's name, when this model can't transcribe it. */
+  unsupportedLanguage: string | null;
   aneInstalled: boolean;
   shiftHeld: boolean;
   onUse: () => void;
@@ -108,12 +119,17 @@ const InstalledModelRow = ({
 
   const builtIn = isBuiltInModel(model);
   const facts = [
-    stats.englishOnly
-      ? t({ id: "settings.models.installed.english", message: "English" })
-      : t({
-          id: "settings.models.installed.multilingual",
-          message: "Multilingual",
-        }),
+    unsupportedLanguage
+      ? t({
+          id: "model_picker.language_unsupported",
+          message: `Doesn't support ${unsupportedLanguage}`,
+        })
+      : stats.englishOnly
+        ? t({ id: "settings.models.installed.english", message: "English" })
+        : t({
+            id: "settings.models.installed.multilingual",
+            message: "Multilingual",
+          }),
   ];
   facts.push(
     builtIn
@@ -126,7 +142,7 @@ const InstalledModelRow = ({
     facts.push(
       t({ id: "settings.models.installed.ane.v2", message: "Neural Engine" }),
     );
-  if (active && automatic)
+  if (active && automatic && recommended)
     facts.push(
       t({
         id: "settings.models.chosen_automatically",
@@ -162,6 +178,7 @@ const InstalledModelRow = ({
         </>
       }
       facts={facts.join("  ·  ")}
+      factsWarning={active && !fallback && unsupportedLanguage !== null}
       state={
         active && !fallback
           ? {
@@ -229,16 +246,24 @@ const ModelsTab = ({
   setLlmServiceProvider,
   llmAuto,
   setLlmAuto,
+  cleanupOffEverywhere,
+  onOpenShortcuts,
   licenseGateActive,
   setLocalModel,
   handleDownload,
   handleDelete,
   handleCancelDownload,
 }: ModelsTabProps) => {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const [browsing, setBrowsing] = useState(false);
   const shiftHeld = useShiftHeld();
-  const automatic = useSettings().data?.local_model_auto ?? false;
+  const settings = useSettings().data;
+  const automatic = settings?.local_model_auto ?? false;
+  const language = settings?.language ?? "";
+  const unsupportedLanguage = (model: ModelInfo) =>
+    languageSupportedByModel(model, language)
+      ? null
+      : languageName(language, i18n.locale);
   const recommendedKey = useModelRecommendation().data?.key;
   const recommendedLabel =
     modelCatalog.find((model) => model.key === recommendedKey)?.label ?? null;
@@ -290,6 +315,7 @@ const ModelsTab = ({
             catalog={modelCatalog}
             diarizer={diarizerModel}
             activeKey={localModel}
+            unsupportedLanguage={unsupportedLanguage}
             isInstalled={(key) => Boolean(modelStatus[key]?.installed)}
             isAneInstalled={(key) => Boolean(modelStatus[key]?.ane_installed)}
             progressFor={(key) => downloadState[key]}
@@ -355,6 +381,8 @@ const ModelsTab = ({
               model={model}
               active={model.key === installedModel?.key}
               automatic={automatic}
+              recommended={model.key === recommendedKey}
+              unsupportedLanguage={unsupportedLanguage(model)}
               fallback={remoteSpeechEnabled}
               aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
               shiftHeld={shiftHeld}
@@ -377,6 +405,8 @@ const ModelsTab = ({
             setLlmServiceProvider={setLlmServiceProvider}
             llmAuto={llmAuto}
             setLlmAuto={setLlmAuto}
+            cleanupOffEverywhere={cleanupOffEverywhere}
+            onOpenShortcuts={onOpenShortcuts}
             licenseGateActive={licenseGateActive}
             downloadState={downloadState}
             onDownload={handleDownload}

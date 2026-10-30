@@ -461,12 +461,20 @@ impl PillController {
     }
 
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
+        if self.enter_error_state(app, message) {
+            let simple_msg = simplify_recording_error(app, message);
+            toast::show(app, "error", None, &simple_msg);
+        }
+    }
+
+    /// False when an active recording suppresses the error.
+    fn enter_error_state(&self, app: &AppHandle<AppRuntime>, message: &str) -> bool {
         let status = self.status();
         if matches!(status, PillStatus::Listening | PillStatus::Processing) {
             tracing::error!(
                 "[Pill] Suppressing error during active recording ({status}): {message}"
             );
-            return;
+            return false;
         }
         tracing::error!("[Pill] {message}");
         if let Err(err) = self.recorder.stop() {
@@ -476,8 +484,7 @@ impl PillController {
         self.reset_recording_state();
         self.set_hold_key_down(false);
         self.transition_to(app, PillStatus::Error);
-        let simple_msg = simplify_recording_error(app, message);
-        toast::show(app, "error", None, &simple_msg);
+        true
     }
 
     fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, context: &str, err: &anyhow::Error) {
@@ -762,7 +769,25 @@ impl PillController {
                     return false;
                 }
 
-                self.transition_to_error(app, &format!("Unable to start recording: {err}"));
+                let message = format!("Unable to start recording: {err}");
+                // Once the rebuilt recorder failed too, one lasting toast replaces the
+                // generic error; it stays until the next press or a working start.
+                #[cfg(windows)]
+                if self.recorder.start_failures() >= crate::recorder::STUCK_START_FAILURES {
+                    if self.enter_error_state(app, &message) {
+                        toast::emit_toast(
+                            app,
+                            toast::Payload {
+                                toast_type: "error".into(),
+                                message: toast::native(app, "native.error.mic_stuck"),
+                                auto_dismiss: Some(false),
+                                ..Default::default()
+                            },
+                        );
+                    }
+                    return false;
+                }
+                self.transition_to_error(app, &message);
                 false
             }
         }
@@ -1278,8 +1303,19 @@ fn start_model_download(app: &AppHandle<AppRuntime>, model: &str) -> bool {
     let app = app.clone();
     let model = model.to_string();
     tauri::async_runtime::spawn(async move {
-        if let Err(err) = crate::speech::install::download_model_now(app, model, None).await {
+        if let Err(err) = crate::speech::install::download_model_now(app.clone(), model, None).await
+        {
             tracing::warn!("Could not start the model download after a dictation: {err}");
+            // A download that keeps failing would otherwise only show the
+            // "getting ready" notice.
+            toast::show_with_action(
+                &app,
+                "info",
+                None,
+                &toast::native(&app, "native.toast.model_none"),
+                "open_models_page",
+                &toast::native(&app, "native.toast.model_action"),
+            );
         }
     });
     true
@@ -1441,6 +1477,10 @@ pub(crate) fn handle_registered_hotkey_event(
 }
 
 pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
+    // The sandbox runs next to the real app and must not hear its shortcuts.
+    if crate::integrations::dev_sandbox() {
+        return Ok(());
+    }
     let state = app.state::<AppState>();
     if state.is_shortcut_capture_active() {
         return Ok(());

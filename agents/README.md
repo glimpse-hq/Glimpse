@@ -25,6 +25,7 @@ Read the matching references, not the whole directory.
 | App copy, native menu labels, or locales                              | [Localization](reference/i18n.md)         |
 | Native windows, permissions, packaging, or platform-specific behavior | [Platforms](reference/platforms.md)       |
 | CLI commands, MCP tools, or local HTTP API                            | [Integrations](reference/integrations.md) |
+| Looking at screens, before/after screenshots, or README images        | [Screenshots](reference/screenshots.md)   |
 | Removing surprising behavior or changing a product constraint         | [Decisions](reference/decisions.md)       |
 
 ## Reusable workflows
@@ -36,7 +37,5 @@ Read the matching references, not the whole directory.
 Keep instructions short, actionable, and grounded in the implementation. Add guidance where it prevents a concrete mistake; use links for detail rather than duplicating rules. Keep changing values such as versions and model tags in their manifests. Update paths and commands when their owners move.
 
 Keep root instructions universal, subtree guides focused on their boundaries, and detailed procedures in the references. Do not add an `AGENTS.md` to every feature folder without a distinct rule to put there. Check local Markdown links relative to the file containing them.
-
-`plans/` holds design proposals and history, not current rules. Verify a plan against code before using it.
 
 The layout follows the [AGENTS.md format](https://agents.md/) and [OpenAI's instruction discovery guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md): broad rules at the root, narrower guidance close to the code, and explicitly linked references.

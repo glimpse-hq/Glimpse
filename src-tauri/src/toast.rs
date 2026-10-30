@@ -34,9 +34,18 @@ pub fn emit_toast(app: &AppHandle<AppRuntime>, payload: Payload) {
     if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = toast_window.set_size(tauri::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
         position_toast_window(app, &toast_window, WINDOW_WIDTH, WINDOW_HEIGHT);
-        crate::platform::toast::show(app, &toast_window);
+        show_toast_window(app, &toast_window);
     }
     let _ = app.emit(EVENT_SHOW, payload);
+}
+
+fn show_toast_window(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime>) {
+    #[cfg(debug_assertions)]
+    if crate::integrations::dev_sandbox() {
+        let _ = crate::integrations::dev::show_in_background(toast_window);
+        return;
+    }
+    crate::platform::toast::show(app, toast_window);
 }
 
 pub fn native(app: &AppHandle<AppRuntime>, key: &'static str) -> String {
@@ -104,6 +113,10 @@ fn position_toast_window(
     width: f64,
     height: f64,
 ) {
+    // The sandbox keeps its toast where `glimpse dev` put it.
+    if crate::integrations::dev_sandbox() {
+        return;
+    }
     let state = app.state::<AppState>();
     let is_expanded = state.pill().is_expanded();
     let pill_is_visible = state.pill().status() != pill::PillStatus::Idle;

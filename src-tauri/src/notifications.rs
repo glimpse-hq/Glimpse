@@ -212,17 +212,17 @@ fn notice_copy(app: &AppHandle<AppRuntime>, notice: &str, days_remaining: i64) -
             toast::native(app, "native.toast.manage_license"),
         ),
         NOTICE_TRIAL_EXPIRED => (
-            toast::native(app, "native.toast.trial_expired.v2"),
+            toast::native(app, "native.toast.trial_expired.v4"),
             see_options(),
         ),
         _ if days_remaining <= 1 => (
-            toast::native(app, "native.toast.trial_last_day.v2"),
+            toast::native(app, "native.toast.trial_last_day.v4"),
             see_options(),
         ),
         _ => (
             toast::native_format(
                 app,
-                "native.toast.trial_days_left.v2",
+                "native.toast.trial_days_left.v4",
                 &[("days", &days_remaining.to_string())],
             ),
             see_options(),

@@ -1145,6 +1145,151 @@ msgstr ""
 #~ msgstr "v{version} • {mode}"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.trial_days_left.v2"
+#~ msgstr "До конца пробного периода осталось {days} дн. Диктовка остаётся бесплатной. После этого для Библиотеки, Записи и Персонализации потребуется Glimpse Plus."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.cleanup_locked.account_link"
+#~ msgstr "Аккаунт"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
+#~ msgstr "Очистка входит в Glimpse Plus. Приобрести можно в разделе"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.sidebar.locked_hint.v2"
+#~ msgstr "Входит в Glimpse Plus."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+#~ msgid "onboarding.delete.failed"
+#~ msgstr "Ошибка удаления"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v5"
+#~ msgstr "Диктовка бесплатна с любой моделью: локальная транскрипция, словарь, замены и история без ограничений по количеству слов и подписки. Библиотека, Запись, Очистка и Персонализация входят в Glimpse Plus или Glimpse Solo для одного устройства. Их можно бесплатно попробовать в течение 14 дней. Обе лицензии приобретаются один раз. Для локального API-сервера и командной строки нужна купленная лицензия, пробный период на них не распространяется. Введите лицензионный ключ в разделе «Настройки» → «Аккаунт»."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.title_free.v2"
+#~ msgstr "Откройте все возможности с Glimpse Plus."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy.v2"
+#~ msgstr "Купить Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.plus"
+#~ msgstr "Купить Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+#~ msgid "trial_ended.get_plus"
+#~ msgstr "Получить Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "license.activate.buy_with_code"
+#~ msgstr "Купить Glimpse Plus с этим кодом"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.solo"
+#~ msgstr "Купить Glimpse Solo"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.draft_idle.v2"
+#~ msgstr "Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.name.plus"
+#~ msgstr "Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.name.solo"
+#~ msgstr "Glimpse Solo"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.trial_last_day.v2"
+#~ msgstr "Последний день пробного периода. Диктовка остаётся бесплатной. После его окончания для Библиотеки, Записи и Персонализации потребуется Glimpse Plus."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.library.title"
+#~ msgstr "Библиотека входит в Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_subtitle.v2"
+#~ msgstr "Нужна купленная лицензия Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.personalization.title"
+#~ msgstr "Персонализация входит в Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_plus"
+#~ msgstr "Plus"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.subtitle"
+#~ msgstr "Нажмите сочетание клавиш в любом приложении, чтобы начать диктовку."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.record.title"
+#~ msgstr "Запись входит в Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line"
+#~ msgstr "Запускайте локальный API-сервер транскрипции и инструмент командной строки. Для них нужна купленная лицензия, пробный период на них не распространяется."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_solo"
+#~ msgstr "Solo"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.recap.model.v2"
+#~ msgstr "Модель распознавания речи"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.title"
+#~ msgstr "API-сервер входит в Glimpse Plus"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v2"
+#~ msgstr "Для командной строки нужна купленная лицензия Glimpse Plus. Пробный период на неё не распространяется."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.waiting.model_failed"
+#~ msgstr "Не удалось загрузить модель. Повторите попытку ниже."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.trial_expired.v2"
+#~ msgstr "Пробный период завершён. Диктовка остаётся бесплатной. Для Библиотеки, Записи и Персонализации потребуется Glimpse Plus."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -1195,7 +1340,7 @@ msgstr "{0, plural, one {# правило} other {# правил}}"
 #. placeholder {0}: previewForApp.personalitiesCount
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.personalities.detail"
-msgstr "{0} сохранено"
+msgstr "{0, plural, one {# режим сохранён} few {# режима сохранено} many {# режимов сохранено} other {# режима сохранено}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: closedApps.length
@@ -1207,7 +1352,7 @@ msgstr "{0, plural, one {# выбранное приложение не восп
 #. placeholder {0}: previewForApp.transcriptCount
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.history.detail"
-msgstr "{0} транскрипций"
+msgstr "{0, plural, one {# транскрипция} few {# транскрипции} many {# транскрипций} other {# транскрипции}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.dictionaryCount
@@ -1283,7 +1428,7 @@ msgstr "{0} из {DICTIONARY_ENTRY_LIMIT}"
 #. placeholder {0}: formatCompact(totalWords)
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.6"
-msgstr "{0} слов продиктовано — ни одного не напечатано. @try_glimpse_app"
+msgstr "{0} слов продиктовано, ни одного не напечатано. @try_glimpse_app"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
@@ -1307,8 +1452,8 @@ msgstr "{coverageBase} · {activeDevices} из {deviceLimit} устройств 
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.trial_days_left.v2"
-msgstr "До конца пробного периода осталось {days} дн. Диктовка остаётся бесплатной. После этого для Библиотеки, Записи и Персонализации потребуется Glimpse Plus."
+msgid "native.toast.trial_days_left.v4"
+msgstr "До конца пробного периода осталось {days} дн. Диктовка остаётся бесплатной. После этого для Библиотеки, Записи и Персонализации потребуется лицензия Glimpse."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1427,6 +1572,11 @@ msgid "settings.about.data.count_one"
 msgstr "1 аудио- и текстовая пара"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.tier_one_device"
+msgstr "1 устройство"
+
+#. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
 msgid "plans.devices.one"
 msgstr "1 Mac или ПК"
@@ -1520,11 +1670,6 @@ msgstr "Специальные возможности включены. Ваш �
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.tab.account"
 msgstr "Учётная запись"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup_locked.account_link"
-msgstr "Аккаунт"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/AccountPill.tsx
@@ -1849,7 +1994,7 @@ msgstr "Автообновление"
 #. placeholder {0}: choice.defaultModel
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.speech_model.model.automatic_default"
-msgstr "Автоматически ({defaultModel})"
+msgstr "Автоматически ({0})"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2179,8 +2324,13 @@ msgstr "Очистка"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
-msgstr "Очистка входит в Glimpse Plus. Приобрести можно в разделе"
+msgid "settings.general.shortcuts.cleanup_locked.v4"
+msgstr "Очистка входит в лицензию Glimpse."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.cleanup_off"
+msgstr "Очистка отключена для всех сочетаний клавиш."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -2316,8 +2466,8 @@ msgstr "Цвет"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
-msgid "home.sidebar.locked_hint.v2"
-msgstr "Входит в Glimpse Plus."
+msgid "home.sidebar.locked_hint.v4"
+msgstr "Входит в лицензию Glimpse."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2948,11 +3098,6 @@ msgid "settings.models.delete_failed"
 msgstr "Ошибка удаления"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/OnboardingScreen.tsx
-msgid "onboarding.delete.failed"
-msgstr "Ошибка удаления"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.delete_mode"
 msgstr "Режим удаления"
@@ -3055,8 +3200,8 @@ msgstr "Диктовка с этим сочетанием клавиш вста�
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v5"
-msgstr "Диктовка бесплатна с любой моделью: локальная транскрипция, словарь, замены и история без ограничений по количеству слов и подписки. Библиотека, Запись, Очистка и Персонализация входят в Glimpse Plus или Glimpse Solo для одного устройства. Их можно бесплатно попробовать в течение 14 дней. Обе лицензии приобретаются один раз. Для локального API-сервера и командной строки нужна купленная лицензия, пробный период на них не распространяется. Введите лицензионный ключ в разделе «Настройки» → «Аккаунт»."
+msgid "faq.free.answer.v7"
+msgstr "Диктовка бесплатна с любой моделью: локальная транскрипция, словарь, замены и история без ограничений по количеству слов и без подписки. Библиотека, Запись, Очистка и Персонализация входят в лицензию Glimpse, разовая покупка за $25 для одного Mac или ПК либо за $39 для использования не более чем на трёх устройствах. Их можно бесплатно попробовать в течение 14 дней. Для локального API-сервера и командной строки нужна купленная лицензия, на пробный период они не распространяются. Введите ключ лицензии в разделе «Настройки» → «Аккаунт»."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3102,6 +3247,12 @@ msgstr "Отключить"
 #: src/features/recording/components/DismissButton.tsx
 msgid "record.warning.dismiss"
 msgstr "Закрыть"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.language_unsupported"
+msgstr "Не поддерживает {unsupportedLanguage}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -3151,6 +3302,7 @@ msgstr "Ошибка загрузки"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
+#: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.downloads.failed"
 msgstr "Не удалось загрузить"
 
@@ -3497,6 +3649,11 @@ msgid "native.provider.not_configured"
 msgstr "Прежде чем включить сервис распознавания речи, завершите его настройку в разделе «Настройки»."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.update.recording"
+msgstr "Завершите запись перед установкой обновления."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "Завершение..."
@@ -3562,36 +3719,6 @@ msgid "settings.modal.tab.general"
 msgstr "Основные"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.title_free.v2"
-msgstr "Откройте все возможности с Glimpse Plus."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy.v2"
-msgstr "Купить Glimpse Plus"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.plus"
-msgstr "Купить Glimpse Plus"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/TrialEndedScreen.tsx
-msgid "trial_ended.get_plus"
-msgstr "Получить Glimpse Plus"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "license.activate.buy_with_code"
-msgstr "Купить Glimpse Plus с этим кодом"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.solo"
-msgstr "Купить Glimpse Solo"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.title"
 msgstr "Получить поддержку"
@@ -3630,6 +3757,21 @@ msgstr "Настройте свой стиль письма для каждог�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.version_label"
 msgstr "Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_c1"
+msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.language.cleanup_language_unsupported"
+msgstr "Glimpse C1 пока не поддерживает язык «{missingLanguage}»."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.mic_stuck"
+msgstr "Glimpse не удаётся открыть микрофон. Попробуйте перезапустить Glimpse."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3695,21 +3837,6 @@ msgstr "Glimpse требует разрешения на запись систе
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.subtitle"
 msgstr "Glimpse требуется доступ к микрофону и возможность вводить текст за вас."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.draft_idle.v2"
-msgstr "Glimpse Plus"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.name.plus"
-msgstr "Glimpse Plus"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.name.solo"
-msgstr "Glimpse Solo"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4031,6 +4158,11 @@ msgid "live.prefs.on_top"
 msgstr "Поверх окон"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.quit_recording.keep"
+msgstr "Продолжить запись"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.kept_warm"
 msgstr "хранится в памяти для быстрого отклика"
@@ -4082,8 +4214,8 @@ msgstr "Крупный"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.trial_last_day.v2"
-msgstr "Последний день пробного периода. Диктовка остаётся бесплатной. После его окончания для Библиотеки, Записи и Персонализации потребуется Glimpse Plus."
+msgid "native.toast.trial_last_day.v4"
+msgstr "Последний день пробного периода. Диктовка остаётся бесплатной. После окончания пробного периода для Библиотеки, Записи и Персонализации потребуется лицензия Glimpse."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4172,8 +4304,8 @@ msgstr "Библиотека"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.library.title"
-msgstr "Библиотека входит в Glimpse Plus"
+msgid "locked.library.title.v4"
+msgstr "Библиотека входит в лицензию Glimpse"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4562,8 +4694,8 @@ msgstr "Название записи"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_subtitle.v2"
-msgstr "Нужна купленная лицензия Glimpse Plus"
+msgid "settings.about.cli.locked_subtitle.v4"
+msgstr "Требуется купленная лицензия Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4671,6 +4803,11 @@ msgstr "Нет файлов для импорта"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.mic_none"
 msgstr "Устройства ввода не найдены"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.draft_idle.v4"
+msgstr "Пока без лицензии"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5085,6 +5222,11 @@ msgid "onboarding.license_step.tile_recording_others"
 msgstr "Другие"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_c1_body"
+msgstr "Наша собственная модель ИИ для очистки текста. Работает на этом компьютере."
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.time.7d"
 msgstr "За последние 7 дней"
@@ -5172,8 +5314,8 @@ msgstr "Персонализация"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.personalization.title"
-msgstr "Персонализация входит в Glimpse Plus"
+msgid "locked.personalization.title.v4"
+msgstr "Персонализация входит в лицензию Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -5199,11 +5341,6 @@ msgstr "Настройки воспроизведения"
 #: src/main.tsx
 msgid "crash.body"
 msgstr "Перезапустите приложение."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_plus"
-msgstr "Plus"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -5262,11 +5399,6 @@ msgid "faq.how_it_works.answer"
 msgstr "Нажмите сочетание клавиш для диктовки, произнесите текст и отпустите. Glimpse транскрибирует речь на вашем устройстве и вставляет текст в позицию курсора. Основная функция диктовки работает офлайн. Учётная запись не требуется."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-msgid "onboarding.done.subtitle"
-msgstr "Нажмите сочетание клавиш в любом приложении, чтобы начать диктовку."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.lower"
 msgstr "Предыдущий медиафайл"
@@ -5310,6 +5442,11 @@ msgstr "Завершить {app}"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.quit"
 msgstr "Завершить {app}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.quit_recording.title"
+msgstr "Выйти во время записи?"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -5358,8 +5495,8 @@ msgstr "Запись"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.record.title"
-msgstr "Запись входит в Glimpse Plus"
+msgid "locked.record.title.v4"
+msgstr "Запись входит в лицензию Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -5389,12 +5526,12 @@ msgstr "Запись"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.recording.default_name"
-msgstr "Запись — {date}"
+msgstr "Запись: {date}"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.default_name"
-msgstr "Запись — {day}, {time}"
+msgstr "Запись: {day}, {time}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5715,6 +5852,12 @@ msgid "transcriptions.item.retry_cleanup"
 msgstr "Повторить очистку"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.speech_model_retry"
+msgstr "Повторить загрузку"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.retrying"
 msgstr "Повторная попытка..."
@@ -5741,8 +5884,8 @@ msgstr "прямо сейчас"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line"
-msgstr "Запускайте локальный API-сервер транскрипции и инструмент командной строки. Для них нужна купленная лицензия, пробный период на них не распространяется."
+msgid "locked.api.line.v2"
+msgstr "Запустите локальный API-сервер транскрипции и инструмент командной строки. Они не входят в пробный период."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -5773,6 +5916,11 @@ msgstr "S"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.save"
 msgstr "Сохранить"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.quit_recording.save"
+msgstr "Сохранить и выйти"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6028,6 +6176,11 @@ msgid "settings.general.shortcuts.more"
 msgstr "Параметры сочетания клавиш"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
+msgid "settings.models.cleanup_off.shortcuts"
+msgstr "Сочетания клавиш"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts"
 msgstr "Сочетания клавиш"
@@ -6115,6 +6268,7 @@ msgstr "Показать транскрипцию"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
+#: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.later"
 msgstr "Пропустить"
 
@@ -6152,11 +6306,6 @@ msgstr "Маленький"
 #: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart"
 msgstr "Умный"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_solo"
-msgstr "Solo"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -6227,11 +6376,6 @@ msgstr "Речь"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.downloads.speech"
 msgstr "Речевая модель"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-msgid "onboarding.done.recap.model.v2"
-msgstr "Модель распознавания речи"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6377,7 +6521,7 @@ msgstr "Остановлено"
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.3"
-msgstr "Перестал печатать — начал говорить. {wpm} слов в минуту, и это ещё не предел. @try_glimpse_app"
+msgstr "Перестал печатать, начал говорить. {wpm} слов в минуту, и это ещё не предел. @try_glimpse_app"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -6589,8 +6733,8 @@ msgstr "Вот и всё."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.title"
-msgstr "API-сервер входит в Glimpse Plus"
+msgid "locked.api.title.v4"
+msgstr "API-сервер входит в лицензию Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
@@ -6598,9 +6742,14 @@ msgid "settings.error.api_server_restart"
 msgstr "Сервер API не остановился, поэтому перезапустить его не удалось."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.cleanup_language_unsupported"
+msgstr "Модель очистки пока не поддерживает этот язык."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v2"
-msgstr "Для командной строки нужна купленная лицензия Glimpse Plus. Пробный период на неё не распространяется."
+msgid "settings.about.cli.locked_info.v4"
+msgstr "Для командной строки нужна купленная лицензия Glimpse. Она не входит в пробный период."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -6623,6 +6772,11 @@ msgid "native.toast.recording_mic_switched"
 msgstr "Микрофон перестал отвечать. Запись продолжается с {name}."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.quit_recording.message"
+msgstr "Запись сохранится в Библиотеке, а транскрипция выполнится при следующем запуске Glimpse."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.next.anywhere"
 msgstr "Это же сочетание клавиш работает в любом приложении, где можно вводить текст."
@@ -6631,6 +6785,11 @@ msgstr "Это же сочетание клавиш работает в любо
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.model_missing"
 msgstr "Выбранная модель не установлена. Загрузите её в разделе «Настройки» > «Модели»."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.speech_model_failed"
+msgstr "Не удалось загрузить модель распознавания речи."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDeleteDialog.tsx
@@ -6944,6 +7103,36 @@ msgid "member_card.draft_stamp_empty"
 msgstr "Не выдан"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.cleanup_locked.unlock.v3"
+msgstr "Разблокировать"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.buy.v4"
+msgstr "Разблокировать"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.buy.v4"
+msgstr "Разблокировать"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.unlock.v4"
+msgstr "Разблокировать всё"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.title_free.v3"
+msgstr "Откройте все возможности."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "license.activate.buy_with_code.v3"
+msgstr "Разблокировать с помощью этого кода"
+
+#. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "transcription.language.unsupported"
 msgstr "Не поддерживается"
@@ -6972,6 +7161,11 @@ msgstr "Неподдерживаемые языки недоступны в ак
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.up"
 msgstr "Вверх"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.tier_devices"
+msgstr "До {deviceLimit} устройств"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
@@ -7092,7 +7286,7 @@ msgstr "Все выпуски на GitHub"
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.10"
-msgstr "Голос — самая быстрая клавиатура из всех, что у меня есть. {wpm} слов в минуту. @try_glimpse_app"
+msgstr "Для меня голос служит самой быстрой клавиатурой из всех, что у меня есть. {wpm} слов в минуту. @try_glimpse_app"
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -7112,7 +7306,7 @@ msgstr "Не удалось прочитать данные этого прил�
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.model.unrecognized"
-msgstr "Модель этого приложения не распознана — выберите её на следующем шаге."
+msgstr "Мы не распознали модель этого приложения, поэтому выберите её на следующем шаге."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -7229,6 +7423,11 @@ msgstr "Вы"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.subtitle.v2"
+msgstr "Позже это можно изменить в разделе «Настройки»."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.title"
 msgstr "Всё готово"
 
@@ -7250,7 +7449,7 @@ msgstr "Ваши аудиозаписи и транскрипции остают
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
-msgstr "Ваши аудиозаписи и транскрипции хранятся на вашем ПК. Glimpse не собирает записи, транскрипции, ключи API или подсказки. Необязательная анонимная аналитика использования (например, длительность сеанса и использование функций, но никогда — ваш контент) помогает нам улучшать приложение. Вы можете отключить её в любое время в разделе Настройки → Приложение."
+msgstr "Ваши аудиозаписи и транскрипции хранятся на вашем ПК. Glimpse не собирает записи, транскрипции, ключи API или подсказки. Необязательная анонимная аналитика использования (например, длительность сеанса и использование функций, но без вашего контента) помогает нам улучшать приложение. Вы можете отключить её в любое время в разделе Настройки → Приложение."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -7286,11 +7485,6 @@ msgstr "Лицензионный ключ находится в письме с 
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_unavailable"
 msgstr "Микрофон недоступен. Проверьте, подключён ли он."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.waiting.model_failed"
-msgstr "Не удалось загрузить модель. Повторите попытку ниже."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -7334,8 +7528,8 @@ msgstr "Ваш пробный период завершился"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.trial_expired.v2"
-msgstr "Пробный период завершён. Диктовка остаётся бесплатной. Для Библиотеки, Записи и Персонализации потребуется Glimpse Plus."
+msgid "native.toast.trial_expired.v4"
+msgstr "Пробный период завершён. Диктовка остаётся бесплатной. Для Библиотеки, Записи и Персонализации потребуется лицензия Glimpse."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

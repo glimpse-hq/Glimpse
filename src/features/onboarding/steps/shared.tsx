@@ -217,7 +217,7 @@ export function ShortcutKeys({
 }) {
   return (
     <motion.span
-      className="flex items-center justify-center gap-1.5"
+      className="flex flex-wrap items-center justify-center gap-1.5"
       animate={{ opacity: waiting ? [1, 0.55, 1] : 1 }}
       transition={
         waiting

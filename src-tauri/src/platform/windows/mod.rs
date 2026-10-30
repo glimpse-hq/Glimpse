@@ -3,6 +3,7 @@ pub mod elevation;
 pub mod icons;
 pub mod live;
 pub mod overlay;
+pub mod quit_prompt;
 pub mod store;
 pub mod toast;
 

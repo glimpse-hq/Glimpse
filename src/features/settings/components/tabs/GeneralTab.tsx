@@ -347,8 +347,8 @@ const GeneralTab = ({
           {!licenseGateActive && (
             <p className="ui-text-meta ui-color-muted px-0.5">
               {t({
-                id: "settings.general.shortcuts.cleanup_locked.license_prefix.v2",
-                message: "Cleanup comes with Glimpse Plus. Get it in",
+                id: "settings.general.shortcuts.cleanup_locked.v4",
+                message: "Cleanup comes with a Glimpse license.",
               })}{" "}
               <button
                 type="button"
@@ -361,8 +361,8 @@ const GeneralTab = ({
                 className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
               >
                 {t({
-                  id: "settings.general.shortcuts.cleanup_locked.account_link",
-                  message: "Account",
+                  id: "settings.general.shortcuts.cleanup_locked.unlock.v3",
+                  message: "Unlock",
                 })}
               </button>
             </p>

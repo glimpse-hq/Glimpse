@@ -9,7 +9,7 @@ export type ModelDownload = {
   key: string;
   name: string;
   state: DownloadEvent | null;
-  onRetry: () => void;
+  onRetry: (() => void) | null;
 };
 
 const READY_VISIBLE_MS = 2400;
@@ -99,7 +99,7 @@ function DownloadLabel({
       <span className="flex shrink-0 tabular-nums">
         {allReady ? (
           <Check size={13} weight="bold" aria-hidden="true" />
-        ) : error ? (
+        ) : error && download.onRetry ? (
           <button
             type="button"
             onClick={download.onRetry}

@@ -14,6 +14,7 @@ import { settingsKeys } from "../../settings/queries";
 import { transcriptionKeys } from "../../transcriptions/queries";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { formatShortcutForDisplay } from "../../../shared/lib/shortcuts";
+import { languageName } from "../../../shared/lib/transcriptionLanguages";
 import {
   resolveSpeechModelLabel,
   useSpeechModels,
@@ -54,15 +55,6 @@ const ALL_ON: ImportSelections = {
 
 const LIST_SLOT_COUNT = 7;
 
-const languageName = (code: string, locale: string) => {
-  try {
-    return (
-      new Intl.DisplayNames([locale], { type: "language" }).of(code) ?? code
-    );
-  } catch {
-    return code;
-  }
-};
 const ROW_CLASS_NAME = "flex items-center gap-3 py-2.5";
 
 export function ImportStep({

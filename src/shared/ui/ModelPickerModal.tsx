@@ -128,6 +128,8 @@ type ModelPickerData = {
 
 type ModelPickerPanelProps = ModelPickerData & {
   diarizer?: ModelInfo | null;
+  /** The dictation language's name for a model that can't transcribe it. */
+  unsupportedLanguage?: (model: ModelInfo) => string | null;
   className?: string;
 };
 
@@ -142,6 +144,7 @@ export function ModelPickerPanel({
   onDelete,
   onCancel,
   diarizer = null,
+  unsupportedLanguage,
   className,
 }: ModelPickerPanelProps) {
   const { t } = useLingui();
@@ -227,6 +230,9 @@ export function ModelPickerPanel({
         group={group}
         selected={selected}
         active={selected.key === activeKey}
+        unsupportedLanguage={
+          group.diarizer ? null : (unsupportedLanguage?.(selected) ?? null)
+        }
         installed={isInstalled(selected.key)}
         aneInstalled={isAneInstalled?.(selected.key) ?? false}
         isVariantInstalled={isInstalled}
@@ -429,6 +435,7 @@ function ModelRow({
   group,
   selected,
   active,
+  unsupportedLanguage,
   installed,
   aneInstalled,
   isVariantInstalled,
@@ -443,6 +450,7 @@ function ModelRow({
   group: ModelGroup;
   selected: ModelInfo;
   active: boolean;
+  unsupportedLanguage: string | null;
   installed: boolean;
   aneInstalled: boolean;
   isVariantInstalled: (key: string) => boolean;
@@ -563,12 +571,17 @@ function ModelRow({
                   id: "model_picker.diarizer.description.v2",
                   message: "Labels who is speaking in Library transcripts.",
                 })
-              : group.englishOnly
-                ? t({ id: "model_picker.english", message: "English" })
-                : t({
-                    id: "model_picker.multilingual",
-                    message: "Multilingual",
-                  })}
+              : unsupportedLanguage
+                ? t({
+                    id: "model_picker.language_unsupported",
+                    message: `Doesn't support ${unsupportedLanguage}`,
+                  })
+                : group.englishOnly
+                  ? t({ id: "model_picker.english", message: "English" })
+                  : t({
+                      id: "model_picker.multilingual",
+                      message: "Multilingual",
+                    })}
             {"  ·  "}
             {isBuiltInModel(selected)
               ? t({ id: "model_picker.built_in", message: "Built in" })
