@@ -2228,8 +2228,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-language"
-version = "0.1.0"
-source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?tag=0.1.0#910465bb2f3d9580bddfdb45c57a97916ddf3344"
+version = "0.1.1"
+source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?tag=0.1.1#1f2a89cb57eca0ce9de7b1f9b4a0f62c8cd224c3"
 dependencies = [
  "ash",
  "dispatch2",
@@ -2246,8 +2246,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "3.0.0"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.0#e7653f05edce6e6e9e444f595765d4cb7356f297"
+version = "3.0.1"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.1#42d601ea8850865a19b0c50b33847c81b5b416e6"
 dependencies = [
  "anyhow",
  "axum",
