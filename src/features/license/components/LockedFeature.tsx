@@ -16,8 +16,8 @@ const LockedFeature = ({ feature, onEnterKey }: LockedFeatureProps) => {
   const copy: Record<LockedFeatureId, { title: string; line: string }> = {
     personalization: {
       title: t({
-        id: "locked.personalization.title",
-        message: "Personalization comes with Glimpse Plus",
+        id: "locked.personalization.title.v4",
+        message: "Personalization comes with a Glimpse license",
       }),
       line: t({
         id: "locked.personalization.line",
@@ -27,8 +27,8 @@ const LockedFeature = ({ feature, onEnterKey }: LockedFeatureProps) => {
     },
     library: {
       title: t({
-        id: "locked.library.title",
-        message: "Library comes with Glimpse Plus",
+        id: "locked.library.title.v4",
+        message: "Library comes with a Glimpse license",
       }),
       line: t({
         id: "locked.library.line",
@@ -38,8 +38,8 @@ const LockedFeature = ({ feature, onEnterKey }: LockedFeatureProps) => {
     },
     record: {
       title: t({
-        id: "locked.record.title",
-        message: "Record comes with Glimpse Plus",
+        id: "locked.record.title.v4",
+        message: "Record comes with a Glimpse license",
       }),
       line: t({
         id: "locked.record.line",
@@ -49,13 +49,13 @@ const LockedFeature = ({ feature, onEnterKey }: LockedFeatureProps) => {
     },
     api: {
       title: t({
-        id: "locked.api.title",
-        message: "The API server comes with Glimpse Plus",
+        id: "locked.api.title.v4",
+        message: "The API server comes with a Glimpse license",
       }),
       line: t({
-        id: "locked.api.line",
+        id: "locked.api.line.v2",
         message:
-          "Run a local transcription API and the command line tool. They need a purchased license and aren't part of the trial.",
+          "Run a local transcription API and the command line tool. They aren't part of the trial.",
       }),
     },
   };

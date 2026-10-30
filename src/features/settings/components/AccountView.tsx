@@ -340,8 +340,8 @@ const AccountView = ({
                   className="ui-color-primary underline underline-offset-2"
                 >
                   {t({
-                    id: "license.activate.buy_with_code",
-                    message: "Get Glimpse Plus with this code",
+                    id: "license.activate.buy_with_code.v3",
+                    message: "Unlock with this code",
                   })}
                 </button>
               </>

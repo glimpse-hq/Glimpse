@@ -326,7 +326,7 @@ pub fn require_license_gate(store: &SettingsStore, feature: &str) -> Result<(), 
     if license_gate_active(store) {
         Ok(())
     } else {
-        Err(format!("Glimpse Plus is required for {feature}."))
+        Err(format!("A Glimpse license is required for {feature}."))
     }
 }
 
@@ -343,7 +343,7 @@ pub(crate) fn require_active_license(store: &SettingsStore, feature: &str) -> Re
         Ok(())
     } else {
         Err(format!(
-            "A purchased Glimpse Plus license is required for {feature}."
+            "A purchased Glimpse license is required for {feature}."
         ))
     }
 }
@@ -1201,7 +1201,7 @@ pub fn open_checkout(
     code: Option<String>,
 ) -> Result<(), String> {
     let source = match source.as_str() {
-        "account" | "locked_view" | "trial_ended" | "activation" | "announcement" => source,
+        "account" | "locked_view" | "activation" | "announcement" => source,
         _ => "other".to_string(),
     };
     let url = checkout_url(&tier, &source, code.as_deref())?;

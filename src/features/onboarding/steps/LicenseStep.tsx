@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 import type { ActivationError, LicenseState } from "../../license/api";
 import { LICENSE_KEY_PLACEHOLDER } from "../../license/licenseKeyShape";
+import { usePlanPrice } from "../../license/queries";
 import { useActivationErrorText } from "../../license/useActivationErrorText";
 import { shortcutDisplayParts } from "../../../shared/lib/shortcuts";
 import {
@@ -69,6 +70,8 @@ export function LicenseStep({
   );
   const status = licenseState?.status;
   const isActive = status === "active";
+  // The pricing page offers both plans, so the button shows the lowest price.
+  const startingPrice = usePlanPrice("solo", !isActive);
   const isTrial = status === "trial";
 
   const title = isActive
@@ -82,8 +85,8 @@ export function LicenseStep({
           message: "Everything is yours for 14 days.",
         })
       : t({
-          id: "onboarding.license_step.title_free.v2",
-          message: "Get everything with Glimpse Plus.",
+          id: "onboarding.license_step.title_free.v3",
+          message: "Unlock everything.",
         });
 
   const line = isActive
@@ -132,15 +135,20 @@ export function LicenseStep({
                 >
                   <span>
                     {t({
-                      id: "onboarding.license_step.buy.v2",
-                      message: "Get Glimpse Plus",
+                      id: "onboarding.license_step.buy.v4",
+                      message: "Unlock",
                     })}
                   </span>
-                  <span className="opacity-80">
+                  <span className="flex items-center gap-2 ui-text-body-sm tabular-nums opacity-70">
+                    {startingPrice}
                     {opening ? (
-                      <CircleNotch size={14} className="animate-spin" />
+                      <CircleNotch
+                        size={14}
+                        className="animate-spin"
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <ArrowUpRight size={14} />
+                      <ArrowUpRight size={14} aria-hidden="true" />
                     )}
                   </span>
                 </button>

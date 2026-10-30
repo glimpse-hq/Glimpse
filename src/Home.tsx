@@ -442,8 +442,8 @@ const Home = ({ onReady }: HomeProps) => {
 
   const showCleanupButtons = llmEnabled && licenseGateActive;
   const lockedHint = t({
-    id: "home.sidebar.locked_hint.v2",
-    message: "Comes with Glimpse Plus.",
+    id: "home.sidebar.locked_hint.v4",
+    message: "Comes with a Glimpse license.",
   });
 
   const homeViewActive = activeView === "home" && !isSettingsOpen;

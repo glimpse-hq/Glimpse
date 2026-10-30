@@ -276,7 +276,7 @@ pub(crate) fn require_cli_license(identifier: &str) -> Result<()> {
             && !cache_active_before_refresh
         {
             anyhow::bail!(
-                "A purchased Glimpse Plus license is required to use the CLI.\n\
+                "A purchased Glimpse license is required to use the CLI.\n\
                      The saved license could not be refreshed: {err}\n\
                      Open Glimpse > Settings > Account to check or activate your license."
             );
@@ -284,7 +284,7 @@ pub(crate) fn require_cli_license(identifier: &str) -> Result<()> {
     }
     if !license::active_license_gate(&settings_store) {
         anyhow::bail!(
-            "A purchased Glimpse Plus license is required to use the CLI.\n\
+            "A purchased Glimpse license is required to use the CLI.\n\
              Open Glimpse > Settings > Account to check or activate your license."
         );
     }
@@ -705,6 +705,7 @@ pub fn run() {
             analytics::track_onboarding_model_chosen,
             analytics::track_paywall_shown,
             analytics::track_paywall_clicked,
+            analytics::track_trial_ended_choice,
             analytics::track_gate_blocked,
             analytics::track_feature_used_command,
             analytics::track_screen_viewed,

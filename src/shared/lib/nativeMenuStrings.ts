@@ -293,19 +293,19 @@ export const NATIVE_MENU_STRINGS = [
       "Your license is inactive. Dictation stays free. Some features need an active license.",
   }),
   msg({
-    id: "native.toast.trial_expired.v2",
+    id: "native.toast.trial_expired.v4",
     message:
-      "Your trial ended. Dictation stays free. Library, Record and Personalization need Glimpse Plus.",
+      "Your trial ended. Dictation stays free. Library, Record and Personalization need a Glimpse license.",
   }),
   msg({
-    id: "native.toast.trial_last_day.v2",
+    id: "native.toast.trial_last_day.v4",
     message:
-      "Last day of your trial. Dictation stays free. After today, Library, Record and Personalization need Glimpse Plus.",
+      "Last day of your trial. Dictation stays free. After today, Library, Record and Personalization need a Glimpse license.",
   }),
   msg({
-    id: "native.toast.trial_days_left.v2",
+    id: "native.toast.trial_days_left.v4",
     message:
-      "{days} days left in your trial. Dictation stays free. After that, Library, Record and Personalization need Glimpse Plus.",
+      "{days} days left in your trial. Dictation stays free. After that, Library, Record and Personalization need a Glimpse license.",
   }),
   msg({ id: "native.toast.manage_license", message: "Manage license" }),
   msg({ id: "native.toast.see_options", message: "See options" }),
