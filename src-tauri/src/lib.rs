@@ -1512,13 +1512,18 @@ pub(crate) fn note_license_state(
         // Start Recording is enabled by the license, so the menus follow its status.
         tray::refresh_menus(app, &state.current_settings());
         // Registered shortcuts and the preflight read cleanup through the license mask.
-        // Re-registering would end a held recording.
-        if state.pill().status() != pill::PillStatus::Listening {
+        // Re-registering would end a held recording, so it waits for the dictation.
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let state = app.state::<AppState>();
+            while state.pill().status() == pill::PillStatus::Listening {
+                tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+            }
             state.request_preflight_refresh();
-            if let Err(err) = pill::register_shortcuts(app) {
+            if let Err(err) = pill::register_shortcuts(&app) {
                 tracing::warn!("Shortcut registration after a license change failed: {err}");
             }
-        }
+        });
     }
     // Preserve the expiry marker while analytics is disabled.
     if state.current_settings().analytics_enabled

@@ -204,7 +204,12 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                 crate::analytics::set_activity(crate::analytics::Activity::Updating);
                 let downloaded = update.download(|_, _| {}, || {}).await;
                 // Windows quits into the installer, so recheck after the download.
-                if downloaded.is_ok() && !app.state::<AppState>().is_backend_idle() {
+                let busy = {
+                    let state = app.state::<AppState>();
+                    !state.is_backend_idle()
+                        || state.pill().status() != crate::pill::PillStatus::Idle
+                };
+                if downloaded.is_ok() && busy {
                     crate::analytics::set_activity(crate::analytics::Activity::Idle);
                     continue;
                 }
