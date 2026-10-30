@@ -181,6 +181,10 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.error.mic_unavailable",
     message: "Your microphone isn't available. Check that it's connected.",
   }),
+  msg({
+    id: "native.error.mic_stuck",
+    message: "Glimpse can't open your microphone. Try restarting Glimpse.",
+  }),
   msg({ id: "native.error.recording_failed", message: "Recording failed" }),
   msg({
     id: "native.toast.admin_app_shortcut",
