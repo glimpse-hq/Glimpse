@@ -1303,8 +1303,19 @@ fn start_model_download(app: &AppHandle<AppRuntime>, model: &str) -> bool {
     let app = app.clone();
     let model = model.to_string();
     tauri::async_runtime::spawn(async move {
-        if let Err(err) = crate::speech::install::download_model_now(app, model, None).await {
+        if let Err(err) = crate::speech::install::download_model_now(app.clone(), model, None).await
+        {
             tracing::warn!("Could not start the model download after a dictation: {err}");
+            // A download that keeps failing would otherwise only show the
+            // "getting ready" notice.
+            toast::show_with_action(
+                &app,
+                "info",
+                None,
+                &toast::native(&app, "native.toast.model_none"),
+                "open_models_page",
+                &toast::native(&app, "native.toast.model_action"),
+            );
         }
     });
     true
