@@ -7,6 +7,7 @@ import {
   CardsThree,
   CircleNotch,
   Command,
+  Cpu,
   Devices,
   Export,
   HardDrives,
@@ -206,8 +207,10 @@ export function LicenseStep({
 
 function FeatureMarquee({ smartShortcut }: { smartShortcut: string }) {
   const { t } = useLingui();
-  const shortcut = shortcutDisplayParts(smartShortcut);
-  const searchShortcut = shortcutDisplayParts("CommandOrControl+F");
+  const shortcut = shortcutDisplayParts(smartShortcut, { symbols: true });
+  const searchShortcut = shortcutDisplayParts("CommandOrControl+F", {
+    symbols: true,
+  });
   const freeTag = t({
     id: "onboarding.license_step.tag_free",
     message: "Free",
@@ -353,6 +356,21 @@ function FeatureMarquee({ smartShortcut }: { smartShortcut: string }) {
   ];
 
   const right: ReactNode[] = [
+    <Tile
+      key="c1"
+      icon={Cpu}
+      title={t({
+        id: "onboarding.license_step.tile_c1",
+        message: "Glimpse C1 2B",
+      })}
+    >
+      <p className="ui-text-body-sm text-content-muted">
+        {t({
+          id: "onboarding.license_step.tile_c1_body",
+          message: "Our own cleanup model. Runs on this computer.",
+        })}
+      </p>
+    </Tile>,
     <Tile
       key="edit"
       icon={TextAa}
