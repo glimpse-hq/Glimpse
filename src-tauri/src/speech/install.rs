@@ -562,7 +562,7 @@ fn download_failed(
     let reason = download_failure_reason(&err, &detail);
     let stage = match (stage, detail.reason) {
         ("download", "verification") => "verify",
-        ("download", "storage") => "install",
+        ("download", "storage" | "cross_device") => "install",
         _ => stage,
     };
     crate::analytics::track_model_download_failed(app, model, stage, detail);
