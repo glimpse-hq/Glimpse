@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence } from "framer-motion";
+import { Broom } from "@phosphor-icons/react";
 import {
   CLOUD_PROVIDERS,
   getProviderPreset,
@@ -39,6 +40,8 @@ type LanguageModelListProps = {
   setLlmServiceProvider: (value: string) => void;
   llmAuto: boolean;
   setLlmAuto: (value: boolean) => void;
+  cleanupOffEverywhere: boolean;
+  onOpenShortcuts: () => void;
   licenseGateActive: boolean;
   downloadState: Record<string, DownloadEvent>;
   onDownload: (modelKey: string, ane?: boolean) => void;
@@ -71,6 +74,8 @@ const LanguageModelList = ({
   setLlmServiceProvider,
   llmAuto,
   setLlmAuto,
+  cleanupOffEverywhere,
+  onOpenShortcuts,
   licenseGateActive,
   downloadState,
   onDownload,
@@ -301,6 +306,32 @@ const LanguageModelList = ({
           }
         />
       )}
+      <p
+        aria-live="polite"
+        className="col-span-3 mt-3 flex min-h-5 items-center gap-1.5 px-2.5 ui-text-meta ui-color-muted"
+      >
+        {licenseGateActive && cleanupOffEverywhere && (
+          <>
+            <Broom size={13} aria-hidden="true" className="shrink-0" />
+            <span>
+              {t({
+                id: "settings.models.cleanup_off",
+                message: "Cleanup is off for all your shortcuts.",
+              })}{" "}
+              <button
+                type="button"
+                onClick={onOpenShortcuts}
+                className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
+              >
+                {t({
+                  id: "settings.models.cleanup_off.shortcuts",
+                  message: "Shortcuts",
+                })}
+              </button>
+            </span>
+          </>
+        )}
+      </p>
       <AnimatePresence>
         {sheetOpen && (
           <ProviderSheet

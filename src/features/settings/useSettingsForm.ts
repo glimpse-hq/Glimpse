@@ -1286,6 +1286,13 @@ export function useSettingsForm({
     [discardInvalidShortcutDraft, updateShortcutBindings],
   );
 
+  const assignedBindings = Object.values(shortcutBindings)
+    .flat()
+    .filter((binding) => binding.shortcut.trim() !== "");
+  const cleanupOffEverywhere =
+    assignedBindings.length > 0 &&
+    !assignedBindings.some((binding) => binding.cleanup_enabled);
+
   const addShortcutBinding = useCallback(
     (mode: ShortcutMode) => {
       clearPendingSettingsSave();
@@ -1750,6 +1757,7 @@ export function useSettingsForm({
     addShortcutBinding,
     removeShortcutBinding,
     moveShortcutBinding,
+    cleanupOffEverywhere,
 
     llmProvider,
     setLlmProvider,

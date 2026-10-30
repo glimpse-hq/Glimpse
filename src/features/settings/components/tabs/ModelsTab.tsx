@@ -73,6 +73,8 @@ type ModelsTabProps = {
   setLlmServiceProvider: (value: string) => void;
   llmAuto: boolean;
   setLlmAuto: (value: boolean) => void;
+  cleanupOffEverywhere: boolean;
+  onOpenShortcuts: () => void;
   licenseGateActive: boolean;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
@@ -229,6 +231,8 @@ const ModelsTab = ({
   setLlmServiceProvider,
   llmAuto,
   setLlmAuto,
+  cleanupOffEverywhere,
+  onOpenShortcuts,
   licenseGateActive,
   setLocalModel,
   handleDownload,
@@ -377,6 +381,8 @@ const ModelsTab = ({
             setLlmServiceProvider={setLlmServiceProvider}
             llmAuto={llmAuto}
             setLlmAuto={setLlmAuto}
+            cleanupOffEverywhere={cleanupOffEverywhere}
+            onOpenShortcuts={onOpenShortcuts}
             licenseGateActive={licenseGateActive}
             downloadState={downloadState}
             onDownload={handleDownload}

@@ -1479,9 +1479,20 @@ pub(crate) fn note_license_state(
 ) {
     let previous = state.license_snapshot().map(|snapshot| snapshot.status);
     state.note_license_state(license_state);
-    // Start Recording is enabled by the license, so the menus follow its status.
     if previous.is_some_and(|status| status != license_state.status.as_str()) {
+        let _ = app.emit(EVENT_LICENSE_CHANGED, license_state);
+        // Gated settings read differently once the license changes.
+        state.emit_settings_changed(app, &state.current_settings_unmasked());
+        // Start Recording is enabled by the license, so the menus follow its status.
         tray::refresh_menus(app, &state.current_settings());
+        // Registered shortcuts and the preflight read cleanup through the license mask.
+        // Re-registering would end a held recording.
+        if state.pill().status() != pill::PillStatus::Listening {
+            state.request_preflight_refresh();
+            if let Err(err) = pill::register_shortcuts(app) {
+                tracing::warn!("Shortcut registration after a license change failed: {err}");
+            }
+        }
     }
     // Preserve the expiry marker while analytics is disabled.
     if state.current_settings().analytics_enabled
@@ -1509,15 +1520,7 @@ async fn sync_license(app: &tauri::AppHandle<AppRuntime>) {
     }
 
     match license::get_license_state(&state.settings_store) {
-        Ok(license_state) => {
-            let previous = state.license_snapshot().map(|snapshot| snapshot.status);
-            note_license_state(app, &state, &license_state);
-            if previous.is_some_and(|status| status != license_state.status.as_str()) {
-                let _ = app.emit(EVENT_LICENSE_CHANGED, &license_state);
-                // Gated settings read differently once the license changes.
-                state.emit_settings_changed(app, &state.current_settings_unmasked());
-            }
-        }
+        Ok(license_state) => note_license_state(app, &state, &license_state),
         Err(err) => tracing::warn!("Could not read the license state: {err}"),
     }
 }

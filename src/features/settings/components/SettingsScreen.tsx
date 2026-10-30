@@ -140,6 +140,8 @@ const SettingsScreen = ({
                 setLlmServiceProvider={form.setLlmServiceProvider}
                 llmAuto={form.llmAuto}
                 setLlmAuto={form.setLlmAuto}
+                cleanupOffEverywhere={form.cleanupOffEverywhere}
+                onOpenShortcuts={() => onPaneChange("general")}
                 licenseGateActive={form.licenseGateActive}
                 setLocalModel={form.setLocalModel}
                 handleDownload={form.handleDownload}
