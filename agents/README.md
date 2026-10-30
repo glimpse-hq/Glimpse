@@ -38,6 +38,4 @@ Keep instructions short, actionable, and grounded in the implementation. Add gui
 
 Keep root instructions universal, subtree guides focused on their boundaries, and detailed procedures in the references. Do not add an `AGENTS.md` to every feature folder without a distinct rule to put there. Check local Markdown links relative to the file containing them.
 
-`plans/` holds design proposals and history, not current rules. Verify a plan against code before using it.
-
 The layout follows the [AGENTS.md format](https://agents.md/) and [OpenAI's instruction discovery guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md): broad rules at the root, narrower guidance close to the code, and explicitly linked references.
