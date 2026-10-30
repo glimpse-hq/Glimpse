@@ -59,7 +59,7 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 - **Recording Mode.** Record meetings, calls and lectures from your microphone and your computer's audio, or only the apps you pick, like Zoom or your browser. No bot joins the call. Follow a live transcript while you record, and drop bookmarks. [More](https://tryglimpse.cc/meeting-transcription)
 - **Speaker detection.** [NVIDIA Nemotron 3 Diarization](https://tryglimpse.cc/nemotron-3-diarization) labels up to 8 speakers on your computer, live and after the recording. Runs on Metal, Vulkan or CPU, no NVIDIA card needed.
 - **Library.** Drop in audio or video, scrub the synced transcript, assign speakers, export to `.txt`, `.md`, `.srt`, or `.vtt`.
-- **AI Cleanup.** Polish dictated text with your own LLM, set up in **Settings → Providers**.
+- **AI Cleanup.** Polish dictated text with Glimpse's on-device cleanup model, or your own LLM in **Settings → Providers**.
 - **Edit Mode.** Highlight text, say what you want, and watch it rewrite in place.
 - **Personalization.** Different tones per app or site, with [snippets](https://github.com/glimpse-hq/Glimpse/wiki/snippets) for dynamic context.
 
@@ -80,7 +80,7 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 | ------------ | ----------------- | ----------------------------------------- |
 | **Solo**     | $25 one-time      | You, on 1 device                          |
 | **Plus**     | $39 one-time      | You, on up to 3 devices                   |
-| **Business** | $48 / seat / year | Work use, one seat per person, one device |
+| **Business** | $60 / seat / year | Work use, one seat per person, one device |
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 
@@ -130,7 +130,7 @@ Speech models are downloaded in-app from Hugging Face. The live list lives in **
 
 The on-device cleanup model:
 
-- **[Glimpse C1 2B](https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B)**, Glimpse's adapter (Glimpse C1 License: personal, non-commercial use) on [Ternary Bonsai 2](https://huggingface.co/prism-ml) by PrismML (Apache-2.0), which is built from [Qwen3.5](https://huggingface.co/Qwen) by Alibaba Cloud (Apache-2.0). Its LICENSE and NOTICE.txt are installed with the model files.
+- **[Glimpse C1 2B](https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B)**, Glimpse's adapter (Glimpse C1 License: free to use through Glimpse) on [Ternary Bonsai 2](https://huggingface.co/prism-ml) by PrismML (Apache-2.0), which is built from [Qwen3.5](https://huggingface.co/Qwen) by Alibaba Cloud (Apache-2.0). Its LICENSE and NOTICE.txt are installed with the model files.
 
 ## License
 
