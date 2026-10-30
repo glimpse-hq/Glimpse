@@ -91,6 +91,7 @@ const InstalledModelRow = ({
   active,
   fallback,
   automatic,
+  recommended,
   unsupportedLanguage,
   aneInstalled,
   shiftHeld,
@@ -101,6 +102,7 @@ const InstalledModelRow = ({
   active: boolean;
   fallback: boolean;
   automatic: boolean;
+  recommended: boolean;
   /** The dictation language's name, when this model can't transcribe it. */
   unsupportedLanguage: string | null;
   aneInstalled: boolean;
@@ -140,7 +142,7 @@ const InstalledModelRow = ({
     facts.push(
       t({ id: "settings.models.installed.ane.v2", message: "Neural Engine" }),
     );
-  if (active && automatic)
+  if (active && automatic && recommended)
     facts.push(
       t({
         id: "settings.models.chosen_automatically",
@@ -379,6 +381,7 @@ const ModelsTab = ({
               model={model}
               active={model.key === installedModel?.key}
               automatic={automatic}
+              recommended={model.key === recommendedKey}
               unsupportedLanguage={unsupportedLanguage(model)}
               fallback={remoteSpeechEnabled}
               aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
