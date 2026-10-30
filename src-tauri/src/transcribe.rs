@@ -178,20 +178,37 @@ fn watch_for_stall(
     } else {
         (audio_seconds * 4.0).max(30.0)
     };
+    let limit = Duration::from_secs_f32(limit);
+    let started = Instant::now();
     let app = app.clone();
     async_runtime::spawn(async move {
-        tokio::time::sleep(Duration::from_secs_f32(limit)).await;
+        tokio::time::sleep(limit).await;
         if finished.load(Ordering::Relaxed) {
             return;
         }
         analytics::track_dictation_stalled(&app, &model, mode, audio_seconds);
-        // A model that is still loading is slow, not stuck.
-        while matches!(
-            analytics::activity(),
-            Activity::ModelLoading | Activity::Llm
-        ) || app.state::<AppState>().local_transcriber().is_loading()
-        {
-            tokio::time::sleep(Duration::from_secs_f32(limit)).await;
+        let transcriber = app.state::<AppState>().local_transcriber();
+        loop {
+            // A model that is still loading is slow, not stuck.
+            let wait = if matches!(
+                analytics::activity(),
+                Activity::ModelLoading | Activity::Llm
+            ) || transcriber.is_loading()
+            {
+                limit
+            } else {
+                // The clock restarts when a load ends during this dictation.
+                match transcriber.load_ended_at() {
+                    Some(ended) if ended > started => {
+                        (ended + limit).saturating_duration_since(Instant::now())
+                    }
+                    _ => Duration::ZERO,
+                }
+            };
+            if wait.is_zero() {
+                break;
+            }
+            tokio::time::sleep(wait).await;
             if finished.load(Ordering::Relaxed) {
                 return;
             }
