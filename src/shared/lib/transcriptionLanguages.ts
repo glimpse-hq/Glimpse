@@ -9,6 +9,16 @@ export type TranscriptionLanguageOption = {
   description?: string;
 };
 
+export const languageName = (code: string, locale: string) => {
+  try {
+    return (
+      new Intl.DisplayNames([locale], { type: "language" }).of(code) ?? code
+    );
+  } catch {
+    return code;
+  }
+};
+
 export function languageSupportedByModel(
   model: ModelInfo | undefined,
   language: string,
@@ -17,6 +27,16 @@ export function languageSupportedByModel(
   if (!code) return true;
   return Boolean(
     model?.supported_languages.some((entry) => entry.code === code),
+  );
+}
+
+export function languageSupportedByAny(
+  models: ModelInfo[],
+  language: string,
+): boolean {
+  return (
+    !language.trim() ||
+    models.some((model) => languageSupportedByModel(model, language))
   );
 }
 
@@ -37,7 +57,7 @@ export function collectAllTranscriptionLanguages(
 }
 
 export function buildActiveTranscriptionLanguageOptions(
-  model: ModelInfo | undefined,
+  models: ModelInfo[],
   allLanguages: TranscriptionLanguageOption[],
   remoteSpeechActive: boolean,
   autoLabel: string,
@@ -49,7 +69,7 @@ export function buildActiveTranscriptionLanguageOptions(
   ];
   const locked: TranscriptionLanguageOption[] = [];
   for (const language of allLanguages) {
-    if (remoteSpeechActive || languageSupportedByModel(model, language.code)) {
+    if (remoteSpeechActive || languageSupportedByAny(models, language.code)) {
       supported.push({ ...language, locked: false });
     } else {
       locked.push({ ...language, locked: true });

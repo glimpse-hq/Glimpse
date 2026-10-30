@@ -10,6 +10,7 @@ Choose checks for the change. Run commands from the repository root. Do not run 
 | User-facing strings            | Follow `../reference/i18n.md`, run `bun run lingui:extract` and `bun run lingui:compile`, and inspect catalog changes. Check Rust too when native menu strings change.                                        |
 | Native UI or platform behavior | Exercise the affected flow in the native app on the available platform. A frontend build cannot validate focus, shortcuts, permissions, paste, audio capture, or deep links.                                  |
 
+- To see a screen, take screenshots with the sandbox in [Screenshots](../reference/screenshots.md), never computer use or keystrokes.
 - Format specific frontend or Markdown files with `bun run prettier --write <paths>`. For Rust formatting fixes use `cargo fmt --manifest-path src-tauri/Cargo.toml` and inspect its scope. `bun run format` rewrites the entire repository; use it only when that scope is intended.
 - `bun run format:check` is the read-only repository formatting check. `bun run test:frontend` runs the full existing frontend suite; a focused run is `bun --no-install test tests/frontend/<file>.test.ts`.
 - Do not add tests unless asked. Run relevant existing coverage; when asked for tests, target meaningful regressions rather than prose, styling, or checks that mirror implementation.

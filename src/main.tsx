@@ -7,6 +7,7 @@ import { AppProviders } from "./app/providers";
 import { msg } from "@lingui/core/macro";
 import { i18n, localeReady } from "./i18n";
 import { detectAppPlatform } from "./platform/service";
+import { installDevSandbox } from "./shared/hooks/devSandbox";
 import {
   parseTextSizeMode,
   resolveTextScale,
@@ -189,6 +190,7 @@ const applyInitialAppearance = () => {
 
 document.documentElement.dataset.platform = detectAppPlatform();
 applyInitialAppearance();
+installDevSandbox();
 
 // Catalogs load on demand, so the first one has to land before the first
 // render or every window would paint untranslated and then swap.

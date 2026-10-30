@@ -272,9 +272,8 @@ fn io_detail(err: &std::io::Error) -> ErrorDetail {
         ErrorKind::ResourceBusy | ErrorKind::ExecutableFileBusy => "file_busy",
         ErrorKind::Interrupted => "cancelled",
         ErrorKind::InvalidData => "decode",
-        ErrorKind::AlreadyExists | ErrorKind::DirectoryNotEmpty | ErrorKind::CrossesDevices => {
-            "storage"
-        }
+        ErrorKind::AlreadyExists | ErrorKind::DirectoryNotEmpty => "storage",
+        ErrorKind::CrossesDevices => "cross_device",
         _ => os_error.and_then(hresult_reason).unwrap_or("unknown"),
     };
     ErrorDetail {

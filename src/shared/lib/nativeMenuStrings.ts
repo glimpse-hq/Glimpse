@@ -125,6 +125,10 @@ export const NATIVE_MENU_STRINGS = [
     message: "{subject} is unreachable.",
   }),
   msg({
+    id: "native.provider.cleanup_language_unsupported",
+    message: "The cleanup model doesn't support this language yet.",
+  }),
+  msg({
     id: "native.provider.fallback_local",
     message: "Using your local model instead.",
   }),
@@ -181,6 +185,10 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.error.mic_unavailable",
     message: "Your microphone isn't available. Check that it's connected.",
   }),
+  msg({
+    id: "native.error.mic_stuck",
+    message: "Glimpse can't open your microphone. Try restarting Glimpse.",
+  }),
   msg({ id: "native.error.recording_failed", message: "Recording failed" }),
   msg({
     id: "native.toast.admin_app_shortcut",
@@ -231,6 +239,21 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.toast.recording_write_failed",
     message:
       "Glimpse couldn't keep writing the recording, so it stopped. What was recorded so far is saved.",
+  }),
+  msg({
+    id: "native.quit_recording.title",
+    message: "Quit while recording?",
+  }),
+  msg({
+    id: "native.quit_recording.message",
+    message:
+      "The recording is saved to your Library and transcribed the next time you open Glimpse.",
+  }),
+  msg({ id: "native.quit_recording.save", message: "Save and Quit" }),
+  msg({ id: "native.quit_recording.keep", message: "Keep Recording" }),
+  msg({
+    id: "native.update.recording",
+    message: "Finish the recording before installing the update.",
   }),
   msg({
     id: "native.toast.recording_low_disk",
@@ -289,19 +312,19 @@ export const NATIVE_MENU_STRINGS = [
       "Your license is inactive. Dictation stays free. Some features need an active license.",
   }),
   msg({
-    id: "native.toast.trial_expired.v2",
+    id: "native.toast.trial_expired.v4",
     message:
-      "Your trial ended. Dictation stays free. Library, Record and Personalization need Glimpse Plus.",
+      "Your trial ended. Dictation stays free. Library, Record and Personalization need a Glimpse license.",
   }),
   msg({
-    id: "native.toast.trial_last_day.v2",
+    id: "native.toast.trial_last_day.v4",
     message:
-      "Last day of your trial. Dictation stays free. After today, Library, Record and Personalization need Glimpse Plus.",
+      "Last day of your trial. Dictation stays free. After today, Library, Record and Personalization need a Glimpse license.",
   }),
   msg({
-    id: "native.toast.trial_days_left.v2",
+    id: "native.toast.trial_days_left.v4",
     message:
-      "{days} days left in your trial. Dictation stays free. After that, Library, Record and Personalization need Glimpse Plus.",
+      "{days} days left in your trial. Dictation stays free. After that, Library, Record and Personalization need a Glimpse license.",
   }),
   msg({ id: "native.toast.manage_license", message: "Manage license" }),
   msg({ id: "native.toast.see_options", message: "See options" }),

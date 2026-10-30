@@ -25,7 +25,10 @@ fn help() {
             (
                 "OPTIONS",
                 &[
-                    ("--tab <name>", "Settings tab: models, about, account."),
+                    (
+                        "--tab <name>",
+                        "Settings tab: account, general, app, about, models, api.",
+                    ),
                     ("--json", "Output machine-readable JSON."),
                 ],
             ),

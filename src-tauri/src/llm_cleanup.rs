@@ -6,6 +6,7 @@ use reqwest::Client;
 use reqwest::StatusCode;
 use reqwest::header::RETRY_AFTER;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
@@ -245,6 +246,73 @@ pub fn uses_bonsai_provider(settings: &UserSettings) -> bool {
     active_provider(settings) == BONSAI_PROVIDER
 }
 
+/// The settings to clean up one dictation with, or `None` to skip cleanup.
+/// The cleanup model only knows the languages it was trained on; for others,
+/// Automatic hands the dictation to Apple's model when it supports the language.
+/// Reads cached state only, so it is safe per dictation.
+pub fn settings_for_language<'a>(
+    settings: &'a UserSettings,
+    detected: Option<&str>,
+) -> Option<Cow<'a, UserSettings>> {
+    if !settings.llm_enabled || !uses_bonsai_provider(settings) {
+        return Some(Cow::Borrowed(settings));
+    }
+    let languages = dictation_languages(settings, detected);
+    if languages.is_empty()
+        || languages
+            .iter()
+            .any(|language| crate::speech::catalog::cleanup_model_supports(language))
+    {
+        return Some(Cow::Borrowed(settings));
+    }
+    if settings.llm_auto
+        && apple_llm_ready()
+        && languages.iter().any(|language| apple_supports(language))
+    {
+        let mut apple = settings.clone();
+        apple.llm_auto = false;
+        apple.llm_provider = APPLE_PROVIDER.to_string();
+        return Some(Cow::Owned(apple));
+    }
+    None
+}
+
+/// The chosen dictation language, else the one the speech model detected,
+/// else the user's languages. Base codes only.
+fn dictation_languages(settings: &UserSettings, detected: Option<&str>) -> Vec<String> {
+    let base = |code: &str| {
+        let base = code.split(['-', '_']).next().unwrap_or_default();
+        crate::model_language_table::known_language_code(&base.to_ascii_lowercase())
+    };
+    let chosen = settings.language.trim();
+    if !chosen.is_empty() && !chosen.eq_ignore_ascii_case("auto") {
+        return vec![base(chosen).unwrap_or(chosen).to_string()];
+    }
+    // Some remote providers report a name like "english", which isn't a code.
+    let detected = detected
+        .map(|code| code.split(['-', '_']).next().unwrap_or_default())
+        .filter(|code| (2..=3).contains(&code.len()));
+    match detected {
+        Some(code) => vec![base(code).unwrap_or(code).to_ascii_lowercase()],
+        None => crate::speech::catalog::user_languages(settings),
+    }
+}
+
+fn apple_supports(language: &str) -> bool {
+    static LANGUAGES: OnceLock<Vec<String>> = OnceLock::new();
+    let languages = match LANGUAGES.get() {
+        Some(languages) => languages,
+        None => {
+            let fetched = glimpse_language::apple::apple_supported_languages();
+            if fetched.is_empty() {
+                return false;
+            }
+            LANGUAGES.get_or_init(|| fetched)
+        }
+    };
+    languages.iter().any(|code| code == language)
+}
+
 /// Built-in models with no endpoint, API key, or model name to configure.
 pub fn is_on_device_provider(provider: &str) -> bool {
     matches!(provider.trim(), APPLE_PROVIDER | BONSAI_PROVIDER)
@@ -276,16 +344,19 @@ pub fn should_refine_transcript(settings: &UserSettings) -> bool {
 }
 
 pub fn prewarm_cleanup(settings: &UserSettings) {
-    let apple = uses_apple_provider(settings);
-    if !settings.llm_enabled || !(apple || uses_bonsai_provider(settings)) {
+    if !settings.llm_enabled || !(uses_apple_provider(settings) || uses_bonsai_provider(settings)) {
         return;
     }
     let settings = settings.clone();
     std::thread::spawn(move || {
-        if !apple {
+        if !uses_apple_provider(&settings) {
             // Picks up model files copied in since the last scan.
             crate::cleanup_model::refresh_installed();
         }
+        let Some(settings) = settings_for_language(&settings, None) else {
+            return;
+        };
+        let apple = uses_apple_provider(&settings);
         if !should_refine_transcript(&settings) {
             return;
         }
@@ -315,19 +386,22 @@ pub fn prewarm_edit(settings: &UserSettings) {
     if !settings.llm_enabled {
         return;
     }
-    if uses_apple_provider(settings) {
-        std::thread::spawn(|| {
+    if !(uses_apple_provider(settings) || uses_bonsai_provider(settings)) {
+        return;
+    }
+    let settings = settings.clone();
+    std::thread::spawn(move || {
+        let Some(settings) = settings_for_language(&settings, None) else {
+            return;
+        };
+        if uses_apple_provider(&settings) {
             if let Err(err) = glimpse_language::apple::apple_prewarm(EDIT_PROMPT.trim()) {
                 tracing::debug!("[Apple LLM] edit prewarm skipped: {err}");
             }
-        });
-    } else if uses_bonsai_provider(settings) {
-        std::thread::spawn(|| {
-            if let Err(err) = crate::cleanup_model::prewarm(EDIT_PROMPT.trim()) {
-                tracing::debug!("[cleanup model] edit prewarm skipped: {err}");
-            }
-        });
-    }
+        } else if let Err(err) = crate::cleanup_model::prewarm(EDIT_PROMPT.trim()) {
+            tracing::debug!("[cleanup model] edit prewarm skipped: {err}");
+        }
+    });
 }
 
 pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {

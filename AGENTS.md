@@ -7,7 +7,7 @@ Glimpse is a local-first dictation app for macOS and Windows (never Linux). Taur
 - Check `git status --short` and the existing diff before editing. Preserve unrelated work.
 - Research before implementing: trace the existing owner and callers, check dependencies already in use, and consult primary documentation for unfamiliar APIs or approaches. Extend the existing path instead of layering a second solution over it.
 - Keep edits tied to the requested behavior. Finding a large file or a legacy exception is not a reason to reorganize unrelated code.
-- If guidance and code disagree, verify the behavior and fix the stale guidance. Plans in `agents/plans/` are proposals, not implementation truth.
+- If guidance and code disagree, verify the behavior and fix the stale guidance.
 
 ## Product boundaries
 

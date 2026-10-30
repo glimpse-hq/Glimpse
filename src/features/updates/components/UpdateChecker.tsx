@@ -2,7 +2,6 @@ import { useLingui } from "@lingui/react/macro";
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
-import { relaunch } from "@tauri-apps/plugin-process";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DownloadSimple as Download,
@@ -154,10 +153,8 @@ export function UpdateChecker({
     }
   };
 
-  const handleRelaunch = async () => {
-    localStorage.removeItem(PENDING_RESTART_KEY);
-    await relaunch();
-  };
+  // The pending-restart key clears itself after the restart.
+  const handleRelaunch = () => invoke("restart_to_update");
 
   if (storeBuild) {
     return (

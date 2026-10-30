@@ -25,7 +25,7 @@ use tauri::ActivationPolicy;
 
 pub(crate) const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
 const MENU_ID_OPEN_SETTINGS: &str = "open_settings";
-const MENU_ID_QUIT: &str = "quit_glimpse";
+pub(crate) const MENU_ID_QUIT: &str = "quit_glimpse";
 const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
 const MENU_ID_RECORDING_START: &str = "menu_recording_start";
@@ -53,6 +53,9 @@ pub(crate) enum SettingsPage {
     Personalization,
     Library,
     Record,
+    General,
+    App,
+    Api,
     CheckoutReturned,
 }
 
@@ -67,6 +70,9 @@ impl SettingsPage {
             Self::Personalization => "navigate:personalization",
             Self::Library => "navigate:library",
             Self::Record => "navigate:record",
+            Self::General => "navigate:general",
+            Self::App => "navigate:app",
+            Self::Api => "navigate:api",
             Self::CheckoutReturned => crate::EVENT_LICENSE_CHECKOUT_RETURNED,
         }
     }
@@ -622,7 +628,7 @@ pub(crate) fn handle_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
                 tracing::error!("Failed to open settings window: {err}");
             }
         }
-        MENU_ID_QUIT => app.exit(0),
+        MENU_ID_QUIT => quit(app, false),
         MENU_ID_CHECK_UPDATES => {
             if let Err(err) = open_settings_page(app, SettingsPage::About) {
                 tracing::error!("Failed to open the About screen: {err}");
@@ -645,6 +651,72 @@ pub(crate) fn handle_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
                 crate::platform::macos::menu::handle_app_menu_event(app, id);
             }
         }
+    }
+}
+
+static QUIT_PROMPT_OPEN: AtomicBool = AtomicBool::new(false);
+
+/// Quits (or restarts) at once, or asks first while a recording is in progress.
+pub(crate) fn quit(app: &AppHandle<AppRuntime>, restart: bool) {
+    let leave = move |app: &AppHandle<AppRuntime>| {
+        if restart {
+            app.request_restart();
+        } else {
+            app.exit(0);
+        }
+    };
+    let recording = app.state::<AppState>().recording().state();
+    if recording.status == "idle" {
+        leave(app);
+        return;
+    }
+    // Stays set once Save and Quit is chosen, so a second Quit can't race the save.
+    if QUIT_PROMPT_OPEN.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    // Finished from the Record screen: nothing to ask, only the save to wait for.
+    if recording.status == "saving" {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            wait_for_save(&app).await;
+            leave(&app);
+        });
+        return;
+    }
+    let strings = MenuStrings::resolve(&app.state::<AppState>().current_settings());
+    let prompt = crate::platform::QuitPrompt {
+        title: strings.get("native.quit_recording.title"),
+        message: strings.get("native.quit_recording.message"),
+        keep: strings.get("native.quit_recording.keep"),
+        save: strings.get("native.quit_recording.save"),
+    };
+    let handle = app.clone();
+    crate::platform::confirm_quit_while_recording(app, prompt, move |save| {
+        let app = handle;
+        if !save {
+            QUIT_PROMPT_OPEN.store(false, Ordering::SeqCst);
+            return;
+        }
+        tauri::async_runtime::spawn(async move {
+            // A session that can't be saved now stays on disk and is recovered on launch.
+            if let Err(err) =
+                crate::recording::finish_recording_session(app.clone(), String::new()).await
+            {
+                tracing::warn!("Recording not saved before quitting: {err}");
+                wait_for_save(&app).await;
+            }
+            leave(&app);
+        });
+    });
+}
+
+/// Waits up to 10s for a finish started from the Record screen to save.
+async fn wait_for_save(app: &AppHandle<AppRuntime>) {
+    for _ in 0..50 {
+        if !app.state::<AppState>().recording().is_active() {
+            return;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     }
 }
 
@@ -775,7 +847,9 @@ fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWi
                 .pill()
                 .stop_microphone_test(&app_handle);
             #[cfg(target_os = "macos")]
-            let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
+            if !crate::integrations::dev_sandbox() {
+                let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
+            }
 
             let generation = SETTINGS_WINDOW_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
             if !app_handle
@@ -808,6 +882,10 @@ fn show_settings_window(
     window: &WebviewWindow<AppRuntime>,
 ) -> tauri::Result<()> {
     SETTINGS_WINDOW_GENERATION.fetch_add(1, Ordering::SeqCst);
+    #[cfg(debug_assertions)]
+    if crate::integrations::dev_sandbox() {
+        return crate::integrations::dev::show_in_background(window);
+    }
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(ActivationPolicy::Regular);
     #[cfg(not(target_os = "macos"))]

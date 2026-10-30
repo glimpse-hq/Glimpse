@@ -26,6 +26,7 @@ import {
   useModelStatuses,
 } from "../settings/models-queries";
 import { onboardingMachine, getSteps } from "./machine";
+import type { OnboardingStep } from "./platform";
 import { useImportableApps } from "../import/queries";
 import { ImportStep } from "../import/components/ImportStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
@@ -42,9 +43,10 @@ import {
   useLicenseState,
 } from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
-import ModelPickerModal from "../../shared/ui/ModelPickerModal";
 import WindowControls from "../../shared/ui/WindowControls";
 import { showErrorToast } from "../../shared/lib/errorToast";
+import { downloadFailureLabel } from "../../shared/lib/modelStats";
+import { useDevRequest } from "../../shared/hooks/devSandbox";
 import type {
   DownloadEvent,
   StoredSettings,
@@ -143,13 +145,12 @@ export default function OnboardingScreen({
   onComplete,
 }: OnboardingScreenProps) {
   const { t } = useLingui();
-  const [state, send] = useMachine(onboardingMachine);
+  const [state, send, actor] = useMachine(onboardingMachine);
   const [downloadStatus, setDownloadStatus] = useState<
     Record<string, DownloadEvent>
   >({});
   const [openingLicenseCheckout, setOpeningLicenseCheckout] = useState(false);
   const [licenseOpenError, setLicenseOpenError] = useState<string | null>(null);
-  const [showModelPicker, setShowModelPicker] = useState(false);
   const [source, setSource] = useState<OnboardingSource | null>(null);
   const ctx = state.context;
   const queryClient = useQueryClient();
@@ -373,26 +374,6 @@ export default function OnboardingScreen({
       }
     },
     [modelCatalogQuery.data, queryClient, t, updateDownloadStatus],
-  );
-
-  const handleDelete = useCallback(
-    async (modelKey: string) => {
-      try {
-        const status = await modelsApi.deleteModel(modelKey);
-        queryClient.setQueryData(modelKeys.status(modelKey), status);
-        updateDownloadStatus(modelKey, { status: "idle", percent: 0 });
-      } catch {
-        updateDownloadStatus(modelKey, {
-          status: "error",
-          percent: 0,
-          message: t({
-            id: "onboarding.delete.failed",
-            message: "Delete failed",
-          }),
-        });
-      }
-    },
-    [queryClient, t, updateDownloadStatus],
   );
 
   const handleCancelDownload = useCallback(
@@ -630,6 +611,54 @@ export default function OnboardingScreen({
     send({ type: "BACK" });
   }, [send]);
 
+  // `glimpse dev onboarding <action>` in the screenshot sandbox.
+  useDevRequest("dev:onboarding", ({ action }) => {
+    const order: OnboardingStep[] = [
+      "welcome",
+      "import",
+      "source",
+      "permissions",
+      "license",
+      "done",
+      "practice",
+    ];
+    const target = action as OnboardingStep;
+    if (order.includes(target)) {
+      for (let hop = 0; hop < order.length * 2; hop += 1) {
+        const current = actor.getSnapshot().value as OnboardingStep;
+        if (current === target) return;
+        if (order.indexOf(target) < order.indexOf(current)) {
+          send({ type: "BACK" });
+        } else {
+          send({ type: current === "done" ? "START_PRACTICE" : "NEXT" });
+        }
+      }
+      throw new Error(`Setup has no ${target} step here.`);
+    }
+    if (action === "download-failed" || action === "disk-full") {
+      updateDownloadStatus(selectedModel, {
+        status: "error",
+        percent: 0,
+        message: String(action),
+        reason: action === "disk-full" ? "disk_full" : "network",
+      });
+    } else if (action === "setup-failed") {
+      send({
+        type: "COMPLETE_ERROR",
+        error: t({
+          id: "onboarding.complete.failed",
+          message: "Could not finish setup. Check your settings and try again.",
+        }),
+      });
+    } else if (action === "faq") {
+      send({ type: "TOGGLE_FAQ", show: true });
+    } else if (action === "close") {
+      send({ type: "TOGGLE_FAQ", show: false });
+    } else {
+      throw new Error(`Unknown onboarding action ${String(action)}.`);
+    }
+  });
+
   // A short beat on the picked option, then move on without a Continue.
   const sourceAdvanceTimer = useRef<number | null>(null);
   useEffect(
@@ -730,11 +759,30 @@ export default function OnboardingScreen({
     handleDownload,
   ]);
 
+  const speechModelState = displayStateByModel[selectedModel];
+  const speechModelFailure =
+    !selectedModelReady && speechModelState?.status === "error"
+      ? speechModelState
+      : null;
   const practiceModelState = selectedModelReady
     ? "ready"
-    : displayStateByModel[selectedModel]?.status === "error"
+    : speechModelFailure
       ? "failed"
       : "downloading";
+  const speechModelFailed = speechModelFailure
+    ? t({
+        id: "onboarding.speech_model_failed",
+        message: "The speech model didn't download.",
+      })
+    : null;
+  const speechModelReason =
+    speechModelFailure?.reason && speechModelFailure.reason !== "failed"
+      ? `${downloadFailureLabel(speechModelFailure.reason)}.`
+      : null;
+  const speechModelError = speechModelFailed
+    ? [speechModelFailed, speechModelReason].filter(Boolean).join(" ")
+    : null;
+  const retrySpeechModel = () => void handleDownload(selectedModel);
 
   const stepDirection = zoomingFromWelcome.current
     ? 0
@@ -839,8 +887,8 @@ export default function OnboardingScreen({
             stepMotionProps={stepMotionProps}
             smartShortcut={ctx.smartShortcut}
             onSetShortcut={applySmartShortcut}
-            modelLabel={selectedModelInfo?.label ?? null}
-            onEditModel={() => setShowModelPicker(true)}
+            speechModelError={speechModelReason ?? speechModelFailed}
+            onRetrySpeechModel={retrySpeechModel}
             microphoneDevice={ctx.microphoneDevice}
             onSetMicrophoneDevice={(device) =>
               send({ type: "SET_MICROPHONE_DEVICE", device })
@@ -862,6 +910,8 @@ export default function OnboardingScreen({
             smartShortcut={ctx.smartShortcut}
             onSetShortcut={applySmartShortcut}
             modelState={practiceModelState}
+            speechModelError={speechModelError}
+            onRetrySpeechModel={retrySpeechModel}
             onFinish={handleFinishOnboarding}
             isFinishing={ctx.isCompleting}
             completionError={ctx.completionError}
@@ -880,7 +930,11 @@ export default function OnboardingScreen({
       key: selectedModel,
       name: t({ id: "onboarding.downloads.speech", message: "Speech model" }),
       state: displayStateByModel[selectedModel] ?? null,
-      onRetry: () => void handleDownload(selectedModel),
+      // Done and practice put the retry in their main button.
+      onRetry:
+        currentStep === "done" || currentStep === "practice"
+          ? null
+          : retrySpeechModel,
     });
   }
   if (diarizer && (speakerWanted || speakerStarted)) {
@@ -958,26 +1012,6 @@ export default function OnboardingScreen({
         <FAQModal
           isOpen={ctx.showFAQModal}
           onClose={() => send({ type: "TOGGLE_FAQ", show: false })}
-        />
-
-        <ModelPickerModal
-          open={showModelPicker}
-          onClose={() => setShowModelPicker(false)}
-          catalog={modelCatalogQuery.data ?? []}
-          activeKey={selectedModel}
-          isInstalled={(key) =>
-            Boolean(modelStatus[key]?.installed) ||
-            displayStateByModel[key]?.status === "complete"
-          }
-          isAneInstalled={(key) => Boolean(modelStatus[key]?.ane_installed)}
-          progressFor={(key) => displayStateByModel[key]}
-          onUse={(key) => {
-            send({ type: "SELECT_MODEL", key });
-            setShowModelPicker(false);
-          }}
-          onDownload={handleDownload}
-          onDelete={handleDelete}
-          onCancel={handleCancelDownload}
         />
       </div>
     </MotionConfig>

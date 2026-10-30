@@ -2,7 +2,7 @@ use crate::AppRuntime;
 use crate::native_i18n::MenuStrings;
 use crate::settings::UserSettings;
 use crate::speech::menu::{build_model_status_items, build_models_submenu};
-use crate::tray::{MENU_ID_CHECK_UPDATES, build_microphone_submenu};
+use crate::tray::{MENU_ID_CHECK_UPDATES, MENU_ID_QUIT, build_microphone_submenu};
 use tauri::AppHandle;
 use tauri::menu::{Menu, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 
@@ -68,10 +68,15 @@ pub fn build_app_menu(
             Some(strings.get("native.menu.show_all")),
         )?)
         .separator()
-        .item(&PredefinedMenuItem::quit(
-            app,
-            Some(&strings.format("native.menu.quit", &[("app", &app_name)])),
-        )?)
+        // Not the predefined Quit: that calls terminate:, which skips the recording prompt.
+        .item(
+            &MenuItemBuilder::with_id(
+                MENU_ID_QUIT,
+                strings.format("native.menu.quit", &[("app", &app_name)]),
+            )
+            .accelerator("CmdOrCtrl+Q")
+            .build(app)?,
+        )
         .build()?;
 
     // View menu

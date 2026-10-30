@@ -428,6 +428,17 @@ pub fn track_paywall_clicked(app: tauri::AppHandle<AppRuntime>, source: String) 
     capture_event(&app, "paywall_clicked", json!({ "source": source }));
 }
 
+/// Records what the user chose on the trial-ended screen, or that they closed
+/// the window without choosing.
+#[tauri::command]
+pub fn track_trial_ended_choice(app: tauri::AppHandle<AppRuntime>, choice: String) {
+    let choice = match choice.as_str() {
+        "buy" | "continue_free" | "enter_key" | "closed" => choice.as_str(),
+        _ => "other",
+    };
+    capture_event(&app, "trial_ended_choice", json!({ "choice": choice }));
+}
+
 /// Records selected product-setting toggles after settings persist.
 pub fn track_setting_changed(
     app: &tauri::AppHandle<AppRuntime>,

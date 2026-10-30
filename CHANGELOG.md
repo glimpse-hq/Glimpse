@@ -1,3 +1,28 @@
+1.4.1
+
+### New Features
+
+- Glimpse is now available in Japanese and Brazilian Portuguese.
+
+### Improvements
+
+- Cleanup is now on for your shortcuts after setup, and works right after you buy a license, without restarting Glimpse.
+- Settings shows when cleanup is off for all your shortcuts and links to where you turn it on.
+- The last setup screen is simpler. Glimpse picks the speech model for you, and you can change it later in Settings.
+- If the speech model fails to download during setup, Glimpse says so and lets you retry or skip it.
+- Buying a license is simpler. Buttons show the price, and you choose between 1 computer or up to 3.
+- Turning on Choose automatically for speech models switches to the recommended model right away, and keeps the models you downloaded.
+- Cleanup skips languages Glimpse C1 doesn't support and inserts your words as spoken. On a Mac, Apple Intelligence cleans them up instead when it supports the language.
+- Quitting Glimpse during a recording now asks first and can save the recording before it quits. Updates wait until the recording ends.
+
+### Fixes
+
+- Whisper Large V3 Turbo downloads work again. They had failed since mid-October, mostly on Windows, because the download source changed the files. Glimpse now downloads every model from its own source, so this can't happen again.
+- Choose automatically now switches to a speech model that supports your dictation language when you change it.
+- Model downloads no longer fail on some Windows computers with Glimpse from the Microsoft Store.
+- Your first dictation after opening Glimpse or a break no longer times out while a large speech model finishes loading.
+- Dictation recovers when the microphone fails to start, like when AirPods connect. On Windows, a microphone that keeps failing shows one message instead of an error on every press.
+
 1.4.0
 
 ## New Models

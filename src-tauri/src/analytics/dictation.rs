@@ -154,25 +154,32 @@ pub fn track_llm_failed(
     );
 }
 
-static CLEANUP_SKIP_REPORTED: AtomicBool = AtomicBool::new(false);
-static EDIT_SKIP_REPORTED: AtomicBool = AtomicBool::new(false);
+/// Why the language model step was skipped.
+#[derive(Clone, Copy)]
+pub enum LlmSkipReason {
+    /// The last check found the provider unreachable.
+    PreflightUnavailable,
+    /// The cleanup model doesn't support the dictation's language.
+    UnsupportedLanguage,
+}
 
-/// Records, at most once per app session for each kind (cleanup or edit),
-/// that the language model step was skipped because the last check found the
-/// provider unreachable.
-pub fn track_llm_skipped(app: &tauri::AppHandle<AppRuntime>, kind: &str) {
-    let reported = if kind == "edit" {
-        &EDIT_SKIP_REPORTED
-    } else {
-        &CLEANUP_SKIP_REPORTED
-    };
-    if reported.swap(true, Ordering::Relaxed) {
+static SKIPS_REPORTED: [AtomicBool; 4] = [const { AtomicBool::new(false) }; 4];
+
+/// Records, at most once per app session for each kind (cleanup or edit) and
+/// reason, that the language model step was skipped.
+pub fn track_llm_skipped(app: &tauri::AppHandle<AppRuntime>, kind: &str, reason: LlmSkipReason) {
+    let index = usize::from(kind == "edit") * 2 + reason as usize;
+    if SKIPS_REPORTED[index].swap(true, Ordering::Relaxed) {
         return;
     }
+    let reason = match reason {
+        LlmSkipReason::PreflightUnavailable => "preflight_unavailable",
+        LlmSkipReason::UnsupportedLanguage => "unsupported_language",
+    };
     capture_event(
         app,
         "llm_skipped",
-        json!({ "kind": kind, "reason": "preflight_unavailable" }),
+        json!({ "kind": kind, "reason": reason }),
     );
 }
 

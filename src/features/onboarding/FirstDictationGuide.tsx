@@ -41,6 +41,8 @@ interface FirstDictationGuideProps {
   smartShortcut: string;
   onSetShortcut: (shortcut: string) => void | Promise<void>;
   modelState: "ready" | "downloading" | "failed";
+  speechModelError: string | null;
+  onRetrySpeechModel: () => void;
   onFinish: (firstDictation: boolean) => void;
   isFinishing: boolean;
   completionError: string | null;
@@ -51,6 +53,8 @@ export default function FirstDictationGuide({
   smartShortcut,
   onSetShortcut,
   modelState,
+  speechModelError,
+  onRetrySpeechModel,
   onFinish,
   isFinishing,
   completionError,
@@ -184,11 +188,8 @@ export default function FirstDictationGuide({
       id: "onboarding.first_dictation.waiting.model",
       message: "Your model is still downloading. Please wait.",
     });
-  } else if (modelState === "failed") {
-    waitingMessage = t({
-      id: "onboarding.first_dictation.waiting.model_failed",
-      message: "Your model didn't download. Retry below.",
-    });
+  } else if (speechModelError) {
+    waitingMessage = speechModelError;
   } else if (capturing) {
     waitingMessage = t({
       id: "onboarding.first_dictation.waiting.capture",
@@ -235,6 +236,18 @@ export default function FirstDictationGuide({
                   message: "Continue to Glimpse",
                 })
               )}
+            </button>
+          ) : speechModelError ? (
+            <button
+              type="button"
+              onClick={onRetrySpeechModel}
+              disabled={isFinishing}
+              className={PRIMARY_BUTTON_CLASS}
+            >
+              {t({
+                id: "onboarding.speech_model_retry",
+                message: "Retry download",
+              })}
             </button>
           ) : (
             <button

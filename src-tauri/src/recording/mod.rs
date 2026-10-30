@@ -1721,6 +1721,12 @@ pub async fn finish_recording_session(
     .await
     .map_err(|err| err.to_string())?;
 
+    // Another finish took the session first and is still saving it.
+    if let Err(("finish", err)) = &result
+        && err.to_string() == "not_recording"
+    {
+        return Err("not_recording".into());
+    }
     manager.shared.reset(true);
     manager.shared.live.publish(&app, false);
     analytics::set_activity(Activity::Idle);

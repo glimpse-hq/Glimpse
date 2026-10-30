@@ -88,8 +88,11 @@ const MemberCardInner = ({
         : edition === "contributor"
           ? t({ id: "member_card.tier_contributor", message: "Contributor" })
           : deviceLimit <= 1
-            ? t({ id: "member_card.tier_solo", message: "Solo" })
-            : t({ id: "member_card.tier_plus", message: "Plus" });
+            ? t({ id: "member_card.tier_one_device", message: "1 device" })
+            : t({
+                id: "member_card.tier_devices",
+                message: `Up to ${deviceLimit} devices`,
+              });
   const editionBlurb =
     edition === "commercial"
       ? t({
@@ -173,8 +176,8 @@ const MemberCardInner = ({
       ? ("sweep" as const)
       : ("none" as const);
   const idlePrompt = t({
-    id: "member_card.draft_idle.v2",
-    message: "Glimpse Plus",
+    id: "member_card.draft_idle.v4",
+    message: "No license yet",
   });
 
   const coverageBase = editionBlurb;

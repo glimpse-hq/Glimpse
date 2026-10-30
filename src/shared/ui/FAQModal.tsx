@@ -123,9 +123,9 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
         message: "What is free vs paid?",
       }),
       answer: t({
-        id: "faq.free.answer.v5",
+        id: "faq.free.answer.v7",
         message:
-          "Dictation is free with every model: local transcription, dictionary, replacements, and history, with no word limits or subscription. Library, Record, Cleanup, and Personalization come with Glimpse Plus, or Glimpse Solo for one device, and you can try them free for 14 days. Both are a single payment. The local API server and the command line need a purchased license and aren't part of the trial. Enter your license key in Settings → Account.",
+          "Dictation is free with every model: local transcription, dictionary, replacements, and history, with no word limits or subscription. Library, Record, Cleanup, and Personalization come with a Glimpse license, a single payment of $25 for one Mac or PC or $39 for up to three. You can try them free for 14 days. The local API server and the command line need a purchased license and aren't part of the trial. Enter your license key in Settings → Account.",
       }),
     },
     {

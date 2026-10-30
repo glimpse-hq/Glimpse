@@ -25,6 +25,8 @@ use crate::{
 struct ProcessedTranscript {
     final_transcript: String,
     llm_cleaned: bool,
+    /// The "provider:model" label of the model that cleaned it, if one did.
+    llm_model: Option<String>,
     pasted: bool,
     llm_seconds: Option<f32>,
     llm_outcome: &'static str,
@@ -39,6 +41,8 @@ enum ProcessTranscriptOutcome {
 
 struct ProcessTranscriptInput<'a> {
     raw_transcript: String,
+    /// The language the speech model detected, when it reports one.
+    detected_language: Option<&'a str>,
     pending_selected_text: Option<&'a str>,
     settings: &'a UserSettings,
     active_mode: Option<&'a Personality>,
@@ -178,20 +182,37 @@ fn watch_for_stall(
     } else {
         (audio_seconds * 4.0).max(30.0)
     };
+    let limit = Duration::from_secs_f32(limit);
+    let started = Instant::now();
     let app = app.clone();
     async_runtime::spawn(async move {
-        tokio::time::sleep(Duration::from_secs_f32(limit)).await;
+        tokio::time::sleep(limit).await;
         if finished.load(Ordering::Relaxed) {
             return;
         }
         analytics::track_dictation_stalled(&app, &model, mode, audio_seconds);
-        // A model that is still loading is slow, not stuck.
-        while matches!(
-            analytics::activity(),
-            Activity::ModelLoading | Activity::Llm
-        ) || app.state::<AppState>().local_transcriber().is_loading()
-        {
-            tokio::time::sleep(Duration::from_secs_f32(limit)).await;
+        let transcriber = app.state::<AppState>().local_transcriber();
+        loop {
+            // A model that is still loading is slow, not stuck.
+            let wait = if matches!(
+                analytics::activity(),
+                Activity::ModelLoading | Activity::Llm
+            ) || transcriber.is_loading()
+            {
+                limit
+            } else {
+                // The clock restarts when a load ends during this dictation.
+                match transcriber.load_ended_at() {
+                    Some(ended) if ended > started => {
+                        (ended + limit).saturating_duration_since(Instant::now())
+                    }
+                    _ => Duration::ZERO,
+                }
+            };
+            if wait.is_zero() {
+                break;
+            }
+            tokio::time::sleep(wait).await;
             if finished.load(Ordering::Relaxed) {
                 return;
             }
@@ -370,6 +391,7 @@ pub(crate) fn queue_transcription(
                     &http,
                     ProcessTranscriptInput {
                         raw_transcript: raw_transcript.clone(),
+                        detected_language: result.language.as_deref(),
                         pending_selected_text: pending_selected_text.as_deref(),
                         settings: &settings,
                         active_mode: active_mode.as_ref(),
@@ -417,7 +439,7 @@ pub(crate) fn queue_transcription(
                     saved: &saved_for_task,
                     settings: &settings,
                     final_text: &processed.final_transcript,
-                    llm_cleaned: processed.llm_cleaned,
+                    llm_model: processed.llm_model,
                     synced: false,
                     mode: active_mode.as_ref(),
                     speech_model: result.speech_model,
@@ -692,6 +714,7 @@ async fn transcribe_recovered_recording(
         &http,
         ProcessTranscriptInput {
             raw_transcript: raw_transcript.clone(),
+            detected_language: result.language.as_deref(),
             pending_selected_text: None,
             settings,
             active_mode: active_mode.as_ref(),
@@ -725,7 +748,7 @@ async fn transcribe_recovered_recording(
         saved,
         settings,
         final_text: &processed.final_transcript,
-        llm_cleaned: processed.llm_cleaned,
+        llm_model: processed.llm_model,
         synced: false,
         mode: active_mode.as_ref(),
         speech_model: result.speech_model,
@@ -790,6 +813,7 @@ async fn process_transcript_text(
 ) -> ProcessTranscriptOutcome {
     let ProcessTranscriptInput {
         raw_transcript,
+        detected_language,
         pending_selected_text,
         settings,
         active_mode,
@@ -810,16 +834,25 @@ async fn process_transcript_text(
     let llm_needed = is_edit_mode || should_refine_transcript;
     let preflight_unavailable =
         llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
-    let should_use_llm = if is_edit_mode {
-        llm_available && !preflight_unavailable
+    let llm_wanted = if is_edit_mode {
+        llm_available
     } else {
-        should_refine_transcript && !preflight_unavailable
+        should_refine_transcript
     };
+    let routed = if llm_wanted {
+        llm_cleanup::settings_for_language(settings, detected_language)
+    } else {
+        Some(std::borrow::Cow::Borrowed(settings))
+    };
+    let unsupported_language = routed.is_none();
+    let llm_settings = routed.as_deref().unwrap_or(settings);
+    let should_use_llm = llm_wanted && !preflight_unavailable && !unsupported_language;
 
     let mut llm_seconds = None;
     let mut llm_outcome = "off";
     // Reported after insertion so analytics never delays the paste.
     let mut llm_failure = None;
+    let mut skip_reason = None;
     let mut input_skipped = false;
     let (final_transcript, llm_cleaned) = if should_use_llm {
         analytics::set_activity(Activity::Llm);
@@ -835,7 +868,9 @@ async fn process_transcript_text(
             crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
         }
         let outcome = if let Some(selected) = pending_selected_text {
-            match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
+            match llm_cleanup::edit_transcription(http, selected, &raw_transcript, llm_settings)
+                .await
+            {
                 Ok(edited) => (edited, true),
                 Err(err) => {
                     let message = llm_cleanup::llm_issue_message(&err);
@@ -866,7 +901,7 @@ async fn process_transcript_text(
             match llm_cleanup::cleanup_transcription_with_context(
                 http,
                 &raw_transcript,
-                settings,
+                llm_settings,
                 active_mode,
                 active_context,
             )
@@ -912,13 +947,29 @@ async fn process_transcript_text(
         };
         end_step(Activity::Llm, previous_activity);
         outcome
+    } else if unsupported_language {
+        tracing::info!("Cleanup skipped: the cleanup model doesn't support this language");
+        llm_outcome = "skipped";
+        skip_reason = Some(analytics::LlmSkipReason::UnsupportedLanguage);
+        match pending_selected_text {
+            Some(selected) => {
+                let reason = toast::native(app, "native.provider.cleanup_language_unsupported");
+                maybe_warn_llm_issue(app, true, &reason);
+                (selected.to_owned(), false)
+            }
+            None => (raw_transcript.clone(), false),
+        }
     } else {
         if preflight_unavailable {
             llm_outcome = "skipped";
+            skip_reason = Some(analytics::LlmSkipReason::PreflightUnavailable);
             maybe_warn_llm_unavailable(app, is_edit_mode);
         }
         (raw_transcript.clone(), false)
     };
+    let llm_model = llm_cleaned
+        .then(|| llm_cleanup::resolved_model_label(llm_settings))
+        .flatten();
     if should_use_llm {
         crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_DEFAULT);
     }
@@ -993,9 +1044,7 @@ async fn process_transcript_text(
                         settings.dictionary.clone(),
                         settings.auto_dictionary_ignored.clone(),
                         selected_model,
-                        llm_cleaned
-                            .then(|| llm_cleanup::resolved_model_label(settings))
-                            .flatten(),
+                        llm_model.clone(),
                     );
                 }
             }
@@ -1033,16 +1082,17 @@ async fn process_transcript_text(
     }
 
     if let Some(err) = llm_failure {
-        let provider_kind = analytics::llm_provider_kind(settings);
+        let provider_kind = analytics::llm_provider_kind(llm_settings);
         let transient = llm_cleanup::is_transient_llm_error(&err);
         analytics::track_llm_failed(app, llm_kind, provider_kind, &err, transient);
-    } else if llm_outcome == "skipped" {
-        analytics::track_llm_skipped(app, llm_kind);
+    } else if let Some(reason) = skip_reason {
+        analytics::track_llm_skipped(app, llm_kind, reason);
     }
 
     ProcessTranscriptOutcome::Ready(ProcessedTranscript {
         final_transcript,
         llm_cleaned,
+        llm_model,
         pasted,
         llm_seconds,
         llm_outcome,
@@ -1146,13 +1196,17 @@ pub(crate) fn retry_transcription_async(
                 let should_refine_transcript = llm_cleanup::should_refine_transcript(&settings);
                 let preflight_unavailable = should_refine_transcript
                     && matches!(llm_cleanup::cached_preflight_available(), Some(false));
-                let should_use_llm = should_refine_transcript && !preflight_unavailable;
+                let routed =
+                    llm_cleanup::settings_for_language(&settings, result.language.as_deref());
+                let llm_settings = routed.as_deref().unwrap_or(&settings);
+                let should_use_llm =
+                    should_refine_transcript && !preflight_unavailable && routed.is_some();
 
                 let (final_transcript, llm_cleaned) = if should_use_llm {
                     match llm_cleanup::cleanup_transcription(
                         &http,
                         &raw_transcript,
-                        &settings,
+                        llm_settings,
                         saved_personality.as_ref(),
                     )
                     .await
@@ -1173,7 +1227,7 @@ pub(crate) fn retry_transcription_async(
                             analytics::track_llm_failed(
                                 &app_handle,
                                 "cleanup",
-                                analytics::llm_provider_kind(&settings),
+                                analytics::llm_provider_kind(llm_settings),
                                 &err,
                                 llm_cleanup::is_transient_llm_error(&err),
                             );
@@ -1207,7 +1261,7 @@ pub(crate) fn retry_transcription_async(
                         .filter(|label| !label.trim().is_empty())
                         .unwrap_or_else(|| resolve_speech_model_label(&settings)),
                     llm_model: if llm_cleaned {
-                        llm_cleanup::resolved_model_label(&settings)
+                        llm_cleanup::resolved_model_label(llm_settings)
                     } else {
                         None
                     },
@@ -1755,7 +1809,7 @@ struct TranscriptionMetadataInput<'a> {
     saved: &'a RecordingSaved,
     settings: &'a UserSettings,
     final_text: &'a str,
-    llm_cleaned: bool,
+    llm_model: Option<String>,
     synced: bool,
     mode: Option<&'a Personality>,
     speech_model: Option<String>,
@@ -1768,7 +1822,7 @@ fn build_transcription_metadata(
         saved,
         settings,
         final_text,
-        llm_cleaned,
+        llm_model,
         synced,
         mode,
         speech_model,
@@ -1778,11 +1832,7 @@ fn build_transcription_metadata(
         speech_model: speech_model
             .filter(|label| !label.trim().is_empty())
             .unwrap_or_else(|| resolve_speech_model_label(settings)),
-        llm_model: if llm_cleaned {
-            llm_cleanup::resolved_model_label(settings)
-        } else {
-            None
-        },
+        llm_model,
         word_count: count_words(final_text),
         audio_duration_seconds: compute_audio_duration_seconds(saved),
         synced,
@@ -2320,6 +2370,7 @@ pub(crate) fn finalize_streaming_transcription(
             &http,
             ProcessTranscriptInput {
                 raw_transcript: raw_transcript.clone(),
+                detected_language: None,
                 pending_selected_text: pending_selected_text.as_deref(),
                 settings: &settings,
                 active_mode: active_mode.as_ref(),
@@ -2365,11 +2416,7 @@ pub(crate) fn finalize_streaming_transcription(
         .with_origin(origin, is_edit);
         let metadata = storage::TranscriptionMetadata {
             speech_model: resolve_speech_model_label(&settings),
-            llm_model: if processed.llm_cleaned {
-                llm_cleanup::resolved_model_label(&settings)
-            } else {
-                None
-            },
+            llm_model: processed.llm_model,
             word_count: count_words(&processed.final_transcript),
             audio_duration_seconds: duration_seconds,
             synced: false,

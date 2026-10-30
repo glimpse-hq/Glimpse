@@ -26,6 +26,7 @@ pub struct LocalTranscriber {
     exclusive: Mutex<()>,
     // A dictation can wait on `exclusive` behind a load it didn't start.
     loading: AtomicBool,
+    load_ended: Mutex<Option<Instant>>,
 }
 
 impl LocalTranscriber {
@@ -41,6 +42,7 @@ impl LocalTranscriber {
             warm_in_flight: Mutex::new(None),
             exclusive: Mutex::new(()),
             loading: AtomicBool::new(false),
+            load_ended: Mutex::new(None),
         }
     }
 
@@ -104,7 +106,7 @@ impl LocalTranscriber {
 
     // Caller must hold `exclusive` (directly or via a streaming session).
     fn warm_locked(&self, model: &ReadyModel) -> Result<()> {
-        let was_loaded = self.service.is_loaded();
+        let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
         let previous_activity = analytics::activity();
         if !was_loaded {
@@ -112,7 +114,7 @@ impl LocalTranscriber {
             self.loading.store(true, Ordering::Relaxed);
         }
         let result = self.service.preload_and_warm(&model.key);
-        self.loading.store(false, Ordering::Relaxed);
+        self.end_load(was_loaded);
         // A dictation step that started meanwhile keeps its own activity.
         if analytics::activity() == Activity::ModelLoading {
             analytics::set_activity(previous_activity);
@@ -158,9 +160,21 @@ impl LocalTranscriber {
         result
     }
 
+    fn end_load(&self, was_loaded: bool) {
+        if !was_loaded {
+            *self.load_ended.lock() = Some(Instant::now());
+        }
+        self.loading.store(false, Ordering::Release);
+    }
+
     /// Whether a model load is running, whoever started it.
     pub fn is_loading(&self) -> bool {
-        self.loading.load(Ordering::Relaxed)
+        self.loading.load(Ordering::Acquire)
+    }
+
+    /// When the last model load finished.
+    pub fn load_ended_at(&self) -> Option<Instant> {
+        *self.load_ended.lock()
     }
 
     pub fn loaded_model_id(&self) -> Option<String> {
@@ -268,7 +282,7 @@ impl LocalTranscriber {
         language: Option<&str>,
         granularity: Option<TimestampGranularity>,
     ) -> Result<glimpse_speech::Transcription> {
-        let was_loaded = self.service.is_loaded();
+        let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
         // The service loads the model first when it isn't loaded.
         self.loading.store(!was_loaded, Ordering::Relaxed);
@@ -284,7 +298,7 @@ impl LocalTranscriber {
             timestamps: granularity.is_some(),
             timestamp_granularity: granularity,
         });
-        self.loading.store(false, Ordering::Relaxed);
+        self.end_load(was_loaded);
         let response = response?;
         tracing::info!(
             "[LocalTranscriber] transcribe took {:.2}s (audio {:.2}s, was_loaded={})",

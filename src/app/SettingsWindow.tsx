@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { licenseKeys } from "../features/license/queries";
 import { useTextScale, useTheme } from "../shared/hooks/useAppearance";
 import { useTauriEvent } from "../shared/hooks/useTauriEvent";
+import { registerDevQueryClient } from "../shared/hooks/devSandbox";
 import { modelKeys } from "../features/settings/models-queries";
 import { getSettings } from "../features/settings/api";
 import { settingsKeys, useSettings } from "../features/settings/queries";
@@ -32,6 +33,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+registerDevQueryClient(queryClient);
 
 // Fetch settings and the Home chunk in parallel.
 void queryClient.prefetchQuery({

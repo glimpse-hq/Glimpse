@@ -64,6 +64,25 @@ pub mod macos;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
+pub struct QuitPrompt {
+    pub title: &'static str,
+    pub message: &'static str,
+    pub keep: &'static str,
+    pub save: &'static str,
+}
+
+/// Asks whether to save the recording and quit; `on_answer(true)` means yes.
+pub fn confirm_quit_while_recording(
+    app: &tauri::AppHandle<crate::AppRuntime>,
+    prompt: QuitPrompt,
+    on_answer: impl FnOnce(bool) + Send + 'static,
+) {
+    #[cfg(target_os = "macos")]
+    macos::quit_prompt::confirm(app, prompt, on_answer);
+    #[cfg(target_os = "windows")]
+    windows::quit_prompt::confirm(app, prompt, on_answer);
+}
+
 /// 0 on Windows or when `sw_vers` can't be read.
 pub fn macos_major_version() -> u32 {
     #[cfg(target_os = "macos")]

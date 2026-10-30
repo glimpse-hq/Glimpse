@@ -5,6 +5,8 @@
 
 mod api;
 mod client;
+#[cfg(debug_assertions)]
+pub(crate) mod dev;
 mod dictionary;
 mod handlers;
 mod history;
@@ -97,7 +99,19 @@ const COMMANDS: &[CliCommand] = &[
         help: "Run a standalone transcription server.",
         owned: false,
     },
+    #[cfg(debug_assertions)]
+    CliCommand {
+        name: "dev",
+        help: "Drive the screenshot sandbox (debug builds only).",
+        owned: true,
+    },
 ];
+
+/// True in a debug build started by `scripts/screenshots/run.mjs`. Always
+/// false in release builds.
+pub(crate) fn dev_sandbox() -> bool {
+    cfg!(debug_assertions) && std::env::var_os("GLIMPSE_DEV_SANDBOX").is_some_and(|v| v == "1")
+}
 
 pub fn is_integration_command(verb: &str) -> bool {
     COMMANDS.iter().any(|c| c.name == verb && c.owned)
@@ -183,6 +197,8 @@ fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "status" => status::run(rest, json),
         "api" => api::run(rest, json),
         "transcribe" => transcribe::run(identifier, rest, json),
+        #[cfg(debug_assertions)]
+        "dev" => dev::run(identifier, rest, json),
         other => bail!("Unknown command: {other}"),
     }
 }

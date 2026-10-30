@@ -199,12 +199,26 @@ impl Drop for CaptureDrain {
 
 pub struct RecorderManager {
     tx: Sender<RecorderCommand>,
+    shared: CoreShared,
+}
+
+/// State the recorder thread shares with the manager. A rebuilt thread reuses it.
+#[derive(Clone)]
+struct CoreShared {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
     #[cfg(target_os = "macos")]
     active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
+    // Dictation starts that failed in a row.
+    #[cfg(windows)]
+    start_failures: Arc<std::sync::atomic::AtomicU32>,
 }
+
+/// Failed dictation starts in a row after which the recorder thread is rebuilt
+/// on every further failure.
+#[cfg(windows)]
+pub(crate) const STUCK_START_FAILURES: u32 = 2;
 
 type AfterCaptureHook = Box<dyn FnOnce() + Send + 'static>;
 
@@ -344,58 +358,101 @@ pub struct RecordingSaved {
 impl Default for RecorderManager {
     fn default() -> Self {
         let (tx, rx) = unbounded();
-        let spectrum = Arc::new(Mutex::new(AudioSpectrumState::new()));
-        let live_buffer = Arc::new(Mutex::new(None));
-        let armed = Arc::new(AtomicBool::new(false));
-        #[cfg(target_os = "macos")]
-        let active_device = Arc::new(Mutex::new(None));
-        let spectrum_for_thread = Arc::clone(&spectrum);
-        let live_buffer_for_thread = Arc::clone(&live_buffer);
-        let armed_for_thread = Arc::clone(&armed);
-        #[cfg(target_os = "macos")]
-        let active_device_for_thread = Arc::clone(&active_device);
+        let shared = CoreShared {
+            spectrum: Arc::new(Mutex::new(AudioSpectrumState::new())),
+            live_buffer: Arc::new(Mutex::new(None)),
+            armed: Arc::new(AtomicBool::new(false)),
+            #[cfg(target_os = "macos")]
+            active_device: Arc::new(Mutex::new(None)),
+            #[cfg(windows)]
+            start_failures: Arc::new(std::sync::atomic::AtomicU32::new(0)),
+        };
+        spawn_recorder_thread(rx, shared.clone(), None).expect("failed to spawn recorder thread");
+        Self { tx, shared }
+    }
+}
 
-        std::thread::Builder::new()
-            .name("glimpse-recorder".into())
-            .spawn(move || {
-                let mut core = RecorderCore::new(
-                    spectrum_for_thread,
-                    live_buffer_for_thread,
-                    armed_for_thread,
-                    #[cfg(target_os = "macos")]
-                    active_device_for_thread,
-                );
-                while let Ok(cmd) = rx.recv() {
-                    match cmd {
-                        RecorderCommand::Start {
-                            device_id,
-                            pending_dir,
-                            monitor_only,
-                            respond,
-                        } => {
-                            let _ = respond.send(core.start(device_id, pending_dir, monitor_only));
+fn spawn_recorder_thread(
+    rx: Receiver<RecorderCommand>,
+    shared: CoreShared,
+    retry: Option<RecorderCommand>,
+) -> std::io::Result<()> {
+    std::thread::Builder::new()
+        .name("glimpse-recorder".into())
+        .spawn(move || run_recorder(rx, shared, retry))
+        .map(|_| ())
+}
+
+/// `retry` is a start that failed on the previous recorder thread; it runs
+/// first and is never handed on again.
+fn run_recorder(rx: Receiver<RecorderCommand>, shared: CoreShared, retry: Option<RecorderCommand>) {
+    let mut core = RecorderCore::new(shared.clone());
+    #[cfg(windows)]
+    let mut can_rebuild = retry.is_none();
+    let mut next = retry;
+    while let Some(cmd) = next.take().or_else(|| rx.recv().ok()) {
+        match cmd {
+            RecorderCommand::Start {
+                device_id,
+                pending_dir,
+                monitor_only,
+                respond,
+            } => {
+                #[cfg(windows)]
+                let busy = core.active.is_some();
+                let result = core.start(device_id.clone(), pending_dir.clone(), monitor_only);
+                // Windows can keep failing every start until the app restarts,
+                // so a fresh thread (and COM apartment) retries.
+                #[cfg(windows)]
+                if !monitor_only && !busy {
+                    let failures = &shared.start_failures;
+                    let can_retry = std::mem::replace(&mut can_rebuild, true);
+                    match &result {
+                        Err(err)
+                            if can_retry
+                                && is_transient_start_error(err)
+                                && failures.load(Ordering::Relaxed) + 1 >= STUCK_START_FAILURES =>
+                        {
+                            tracing::warn!(
+                                "Microphone keeps failing, rebuilding the recorder: {err:#}"
+                            );
+                            let retry = RecorderCommand::Start {
+                                device_id,
+                                pending_dir,
+                                monitor_only,
+                                respond,
+                            };
+                            match spawn_recorder_thread(rx.clone(), shared.clone(), Some(retry)) {
+                                Ok(()) => return,
+                                Err(err) => {
+                                    tracing::error!("Could not rebuild the recorder: {err}");
+                                    continue;
+                                }
+                            }
                         }
-                        RecorderCommand::Stop {
-                            respond,
-                            after_capture,
-                            discard_pending,
-                        } => {
-                            let _ = respond.send(core.stop(after_capture, discard_pending));
+                        Err(err) if is_transient_start_error(err) => {
+                            failures.fetch_add(1, Ordering::Relaxed);
                         }
+                        _ => failures.store(0, Ordering::Relaxed),
                     }
                 }
-            })
-            .expect("failed to spawn recorder thread");
-
-        Self {
-            tx,
-            spectrum,
-            live_buffer,
-            armed,
-            #[cfg(target_os = "macos")]
-            active_device,
+                let _ = respond.send(result);
+            }
+            RecorderCommand::Stop {
+                respond,
+                after_capture,
+                discard_pending,
+            } => {
+                let _ = respond.send(core.stop(after_capture, discard_pending));
+            }
         }
     }
+}
+
+/// Permission and missing-device failures do not clear by retrying.
+fn is_transient_start_error(err: &anyhow::Error) -> bool {
+    err.downcast_ref::<NoInputDevice>().is_none()
+        && crate::analytics::error_detail(err).reason != "permission"
 }
 
 impl RecorderManager {
@@ -404,7 +461,12 @@ impl RecorderManager {
     }
 
     pub fn arm(&self) {
-        self.armed.store(true, Ordering::Relaxed);
+        self.shared.armed.store(true, Ordering::Relaxed);
+    }
+
+    #[cfg(windows)]
+    pub fn start_failures(&self) -> u32 {
+        self.shared.start_failures.load(Ordering::Relaxed)
     }
 
     /// Whether the device the active recording opened is still attached.
@@ -413,12 +475,12 @@ impl RecorderManager {
     pub fn active_device_present(&self) -> Option<bool> {
         use cpal::traits::HostTrait;
 
-        let id = self.active_device.lock().clone()?;
+        let id = self.shared.active_device.lock().clone()?;
         Some(cpal::default_host().device_by_id(&id).is_some())
     }
 
     pub fn spectrum_snapshot(&self) -> Option<Vec<f32>> {
-        match self.spectrum.try_lock() {
+        match self.shared.spectrum.try_lock() {
             Some(state) => state.snapshot(),
             _ => None,
         }
@@ -427,7 +489,7 @@ impl RecorderManager {
     /// Read new i16 samples from the live recording buffer starting at `offset`.
     /// Returns `(new_samples_mono_f32, sample_rate, new_offset)` or `None` if not recording.
     pub fn read_live_samples(&self, offset: usize) -> Option<(Vec<f32>, u32, usize)> {
-        let guard = self.live_buffer.lock();
+        let guard = self.shared.live_buffer.lock();
         let state = guard.as_ref()?;
         let buffer = state.buffer.lock();
         let channels = state.channels as usize;
@@ -553,20 +615,15 @@ struct RecorderCore {
 }
 
 impl RecorderCore {
-    fn new(
-        spectrum: Arc<Mutex<AudioSpectrumState>>,
-        live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
-        armed: Arc<AtomicBool>,
-        #[cfg(target_os = "macos")] active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
-    ) -> Self {
+    fn new(shared: CoreShared) -> Self {
         Self {
             active: None,
-            spectrum,
-            live_buffer,
-            armed,
+            spectrum: shared.spectrum,
+            live_buffer: shared.live_buffer,
+            armed: shared.armed,
             monitor_only: Arc::new(AtomicBool::new(false)),
             #[cfg(target_os = "macos")]
-            active_device,
+            active_device: shared.active_device,
         }
     }
 
@@ -580,7 +637,25 @@ impl RecorderCore {
             return Err(anyhow!("Recording is already in progress"));
         }
 
-        let device = crate::audio::find_input_device(device_id.as_deref()).ok_or(NoInputDevice)?;
+        match self.open_input(device_id.as_deref(), pending_dir.clone(), monitor_only) {
+            // Core Audio can reject a device while it switches, like AirPods
+            // connecting or the default input changing; resolving again can
+            // land on the settled device.
+            Err(err) if cfg!(target_os = "macos") && is_transient_start_error(&err) => {
+                tracing::warn!("Microphone failed to start, retrying once: {err:#}");
+                self.open_input(device_id.as_deref(), pending_dir, monitor_only)
+            }
+            result => result,
+        }
+    }
+
+    fn open_input(
+        &mut self,
+        device_id: Option<&str>,
+        pending_dir: Option<PathBuf>,
+        monitor_only: bool,
+    ) -> Result<(DateTime<Local>, String)> {
+        let device = crate::audio::find_input_device(device_id).ok_or(NoInputDevice)?;
         let selected_id = device.id().ok();
         let result = match self.open(device, pending_dir.clone(), monitor_only) {
             // A selected microphone can still be listed but fail to open, like

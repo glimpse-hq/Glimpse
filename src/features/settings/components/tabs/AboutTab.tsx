@@ -346,9 +346,9 @@ const AboutTab = ({
       })
     : cliInstallLocked
       ? t({
-          id: "settings.about.cli.locked_info.v2",
+          id: "settings.about.cli.locked_info.v4",
           message:
-            "The command line comes with a purchased Glimpse Plus license. It isn't part of the trial.",
+            "The command line comes with a purchased Glimpse license. It isn't part of the trial.",
         })
       : cliInstalled && !cliManagedByApp
         ? t({
@@ -376,8 +376,8 @@ const AboutTab = ({
       })
     : cliInstallLocked
       ? t({
-          id: "settings.about.cli.locked_subtitle.v2",
-          message: "Needs a purchased Glimpse Plus license",
+          id: "settings.about.cli.locked_subtitle.v4",
+          message: "Needs a purchased Glimpse license",
         })
       : cliInstalled
         ? t({

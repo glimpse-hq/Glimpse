@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as licenseApi from "./api";
+import { FALLBACK_PLANS, formatPlanPrice } from "./purchaseConfig";
 
 export const licenseKeys = {
   state: () => ["license", "state"] as const,
@@ -8,12 +9,25 @@ export const licenseKeys = {
   trialEndedScreen: () => ["license", "trialEndedScreen"] as const,
 };
 
-export function usePurchasePlans() {
+export function usePurchasePlans(enabled = true) {
   return useQuery({
     queryKey: licenseKeys.purchasePlans(),
     queryFn: licenseApi.getPurchasePlans,
-    staleTime: Infinity,
+    enabled,
+    // An empty list means the API was unreachable, so ask again next time.
+    staleTime: (query) => (query.state.data?.length ? Infinity : 0),
   });
+}
+
+// The formatted price of one plan, from the fallback until the plans load.
+export function usePlanPrice(
+  id: licenseApi.PurchasePlan["id"],
+  enabled = true,
+): string {
+  const plan =
+    usePurchasePlans(enabled).data?.find((candidate) => candidate.id === id) ??
+    FALLBACK_PLANS[id];
+  return formatPlanPrice(plan);
 }
 
 export function useTrialEndedScreen(enabled: boolean) {
