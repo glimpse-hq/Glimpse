@@ -237,6 +237,21 @@ export const NATIVE_MENU_STRINGS = [
       "Glimpse couldn't keep writing the recording, so it stopped. What was recorded so far is saved.",
   }),
   msg({
+    id: "native.quit_recording.title",
+    message: "Quit while recording?",
+  }),
+  msg({
+    id: "native.quit_recording.message",
+    message:
+      "The recording is saved to your Library and transcribed the next time you open Glimpse.",
+  }),
+  msg({ id: "native.quit_recording.save", message: "Save and Quit" }),
+  msg({ id: "native.quit_recording.keep", message: "Keep Recording" }),
+  msg({
+    id: "native.update.recording",
+    message: "Finish the recording before installing the update.",
+  }),
+  msg({
     id: "native.toast.recording_low_disk",
     message:
       "Your disk is almost full. Glimpse will stop recording if it runs out of space.",

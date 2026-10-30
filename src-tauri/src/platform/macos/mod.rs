@@ -3,6 +3,7 @@ pub mod icons;
 pub mod live;
 pub mod menu;
 pub mod overlay;
+pub mod quit_prompt;
 pub mod toast;
 
 pub fn major_version() -> u32 {

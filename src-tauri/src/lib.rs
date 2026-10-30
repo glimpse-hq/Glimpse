@@ -371,8 +371,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init());
+        .plugin(tauri_plugin_updater::Builder::new().build());
 
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     let builder = builder.plugin(tauri_plugin_autostart::init(
@@ -722,7 +721,8 @@ pub fn run() {
             reveal_logs,
             update_checker::get_update_status,
             update_checker::check_for_updates,
-            update_checker::download_and_install_update
+            update_checker::download_and_install_update,
+            update_checker::restart_to_update
         ])
         .build(app_context())
         .expect("error while building tauri application")

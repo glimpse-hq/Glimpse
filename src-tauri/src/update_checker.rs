@@ -202,7 +202,13 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
             Ok(Some(update)) => {
                 let version = update.version.clone();
                 crate::analytics::set_activity(crate::analytics::Activity::Updating);
-                let installed = update.download_and_install(|_, _| {}, || {}).await;
+                let downloaded = update.download(|_, _| {}, || {}).await;
+                // Windows quits into the installer, so recheck after the download.
+                if downloaded.is_ok() && !app.state::<AppState>().is_backend_idle() {
+                    crate::analytics::set_activity(crate::analytics::Activity::Idle);
+                    continue;
+                }
+                let installed = downloaded.and_then(|bytes| update.install(bytes));
                 crate::analytics::set_activity(crate::analytics::Activity::Idle);
                 match installed {
                     Ok(()) => {
@@ -473,6 +479,12 @@ pub async fn check_for_updates(app: AppHandle<AppRuntime>) -> Result<UpdateStatu
     Ok(status)
 }
 
+/// Restarts into an installed update, asking first while a recording is in progress.
+#[tauri::command]
+pub fn restart_to_update(app: AppHandle<AppRuntime>) {
+    crate::tray::quit(&app, true);
+}
+
 #[tauri::command]
 pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(), String> {
     if crate::platform::is_store_build() {
@@ -503,8 +515,8 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
     let progress_app = app.clone();
 
     crate::analytics::set_activity(crate::analytics::Activity::Updating);
-    let installed = update
-        .download_and_install(
+    let bytes = update
+        .download(
             |chunk_length, content_length| {
                 if total.is_none() {
                     total = content_length;
@@ -530,6 +542,12 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
             || {},
         )
         .await;
+    // Windows quits into the installer, and a restart would cut the recording off.
+    if bytes.is_ok() && app.state::<AppState>().recording().is_active() {
+        crate::analytics::set_activity(crate::analytics::Activity::Idle);
+        return Err(toast::native(&app, "native.update.recording"));
+    }
+    let installed = bytes.and_then(|bytes| update.install(bytes));
     crate::analytics::set_activity(crate::analytics::Activity::Idle);
     if let Err(err) = installed {
         let err = anyhow::Error::from(err);
