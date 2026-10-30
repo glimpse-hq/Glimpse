@@ -199,6 +199,10 @@ pub(crate) fn sync_launch_at_login(
     app: &AppHandle<AppRuntime>,
     enabled: bool,
 ) -> Result<(), String> {
+    // The login item is named after the app, so the sandbox's would be the real one's.
+    if integrations::dev_sandbox() {
+        return Ok(());
+    }
     // MSIX virtualizes the Run registry key, so store builds go through
     // the StartupTask declared in the package manifest instead.
     #[cfg(target_os = "windows")]
@@ -324,6 +328,18 @@ fn normalized_integration_args(args: &[String]) -> Option<Vec<String>> {
     Some(normalized)
 }
 
+// Set before launch, when the app would otherwise start as Regular and
+// activate. A prohibited app can't activate at all, and its windows still draw.
+fn sandbox_activation_policy(app: tauri::App<AppRuntime>) -> tauri::App<AppRuntime> {
+    #[cfg(target_os = "macos")]
+    if integrations::dev_sandbox() {
+        let mut app = app;
+        app.set_activation_policy(ActivationPolicy::Prohibited);
+        return app;
+    }
+    app
+}
+
 fn app_context() -> tauri::Context<AppRuntime> {
     tauri::generate_context!()
 }
@@ -396,7 +412,9 @@ pub fn run() {
         .setup(|app| {
             analytics::set_crash_phase("setup_start");
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(ActivationPolicy::Accessory);
+            if !integrations::dev_sandbox() {
+                app.set_activation_policy(ActivationPolicy::Accessory);
+            }
 
             let handle = app.handle();
             analytics::set_crash_phase("logging");
@@ -433,17 +451,20 @@ pub fn run() {
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
             cleanup_model::init(handle);
-            cleanup_model::update_in_background(handle);
             #[cfg(target_os = "windows")]
             platform::windows::elevation::watch_foreground(handle.clone());
-            speech::upgrade_retired_diarizers(handle);
-            speech::follow_model_upgrade(handle);
-            speech::remove_whisper_cpp_files(handle);
-            speech::compile_pending_ane_encoders(handle);
-            speech::upgrade_parakeet_encoder(handle);
-            speech::warm_ane_encoder(handle);
-            speech::upgrade_whisper_decoder(handle);
-            speech::replace_onnx_models(handle);
+            // The sandbox's models are links to the real ones, which it leaves alone.
+            if !integrations::dev_sandbox() {
+                cleanup_model::update_in_background(handle);
+                speech::upgrade_retired_diarizers(handle);
+                speech::follow_model_upgrade(handle);
+                speech::remove_whisper_cpp_files(handle);
+                speech::compile_pending_ane_encoders(handle);
+                speech::upgrade_parakeet_encoder(handle);
+                speech::warm_ane_encoder(handle);
+                speech::upgrade_whisper_decoder(handle);
+                speech::replace_onnx_models(handle);
+            }
             {
                 let h = handle.clone();
                 async_runtime::spawn(async move {
@@ -514,7 +535,10 @@ pub fn run() {
             }
 
             analytics::set_crash_phase("tray_shortcuts");
-            if let Ok(tray) = tray::build_tray(handle) {
+            // The sandbox stays out of the menu bar the real app is in.
+            if !integrations::dev_sandbox()
+                && let Ok(tray) = tray::build_tray(handle)
+            {
                 handle.state::<AppState>().store_tray(tray);
             }
 
@@ -538,7 +562,7 @@ pub fn run() {
             analytics::set_crash_phase("background_tasks");
             if platform::is_store_build() {
                 tracing::info!("store build: built-in updater disabled");
-            } else {
+            } else if !integrations::dev_sandbox() {
                 let update_handle = handle.clone();
                 let update_state = handle.state::<AppState>().update_state().clone();
                 update_checker::start_background_checker(update_handle, update_state);
@@ -725,6 +749,7 @@ pub fn run() {
             update_checker::restart_to_update
         ])
         .build(app_context())
+        .map(sandbox_activation_policy)
         .expect("error while building tauri application")
         .run(|handler, event| match event {
             #[cfg(target_os = "macos")]

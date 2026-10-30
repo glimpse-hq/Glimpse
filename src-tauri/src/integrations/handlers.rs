@@ -34,6 +34,8 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "record.bookmark" => record_bookmark(app),
         "record.finish" => record_finish(app, &request.args),
         "record.live" => record_live(app, &request.args),
+        #[cfg(debug_assertions)]
+        dev if dev.starts_with("dev.") => super::dev::handle(app, dev, &request.args),
         other => Err(format!("Unknown command: {other}")),
     };
     match result {
@@ -158,6 +160,9 @@ fn open(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
         ("models", _) | ("settings", Some("models")) => Some(SettingsPage::Models),
         ("settings", Some("about")) => Some(SettingsPage::About),
         ("settings", Some("account")) => Some(SettingsPage::Account),
+        ("settings", Some("general")) => Some(SettingsPage::General),
+        ("settings", Some("app")) => Some(SettingsPage::App),
+        ("settings", Some("api")) => Some(SettingsPage::Api),
         _ => None,
     };
     let result = match page {

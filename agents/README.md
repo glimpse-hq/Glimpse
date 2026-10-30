@@ -25,6 +25,7 @@ Read the matching references, not the whole directory.
 | App copy, native menu labels, or locales                              | [Localization](reference/i18n.md)         |
 | Native windows, permissions, packaging, or platform-specific behavior | [Platforms](reference/platforms.md)       |
 | CLI commands, MCP tools, or local HTTP API                            | [Integrations](reference/integrations.md) |
+| Looking at screens, before/after screenshots, or README images        | [Screenshots](reference/screenshots.md)   |
 | Removing surprising behavior or changing a product constraint         | [Decisions](reference/decisions.md)       |
 
 ## Reusable workflows

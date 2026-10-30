@@ -331,6 +331,15 @@ const Home = ({ onReady }: HomeProps) => {
           setIsSettingsOpen(true);
         },
       ],
+      ...(["general", "app", "api"] as const).map(
+        (pane): [string, () => void] => [
+          `navigate:${pane}`,
+          () => {
+            setSettingsTab(pane);
+            setIsSettingsOpen(true);
+          },
+        ],
+      ),
       ["navigate:dictionary", () => openView("dictionary")],
       ["navigate:personalization", () => openView("brain")],
       ["navigate:library", () => openView("library")],

@@ -96,6 +96,10 @@ fn connect_or_launch() -> Result<Stream> {
     if let Some(stream) = try_connect() {
         return Ok(stream);
     }
+    // Launching from here would start the sandbox build outside its sandbox.
+    if super::dev_sandbox() {
+        return Err(coded(2, "The sandbox app is not running."));
+    }
 
     launch_app().map_err(|err| {
         coded(

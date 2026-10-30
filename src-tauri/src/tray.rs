@@ -53,6 +53,9 @@ pub(crate) enum SettingsPage {
     Personalization,
     Library,
     Record,
+    General,
+    App,
+    Api,
     CheckoutReturned,
 }
 
@@ -67,6 +70,9 @@ impl SettingsPage {
             Self::Personalization => "navigate:personalization",
             Self::Library => "navigate:library",
             Self::Record => "navigate:record",
+            Self::General => "navigate:general",
+            Self::App => "navigate:app",
+            Self::Api => "navigate:api",
             Self::CheckoutReturned => crate::EVENT_LICENSE_CHECKOUT_RETURNED,
         }
     }
@@ -841,7 +847,9 @@ fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWi
                 .pill()
                 .stop_microphone_test(&app_handle);
             #[cfg(target_os = "macos")]
-            let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
+            if !crate::integrations::dev_sandbox() {
+                let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
+            }
 
             let generation = SETTINGS_WINDOW_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
             if !app_handle
@@ -874,6 +882,10 @@ fn show_settings_window(
     window: &WebviewWindow<AppRuntime>,
 ) -> tauri::Result<()> {
     SETTINGS_WINDOW_GENERATION.fetch_add(1, Ordering::SeqCst);
+    #[cfg(debug_assertions)]
+    if crate::integrations::dev_sandbox() {
+        return crate::integrations::dev::show_in_background(window);
+    }
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(ActivationPolicy::Regular);
     #[cfg(not(target_os = "macos"))]

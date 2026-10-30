@@ -346,6 +346,15 @@ pub async fn download_model_now(
     model: String,
     ane: Option<bool>,
 ) -> Result<ModelStatus, String> {
+    // The sandbox's models are links to the real ones; it never writes there.
+    if crate::integrations::dev_sandbox() {
+        return Err(download_failed(
+            &app,
+            &model,
+            "resolve",
+            anyhow!("The screenshot sandbox doesn't download models."),
+        ));
+    }
     let state = app.state::<crate::AppState>();
     if super::catalog::cleanup_model_definition(&model).is_some() {
         crate::license::require_license_gate(&state.settings_store, "on-device cleanup")?;
@@ -634,6 +643,9 @@ pub async fn delete_model(
     app: AppHandle<AppRuntime>,
     model: String,
 ) -> Result<ModelStatus, String> {
+    if crate::integrations::dev_sandbox() {
+        return Err("The screenshot sandbox doesn't delete models.".to_string());
+    }
     let handle = app.clone();
     let status = tauri::async_runtime::spawn_blocking(move || {
         let manager = model_manager(&handle).map_err(|err| err.to_string())?;

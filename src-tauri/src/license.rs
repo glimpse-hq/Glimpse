@@ -249,7 +249,119 @@ fn invalidate_gate_cache() {
 }
 
 pub(crate) fn developer_license_bypass_active() -> bool {
-    cfg!(debug_assertions) && option_env!("GLIMPSE_FORCE_LICENSE_GATE") != Some("1")
+    cfg!(debug_assertions)
+        && option_env!("GLIMPSE_FORCE_LICENSE_GATE") != Some("1")
+        && !crate::integrations::dev_sandbox()
+}
+
+/// A license state for the screenshot sandbox, set by `glimpse dev license`.
+/// It replaces the stored license, which the sandbox never reads or refreshes.
+#[cfg(debug_assertions)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DevLicense {
+    None,
+    Trial,
+    TrialLastDay,
+    Expired,
+    Unlocked(u32),
+}
+
+#[cfg(debug_assertions)]
+impl DevLicense {
+    pub(crate) const NAMES: &[&str] = &[
+        "none",
+        "trial",
+        "trial-last-day",
+        "expired",
+        "unlocked-1",
+        "unlocked-3",
+    ];
+
+    pub(crate) fn parse(name: &str) -> Option<Self> {
+        Some(match name {
+            "none" => Self::None,
+            "trial" => Self::Trial,
+            "trial-last-day" => Self::TrialLastDay,
+            "expired" => Self::Expired,
+            "unlocked-1" => Self::Unlocked(1),
+            "unlocked-3" => Self::Unlocked(3),
+            _ => return Option::None,
+        })
+    }
+}
+
+// The license and whether the trial-ended screen is due.
+#[cfg(debug_assertions)]
+static DEV_LICENSE: Mutex<Option<(DevLicense, bool)>> = Mutex::new(None);
+
+#[cfg(debug_assertions)]
+fn dev_license() -> Option<(DevLicense, bool)> {
+    if !crate::integrations::dev_sandbox() {
+        return None;
+    }
+    let mut slot = DEV_LICENSE.lock();
+    let initial = || {
+        let license = std::env::var("GLIMPSE_DEV_LICENSE")
+            .ok()
+            .and_then(|name| DevLicense::parse(&name))
+            .unwrap_or(DevLicense::Trial);
+        (license, false)
+    };
+    Some(*slot.get_or_insert_with(initial))
+}
+
+#[cfg(debug_assertions)]
+pub(crate) fn set_dev_license(license: Option<DevLicense>, trial_ended_screen: bool) {
+    let mut slot = DEV_LICENSE.lock();
+    let current = slot.map_or(DevLicense::Trial, |(license, _)| license);
+    *slot = Some((license.unwrap_or(current), trial_ended_screen));
+    drop(slot);
+    invalidate_gate_cache();
+}
+
+#[cfg(debug_assertions)]
+fn dev_license_state(license: DevLicense) -> LicenseState {
+    let now = Utc::now();
+    let trial_ends_at = match license {
+        DevLicense::Trial => now + Duration::days(10),
+        DevLicense::TrialLastDay => now + Duration::hours(20),
+        _ => now - Duration::days(30),
+    };
+    let trial_active = now < trial_ends_at;
+    let active = matches!(license, DevLicense::Unlocked(_));
+    let purchased = active || license == DevLicense::Expired;
+    let days_ago = |days| (now - Duration::days(days)).to_rfc3339();
+    let demo = |value: &str| purchased.then(|| value.to_string());
+    LicenseState {
+        status: if active {
+            LicenseStatus::Active
+        } else if trial_active {
+            LicenseStatus::Trial
+        } else {
+            LicenseStatus::Expired
+        },
+        license_gate_active: active || trial_active,
+        trial_active,
+        trial_started_at: (trial_ends_at - Duration::days(TRIAL_DAYS)).to_rfc3339(),
+        trial_ends_at: trial_ends_at.to_rfc3339(),
+        trial_days_remaining: ((trial_ends_at - now).num_seconds() as f64 / 86_400.0)
+            .ceil()
+            .max(0.0) as i64,
+        display_key: demo("GLMPS-DEMO1-DEMO2-DEMO3-DEMO4"),
+        customer_email: demo("user@example.com"),
+        customer_name: purchased.then(|| demo_account_name().unwrap_or_else(|| "User".into())),
+        last_validated_at: purchased.then(|| days_ago(0)),
+        activated_at: purchased.then(|| days_ago(40)),
+        purchased_at: purchased.then(|| days_ago(40)),
+        expires_at: (license == DevLicense::Expired).then(|| days_ago(2)),
+        activations_limit: match license {
+            DevLicense::Unlocked(limit) => limit,
+            _ => 1,
+        },
+        activations_count: active.then_some(1),
+        edition: active.then_some(LicenseEdition::Personal),
+        provider: demo("creem"),
+    }
 }
 
 // Debug builds only. The README screenshot script sets it so the account pill
@@ -349,6 +461,10 @@ pub(crate) fn require_active_license(store: &SettingsStore, feature: &str) -> Re
 }
 
 pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> {
+    #[cfg(debug_assertions)]
+    if let Some((license, _)) = dev_license() {
+        return Ok(dev_license_state(license));
+    }
     let (trial_started_at, trial_days) = trial_window(store)?;
     let now = Utc::now();
     let trial_ends_at = trial_started_at + Duration::days(trial_days);
@@ -619,6 +735,10 @@ fn write_license_key(store: &SettingsStore, key: Option<&str>) -> Result<(), Str
 }
 
 fn stored_license_active(store: &SettingsStore, now: DateTime<Utc>) -> Result<bool, String> {
+    #[cfg(debug_assertions)]
+    if let Some((license, _)) = dev_license() {
+        return Ok(matches!(license, DevLicense::Unlocked(_)));
+    }
     Ok(read_cached_license_grant(store)?
         .and_then(|grant| verified_grant(store, grant))
         .is_some_and(|grant| cached_grant_is_active(now, &grant)))
@@ -993,6 +1113,11 @@ async fn license_post_to<T: serde::de::DeserializeOwned>(
     path: &str,
     body: &impl Serialize,
 ) -> Option<Result<T, LicenseFailure>> {
+    if crate::integrations::dev_sandbox() {
+        return Some(Err(LicenseFailure::Other(
+            "The screenshot sandbox never contacts the license server.".to_string(),
+        )));
+    }
     let response = match client
         .post(format!("{base}/v1/{path}"))
         .json(body)
@@ -1098,6 +1223,10 @@ fn trial_lapsed(state: &LicenseState) -> bool {
 
 /// The trial-ended screen shows once, after the trial runs out with no license.
 fn trial_ended_screen_due(store: &SettingsStore, state: &LicenseState) -> bool {
+    #[cfg(debug_assertions)]
+    if let Some((_, due)) = dev_license() {
+        return due && trial_lapsed(state);
+    }
     trial_lapsed(state)
         && read_optional_string(store, KEY_TRIAL_ENDED_SCREEN_SEEN)
             .ok()
@@ -1106,6 +1235,11 @@ fn trial_ended_screen_due(store: &SettingsStore, state: &LicenseState) -> bool {
 }
 
 fn mark_trial_ended_screen_seen(store: &SettingsStore) -> Result<(), String> {
+    #[cfg(debug_assertions)]
+    if dev_license().is_some() {
+        set_dev_license(None, false);
+        return Ok(());
+    }
     write_string(store, KEY_TRIAL_ENDED_SCREEN_SEEN, "1")
 }
 

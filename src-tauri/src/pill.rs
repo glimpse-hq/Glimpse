@@ -1477,6 +1477,10 @@ pub(crate) fn handle_registered_hotkey_event(
 }
 
 pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
+    // The sandbox runs next to the real app and must not hear its shortcuts.
+    if crate::integrations::dev_sandbox() {
+        return Ok(());
+    }
     let state = app.state::<AppState>();
     if state.is_shortcut_capture_active() {
         return Ok(());

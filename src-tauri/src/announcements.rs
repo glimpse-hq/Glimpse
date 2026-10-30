@@ -80,10 +80,26 @@ pub fn note_launch(store: &SettingsStore, onboarding_completed: bool) {
     }
 }
 
+/// Release notes `glimpse dev show release-notes` puts in front of Home.
+#[cfg(debug_assertions)]
+pub(crate) static DEV_RELEASE_NOTES: parking_lot::Mutex<Option<String>> =
+    parking_lot::Mutex::new(None);
+
 #[tauri::command]
 pub async fn get_announcement(
     state: tauri::State<'_, AppState>,
 ) -> Result<Option<Announcement>, String> {
+    // The sandbox shows only what `glimpse dev` asks for, never the live feed.
+    if crate::integrations::dev_sandbox() {
+        #[cfg(debug_assertions)]
+        if let Some(markdown) = DEV_RELEASE_NOTES.lock().clone() {
+            return Ok(Some(Announcement::ReleaseNotes {
+                version: VERSION.to_string(),
+                markdown,
+            }));
+        }
+        return Ok(None);
+    }
     let store = &state.settings_store;
     let client = state.http();
     if release_notes_due(store)
@@ -153,6 +169,8 @@ async fn targeted_messages(
 
 #[tauri::command]
 pub fn dismiss_release_notes(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    #[cfg(debug_assertions)]
+    DEV_RELEASE_NOTES.lock().take();
     state
         .settings_store
         .write_app_value(KEY_RELEASE_NOTES_VERSION, &VERSION.to_string())

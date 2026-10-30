@@ -471,9 +471,12 @@ pub async fn check_for_updates(app: AppHandle<AppRuntime>) -> Result<UpdateStatu
         return Err("Updates are managed by the Microsoft Store.".to_string());
     }
     let update_state = app.state::<AppState>().update_state().clone();
-    check_for_update(&app, &update_state)
-        .await
-        .map_err(|err| err.to_string())?;
+    // The sandbox always reads as up to date.
+    if !crate::integrations::dev_sandbox() {
+        check_for_update(&app, &update_state)
+            .await
+            .map_err(|err| err.to_string())?;
+    }
 
     let status = UpdateStatus::snapshot(&update_state.lock());
     Ok(status)
