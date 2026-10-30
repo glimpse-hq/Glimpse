@@ -119,14 +119,14 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 
 Speech models are downloaded in-app from Hugging Face. The live list lives in **Settings → Models**. By family:
 
-- **Whisper GGUF** (MIT), via [`handy-computer`](https://huggingface.co/handy-computer)
+- **Whisper GGUF** (Apache-2.0; Large V3 Turbo MIT), converted by [`handy-computer`](https://huggingface.co/handy-computer) and hosted by [`Glimpse-Dictation`](https://huggingface.co/Glimpse-Dictation) with Neural Engine builds
 - **Distil-Whisper GGUF** (MIT, English-only), via [Glimpse's conversions](https://huggingface.co/Glimpse-Dictation) of [`distil-whisper`](https://huggingface.co/distil-whisper)
-- **Parakeet TDT V3 GGUF** (CC-BY-4.0), via [`handy-computer`](https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf), with a Neural Engine build from [`Glimpse-Dictation`](https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml)
+- **Parakeet TDT V3 GGUF** (CC-BY-4.0), converted by [`handy-computer`](https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf) and hosted by [`Glimpse-Dictation`](https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml) with a Neural Engine build
 - **Parakeet Ultra GGUF** (CC-BY-4.0), via [Glimpse's conversion](https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml) of [`moondream/parakeet-ultra`](https://huggingface.co/moondream/parakeet-ultra), with a Neural Engine build
-- **Parakeet Unified GGUF** (CC-BY-4.0, English-only), via [`handy-computer`](https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf)
-- **Nemotron Streaming GGUF** (NVIDIA Open Model License), English and 3.5 multilingual, via [`handy-computer`](https://huggingface.co/handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf)
+- **Parakeet Unified GGUF** (NVIDIA Open Model License, English-only), converted by [`handy-computer`](https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf) and hosted by [`Glimpse-Dictation`](https://huggingface.co/Glimpse-Dictation/Parakeet-Unified-EN-0.6B-coreml) with a Neural Engine build
+- **Nemotron Streaming GGUF**, [English](https://huggingface.co/Glimpse-Dictation/Nemotron-Speech-Streaming-EN-0.6B-gguf) (NVIDIA Open Model License) and [3.5 multilingual](https://huggingface.co/Glimpse-Dictation/Nemotron-3.5-ASR-Streaming-0.6B-gguf) (OpenMDW 1.1), converted by [`handy-computer`](https://huggingface.co/handy-computer) and hosted by `Glimpse-Dictation`
 - **NVIDIA Nemotron 3 Diarization GGUF** (OpenMDW 1.1), speaker detection, via [Glimpse's conversion](https://huggingface.co/Glimpse-Dictation/Nemotron-3-Diarization-gguf) of [`nvidia/Nemotron-3-Diarization`](https://huggingface.co/nvidia/Nemotron-3-Diarization)
-- **Qwen3-ASR GGUF** (Apache-2.0), via [`handy-computer`](https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf)
+- **Qwen3-ASR GGUF** (Apache-2.0), converted by [`handy-computer`](https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf) and hosted by [`Glimpse-Dictation`](https://huggingface.co/Glimpse-Dictation/Qwen3-ASR-0.6B-coreml) with a Neural Engine build
 
 The on-device cleanup model:
 

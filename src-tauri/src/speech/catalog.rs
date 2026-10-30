@@ -113,28 +113,28 @@ pub enum Languages {
 }
 
 const PARAKEET_UNIFIED_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
-    url: "https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf/resolve/main/parakeet-unified-en-0.6b-Q8_0.gguf",
+    url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Unified-EN-0.6B-coreml/resolve/main/parakeet-unified-en-0.6b-Q8_0.gguf",
     path: "parakeet-unified-en-0.6b-Q8_0.gguf",
     size_bytes: Some(731_357_568),
     sha256: Some("4b50b6dd862bf6e346929aaf4f5eaacec003bfa3f56462d6c874b41ef2f38795"),
 }];
 
 const NEMOTRON_35_STREAMING_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
-    url: "https://huggingface.co/handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf/resolve/main/nemotron-3.5-asr-streaming-0.6b-Q8_0.gguf",
+    url: "https://huggingface.co/Glimpse-Dictation/Nemotron-3.5-ASR-Streaming-0.6B-gguf/resolve/main/nemotron-3.5-asr-streaming-0.6b-Q8_0.gguf",
     path: "nemotron-3.5-asr-streaming-0.6b-Q8_0.gguf",
     size_bytes: Some(751_094_240),
     sha256: Some("b94545b313b3223fda7b2857a52681da813935c2127643d1e9ff0c23d988089c"),
 }];
 
 const NEMOTRON_STREAMING_EN_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
-    url: "https://huggingface.co/handy-computer/nemotron-speech-streaming-en-0.6b-gguf/resolve/main/nemotron-speech-streaming-en-0.6b-Q8_0.gguf",
+    url: "https://huggingface.co/Glimpse-Dictation/Nemotron-Speech-Streaming-EN-0.6B-gguf/resolve/main/nemotron-speech-streaming-en-0.6b-Q8_0.gguf",
     path: "nemotron-speech-streaming-en-0.6b-Q8_0.gguf",
     size_bytes: Some(729_650_176),
     sha256: Some("90d8c89714cd31efc88be62a40c6b2bea57e0cc2063af1ffe2c28f1a228ca110"),
 }];
 
 const PARAKEET_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
-    url: "https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf/resolve/main/parakeet-tdt-0.6b-v3-Q8_0.gguf",
+    url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0.gguf",
     path: "parakeet-tdt-0.6b-v3-Q8_0.gguf",
     size_bytes: Some(739_508_576),
     sha256: Some("5859f77944efcd8eafa23a6350731960b2b55b2203df51f319665c807d802cc7"),
@@ -169,7 +169,7 @@ const DIARIZER_FILES: &[CatalogFile] = &[CatalogFile {
 }];
 
 const QWEN3_ASR_0_6B_FILES: &[CatalogFile] = &[CatalogFile {
-    url: "https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf/resolve/main/Qwen3-ASR-0.6B-Q8_0.gguf",
+    url: "https://huggingface.co/Glimpse-Dictation/Qwen3-ASR-0.6B-coreml/resolve/main/Qwen3-ASR-0.6B-Q8_0.gguf",
     path: "Qwen3-ASR-0.6B-Q8_0.gguf",
     size_bytes: Some(850_423_456),
     sha256: Some("f081b2d5e23bd669d92cc331d722a8a0681943b8e6f34b48996fd5c319b5acd8"),
@@ -348,13 +348,34 @@ fn transcribe_ane_encoder(model: &str) -> Option<&'static TranscribeAneEncoder> 
         .find(|encoder| encoder.model == model && encoder.min_macos <= macos)
 }
 
+macro_rules! whisper_repo {
+    ("tiny") => {
+        "Whisper-Tiny-coreml"
+    };
+    ("base") => {
+        "Whisper-Base-coreml"
+    };
+    ("small") => {
+        "Whisper-Small-coreml"
+    };
+    ("medium") => {
+        "Whisper-Medium-coreml"
+    };
+    ("large-v3") => {
+        "Whisper-Large-V3-coreml"
+    };
+    ("large-v3-turbo") => {
+        "Whisper-Large-V3-Turbo-coreml"
+    };
+}
+
 macro_rules! whisper_files {
-    ($family:literal, $quant:literal, $size_bytes:literal, $sha256:literal) => {
+    ($family:tt, $quant:literal, $size_bytes:literal, $sha256:literal) => {
         &[CatalogFile {
             url: concat!(
-                "https://huggingface.co/handy-computer/whisper-",
-                $family,
-                "-gguf/resolve/main/whisper-",
+                "https://huggingface.co/Glimpse-Dictation/",
+                whisper_repo!($family),
+                "/resolve/main/whisper-",
                 $family,
                 "-",
                 $quant,
@@ -379,14 +400,16 @@ macro_rules! distil_whisper_files {
 }
 
 macro_rules! whisper_bin {
-    ($model:literal, $path:literal, $size_bytes:literal) => {
-        whisper_bin!($model, "ggerganov/whisper.cpp", $path, $size_bytes)
-    };
     ($model:literal, $repo:literal, $path:literal, $size_bytes:literal) => {
         (
             $model,
             CatalogFile {
-                url: concat!("https://huggingface.co/", $repo, "/resolve/main/", $path),
+                url: concat!(
+                    "https://huggingface.co/Glimpse-Dictation/",
+                    $repo,
+                    "/resolve/main/",
+                    $path
+                ),
                 path: $path,
                 size_bytes: Some($size_bytes),
                 sha256: None,
@@ -400,52 +423,121 @@ macro_rules! whisper_bin {
 const WHISPER_BIN_FILES: &[(&str, CatalogFile)] = &[
     whisper_bin!(
         "whisper_large_v3_turbo_q8",
+        "Whisper-Large-V3-Turbo-coreml",
         "ggml-large-v3-turbo-q8_0.bin",
         874_188_075
     ),
-    whisper_bin!("whisper_small_q5", "ggml-small-q5_1.bin", 190_085_487),
+    whisper_bin!(
+        "whisper_small_q5",
+        "Whisper-Small-coreml",
+        "ggml-small-q5_1.bin",
+        190_085_487
+    ),
     whisper_bin!(
         "distil_whisper_large_v35",
-        "Pomni/distil-large-v3.5-ggml-allquants",
+        "Distil-Whisper-Large-V3.5-gguf",
         "ggml-distil-large-v3.5-q8_0.bin",
         818_305_955
     ),
     whisper_bin!(
         "distil_whisper_medium_en",
-        "Pomni/distil-medium.en-ggml-allquants",
+        "Distil-Whisper-Medium.en-gguf",
         "ggml-distil-medium.en-q8_0.bin",
         429_655_940
     ),
     whisper_bin!(
         "distil_whisper_small_en",
-        "Pomni/distil-small.en-ggml-allquants",
+        "Distil-Whisper-Small.en-gguf",
         "ggml-distil-small.en-q8_0.bin",
         183_833_897
     ),
-    whisper_bin!("whisper_tiny_q5", "ggml-tiny-q5_1.bin", 32_152_673),
-    whisper_bin!("whisper_tiny_q8", "ggml-tiny-q8_0.bin", 43_537_433),
-    whisper_bin!("whisper_tiny", "ggml-tiny.bin", 77_691_713),
-    whisper_bin!("whisper_base_q5", "ggml-base-q5_1.bin", 59_707_625),
-    whisper_bin!("whisper_base_q8", "ggml-base-q8_0.bin", 81_768_585),
-    whisper_bin!("whisper_base", "ggml-base.bin", 147_951_465),
-    whisper_bin!("whisper_small_q8", "ggml-small-q8_0.bin", 264_464_607),
-    whisper_bin!("whisper_small", "ggml-small.bin", 487_601_967),
-    whisper_bin!("whisper_medium_q5", "ggml-medium-q5_0.bin", 539_212_467),
-    whisper_bin!("whisper_medium_q8", "ggml-medium-q8_0.bin", 823_369_779),
-    whisper_bin!("whisper_medium", "ggml-medium.bin", 1_533_763_059),
+    whisper_bin!(
+        "whisper_tiny_q5",
+        "Whisper-Tiny-coreml",
+        "ggml-tiny-q5_1.bin",
+        32_152_673
+    ),
+    whisper_bin!(
+        "whisper_tiny_q8",
+        "Whisper-Tiny-coreml",
+        "ggml-tiny-q8_0.bin",
+        43_537_433
+    ),
+    whisper_bin!(
+        "whisper_tiny",
+        "Whisper-Tiny-coreml",
+        "ggml-tiny.bin",
+        77_691_713
+    ),
+    whisper_bin!(
+        "whisper_base_q5",
+        "Whisper-Base-coreml",
+        "ggml-base-q5_1.bin",
+        59_707_625
+    ),
+    whisper_bin!(
+        "whisper_base_q8",
+        "Whisper-Base-coreml",
+        "ggml-base-q8_0.bin",
+        81_768_585
+    ),
+    whisper_bin!(
+        "whisper_base",
+        "Whisper-Base-coreml",
+        "ggml-base.bin",
+        147_951_465
+    ),
+    whisper_bin!(
+        "whisper_small_q8",
+        "Whisper-Small-coreml",
+        "ggml-small-q8_0.bin",
+        264_464_607
+    ),
+    whisper_bin!(
+        "whisper_small",
+        "Whisper-Small-coreml",
+        "ggml-small.bin",
+        487_601_967
+    ),
+    whisper_bin!(
+        "whisper_medium_q5",
+        "Whisper-Medium-coreml",
+        "ggml-medium-q5_0.bin",
+        539_212_467
+    ),
+    whisper_bin!(
+        "whisper_medium_q8",
+        "Whisper-Medium-coreml",
+        "ggml-medium-q8_0.bin",
+        823_369_779
+    ),
+    whisper_bin!(
+        "whisper_medium",
+        "Whisper-Medium-coreml",
+        "ggml-medium.bin",
+        1_533_763_059
+    ),
     whisper_bin!(
         "whisper_large_v3_q5",
+        "Whisper-Large-V3-coreml",
         "ggml-large-v3-q5_0.bin",
         1_081_140_203
     ),
-    whisper_bin!("whisper_large_v3", "ggml-large-v3.bin", 3_095_033_483),
+    whisper_bin!(
+        "whisper_large_v3",
+        "Whisper-Large-V3-coreml",
+        "ggml-large-v3.bin",
+        3_095_033_483
+    ),
     whisper_bin!(
         "whisper_large_v3_turbo_q5",
+        "Whisper-Large-V3-Turbo-coreml",
         "ggml-large-v3-turbo-q5_0.bin",
         574_041_195
     ),
     whisper_bin!(
         "whisper_large_v3_turbo",
+        "Whisper-Large-V3-Turbo-coreml",
         "ggml-large-v3-turbo.bin",
         1_624_555_275
     ),
@@ -1038,7 +1130,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         variant: "Q5_0",
         // Measured more accurate and smaller than the Q5_K_M GGUF.
         files: &[CatalogFile {
-            url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-q5_0.bin",
+            url: "https://huggingface.co/Glimpse-Dictation/Whisper-Large-V3-coreml/resolve/main/ggml-large-v3-q5_0.bin",
             path: "ggml-large-v3-q5_0.bin",
             size_bytes: Some(1_081_140_203),
             sha256: Some("d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1"),
