@@ -6,6 +6,7 @@
 - Upgrading from Solo to Plus switches to your new license on its own. If a link would replace a different license, Glimpse asks first.
 - The Account screen says why a license stopped working, like a device being removed or a payment being refunded.
 - Glimpse C1 can now be used for work through the Glimpse app.
+- You can now look through the API Server settings before buying a license.
 
 ### Fixes
 

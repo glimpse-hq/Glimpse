@@ -6,11 +6,16 @@ export type LockedFeatureId = "personalization" | "library" | "record" | "api";
 type LockedFeatureProps = {
   feature: LockedFeatureId;
   onEnterKey: () => void;
+  compact?: boolean;
 };
 
 // Stands in for a feature the license doesn't cover, in the place the
 // feature would be, so buying it doesn't mean leaving it.
-const LockedFeature = ({ feature, onEnterKey }: LockedFeatureProps) => {
+const LockedFeature = ({
+  feature,
+  onEnterKey,
+  compact = false,
+}: LockedFeatureProps) => {
   const { t } = useLingui();
 
   const copy: Record<LockedFeatureId, { title: string; line: string }> = {
@@ -61,7 +66,9 @@ const LockedFeature = ({ feature, onEnterKey }: LockedFeatureProps) => {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-10">
+    <div
+      className={`mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center ${compact ? "" : "py-10"}`}
+    >
       <h2 className="font-satoshi ui-text-screen-title ui-color-primary tracking-tight text-balance">
         {copy[feature].title}
       </h2>

@@ -42,25 +42,14 @@ const SettingsScreen = ({
   }, [onLicenseKeyFocused]);
   const form = useSettingsForm({ pane, active, onClose });
   const licenseLoading = useLicenseState().isLoading;
-  const localApiLocked = !form.activeLicense;
+  // A server that is still running keeps its Stop button.
+  const localApiLocked =
+    !form.activeLicense &&
+    !form.localApiStatus?.running &&
+    !form.localApiStatus?.starting;
 
-  // Same frame as the locked main views: no pane header, app type scale.
-  if (pane === "api" && (licenseLoading || localApiLocked)) {
-    return (
-      <div className="flex flex-1 flex-col min-h-0 px-8 pb-6">
-        {!licenseLoading && (
-          <div className="flex min-h-0 flex-1 flex-col pt-8">
-            <LockedFeature
-              feature="api"
-              onEnterKey={() => {
-                setApiLicenseKeyFocus(true);
-                onPaneChange("account");
-              }}
-            />
-          </div>
-        )}
-      </div>
-    );
+  if (pane === "api" && licenseLoading) {
+    return <div className="flex flex-1 flex-col min-h-0" />;
   }
 
   return (
@@ -228,30 +217,51 @@ const SettingsScreen = ({
             )}
 
             {pane === "api" && (
-              <LocalApiTab
-                key="api"
-                modelCatalog={form.modelCatalog}
-                modelStatus={form.modelStatus}
-                apiKey={form.localApiKey}
-                setApiKey={form.setLocalApiKey}
-                port={form.localApiPort}
-                setPort={form.setLocalApiPort}
-                model={form.localApiModel}
-                setModel={form.setLocalApiModel}
-                host={form.localApiHost}
-                setHost={form.setLocalApiHost}
-                startOnLaunch={form.localApiStartOnLaunch}
-                setStartOnLaunch={form.setLocalApiStartOnLaunch}
-                cors={form.localApiCors}
-                setCors={form.setLocalApiCors}
-                status={form.localApiStatus}
-                busy={form.localApiBusy}
-                stopping={form.localApiStopping}
-                onStart={form.handleStartLocalApi}
-                onStop={form.handleStopLocalApi}
-                onRestart={form.handleRestartLocalApi}
-                onClearLogs={form.handleClearLocalApiLogs}
-              />
+              <div className="relative flex min-h-0 flex-1 flex-col">
+                <div
+                  inert={localApiLocked}
+                  className={`flex min-h-0 flex-1 flex-col ${localApiLocked ? "opacity-60 blur-[1px]" : ""}`}
+                >
+                  <LocalApiTab
+                    key="api"
+                    modelCatalog={form.modelCatalog}
+                    modelStatus={form.modelStatus}
+                    apiKey={form.localApiKey}
+                    setApiKey={form.setLocalApiKey}
+                    port={form.localApiPort}
+                    setPort={form.setLocalApiPort}
+                    model={form.localApiModel}
+                    setModel={form.setLocalApiModel}
+                    host={form.localApiHost}
+                    setHost={form.setLocalApiHost}
+                    startOnLaunch={form.localApiStartOnLaunch}
+                    setStartOnLaunch={form.setLocalApiStartOnLaunch}
+                    cors={form.localApiCors}
+                    setCors={form.setLocalApiCors}
+                    status={form.localApiStatus}
+                    busy={form.localApiBusy}
+                    stopping={form.localApiStopping}
+                    onStart={form.handleStartLocalApi}
+                    onStop={form.handleStopLocalApi}
+                    onRestart={form.handleRestartLocalApi}
+                    onClearLogs={form.handleClearLocalApiLogs}
+                  />
+                </div>
+                {localApiLocked && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep">
+                      <LockedFeature
+                        feature="api"
+                        compact
+                        onEnterKey={() => {
+                          setApiLicenseKeyFocus(true);
+                          onPaneChange("account");
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
