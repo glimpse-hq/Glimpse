@@ -50,6 +50,7 @@ pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
     let storage = open_storage(identifier)?;
     storage.set_query_only()?;
     let mut seen = Seen::default();
+    seen.remember_library(&storage)?;
     seen.events(&storage)?;
     let mut stdout = std::io::stdout();
     loop {
@@ -77,20 +78,10 @@ fn render(event: &Value, json: bool) -> String {
     .to_string()
 }
 
+#[derive(Default)]
 struct Seen {
     dictations: HashSet<String>,
     library: HashMap<String, String>,
-    started_at: chrono::DateTime<chrono::Utc>,
-}
-
-impl Default for Seen {
-    fn default() -> Self {
-        Self {
-            dictations: HashSet::new(),
-            library: HashMap::new(),
-            started_at: chrono::Utc::now(),
-        }
-    }
 }
 
 fn is_active(status: &str) -> bool {
@@ -98,6 +89,23 @@ fn is_active(status: &str) -> bool {
 }
 
 impl Seen {
+    // Everything here now counts as already added, wherever it sits in the list later.
+    fn remember_library(&mut self, storage: &StorageManager) -> Result<()> {
+        let mut offset = 0;
+        loop {
+            let (items, has_more) =
+                storage.get_library_items_page(LibraryFilter::default(), WINDOW, offset)?;
+            offset += items.len();
+            for item in &items {
+                let (status, _, _) = item.status.as_fields();
+                self.library.insert(item.id.clone(), status);
+            }
+            if !has_more {
+                return Ok(());
+            }
+        }
+    }
+
     /// Changes since the last call, oldest first.
     fn events(&mut self, storage: &StorageManager) -> Result<Vec<Value>> {
         let mut events = Vec::new();
@@ -113,9 +121,6 @@ impl Seen {
             }
         }
         let (mut items, _) = storage.get_library_items_page(LibraryFilter::default(), WINDOW, 0)?;
-        // A recording's date is when it started, so one saved during the watch can
-        // predate it, but it still lands on the newest page.
-        let newest: HashSet<String> = items.iter().map(|item| item.id.clone()).collect();
         // Retried items stay at their old place in the list, past the newest page.
         let active = LibraryFilter {
             status: Some("active".to_string()),
@@ -134,9 +139,7 @@ impl Seen {
             let (status, _, _) = item.status.as_fields();
             let previous = self.library.insert(item.id.clone(), status.clone());
             let mut changes = Vec::new();
-            let created_since_start = chrono::DateTime::parse_from_rfc3339(&item.created_at)
-                .is_ok_and(|created| created >= self.started_at);
-            if previous.is_none() && (created_since_start || newest.contains(&item.id)) {
+            if previous.is_none() {
                 changes.push("library.added");
             }
             if previous.as_deref() != Some(status.as_str()) {
