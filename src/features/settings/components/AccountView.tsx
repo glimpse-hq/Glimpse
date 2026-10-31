@@ -332,7 +332,7 @@ const AccountView = ({
                 })}
               </button>
             )
-          ) : businessLapsed || needsCheck ? (
+          ) : !licenseLoading ? (
             <CustomerPortalLink
               provider={licenseState?.provider}
               className={portalLinkClassName}

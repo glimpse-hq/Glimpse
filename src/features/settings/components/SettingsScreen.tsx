@@ -54,8 +54,12 @@ const SettingsScreen = ({
 
   return (
     <div className="settings-typescale flex flex-1 flex-col min-h-0">
-      <header className="shrink-0 px-8 pb-4">
-        <h1 className="ui-text-screen-title ui-color-primary tracking-tight">
+      {/* Sits in the titlebar strip, so it has to stay draggable. */}
+      <header data-tauri-drag-region className="-mt-3 shrink-0 px-8 pb-1">
+        <h1
+          data-tauri-drag-region
+          className="ui-text-screen-title ui-color-primary tracking-tight"
+        >
           {i18n._(SETTINGS_PANE_LABELS[pane])}
         </h1>
       </header>
