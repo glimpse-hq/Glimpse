@@ -28,6 +28,7 @@ struct ProcessedTranscript {
     /// The "provider:model" label of the model that cleaned it, if one did.
     llm_model: Option<String>,
     pasted: bool,
+    answered: Option<crate::voice_prompt::AnsweredQuestion>,
     llm_seconds: Option<f32>,
     llm_outcome: &'static str,
     insert_latency_seconds: Option<f32>,
@@ -448,6 +449,10 @@ pub(crate) fn queue_transcription(
                     .as_ref()
                     .map(|_| raw_transcript.clone());
                 metadata.selected_text = pending_selected_text;
+                if let Some(answered) = processed.answered {
+                    metadata.question = Some(answered.question);
+                    metadata.question_client = Some(answered.client);
+                }
 
                 emit_transcription_complete_with_cleanup(
                     &app_handle,
@@ -987,6 +992,10 @@ async fn process_transcript_text(
 
     let mut pasted = false;
     let mut insert_latency_seconds = None;
+    let answered = auto_paste
+        .then(|| crate::voice_prompt::answer(app, &final_transcript))
+        .flatten();
+    let auto_paste = auto_paste && answered.is_none();
     if auto_paste && !final_transcript.trim().is_empty() {
         analytics::set_activity(Activity::Inserting);
         let can_read_field = !is_edit_mode;
@@ -1094,6 +1103,7 @@ async fn process_transcript_text(
         llm_cleaned,
         llm_model,
         pasted,
+        answered,
         llm_seconds,
         llm_outcome,
         insert_latency_seconds,
@@ -1589,23 +1599,26 @@ fn handle_empty_transcription(
         },
     );
 
-    toast::emit_toast(
-        app,
-        toast::Payload {
-            toast_type: "warning".to_string(),
-            message: toast::native(
-                app,
-                if kept {
-                    "native.toast.no_words_kept"
-                } else {
-                    "native.toast.no_words"
-                },
-            ),
-            auto_dismiss: Some(true),
-            duration: Some(if kept { 5000 } else { 3000 }),
-            ..Default::default()
-        },
-    );
+    // The question staying up is the feedback; a notice would displace it.
+    if !crate::voice_prompt::is_answering() {
+        toast::emit_toast(
+            app,
+            toast::Payload {
+                toast_type: "warning".to_string(),
+                message: toast::native(
+                    app,
+                    if kept {
+                        "native.toast.no_words_kept"
+                    } else {
+                        "native.toast.no_words"
+                    },
+                ),
+                auto_dismiss: Some(true),
+                duration: Some(if kept { 5000 } else { 3000 }),
+                ..Default::default()
+            },
+        );
+    }
 
     if !kept
         && audio_path.exists()
@@ -2426,6 +2439,8 @@ pub(crate) fn finalize_streaming_transcription(
                 .as_ref()
                 .map(|_| raw_transcript.clone()),
             selected_text: pending_selected_text,
+            question: processed.answered.as_ref().map(|a| a.question.clone()),
+            question_client: processed.answered.as_ref().map(|a| a.client.clone()),
         };
 
         crate::pill::collapse_expanded_pill(&app_handle);

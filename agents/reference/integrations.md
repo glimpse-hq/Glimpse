@@ -7,12 +7,15 @@ Paths below are relative to `src-tauri/src/`. Keep adapters thin and reuse app o
 - `main.rs` distinguishes GUI launch from CLI launch; `lib.rs::run_cli` dispatches app-owned verbs to `integrations/` and engine-owned verbs to Glimpse-Speech. Check `integrations/mod.rs` before adding a command.
 - Headless reads open existing databases. Mutations and app-controlled transcription go through `integrations/client.rs`, the local socket protocol in `ipc.rs`, `server.rs`, and `handlers.rs` to the running app.
 - Preserve JSON output and exit-code behavior in `integrations/mod.rs` and `output.rs`. Do not write directly to the database from a new CLI mutation and bypass settings events, licensing, or job scheduling.
+- `glimpse watch` polls the databases headlessly and prints ids and details, never text.
 
 ## MCP
 
 `integrations/mcp.rs` implements `glimpse mcp` over stdio with `rmcp`. Keep stdout reserved for the protocol. It uses the existing Library database in query-only mode and checks an active license at startup and on tool calls.
 
 The default tools read Library data. `transcribe_file` is exposed only with `--allow-import` and queues work through the running app. Preserve this opt-in and reuse Library search, export, and queue behavior. `transcribe_audio` runs the app's `transcribe` command and adds nothing to the Library.
+
+`ask_user` opens a question in `voice_prompt.rs` through `prompt.open` and polls `prompt.poll`. The question shows in the toast window, and the next dictation started while it shows goes to the asker instead of the cursor. Dictations started before it stay with the cursor, a dictation that fails leaves it open, Escape skips it and stays out of the frontmost app unless a dictation is answering it, and a question is withdrawn when the asker's connection closes or nobody polls it for 90 seconds. `recent_dictations` reads history; `add_bookmark` is on by default; `start_recording` and `finish_recording` need `--allow-recording`.
 
 `get_live_transcript` and `wait_for_live_transcript` poll the app's `record.live` command, which turns on live transcription for the recording (as opening the live view does) and returns settled segments only. `wait_for_live_transcript` is a long poll: it returns one chunk per call when the speaker pauses or a timer runs out, so the agent gets one turn per chunk instead of a stream. The server remembers which segment ids it has returned for the current recording, and sends the client name so the Record screen can show who is following. When live transcription turns on mid-recording, `recording/live.rs` first reads the track files from the start (`LiveTap::read_written`), so the live view and agents get earlier speech too.
 

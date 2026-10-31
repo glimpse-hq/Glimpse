@@ -61,11 +61,13 @@ const AccountView = ({
   const licenseKeyInputRef = useRef<HTMLInputElement>(null);
 
   const isActive = licenseState?.status === "active";
-  const isUnverified = licenseState?.status === "unverified";
+  const needsCheck =
+    licenseState?.status === "unverified" || licenseState?.needsCheck === true;
   const isTrialing = !isActive && (licenseState?.trialActive ?? false);
+  const businessLapsed = licenseState?.businessLapsed ?? false;
   const renewsAt =
-    isActive && licenseState?.expiresAt
-      ? formatDate(licenseState.expiresAt)
+    isActive && licenseState?.renewsAt
+      ? formatDate(licenseState.renewsAt)
       : null;
   const renewsText = renewsAt ? t`Renews ${renewsAt}` : null;
 
@@ -108,13 +110,14 @@ const AccountView = ({
     classifyActivationInput(attemptedKey) === "discount_code";
   const showSupport = activationErrorText !== null && activationAttempt >= 2;
 
-  const activationHintText = checkoutReturned
-    ? t({
-        id: "settings.account.activate.checkout_return_hint_generic",
-        message:
-          "Your license key is in your receipt email. Paste it here, or paste the whole email.",
-      })
-    : null;
+  const activationHintText =
+    checkoutReturned || licenseState?.status === "invalid"
+      ? t({
+          id: "settings.account.activate.checkout_return_hint_generic",
+          message:
+            "Your license key is in your receipt email. Paste it here, or paste the whole email.",
+        })
+      : null;
 
   const handleDeactivateClick = () => {
     if (confirmDeactivate) {
@@ -143,10 +146,74 @@ const AccountView = ({
 
   const trialDaysRemaining = licenseState?.trialDaysRemaining ?? 0;
   const trialEndsAt = licenseState?.trialEndsAt ?? null;
+  const revocationText = (() => {
+    switch (licenseState?.revocationReason) {
+      case "removed":
+        return t({
+          id: "settings.account.license.revoked.removed",
+          message: "This device was removed from the license.",
+        });
+      case "disabled":
+        return t({
+          id: "settings.account.license.revoked.disabled",
+          message: "This license key was turned off.",
+        });
+      case "upgraded":
+        return t({
+          id: "settings.account.license.revoked.upgraded",
+          message: "This license was upgraded. Enter your new key below.",
+        });
+      case "refunded":
+        return t({
+          id: "settings.account.license.revoked.refunded",
+          message: "This payment was refunded or disputed.",
+        });
+      case "upgrade_reused":
+        return t({
+          id: "settings.account.license.revoked.upgrade_reused",
+          message:
+            "This Solo's upgrade price was already used for another Plus. Contact support for a refund.",
+        });
+      case "solo_refunded":
+        return t({
+          id: "settings.account.license.revoked.solo_refunded",
+          message:
+            "The Solo behind this upgrade was refunded. Contact support for a refund.",
+        });
+      case "subscription_inactive":
+        return t({
+          id: "settings.account.license.revoked.subscription_inactive",
+          message: "This subscription is no longer active.",
+        });
+      default:
+        return null;
+    }
+  })();
+  const statusProblem =
+    revocationText !== null ||
+    businessLapsed ||
+    needsCheck ||
+    licenseState?.status === "invalid";
   const trialStatusText = (() => {
     if (licenseLoading) return "\u00a0";
 
-    if (isUnverified) {
+    if (revocationText) return revocationText;
+
+    if (businessLapsed) {
+      return t({
+        id: "settings.account.license.business_lapsed",
+        message: "Your Business license is no longer active on this device.",
+      });
+    }
+
+    if (licenseState?.status === "invalid" && !isTrialing) {
+      return t({
+        id: "settings.account.license.no_longer_active",
+        message: "This license is no longer active on this device.",
+      });
+    }
+
+    if (needsCheck) {
       return t({
         id: "settings.account.license.unverified",
         message: "Reconnect to the internet to verify your license.",
@@ -204,11 +271,12 @@ const AccountView = ({
             </div>
           ) : (
             <p
-              className="min-w-0 truncate ui-text-meta"
+              className={`min-w-0 ui-text-meta ${statusProblem ? "" : "truncate"}`}
               style={{
-                color: isTrialing
-                  ? "var(--color-cloud)"
-                  : "var(--color-text-muted)",
+                color:
+                  isTrialing && !statusProblem
+                    ? "var(--color-cloud)"
+                    : "var(--color-text-muted)",
               }}
             >
               {trialStatusText}
@@ -264,6 +332,11 @@ const AccountView = ({
                 })}
               </button>
             )
+          ) : !licenseLoading ? (
+            <CustomerPortalLink
+              provider={licenseState?.provider}
+              className={portalLinkClassName}
+            />
           ) : null}
         </div>
 
@@ -274,7 +347,7 @@ const AccountView = ({
         ) : null}
       </div>
 
-      {!isActive && !licenseLoading && (
+      {!isActive && !licenseLoading && !businessLapsed && !needsCheck && (
         <section className="mx-auto max-w-[400px]">
           <PlanPicker source="account" />
         </section>

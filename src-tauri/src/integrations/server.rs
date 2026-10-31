@@ -77,8 +77,13 @@ fn handle_connection(app: &AppHandle<AppRuntime>, stream: Stream) -> std::io::Re
         return Ok(());
     }
 
+    let mut prompt_opened = false;
     let response = match serde_json::from_str::<Request>(line.trim()) {
-        Ok(request) => handlers::dispatch(app, &request),
+        Ok(request) => {
+            let response = handlers::dispatch(app, &request);
+            prompt_opened = request.command == "prompt.open" && response.ok;
+            response
+        }
         Err(err) => Response::error(format!("Malformed request: {err}")),
     };
 
@@ -90,8 +95,16 @@ fn handle_connection(app: &AppHandle<AppRuntime>, stream: Stream) -> std::io::Re
     });
     payload.push('\n');
 
-    let mut stream = reader.into_inner();
+    let stream = reader.get_mut();
     stream.write_all(payload.as_bytes())?;
     stream.flush()?;
+
+    // The asker holds this connection open, so its end means the asker is gone.
+    if prompt_opened {
+        let _ = reader.read_line(&mut String::new());
+        if let Some(id) = response.data.get("id").and_then(serde_json::Value::as_str) {
+            crate::voice_prompt::close(app, id);
+        }
+    }
     Ok(())
 }

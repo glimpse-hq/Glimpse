@@ -31,6 +31,11 @@ Press your shortcut, talk, and your words show up wherever you're typing. It wor
 
 Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/Glimpse/issues) or email me at [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc). I do my best to respond ASAP.
 
+## Install
+
+- **Mac:** [download the app](https://tryglimpse.cc/download), or run `brew install --cask glimpse-hq/tap/glimpse`.
+- **Windows:** get it from the [Microsoft Store](https://apps.microsoft.com/detail/9PJWF4W8V4WG), or [download the installer](https://tryglimpse.cc/download).
+
 ## Screenshots
 
 <p align="center">
@@ -70,8 +75,10 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 
 ## Integrations
 
-- **[Raycast](https://www.raycast.com/garon/glimpse)**. Search dictations, transcribe files, switch models, and more, without leaving Raycast. Requires a [license](#pricing).
-- **AI agents.** `glimpse mcp` lets Claude Code, Claude Desktop, Cursor and other MCP clients search and read your Library, on your machine. Connect it with `claude mcp add glimpse -- glimpse mcp`. Requires a [license](#pricing).
+All integrations require a [license](#pricing).
+
+<a href="https://www.raycast.com/garon/glimpse" title="Install Glimpse Raycast Extension"><img src="https://www.raycast.com/garon/glimpse/install_button@2x.png?v=1.1" height="64" style="height: 64px;" alt="Install Glimpse Raycast Extension" /></a> <a href="https://tryglimpse.cc/mcp/" title="Connect Glimpse to your AI agent"><img src="./assets/readme/mcp-button.svg" height="64" style="height: 64px;" alt="Connect Glimpse MCP server" /></a>
+
 - **Your own.** The [CLI guide](https://github.com/glimpse-hq/Glimpse/wiki/CLI) covers scripting Glimpse from Shortcuts, Finder, or anything else that can run a command.
 
 ## Pricing

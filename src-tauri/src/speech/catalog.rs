@@ -188,7 +188,7 @@ macro_rules! c1_file {
     ($file:literal, $path:expr, $size_bytes:literal, $sha256:literal) => {
         CatalogFile {
             url: concat!(
-                "https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B/resolve/d424cc981fa7817f2d677533bd5fa01f625fa195/",
+                "https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B/resolve/174b6092dc5e3dacd3e473e844831246d690e6a0/",
                 $file
             ),
             path: $path,
@@ -242,8 +242,8 @@ const CLEANUP_MODEL_FILES: &[CatalogFile] = &[
     c1_file!(
         "LICENSE-C1.md",
         "LICENSE-C1.md",
-        1_039,
-        "406ac09dedc41d692fcc94d52c32c29028fe2513d5d360e5dbb068cee4717e41"
+        1_184,
+        "77600de5d8480a9a9fe2dae1acff8a210215cb06bbfcf95f7ee6864f4fd49b43"
     ),
 ];
 

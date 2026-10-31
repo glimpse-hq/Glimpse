@@ -458,6 +458,9 @@ impl PillController {
 
         self.update_overlay_visibility(app, previous, new_status);
         self.emit_state(app);
+        if new_status == PillStatus::Idle {
+            crate::voice_prompt::pill_became_idle(app);
+        }
     }
 
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
@@ -719,6 +722,7 @@ impl PillController {
         crate::llm_cleanup::prewarm_cleanup(&settings);
 
         let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
+        crate::voice_prompt::claim_for_dictation();
         // Enter Listening before the device opens for fast visual feedback.
         self.transition_to(app, PillStatus::Listening);
 
@@ -976,7 +980,7 @@ impl PillController {
             stopped_at,
         };
         let state = app.state::<AppState>();
-        if auto_paste {
+        if auto_paste && !crate::voice_prompt::is_answering() {
             self.capture_selected_text_if_enabled(app, &settings);
         } else {
             // No paste means no edit mode; keep the raw transcript.

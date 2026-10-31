@@ -644,7 +644,7 @@ const LICENSES = [
   "unlocked-3",
 ];
 const LOCKED_VIEWS = ["personalization", "library", "record"];
-const TOASTS = ["milestone", "update", "no-words", "disk-full"];
+const TOASTS = ["milestone", "update", "no-words", "disk-full", "ask"];
 
 const onboardingShots = async () => {
   await dev("onboarding", "reset");

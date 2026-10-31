@@ -1481,6 +1481,59 @@ body {
   animation: toast-out 0.15s ease-in forwards;
 }
 
+@keyframes ask-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(18px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ask-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ask-dot {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-cloud) 60%, transparent);
+  }
+
+  to {
+    box-shadow: 0 0 0 9px transparent;
+  }
+}
+
+.animate-ask-in {
+  animation: ask-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: bottom center;
+}
+
+.ask-reveal {
+  animation: ask-reveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+}
+
+.ask-reveal-late {
+  animation: ask-reveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+.ask-dot {
+  animation: ask-dot 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.18s 1;
+}
+
 @keyframes twinkle {
   0%,
   100% {
@@ -1764,6 +1817,10 @@ body {
   .animate-shake,
   .animate-toast-in,
   .animate-toast-out,
+  .animate-ask-in,
+  .ask-reveal,
+  .ask-reveal-late,
+  .ask-dot,
   .animate-pulse,
   .recording-pulse,
   .hover-tip,

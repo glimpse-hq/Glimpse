@@ -1,5 +1,5 @@
 export type ToastType =
-  "error" | "info" | "success" | "warning" | "update" | "celebration";
+  "error" | "info" | "success" | "warning" | "update" | "celebration" | "ask";
 
 export type ToastPayload = {
   type: ToastType;
@@ -12,4 +12,7 @@ export type ToastPayload = {
   actionLabel?: string;
   secondaryAction?: string;
   secondaryActionLabel?: string;
+  detail?: string;
+  closeAction?: string;
+  keepWhileRecording?: boolean;
 };

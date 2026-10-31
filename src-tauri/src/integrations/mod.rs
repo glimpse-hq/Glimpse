@@ -21,6 +21,7 @@ mod replacements;
 mod server;
 mod status;
 mod transcribe;
+mod watch;
 
 pub(crate) use server::start as start_control_server;
 
@@ -75,8 +76,13 @@ const COMMANDS: &[CliCommand] = &[
         owned: false,
     },
     CliCommand {
+        name: "watch",
+        help: "Print a line for each new dictation and Library change.",
+        owned: true,
+    },
+    CliCommand {
         name: "mcp",
-        help: "Let AI agents read your Library and follow recordings.",
+        help: "Let AI agents read your Library and dictations, follow recordings and ask you questions.",
         owned: true,
     },
     CliCommand {
@@ -191,6 +197,7 @@ fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "replacements" => replacements::run(identifier, rest, json),
         "model" => model::run(identifier, rest, json),
         "library" => library::run(identifier, rest, json),
+        "watch" => watch::run(identifier, rest, json),
         "mcp" => mcp::run(identifier, rest),
         "record" => record::run(rest, json),
         "open" => open::run(rest, json),
