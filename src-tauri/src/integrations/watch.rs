@@ -14,6 +14,8 @@ use crate::storage::StorageManager;
 
 const POLL: Duration = Duration::from_secs(2);
 const WINDOW: usize = 20;
+// Enough for a large import, which stays active while it works through the queue.
+const MAX_ACTIVE: usize = 500;
 
 fn help() {
     super::print_command_help(
@@ -75,10 +77,24 @@ fn render(event: &Value, json: bool) -> String {
     .to_string()
 }
 
-#[derive(Default)]
 struct Seen {
     dictations: HashSet<String>,
     library: HashMap<String, String>,
+    started_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl Default for Seen {
+    fn default() -> Self {
+        Self {
+            dictations: HashSet::new(),
+            library: HashMap::new(),
+            started_at: chrono::Utc::now(),
+        }
+    }
+}
+
+fn is_active(status: &str) -> bool {
+    !matches!(status, "complete" | "error" | "cancelled")
 }
 
 impl Seen {
@@ -96,12 +112,28 @@ impl Seen {
                 }));
             }
         }
-        let (items, _) = storage.get_library_items_page(LibraryFilter::default(), WINDOW, 0)?;
-        for item in items.iter().rev() {
+        let (mut items, _) = storage.get_library_items_page(LibraryFilter::default(), WINDOW, 0)?;
+        // Retried items stay at their old place in the list, past the newest page.
+        let active = LibraryFilter {
+            status: Some("active".to_string()),
+            ..Default::default()
+        };
+        items.extend(storage.get_library_items_page(active, MAX_ACTIVE, 0)?.0);
+        for (id, status) in &self.library {
+            if is_active(status) {
+                items.extend(storage.get_library_item(id)?);
+            }
+        }
+        let mut visited = HashSet::new();
+        items.retain(|item| visited.insert(item.id.clone()));
+        items.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        for item in &items {
             let (status, _, _) = item.status.as_fields();
             let previous = self.library.insert(item.id.clone(), status.clone());
             let mut changes = Vec::new();
-            if previous.is_none() {
+            let created_since_start = chrono::DateTime::parse_from_rfc3339(&item.created_at)
+                .is_ok_and(|created| created >= self.started_at);
+            if previous.is_none() && created_since_start {
                 changes.push("library.added");
             }
             if previous.as_deref() != Some(status.as_str()) {

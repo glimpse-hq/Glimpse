@@ -42,12 +42,15 @@ impl Prompt {
 struct Prompts {
     items: Vec<Prompt>,
     shown: Option<String>,
+    // Another toast is on top of the shown question until it closes.
+    covered: bool,
     reaping: bool,
 }
 
 static PROMPTS: Mutex<Prompts> = Mutex::new(Prompts {
     items: Vec::new(),
     shown: None,
+    covered: false,
     reaping: false,
 });
 
@@ -135,6 +138,9 @@ pub fn voice_prompt_skip(id: String) {
 
 // Not while answering: Escape is used in other apps during a dictation.
 fn shown_waiting_index(prompts: &Prompts) -> Option<usize> {
+    if prompts.covered {
+        return None;
+    }
     prompts.items.iter().position(|p| {
         prompts.shown.as_deref() == Some(p.id.as_str()) && matches!(p.stage, Stage::Waiting)
     })
@@ -161,12 +167,8 @@ pub(crate) fn skip_shown(app: &AppHandle<AppRuntime>) -> bool {
 /// A dictation just started: it answers the question on screen, if any.
 pub(crate) fn claim_for_dictation() {
     let mut prompts = PROMPTS.lock();
-    let Prompts { items, shown, .. } = &mut *prompts;
-    if let Some(prompt) = items
-        .iter_mut()
-        .find(|p| shown.as_deref() == Some(p.id.as_str()) && matches!(p.stage, Stage::Waiting))
-    {
-        prompt.stage = Stage::Answering;
+    if let Some(index) = shown_waiting_index(&prompts) {
+        prompts.items[index].stage = Stage::Answering;
     }
 }
 
@@ -217,9 +219,19 @@ pub(crate) fn pill_became_idle(app: &AppHandle<AppRuntime>) {
     show_current(app);
 }
 
+/// Another toast replaced the card. The question returns when that toast closes.
+pub(crate) fn toast_covered() {
+    let mut prompts = PROMPTS.lock();
+    prompts.covered = prompts.shown.is_some();
+}
+
 /// The toast window closed its card. Returns true when a question took its place.
 pub(crate) fn toast_closed(app: &AppHandle<AppRuntime>) -> bool {
-    PROMPTS.lock().shown = None;
+    {
+        let mut prompts = PROMPTS.lock();
+        prompts.shown = None;
+        prompts.covered = false;
+    }
     show_current(app);
     PROMPTS.lock().shown.is_some()
 }
@@ -238,7 +250,7 @@ fn show_current(app: &AppHandle<AppRuntime>) {
     let idle = app.state::<AppState>().pill().status() == pill::PillStatus::Idle;
     let (id, client, question) = {
         let mut prompts = PROMPTS.lock();
-        if prompts.shown.is_some() {
+        if prompts.shown.is_some() || prompts.covered {
             return;
         }
         let Some(prompt) = prompts.items.iter().find(|p| p.is_open()) else {

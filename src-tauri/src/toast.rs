@@ -37,6 +37,9 @@ pub struct Payload {
 }
 
 pub fn emit_toast(app: &AppHandle<AppRuntime>, payload: Payload) {
+    if payload.toast_type != "ask" {
+        crate::voice_prompt::toast_covered();
+    }
     if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = toast_window.set_size(tauri::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
         position_toast_window(app, &toast_window, WINDOW_WIDTH, WINDOW_HEIGHT);

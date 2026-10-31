@@ -37,6 +37,8 @@ const LIVE_POLL: Duration = Duration::from_secs(1);
 // A transcript line starts over after this long, even with the same speaker.
 const LIVE_LINE_MS: u64 = 60_000;
 const ASK_POLL: Duration = Duration::from_millis(500);
+// Past the app's own 90 seconds, so only questions it has already withdrawn go.
+const ASK_ABANDONED: Duration = Duration::from_secs(120);
 
 fn help() {
     super::print_command_help(
@@ -310,7 +312,7 @@ struct LibraryServer {
     settings: Arc<SettingsStore>,
     live: Arc<Mutex<LiveCursor>>,
     // Each connection keeps its question open; dropping one withdraws it.
-    asks: Arc<Mutex<HashMap<String, interprocess::local_socket::Stream>>>,
+    asks: Arc<Mutex<HashMap<String, (interprocess::local_socket::Stream, Instant)>>>,
     tool_router: ToolRouter<Self>,
 }
 
@@ -551,6 +553,10 @@ impl LibraryServer {
         context: RequestContext<RoleServer>,
     ) -> Result<String, String> {
         self.require_license()?;
+        self.asks
+            .lock()
+            .expect("open asks")
+            .retain(|_, (_, polled)| polled.elapsed() < ASK_ABANDONED);
         let id = match (params.ask_id, params.question) {
             (Some(id), _) => id,
             (None, Some(question)) => {
@@ -564,7 +570,7 @@ impl LibraryServer {
                 self.asks
                     .lock()
                     .expect("open asks")
-                    .insert(id.clone(), connection);
+                    .insert(id.clone(), (connection, Instant::now()));
                 id
             }
             (None, None) => return Err("Pass a question or an ask_id.".to_string()),
@@ -576,6 +582,9 @@ impl LibraryServer {
             if context.ct.is_cancelled() {
                 self.asks.lock().expect("open asks").remove(&id);
                 return Err("Cancelled.".to_string());
+            }
+            if let Some((_, polled)) = self.asks.lock().expect("open asks").get_mut(&id) {
+                *polled = Instant::now();
             }
             // Polling must not reopen an app the user just quit.
             let polled = running_app_request("prompt.poll", json!({ "id": id }))
