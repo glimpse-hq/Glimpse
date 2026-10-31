@@ -1290,6 +1290,16 @@ msgstr ""
 #~ msgstr "Пробный период завершён. Диктовка остаётся бесплатной. Для Библиотеки, Записи и Персонализации потребуется Glimpse Plus."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+#~ msgid "license.customer_portal"
+#~ msgstr "Портал клиента"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_commercial"
+#~ msgstr "Для работы. Один человек на лицензию, ежегодная оплата."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -2956,11 +2966,6 @@ msgid "model_capability.dictionary"
 msgstr "Пользовательские слова"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/CustomerPortalLink.tsx
-msgid "license.customer_portal"
-msgstr "Портал клиента"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.cut"
 msgstr "Вырезать"
@@ -3660,8 +3665,8 @@ msgstr "Завершение..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_commercial"
-msgstr "Для работы. Один человек на лицензию, ежегодная оплата."
+msgid "member_card.edition_blurb_commercial_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3772,6 +3777,11 @@ msgstr "Glimpse C1 пока не поддерживает язык «{missingLan
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_stuck"
 msgstr "Glimpse не удаётся открыть микрофон. Попробуйте перезапустить Glimpse."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.license_switch_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4148,6 +4158,11 @@ msgid "library.import.store_original.description"
 msgstr "Хранить копию в папке библиотеки"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_keep"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
 msgstr "Продолжайте удерживать, затем отпустите, когда закончите."
@@ -4318,6 +4333,11 @@ msgid "onboarding.license.input_aria"
 msgstr "Лицензионный ключ"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.draft_inactive"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Светлый"
@@ -4459,6 +4479,11 @@ msgstr "Mac и Windows"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.major_release"
 msgstr "Крупный выпуск"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+msgid "license.manage_account"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6559,6 +6584,16 @@ msgid "home.support.menu_aria"
 msgstr "Меню поддержки"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_confirm"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "Система"
@@ -6773,6 +6808,11 @@ msgstr "Микрофон перестал отвечать. Запись про�
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_downgrade"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.quit_recording.message"
 msgstr "Запись сохранится в Библиотеке, а транскрипция выполнится при следующем запуске Glimpse."
 
@@ -6785,6 +6825,11 @@ msgstr "Это же сочетание клавиш работает в любо
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.model_missing"
 msgstr "Выбранная модель не установлена. Загрузите её в разделе «Настройки» > «Модели»."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.solo_refunded"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -6817,6 +6862,11 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "В этой сборке отсутствует вспомогательный инструмент командной строки."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.removed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.unsupported_sample_rate"
 msgstr "Этот файл имеет неподдерживаемую частоту дискретизации."
@@ -6832,9 +6882,24 @@ msgid "license.activate.error.device_limit"
 msgstr "Этот ключ уже активирован на максимальном количестве устройств. Сначала отключите его на другом устройстве."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.no_longer_active"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
 msgid "license.activate.error.inactive"
 msgstr "Эта лицензия больше не действует."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.disabled"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgraded"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6842,9 +6907,24 @@ msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "Будут удалены только сохранённые аудиофайлы, но не транскрипции."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.refunded"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.provider.models_empty"
 msgstr "Этот провайдер не предоставил список моделей."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgrade_reused"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.subscription_inactive"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7427,6 +7507,11 @@ msgid "onboarding.done.subtitle.v2"
 msgstr "Позже это можно изменить в разделе «Настройки»."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_message"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.title"
 msgstr "Всё готово"
@@ -7450,6 +7535,11 @@ msgstr "Ваши аудиозаписи и транскрипции остают
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Ваши аудиозаписи и транскрипции хранятся на вашем ПК. Glimpse не собирает записи, транскрипции, ключи API или подсказки. Необязательная анонимная аналитика использования (например, длительность сеанса и использование функций, но без вашего контента) помогает нам улучшать приложение. Вы можете отключить её в любое время в разделе Настройки → Приложение."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.business_lapsed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

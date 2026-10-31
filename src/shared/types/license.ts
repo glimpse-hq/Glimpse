@@ -21,6 +21,10 @@ export type LicenseState = {
   activatedAt?: string | null;
   purchasedAt?: string | null;
   expiresAt?: string | null;
+  renewsAt?: string | null;
+  businessLapsed?: boolean;
+  needsCheck?: boolean;
+  revocationReason?: string | null;
   activationsLimit: number;
   activationsCount?: number | null;
   provider?: LicenseProvider | null;

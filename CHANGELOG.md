@@ -1,3 +1,17 @@
+1.4.2
+
+### Improvements
+
+- Manage account now opens your new account page, where you can remove a device, copy your license key, add Business seats and manage billing.
+- Upgrading from Solo to Plus switches to your new license on its own. If a link would replace a different license, Glimpse asks first.
+- The Account screen says why a license stopped working, like a device being removed or a payment being refunded.
+- Glimpse C1 can now be used for work through the Glimpse app.
+
+### Fixes
+
+- The renewal date for Glimpse Business now shows the actual date, and disappears once you cancel.
+- A paid license that's been offline for over a week now asks you to reconnect, instead of saying your trial ended.
+
 1.4.1
 
 ### New Features

@@ -34,8 +34,8 @@ const CustomerPortalLink = ({
       className={className}
     >
       {t({
-        id: "license.customer_portal",
-        message: "Customer portal",
+        id: "license.manage_account",
+        message: "Manage account",
       })}
       <ExternalLink size={11} aria-hidden="true" />
     </button>

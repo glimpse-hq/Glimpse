@@ -5,6 +5,27 @@ import { msg } from "@lingui/core/macro";
 // src-tauri/build.rs compiles into a Rust table. The `native.` prefix is
 // the contract build.rs selects on.
 export const NATIVE_MENU_STRINGS = [
+  // license switch from a checkout link
+  msg({
+    id: "native.license.switch_title",
+    message: "Switch to a different license?",
+  }),
+  msg({
+    id: "native.license.switch_message",
+    message:
+      "You opened a link for license {new_key}. Switching removes license {current_key} from this device. Only switch if you just bought the new license.",
+  }),
+  msg({
+    id: "native.license.switch_downgrade",
+    message: "The new license may include less than your current one.",
+  }),
+  msg({ id: "native.license.switch_confirm", message: "Switch License" }),
+  msg({ id: "native.license.switch_keep", message: "Keep Current License" }),
+  msg({
+    id: "native.toast.license_switch_failed",
+    message:
+      "Glimpse couldn't activate the license from that link. Your current license was not changed.",
+  }),
   // shared between the tray and the macOS menu bar
   msg({ id: "native.menu.check_updates", message: "Check for Updates" }),
   msg({

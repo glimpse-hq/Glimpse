@@ -60,6 +60,13 @@ pub struct LicenseState {
     pub activated_at: Option<String>,
     pub purchased_at: Option<String>,
     pub expires_at: Option<String>,
+    pub renews_at: Option<String>,
+    /// The server rejected this Business license: ended, refunded, or device removed.
+    pub business_lapsed: bool,
+    /// A paid license that couldn't check in within the offline window.
+    pub needs_check: bool,
+    /// Why the server refused this license, when it said. See the contract's reasons.
+    pub revocation_reason: Option<String>,
     pub activations_limit: u32,
     pub activations_count: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -130,15 +137,21 @@ struct LicenseGrant {
     customer_name: Option<String>,
     purchased_at: Option<String>,
     expires_at: Option<String>,
+    #[serde(default)]
+    renews_at: Option<String>,
     limit_activations: Option<u32>,
     activations: Option<u32>,
     grant_token: Option<String>,
+    #[serde(default)]
+    seat_pool: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct LicenseApiError {
     error: String,
     message: Option<String>,
+    #[serde(default)]
+    reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -149,6 +162,8 @@ struct CachedLicenseGrant {
     activated_at: Option<String>,
     #[serde(default)]
     expires_at: Option<String>,
+    #[serde(default)]
+    renews_at: Option<String>,
     #[serde(default)]
     purchased_at: Option<String>,
     // None on grants cached before the Worker, which forces one refresh.
@@ -168,6 +183,10 @@ struct CachedLicenseGrant {
     grant_token: Option<String>,
     #[serde(default)]
     provider: Option<String>,
+    #[serde(default)]
+    seat_pool: Option<String>,
+    #[serde(default)]
+    revocation_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -189,8 +208,9 @@ struct KeyActivationRequest<'a> {
 
 /// What a failed license call means for the cached grant.
 enum LicenseFailure {
-    /// The Worker answered definitively that this key or device is no longer valid.
-    Rejected(String),
+    /// The Worker answered definitively that this key or device is no longer valid,
+    /// with its reason when it gave one.
+    Rejected(String, Option<String>),
     /// Anything else. The cache stays so a blip never downgrades anyone.
     Other(String),
 }
@@ -198,7 +218,7 @@ enum LicenseFailure {
 impl LicenseFailure {
     fn message(self) -> String {
         match self {
-            Self::Rejected(message) | Self::Other(message) => message,
+            Self::Rejected(message, _) | Self::Other(message) => message,
         }
     }
 }
@@ -354,6 +374,10 @@ fn dev_license_state(license: DevLicense) -> LicenseState {
         activated_at: purchased.then(|| days_ago(40)),
         purchased_at: purchased.then(|| days_ago(40)),
         expires_at: (license == DevLicense::Expired).then(|| days_ago(2)),
+        renews_at: None,
+        business_lapsed: false,
+        needs_check: false,
+        revocation_reason: None,
         activations_limit: match license {
             DevLicense::Unlocked(limit) => limit,
             _ => 1,
@@ -400,6 +424,17 @@ pub(crate) fn deep_link_license_key(raw_url: &str) -> Option<String> {
 /// A paid license is active, ignoring the debug-build bypass.
 pub(crate) fn has_active_license(store: &SettingsStore) -> bool {
     stored_license_active(store, Utc::now()).unwrap_or(false)
+}
+
+/// A stored license that hasn't been revoked, even if its cache has gone stale
+/// offline, so a link can't overwrite it without the replacement checks.
+pub(crate) fn link_must_not_overwrite(store: &SettingsStore) -> bool {
+    has_active_license(store)
+        || (read_license_key(store).is_ok_and(|key| key.is_some())
+            && read_cached_license_grant(store)
+                .ok()
+                .flatten()
+                .is_some_and(|grant| grant.status == GRANT_STATUS_GRANTED))
 }
 
 static CHECKOUT_RETURNED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -523,6 +558,17 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
         activated_at: grant.as_ref().and_then(|grant| grant.activated_at.clone()),
         purchased_at: grant.as_ref().and_then(|grant| grant.purchased_at.clone()),
         expires_at: grant.as_ref().and_then(|grant| grant.expires_at.clone()),
+        renews_at: grant.as_ref().and_then(|grant| grant.renews_at.clone()),
+        needs_check: !license_active && !unsigned && grant_status == Some(GRANT_STATUS_GRANTED),
+        business_lapsed: !license_active
+            && grant.as_ref().is_some_and(|grant| {
+                grant.status == GRANT_STATUS_INVALID
+                    && grant.edition == Some(LicenseEdition::Commercial)
+            }),
+        revocation_reason: grant
+            .as_ref()
+            .filter(|grant| !license_active && grant.status == GRANT_STATUS_INVALID)
+            .and_then(|grant| grant.revocation_reason.clone()),
         activations_limit: grant
             .as_ref()
             .and_then(|grant| grant.limit_activations)
@@ -550,9 +596,251 @@ pub async fn activate_license(
         .await
         .map_err(LicenseFailure::message)?;
 
-    write_grant(store, grant)?;
-    write_license_key(store, Some(&key))?;
+    write_license(store, &key, grant)?;
     get_license_state(store)
+}
+
+static LINK_SWITCH_RUNNING: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Applies a checkout link's key while another license is stored. Returns None
+/// when nothing changed, including when the user keeps the current license.
+pub(crate) async fn replace_license_from_link(
+    app: &AppHandle<AppRuntime>,
+    client: Client,
+    store: &SettingsStore,
+    key: &str,
+) -> Result<Option<LicenseState>, String> {
+    use std::sync::atomic::Ordering;
+    // A burst of links can't stack dialogs or race each other.
+    if LINK_SWITCH_RUNNING.swap(true, Ordering::SeqCst) {
+        return Ok(None);
+    }
+    let result = replace_license_from_link_inner(app, &client, store, key).await;
+    LINK_SWITCH_RUNNING.store(false, Ordering::SeqCst);
+    result
+}
+
+async fn replace_license_from_link_inner(
+    app: &AppHandle<AppRuntime>,
+    client: &Client,
+    store: &SettingsStore,
+    key: &str,
+) -> Result<Option<LicenseState>, String> {
+    let key = normalize_license_key(key)?;
+    let change = LICENSE_CHANGE.lock().await;
+    let Some(current_key) = read_license_key(store)? else {
+        return Ok(None);
+    };
+    if key_hash(&current_key) == key_hash(&key) {
+        return Ok(None);
+    }
+    let current_activation = read_optional_string(store, KEY_LICENSE_ACTIVATION_ID)?;
+    let current_pool = read_cached_license_grant(store)?.and_then(|cached| cached.seat_pool);
+    let body = ActivateRequest {
+        key: &key,
+        label: activation_label(),
+        device: device_id(),
+    };
+    // The current license stays untouched until the new one is proven usable here.
+    let grant = license_post::<LicenseGrant>(client, "license/activate", &body)
+        .await
+        .map_err(LicenseFailure::message)?;
+    let new_activation = grant.activation_id.clone();
+    let shared_activation = shares_activation(
+        current_activation.as_deref(),
+        current_pool.as_deref(),
+        &new_activation,
+        grant.seat_pool.as_deref(),
+    );
+    let Some(new_edition) = link_grant_edition(&key, &grant) else {
+        drop(change);
+        if !shared_activation {
+            release_activation(client, &key, &new_activation).await;
+        }
+        return Err("The license server sent an unreadable response.".to_string());
+    };
+    let current = read_cached_license_grant(store)?
+        .filter(|cached| cached.status == GRANT_STATUS_GRANTED)
+        .map(|cached| verified_grant(store, cached.clone()).unwrap_or(cached));
+
+    let change = match current {
+        Some(current) if !link_upgrades_license(&current, &grant, new_edition) => {
+            drop(change);
+            let confirmed = confirm_license_switch(app, &current, &grant, new_edition).await;
+            let change = LICENSE_CHANGE.lock().await;
+            // The stored license can change while the dialog is open.
+            let unchanged = read_license_key(store)
+                .ok()
+                .flatten()
+                .is_some_and(|stored| key_hash(&stored) == key_hash(&current_key))
+                && read_optional_string(store, KEY_LICENSE_ACTIVATION_ID)
+                    .ok()
+                    .flatten()
+                    == current_activation;
+            if !confirmed || !unchanged {
+                let now_in_use = read_license_key(store)
+                    .ok()
+                    .flatten()
+                    .is_some_and(|stored| key_hash(&stored) == key_hash(&key));
+                drop(change);
+                if !shared_activation && !now_in_use {
+                    release_activation(client, &key, &new_activation).await;
+                }
+                return Ok(None);
+            }
+            change
+        }
+        _ => change,
+    };
+
+    if let Err(err) = write_license(store, &key, grant) {
+        drop(change);
+        if !shared_activation {
+            release_activation(client, &key, &new_activation).await;
+        }
+        return Err(err);
+    }
+    let state = get_license_state(store)?;
+    drop(change);
+    // Frees the slot, so the old key can return if the new one is refunded.
+    if !shared_activation && let Some(activation_id) = current_activation.as_deref() {
+        release_activation(client, &current_key, activation_id).await;
+    }
+    Ok(Some(state))
+}
+
+/// Business activations read seat_<device> on every subscription, so the pool tells
+/// them apart. An unknown pool isn't released: a stale seat expires on its own, but
+/// releasing a shared one would free the seat just taken.
+fn shares_activation(
+    current_activation: Option<&str>,
+    current_pool: Option<&str>,
+    new_activation: &str,
+    new_pool: Option<&str>,
+) -> bool {
+    current_activation == Some(new_activation)
+        && match (current_pool, new_pool) {
+            (Some(current), Some(new)) => current == new,
+            _ => true,
+        }
+}
+
+/// The edition signed for this key and device, or None if the grant wouldn't
+/// unlock the app once stored.
+fn link_grant_edition(key: &str, grant: &LicenseGrant) -> Option<LicenseEdition> {
+    if grant.status != GRANT_STATUS_GRANTED {
+        return None;
+    }
+    let Some(SignedToken::License {
+        kh,
+        aid,
+        dev,
+        ed,
+        exp,
+        ..
+    }) = verify_token(grant.grant_token.as_deref()?)
+    else {
+        return None;
+    };
+    (Some(dev.as_str()) == device_id()
+        && aid == grant.activation_id
+        && kh == key_hash(key)
+        && exp.is_none_or(|exp| exp > Utc::now().timestamp()))
+    .then_some(ed)
+}
+
+/// Same buyer moving from Solo to Plus, the only switch applied without asking.
+/// Business, Founder and Contributor licenses always ask.
+fn link_upgrades_license(
+    current: &CachedLicenseGrant,
+    new: &LicenseGrant,
+    new_edition: LicenseEdition,
+) -> bool {
+    let same_buyer = match (
+        current.customer_email.as_deref().map(str::trim),
+        new.customer_email.as_deref().map(str::trim),
+    ) {
+        (Some(current), Some(new)) => !current.is_empty() && current.eq_ignore_ascii_case(new),
+        _ => false,
+    };
+    let more_devices = match (current.limit_activations, new.limit_activations) {
+        (Some(current), Some(new)) => new > current,
+        _ => false,
+    };
+    current.edition == Some(LicenseEdition::Personal)
+        && new_edition == LicenseEdition::Personal
+        && same_buyer
+        && more_devices
+}
+
+fn link_may_downgrade(
+    current: &CachedLicenseGrant,
+    new: &LicenseGrant,
+    new_edition: LicenseEdition,
+) -> bool {
+    let other_kind =
+        current.edition != Some(LicenseEdition::Personal) && current.edition != Some(new_edition);
+    let fewer_devices = match (current.limit_activations, new.limit_activations) {
+        (Some(current), Some(new)) => new < current,
+        _ => false,
+    };
+    other_kind || fewer_devices
+}
+
+/// Closing the dialog counts as keeping the current license.
+async fn confirm_license_switch(
+    app: &AppHandle<AppRuntime>,
+    current: &CachedLicenseGrant,
+    new: &LicenseGrant,
+    new_edition: LicenseEdition,
+) -> bool {
+    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+
+    let mut message = crate::toast::native_format(
+        app,
+        "native.license.switch_message",
+        &[
+            ("new_key", new.display_key.as_deref().unwrap_or("••••")),
+            (
+                "current_key",
+                current.display_key.as_deref().unwrap_or("••••"),
+            ),
+        ],
+    );
+    if link_may_downgrade(current, new, new_edition) {
+        message.push(' ');
+        message.push_str(&crate::toast::native(
+            app,
+            "native.license.switch_downgrade",
+        ));
+    }
+    let (answer, answered) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .message(message)
+        .title(crate::toast::native(app, "native.license.switch_title"))
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            crate::toast::native(app, "native.license.switch_confirm"),
+            crate::toast::native(app, "native.license.switch_keep"),
+        ))
+        .show(move |confirmed| {
+            let _ = answer.send(confirmed);
+        });
+    answered.await.unwrap_or(false)
+}
+
+async fn release_activation(client: &Client, key: &str, activation_id: &str) {
+    let body = KeyActivationRequest {
+        key,
+        activation_id: Some(activation_id),
+        device: None,
+    };
+    if let Err(LicenseFailure::Other(message)) =
+        license_post::<serde_json::Value>(client, "license/deactivate", &body).await
+    {
+        tracing::warn!("Could not release a replaced license activation: {message}");
+    }
 }
 
 pub async fn refresh_license(
@@ -574,8 +862,8 @@ pub async fn refresh_license(
             write_grant(store, grant)?;
             get_license_state(store)
         }
-        Err(LicenseFailure::Rejected(message)) => {
-            revoke_cached_license_grant(store)?;
+        Err(LicenseFailure::Rejected(message, reason)) => {
+            revoke_cached_license_grant(store, reason)?;
             Err(message)
         }
         Err(LicenseFailure::Other(message)) => Err(message),
@@ -609,7 +897,7 @@ pub async fn deactivate_license(
         // Only a definitive answer clears locally. Clearing on a rate limit or
         // outage would leave the device slot taken on the server.
         match license_post::<serde_json::Value>(&client, "license/deactivate", &body).await {
-            Ok(_) | Err(LicenseFailure::Rejected(_)) => {}
+            Ok(_) | Err(LicenseFailure::Rejected(..)) => {}
             Err(LicenseFailure::Other(message)) => return Err(message),
         }
     }
@@ -617,6 +905,28 @@ pub async fn deactivate_license(
     clear_cache(store)?;
     invalidate_gate_cache();
     get_license_state(store)
+}
+
+/// Stores a key with its grant as one change. A key paired with another key's
+/// activation gets a definite refusal on its next check, which would revoke it.
+fn write_license(store: &SettingsStore, key: &str, grant: LicenseGrant) -> Result<(), String> {
+    let previous = [
+        KEY_LICENSE_KEY,
+        KEY_LICENSE_ACTIVATION_ID,
+        KEY_LICENSE_GRANT,
+    ]
+    .map(|name| read_optional_string(store, name).map(|value| (name, value)));
+    let previous = previous.into_iter().collect::<Result<Vec<_>, _>>()?;
+    let result = write_grant(store, grant).and_then(|()| write_license_key(store, Some(key)));
+    if result.is_err() {
+        for (name, value) in previous {
+            if let Err(err) = write_string(store, name, value.as_deref().unwrap_or("")) {
+                tracing::error!("Could not restore a license value after a failed write: {err}");
+            }
+        }
+        invalidate_gate_cache();
+    }
+    result
 }
 
 fn write_grant(store: &SettingsStore, grant: LicenseGrant) -> Result<(), String> {
@@ -636,6 +946,7 @@ fn write_grant(store: &SettingsStore, grant: LicenseGrant) -> Result<(), String>
             last_validated_at: now,
             activated_at,
             expires_at: grant.expires_at,
+            renews_at: grant.renews_at,
             purchased_at: grant.purchased_at,
             edition: Some(grant.edition),
             display_key: grant.display_key,
@@ -645,6 +956,8 @@ fn write_grant(store: &SettingsStore, grant: LicenseGrant) -> Result<(), String>
             activations: grant.activations,
             grant_token: grant.grant_token,
             provider: grant.provider,
+            seat_pool: grant.seat_pool,
+            revocation_reason: None,
         },
     )?;
     invalidate_gate_cache();
@@ -662,11 +975,15 @@ fn clear_cache(store: &SettingsStore) -> Result<(), String> {
     Ok(())
 }
 
-fn revoke_cached_license_grant(store: &SettingsStore) -> Result<(), String> {
+fn revoke_cached_license_grant(
+    store: &SettingsStore,
+    reason: Option<String>,
+) -> Result<(), String> {
     let now = Utc::now().to_rfc3339();
     let mut grant = read_cached_license_grant(store)?.unwrap_or_default();
     grant.status = GRANT_STATUS_INVALID.to_string();
     grant.last_validated_at = now;
+    grant.revocation_reason = reason;
     write_cached_license_grant(store, &grant)?;
     invalidate_gate_cache();
     Ok(())
@@ -1149,13 +1466,14 @@ async fn license_post_to<T: serde::de::DeserializeOwned>(
     };
     Some(Err(match (status.as_u16(), error.error.as_str()) {
         (404, "not_found") => {
-            LicenseFailure::Rejected("That activation code was not found.".to_string())
+            LicenseFailure::Rejected("That activation code was not found.".to_string(), None)
         }
-        (403, "inactive") => {
-            LicenseFailure::Rejected("That activation code is no longer active.".to_string())
-        }
+        (403, "inactive") => LicenseFailure::Rejected(
+            "That activation code is no longer active.".to_string(),
+            error.reason,
+        ),
         (403, "expired") => {
-            LicenseFailure::Rejected("That activation code has expired.".to_string())
+            LicenseFailure::Rejected("That activation code has expired.".to_string(), None)
         }
         (403, "device_limit") => {
             LicenseFailure::Other("This activation code has reached its device limit.".to_string())
@@ -1417,6 +1735,28 @@ fn write_string(store: &SettingsStore, key: &str, value: &str) -> Result<(), Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_the_same_seat_pool_shares_an_activation() {
+        let seat = "seat_device";
+        let shares = |current, new| shares_activation(Some(seat), current, seat, new);
+        assert!(shares(Some("pool_a"), Some("pool_a")));
+        assert!(!shares(Some("pool_a"), Some("pool_b")));
+        // A grant cached before pools existed can't prove a difference.
+        assert!(shares(None, Some("pool_a")));
+        assert!(!shares_activation(Some("lki_1"), None, "lki_2", None));
+    }
+
+    #[test]
+    fn refusal_reason_is_optional() {
+        let old: LicenseApiError =
+            serde_json::from_str(r#"{"error":"inactive","message":"No."}"#).unwrap();
+        assert_eq!(old.reason, None);
+        let new: LicenseApiError =
+            serde_json::from_str(r#"{"error":"inactive","message":"No.","reason":"removed"}"#)
+                .unwrap();
+        assert_eq!(new.reason.as_deref(), Some("removed"));
+    }
 
     #[test]
     fn cached_grant_is_inactive_when_revoked() {

@@ -1290,6 +1290,16 @@ msgstr ""
 #~ msgstr "Your trial ended. Dictation stays free. Library, Record and Personalization need Glimpse Plus."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+#~ msgid "license.customer_portal"
+#~ msgstr "Customer portal"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_commercial"
+#~ msgstr "For work. One person per seat, billed yearly."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -2956,11 +2966,6 @@ msgid "model_capability.dictionary"
 msgstr "Custom words"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/CustomerPortalLink.tsx
-msgid "license.customer_portal"
-msgstr "Customer portal"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.cut"
 msgstr "Cut"
@@ -3660,8 +3665,8 @@ msgstr "Finishing..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_commercial"
-msgstr "For work. One person per seat, billed yearly."
+msgid "member_card.edition_blurb_commercial_short"
+msgstr "For work, billed yearly."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3772,6 +3777,11 @@ msgstr "Glimpse C1 doesn't support {missingLanguage} yet."
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_stuck"
 msgstr "Glimpse can't open your microphone. Try restarting Glimpse."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.license_switch_failed"
+msgstr "Glimpse couldn't activate the license from that link. Your current license was not changed."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4148,6 +4158,11 @@ msgid "library.import.store_original.description"
 msgstr "Keep a copy inside the library folder"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_keep"
+msgstr "Keep Current License"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
 msgstr "Keep holding, then release when you are done."
@@ -4318,6 +4333,11 @@ msgid "onboarding.license.input_aria"
 msgstr "License key"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.draft_inactive"
+msgstr "License not active"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Light"
@@ -4459,6 +4479,11 @@ msgstr "Mac and Windows"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.major_release"
 msgstr "Major Release"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+msgid "license.manage_account"
+msgstr "Manage account"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6559,6 +6584,16 @@ msgid "home.support.menu_aria"
 msgstr "Support menu"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_confirm"
+msgstr "Switch License"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_title"
+msgstr "Switch to a different license?"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "System"
@@ -6773,6 +6808,11 @@ msgstr "The microphone stopped responding. The recording continues with {name}."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_downgrade"
+msgstr "The new license may include less than your current one."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.quit_recording.message"
 msgstr "The recording is saved to your Library and transcribed the next time you open Glimpse."
 
@@ -6785,6 +6825,11 @@ msgstr "The same shortcut works in any app where you can type."
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.model_missing"
 msgstr "The selected model isn't installed. Download one in Settings > Models."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.solo_refunded"
+msgstr "The Solo behind this upgrade was refunded. Contact support for a refund."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -6817,6 +6862,11 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "This build does not include the command line helper."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.removed"
+msgstr "This device was removed from the license."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.unsupported_sample_rate"
 msgstr "This file has an unsupported sample rate."
@@ -6832,9 +6882,24 @@ msgid "license.activate.error.device_limit"
 msgstr "This key is active on as many devices as it allows. Deactivate it on another device first."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.no_longer_active"
+msgstr "This license is no longer active on this device."
+
+#. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
 msgid "license.activate.error.inactive"
 msgstr "This license is no longer active."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.disabled"
+msgstr "This license key was turned off."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgraded"
+msgstr "This license was upgraded. Enter your new key below."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6842,9 +6907,24 @@ msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "This only removes saved audio files, not your transcripts."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.refunded"
+msgstr "This payment was refunded or disputed."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.provider.models_empty"
 msgstr "This provider didn't list any models."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgrade_reused"
+msgstr "This Solo's upgrade price was already used for another Plus. Contact support for a refund."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.subscription_inactive"
+msgstr "This subscription is no longer active."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7427,6 +7507,11 @@ msgid "onboarding.done.subtitle.v2"
 msgstr "You can change these later in Settings."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_message"
+msgstr "You opened a link for license {new_key}. Switching removes license {current_key} from this device. Only switch if you just bought the new license."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.title"
 msgstr "You're set"
@@ -7450,6 +7535,11 @@ msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect re
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Your audio and transcripts stay on your PC. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.business_lapsed"
+msgstr "Your Business license is no longer active on this device."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

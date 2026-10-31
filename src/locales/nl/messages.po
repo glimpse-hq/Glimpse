@@ -1290,6 +1290,16 @@ msgstr ""
 #~ msgstr "Je proefperiode is afgelopen. Dicteren blijft gratis. Voor Bibliotheek, Opnemen en Personalisatie heb je Glimpse Plus nodig."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+#~ msgid "license.customer_portal"
+#~ msgstr "Klantportaal"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_commercial"
+#~ msgstr "Voor werk. Eén persoon per licentie, jaarlijks gefactureerd."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -2956,11 +2966,6 @@ msgid "model_capability.dictionary"
 msgstr "Aangepaste woorden"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/CustomerPortalLink.tsx
-msgid "license.customer_portal"
-msgstr "Klantportaal"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.cut"
 msgstr "Knip"
@@ -3660,8 +3665,8 @@ msgstr "Bezig met afronden..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_commercial"
-msgstr "Voor werk. Eén persoon per licentie, jaarlijks gefactureerd."
+msgid "member_card.edition_blurb_commercial_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3772,6 +3777,11 @@ msgstr "Glimpse C1 ondersteunt {missingLanguage} nog niet."
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_stuck"
 msgstr "Glimpse kan je microfoon niet openen. Probeer Glimpse opnieuw op te starten."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.license_switch_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4148,6 +4158,11 @@ msgid "library.import.store_original.description"
 msgstr "Een kopie bewaren in de bibliotheekmap"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_keep"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
 msgstr "Blijf ingedrukt houden en laat los wanneer je klaar bent."
@@ -4318,6 +4333,11 @@ msgid "onboarding.license.input_aria"
 msgstr "Licentiesleutel"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.draft_inactive"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Licht"
@@ -4459,6 +4479,11 @@ msgstr "Mac en Windows"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.major_release"
 msgstr "Grote release"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+msgid "license.manage_account"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6559,6 +6584,16 @@ msgid "home.support.menu_aria"
 msgstr "Supportmenu"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_confirm"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "Systeem"
@@ -6773,6 +6808,11 @@ msgstr "De microfoon reageert niet meer. De opname gaat verder met {name}."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_downgrade"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.quit_recording.message"
 msgstr "De opname wordt opgeslagen in je Bibliotheek en de volgende keer dat je Glimpse opent, getranscribeerd."
 
@@ -6785,6 +6825,11 @@ msgstr "Dezelfde sneltoets werkt in elke app waarin je kunt typen."
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.model_missing"
 msgstr "Het geselecteerde model is niet geïnstalleerd. Download er een via Instellingen > Modellen."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.solo_refunded"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -6817,6 +6862,11 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "Deze build bevat de opdrachtregelhelper niet."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.removed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.unsupported_sample_rate"
 msgstr "Dit bestand heeft een niet-ondersteunde samplefrequentie."
@@ -6832,9 +6882,24 @@ msgid "license.activate.error.device_limit"
 msgstr "Deze sleutel is actief op het maximale aantal apparaten. Deactiveer de sleutel eerst op een ander apparaat."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.no_longer_active"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
 msgid "license.activate.error.inactive"
 msgstr "Deze licentie is niet meer actief."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.disabled"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgraded"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6842,9 +6907,24 @@ msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "Hiermee verwijder je alleen opgeslagen audiobestanden, niet je transcripties."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.refunded"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.provider.models_empty"
 msgstr "Deze provider heeft geen modellen opgegeven."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgrade_reused"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.subscription_inactive"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7427,6 +7507,11 @@ msgid "onboarding.done.subtitle.v2"
 msgstr "Je kunt dit later wijzigen via Instellingen."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_message"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.title"
 msgstr "Je bent klaar"
@@ -7450,6 +7535,11 @@ msgstr "Je audio en transcripties blijven op je Mac. Glimpse verzamelt geen opna
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Je audio en transcripties blijven op je pc. Glimpse verzamelt geen opnamen, transcripties, API-sleutels of prompts. Optionele anonieme gebruiksanalyses (zoals sessieduur en functiegebruik, nooit je inhoud) helpen ons de app te verbeteren. Je kunt dit op elk moment uitschakelen via Instellingen → App."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.business_lapsed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

@@ -96,8 +96,8 @@ const MemberCardInner = ({
   const editionBlurb =
     edition === "commercial"
       ? t({
-          id: "member_card.edition_blurb_commercial",
-          message: "For work. One person per seat, billed yearly.",
+          id: "member_card.edition_blurb_commercial_short",
+          message: "For work, billed yearly.",
         })
       : edition === "founder"
         ? t({
@@ -175,10 +175,12 @@ const MemberCardInner = ({
     isUserActivationReveal && cinematic && displayKey
       ? ("sweep" as const)
       : ("none" as const);
-  const idlePrompt = t({
-    id: "member_card.draft_idle.v4",
-    message: "No license yet",
-  });
+  const idlePrompt =
+    licenseState?.status === "invalid" ||
+    licenseState?.status === "unverified" ||
+    licenseState?.needsCheck
+      ? t({ id: "member_card.draft_inactive", message: "License not active" })
+      : t({ id: "member_card.draft_idle.v4", message: "No license yet" });
 
   const coverageBase = editionBlurb;
   const coverageLine =

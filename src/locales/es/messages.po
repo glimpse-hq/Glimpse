@@ -1290,6 +1290,16 @@ msgstr ""
 #~ msgstr "Tu prueba terminó. El dictado sigue siendo gratis. Para Biblioteca, Grabación y Personalización necesitas Glimpse Plus."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+#~ msgid "license.customer_portal"
+#~ msgstr "Portal del cliente"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_commercial"
+#~ msgstr "Para trabajar. Una persona por licencia, con facturación anual."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -2956,11 +2966,6 @@ msgid "model_capability.dictionary"
 msgstr "Palabras personalizadas"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/CustomerPortalLink.tsx
-msgid "license.customer_portal"
-msgstr "Portal del cliente"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.cut"
 msgstr "Cortar"
@@ -3660,8 +3665,8 @@ msgstr "Finalizando..."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_commercial"
-msgstr "Para trabajar. Una persona por licencia, con facturación anual."
+msgid "member_card.edition_blurb_commercial_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3772,6 +3777,11 @@ msgstr "Glimpse C1 aún no es compatible con {missingLanguage}."
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_stuck"
 msgstr "Glimpse no puede abrir el micrófono. Intenta reiniciar Glimpse."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.license_switch_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4148,6 +4158,11 @@ msgid "library.import.store_original.description"
 msgstr "Conservar una copia dentro de la carpeta de biblioteca"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_keep"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
 msgstr "Sigue manteniendo pulsado y suelta cuando termines."
@@ -4318,6 +4333,11 @@ msgid "onboarding.license.input_aria"
 msgstr "Clave de licencia"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.draft_inactive"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Claro"
@@ -4459,6 +4479,11 @@ msgstr "Mac y Windows"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.major_release"
 msgstr "Versión principal"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+msgid "license.manage_account"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6559,6 +6584,16 @@ msgid "home.support.menu_aria"
 msgstr "Menú de ayuda"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_confirm"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "Sistema"
@@ -6773,6 +6808,11 @@ msgstr "El micrófono dejó de responder. La grabación continúa con {name}."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_downgrade"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.quit_recording.message"
 msgstr "La grabación se guarda en tu Biblioteca y se transcribe la próxima vez que abras Glimpse."
 
@@ -6785,6 +6825,11 @@ msgstr "El mismo atajo funciona en cualquier app donde puedas escribir."
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.model_missing"
 msgstr "El modelo seleccionado no está instalado. Descarga uno en Ajustes > Modelos."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.solo_refunded"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -6817,6 +6862,11 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "Esta versión no incluye el asistente de línea de comandos."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.removed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.unsupported_sample_rate"
 msgstr "Este archivo tiene una frecuencia de muestreo no compatible."
@@ -6832,9 +6882,24 @@ msgid "license.activate.error.device_limit"
 msgstr "Esta clave ya está activa en todos los dispositivos permitidos. Desactívala primero en otro dispositivo."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.no_longer_active"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
 msgid "license.activate.error.inactive"
 msgstr "Esta licencia ya no está activa."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.disabled"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgraded"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6842,9 +6907,24 @@ msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "Esto solo elimina los archivos de audio guardados, no tus transcripciones."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.refunded"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.provider.models_empty"
 msgstr "Este proveedor no indicó ningún modelo."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.upgrade_reused"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.revoked.subscription_inactive"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7427,6 +7507,11 @@ msgid "onboarding.done.subtitle.v2"
 msgstr "Puedes cambiar esta configuración más adelante en Ajustes."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.license.switch_message"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.title"
 msgstr "Todo listo"
@@ -7450,6 +7535,11 @@ msgstr "Tu audio y tus transcripciones permanecen en tu Mac. Glimpse no recopila
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Tu audio y tus transcripciones permanecen en tu PC. Glimpse no recopila grabaciones, transcripciones, claves de API ni indicaciones. Las estadísticas de uso anónimas opcionales (como la duración de la sesión y el uso de funciones, nunca tu contenido) nos ayudan a mejorar la aplicación. Puedes desactivarlas en cualquier momento en Configuración → Aplicación."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.business_lapsed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

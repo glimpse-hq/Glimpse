@@ -179,13 +179,19 @@ where
         let key = license::deep_link_license_key(raw_url);
         tauri::async_runtime::spawn(async move {
             license::note_checkout_returned(&app);
-            // A link never replaces a license that is already active.
             if let Some(key) = key
                 && let Some(state) = app.try_state::<AppState>()
-                && !license::has_active_license(&state.settings_store)
-                && let Err(err) = activate_license_and_note(&app, &state, key).await
             {
-                tracing::warn!("License from checkout link did not activate: {err}");
+                let result = if license::link_must_not_overwrite(&state.settings_store) {
+                    replace_license_from_link_and_note(&app, &state, key).await
+                } else {
+                    activate_license_and_note(&app, &state, key)
+                        .await
+                        .map(|_| ())
+                };
+                if let Err(err) = result {
+                    tracing::warn!("License from checkout link did not activate: {err}");
+                }
             }
             if let Err(err) = license::handle_deep_link(&app) {
                 tracing::error!("{err}");
@@ -1607,6 +1613,38 @@ async fn activate_license_and_note(
         }
         Err(err) => {
             analytics::track_license_activation_failed(app, &err, input_shape);
+            Err(err)
+        }
+    }
+}
+
+async fn replace_license_from_link_and_note(
+    app: &tauri::AppHandle<AppRuntime>,
+    state: &AppState,
+    key: String,
+) -> Result<(), String> {
+    let input_shape = analytics::activation_input_shape(&key);
+    let trial_day = license::trial_day(&state.settings_store).ok();
+    match license::replace_license_from_link(app, state.http(), &state.settings_store, &key).await {
+        Ok(Some(license_state)) => {
+            note_license_state(app, state, &license_state);
+            analytics::track_license_activated(
+                app,
+                license_state.edition.map(|edition| edition.as_str()),
+                trial_day,
+                input_shape,
+            );
+            Ok(())
+        }
+        Ok(None) => Ok(()),
+        Err(err) => {
+            analytics::track_license_activation_failed(app, &err, input_shape);
+            toast::show(
+                app,
+                "error",
+                None,
+                &toast::native(app, "native.toast.license_switch_failed"),
+            );
             Err(err)
         }
     }
