@@ -146,7 +146,7 @@ fn emit_records(records: &[TranscriptionRecord], json: bool) {
 }
 
 #[derive(Serialize)]
-struct HistoryRecord {
+pub(super) struct HistoryRecord {
     id: String,
     timestamp_ms: i64,
     text: String,
@@ -155,6 +155,7 @@ struct HistoryRecord {
     speech_model: String,
     llm_model: Option<String>,
     mode_name: Option<String>,
+    question: Option<String>,
     word_count: u32,
     audio_duration_seconds: f32,
     audio_path: String,
@@ -173,6 +174,7 @@ impl From<&TranscriptionRecord> for HistoryRecord {
             speech_model: record.speech_model.clone(),
             llm_model: record.llm_model.clone(),
             mode_name: record.mode_name.clone(),
+            question: record.question.clone(),
             word_count: record.word_count,
             audio_duration_seconds: record.audio_duration_seconds,
             audio_path: record.audio_path.clone(),

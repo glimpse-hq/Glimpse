@@ -96,6 +96,13 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.toast.no_words",
     message: "No words detected. Recording deleted.",
   }),
+  msg({ id: "native.toast.ask_title", message: "{client} asks" }),
+  msg({ id: "native.toast.ask_title_unnamed", message: "An agent asks" }),
+  msg({
+    id: "native.toast.ask_hint",
+    message: "Press your shortcut and say your answer.",
+  }),
+  msg({ id: "native.toast.ask_skip", message: "Skip" }),
   msg({ id: "native.toast.writing_model_title", message: "Writing model" }),
   msg({
     id: "native.toast.writing_model_edit_kept",

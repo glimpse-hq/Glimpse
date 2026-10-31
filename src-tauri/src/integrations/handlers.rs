@@ -31,9 +31,11 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "record.start" => record_start(app),
         "record.pause" => record_pause(app),
         "record.resume" => record_resume(app),
-        "record.bookmark" => record_bookmark(app),
+        "record.bookmark" => record_bookmark(app, &request.args),
         "record.finish" => record_finish(app, &request.args),
         "record.live" => record_live(app, &request.args),
+        "prompt.open" => prompt_open(app, &request.args),
+        "prompt.poll" => arg_str(&request.args, "id").map(|id| crate::voice_prompt::poll(&id)),
         #[cfg(debug_assertions)]
         dev if dev.starts_with("dev.") => super::dev::handle(app, dev, &request.args),
         other => Err(format!("Unknown command: {other}")),
@@ -562,10 +564,31 @@ fn record_resume(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
     Ok(record_state_json(&state))
 }
 
-fn record_bookmark(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+fn record_bookmark(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
     require_license(&app.state::<AppState>())?;
-    let bookmark = crate::recording::add_recording_bookmark(app.clone()).map_err(record_error)?;
+    let mut bookmark =
+        crate::recording::add_recording_bookmark(app.clone()).map_err(record_error)?;
+    if let Some(label) = args.get("label").and_then(Value::as_str) {
+        let label = label.trim().to_string();
+        crate::recording::update_recording_bookmark(
+            app.clone(),
+            bookmark.id.clone(),
+            Some(label.clone()),
+        )?;
+        bookmark.label = Some(label);
+    }
     Ok(json!({ "bookmark": bookmark }))
+}
+
+fn prompt_open(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    let question = arg_str(args, "question")?;
+    let client = args
+        .get("client")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let id = crate::voice_prompt::open(app, client, &question)?;
+    Ok(json!({ "id": id }))
 }
 
 fn record_finish(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {

@@ -1299,6 +1299,19 @@ msgstr ""
 #~ msgid "member_card.edition_blurb_commercial"
 #~ msgstr "For work. One person per seat, billed yearly."
 
+#. placeholder {0}: record.question_client
+#. placeholder {1}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question_from"
+#~ msgstr "{0} asked: {1}"
+
+#. placeholder {0}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question"
+#~ msgstr "An agent asked: {0}"
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -1444,6 +1457,11 @@ msgstr "{0} words dictated, none of them typed. @try_glimpse_app"
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {About # word per dictation today} other {About # words per dictation today}}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title"
+msgstr "{client} asks"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1864,6 +1882,11 @@ msgid "locked.enter_key"
 msgstr "Already bought? Enter your license key"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title_unnamed"
+msgstr "An agent asks"
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.follower_unnamed"
 msgstr "An AI agent is following this recording."
@@ -1877,6 +1900,17 @@ msgstr "Anonymous. Never includes transcripts or audio."
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.answer"
 msgstr "Answer"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: record.question_client
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_client"
+msgstr "Answer to {0}"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_agent"
+msgstr "Answer to an agent"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5424,6 +5458,11 @@ msgid "faq.how_it_works.answer"
 msgstr "Press your dictation shortcut, speak, and release. Glimpse transcribes on your device and inserts the text where your cursor is. Core dictation works offline. No account required."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_hint"
+msgstr "Press your shortcut and say your answer."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.lower"
 msgstr "Previous media action"
@@ -5447,6 +5486,11 @@ msgstr "Processing..."
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
 msgstr "Purple"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.question_label"
+msgstr "Question"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -6290,6 +6334,11 @@ msgstr "Show timestamps"
 #: src/features/recording/components/LiveView.tsx
 msgid "live.expand"
 msgstr "Show transcript"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_skip"
+msgstr "Skip"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

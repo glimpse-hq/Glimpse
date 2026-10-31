@@ -60,7 +60,31 @@ pub(crate) fn try_request_data(command: &str, args: Value, failure: &str) -> Res
     }
 }
 
+/// Opens a question and returns the connection that keeps it open: the app
+/// withdraws the question when this end closes, even if the process is killed.
+pub(crate) fn open_prompt(args: Value) -> Result<(Value, Stream)> {
+    let (response, stream) = exchange_keeping_stream(connect_or_launch()?, "prompt.open", args)?;
+    if response.ok {
+        Ok((response.data, stream))
+    } else {
+        Err(coded(
+            3,
+            response
+                .error
+                .unwrap_or_else(|| "Glimpse reported an error".to_string()),
+        ))
+    }
+}
+
 fn exchange(stream: Stream, command: &str, args: Value) -> Result<Response> {
+    exchange_keeping_stream(stream, command, args).map(|(response, _)| response)
+}
+
+fn exchange_keeping_stream(
+    stream: Stream,
+    command: &str,
+    args: Value,
+) -> Result<(Response, Stream)> {
     let request = Request::new(command, args);
     let mut line = serde_json::to_string(&request)?;
     line.push('\n');
@@ -81,7 +105,9 @@ fn exchange(stream: Stream, command: &str, args: Value) -> Result<Response> {
     if response_line.trim().is_empty() {
         bail!("Glimpse closed the connection without responding");
     }
-    serde_json::from_str(response_line.trim()).context("Glimpse returned a malformed response")
+    let response = serde_json::from_str(response_line.trim())
+        .context("Glimpse returned a malformed response")?;
+    Ok((response, reader.into_inner()))
 }
 
 fn try_connect() -> Option<Stream> {

@@ -40,6 +40,7 @@ mod transcribe;
 mod transcription_api;
 mod tray;
 mod update_checker;
+mod voice_prompt;
 
 pub(crate) use speech::engine as local_transcription;
 pub(crate) use speech::install as model_manager;
@@ -708,6 +709,7 @@ pub fn run() {
             audio::list_input_devices,
             toast::toast_dismissed,
             toast::resize_toast_window,
+            voice_prompt::voice_prompt_skip,
             open_accessibility_settings,
             check_accessibility_permission,
             check_microphone_permission,
@@ -2100,7 +2102,8 @@ pub(crate) fn persist_recording_async(
             Some(recorder::calculate_rms_i16(&recording.samples)),
         );
         tracing::error!("Recording rejected: {reason}");
-        if let Some(notice) = notice {
+        // The question staying up is the feedback; a notice would displace it.
+        if let Some(notice) = notice.filter(|_| !voice_prompt::is_answering()) {
             toast::show(&app, "warning", None, &toast::native(&app, notice));
         }
 

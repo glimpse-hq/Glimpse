@@ -162,6 +162,19 @@ msgstr ""
 #~ msgid "member_card.edition_blurb_commercial"
 #~ msgstr "Para o trabalho. Uma pessoa por licença, com cobrança anual."
 
+#. placeholder {0}: record.question_client
+#. placeholder {1}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question_from"
+#~ msgstr ""
+
+#. placeholder {0}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question"
+#~ msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -307,6 +320,11 @@ msgstr "{0} palavras ditadas, nenhuma digitada. @try_glimpse_app"
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {Cerca de # palavra por ditado hoje} many {Cerca de # palavras por ditado hoje} other {Cerca de # palavras por ditado hoje}}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title"
+msgstr "Pergunta de {client}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -727,6 +745,11 @@ msgid "locked.enter_key"
 msgstr "Já comprou? Insira sua chave de licença"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title_unnamed"
+msgstr "Pergunta de um agente"
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.follower_unnamed"
 msgstr "Um agente de IA está acompanhando esta gravação."
@@ -740,6 +763,17 @@ msgstr "Anônimas. Nunca incluem transcrições nem áudio."
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.answer"
 msgstr "Responder"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: record.question_client
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_client"
+msgstr "Resposta para {0}"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_agent"
+msgstr "Resposta para um agente"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -2529,7 +2563,7 @@ msgstr "Finalizando..."
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_commercial_short"
-msgstr ""
+msgstr "Para uso profissional, com cobrança anual."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2644,7 +2678,7 @@ msgstr "O Glimpse não consegue abrir o microfone. Tente reiniciar o Glimpse."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.license_switch_failed"
-msgstr ""
+msgstr "O Glimpse não conseguiu ativar a licença por esse link. Sua licença atual não foi alterada."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3023,7 +3057,7 @@ msgstr "Manter uma cópia na pasta da Biblioteca"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_keep"
-msgstr ""
+msgstr "Manter licença atual"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -3198,7 +3232,7 @@ msgstr "Chave de licença"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_inactive"
-msgstr ""
+msgstr "Licença inativa"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3346,7 +3380,7 @@ msgstr "Versão principal"
 #. js-lingui-explicit-id
 #: src/features/license/components/CustomerPortalLink.tsx
 msgid "license.manage_account"
-msgstr ""
+msgstr "Gerenciar conta"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4287,6 +4321,11 @@ msgid "faq.how_it_works.answer"
 msgstr "Pressione o atalho de ditado, fale e solte. O Glimpse transcreve no seu dispositivo e insere o texto onde está o cursor. O ditado básico funciona sem conexão. Não é necessária uma conta."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_hint"
+msgstr "Pressione seu atalho e dite sua resposta."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.lower"
 msgstr "Ação de mídia anterior"
@@ -4310,6 +4349,11 @@ msgstr "Processando..."
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
 msgstr "Roxo"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.question_label"
+msgstr "Pergunta"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -5155,6 +5199,11 @@ msgid "live.expand"
 msgstr "Mostrar transcrição"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_skip"
+msgstr "Pular"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.later"
@@ -5449,12 +5498,12 @@ msgstr "Menu de suporte"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_confirm"
-msgstr ""
+msgstr "Trocar licença"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_title"
-msgstr ""
+msgstr "Trocar para outra licença?"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -5672,7 +5721,7 @@ msgstr "O microfone parou de responder. A gravação continua com {name}."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_downgrade"
-msgstr ""
+msgstr "A nova licença pode oferecer menos recursos que a atual."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5692,7 +5741,7 @@ msgstr "O modelo selecionado não está instalado. Baixe um em Configurações >
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.solo_refunded"
-msgstr ""
+msgstr "A licença Solo que deu origem a este upgrade foi reembolsada. Entre em contato com o suporte para solicitar o reembolso."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -5727,7 +5776,7 @@ msgstr "Esta versão não inclui o utilitário de linha de comando."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
-msgstr ""
+msgstr "Este dispositivo foi removido da licença."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -5747,7 +5796,7 @@ msgstr "Esta chave já está ativa no número máximo de dispositivos permitido.
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.no_longer_active"
-msgstr ""
+msgstr "Esta licença não está mais ativa neste dispositivo."
 
 #. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
@@ -5757,12 +5806,12 @@ msgstr "Esta licença não está mais ativa."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.disabled"
-msgstr ""
+msgstr "Esta chave de licença foi desativada."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
-msgstr ""
+msgstr "Esta licença passou para um plano superior. Insira sua nova chave abaixo."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5772,7 +5821,7 @@ msgstr "Isso remove somente os arquivos de áudio salvos, não as transcrições
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.refunded"
-msgstr ""
+msgstr "Este pagamento foi reembolsado ou contestado."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
@@ -5782,12 +5831,12 @@ msgstr "Este provedor não listou nenhum modelo."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgrade_reused"
-msgstr ""
+msgstr "O preço de upgrade desta licença Solo já foi usado em outra licença Plus. Entre em contato com o suporte para solicitar o reembolso."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.subscription_inactive"
-msgstr ""
+msgstr "Esta assinatura não está mais ativa."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -6372,7 +6421,7 @@ msgstr "Você pode alterar essas opções mais tarde em Configurações."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_message"
-msgstr ""
+msgstr "Você abriu um link para a licença {new_key}. Ao trocar, a licença {current_key} será removida deste dispositivo. Só faça a troca se você acabou de comprar a nova licença."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -6402,7 +6451,7 @@ msgstr "Seus áudios e transcrições ficam no PC. O Glimpse não coleta gravaç
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.business_lapsed"
-msgstr ""
+msgstr "Sua licença Business não está mais ativa neste dispositivo."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

@@ -748,6 +748,14 @@ pub(crate) fn should_block_event(
             .any(|hotkey| hotkey.key.is_none() && hotkey.modifiers.matches(event.modifiers));
     }
 
+    // Otherwise Escape would also hit the frontmost app, which can be the asking agent's terminal.
+    if !blocking_hotkeys.is_empty()
+        && event.is_escape_press()
+        && crate::voice_prompt::escape_skips()
+    {
+        return true;
+    }
+
     event.key.is_some_and(|_| {
         blocking_hotkeys
             .iter()
@@ -762,12 +770,21 @@ pub(crate) fn should_forward_event(blocking_hotkeys: &BlockingHotkeys, event: &K
     {
         return true;
     }
+    if event.is_escape_press() && crate::voice_prompt::escape_skips() {
+        return true;
+    }
 
     event.key.is_some_and(|key| {
         blocking_hotkeys
             .iter()
             .any(|hotkey| hotkey.key == Some(key))
     })
+}
+
+impl KeyEvent {
+    pub(crate) fn is_escape_press(&self) -> bool {
+        self.key == Some(Key::Escape) && self.is_key_down && !self.repeat
+    }
 }
 
 #[cfg(test)]

@@ -28,6 +28,12 @@ pub struct Payload {
     pub secondary_action: Option<String>,
     #[serde(rename = "secondaryActionLabel")]
     pub secondary_action_label: Option<String>,
+    pub detail: Option<String>,
+    // Runs with `action_args` when the user closes the toast.
+    #[serde(rename = "closeAction")]
+    pub close_action: Option<String>,
+    #[serde(rename = "keepWhileRecording")]
+    pub keep_while_recording: Option<bool>,
 }
 
 pub fn emit_toast(app: &AppHandle<AppRuntime>, payload: Payload) {
@@ -179,16 +185,17 @@ pub(crate) fn monitor_containing_cursor(window: &WebviewWindow<AppRuntime>) -> O
 }
 
 #[tauri::command]
-pub fn toast_dismissed(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    if state.pill().status() == pill::PillStatus::Error {
-        state.pill().reset(&app);
-    }
+pub fn toast_dismissed(app: AppHandle<AppRuntime>) -> bool {
     // The toast window already cleared itself; emitting the hide event back
     // would make it dismiss again and call this in a loop.
     if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
         crate::platform::toast::hide(&app, &toast_window);
     }
+    let state = app.state::<AppState>();
+    if state.pill().status() == pill::PillStatus::Error {
+        state.pill().reset(&app);
+    }
+    crate::voice_prompt::toast_closed(&app)
 }
 
 #[tauri::command]

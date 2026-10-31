@@ -1299,6 +1299,19 @@ msgstr ""
 #~ msgid "member_card.edition_blurb_commercial"
 #~ msgstr "Voor werk. Eén persoon per licentie, jaarlijks gefactureerd."
 
+#. placeholder {0}: record.question_client
+#. placeholder {1}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question_from"
+#~ msgstr ""
+
+#. placeholder {0}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question"
+#~ msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -1444,6 +1457,11 @@ msgstr "{0} woorden gedicteerd, geen één getypt. @try_glimpse_app"
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {Ongeveer # woord per dictaat vandaag} other {Ongeveer # woorden per dictaat vandaag}}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title"
+msgstr "Vraag van {client}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1864,6 +1882,11 @@ msgid "locked.enter_key"
 msgstr "Al gekocht? Voer je licentiesleutel in"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title_unnamed"
+msgstr "Vraag van een agent"
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.follower_unnamed"
 msgstr "Een AI-agent volgt deze opname."
@@ -1877,6 +1900,17 @@ msgstr "Anoniem. Transcripties en audio worden nooit meegestuurd."
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.answer"
 msgstr "Antwoord"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: record.question_client
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_client"
+msgstr "Antwoord aan {0}"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_agent"
+msgstr "Antwoord aan een agent"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3666,7 +3700,7 @@ msgstr "Bezig met afronden..."
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_commercial_short"
-msgstr ""
+msgstr "Voor zakelijk gebruik, jaarlijks gefactureerd."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3781,7 +3815,7 @@ msgstr "Glimpse kan je microfoon niet openen. Probeer Glimpse opnieuw op te star
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.license_switch_failed"
-msgstr ""
+msgstr "Glimpse kon de licentie via die link niet activeren. Je huidige licentie is niet gewijzigd."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4160,7 +4194,7 @@ msgstr "Een kopie bewaren in de bibliotheekmap"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_keep"
-msgstr ""
+msgstr "Huidige licentie behouden"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4335,7 +4369,7 @@ msgstr "Licentiesleutel"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_inactive"
-msgstr ""
+msgstr "Licentie niet actief"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4483,7 +4517,7 @@ msgstr "Grote release"
 #. js-lingui-explicit-id
 #: src/features/license/components/CustomerPortalLink.tsx
 msgid "license.manage_account"
-msgstr ""
+msgstr "Account beheren"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5424,6 +5458,11 @@ msgid "faq.how_it_works.answer"
 msgstr "Druk op je dicteersneltoets, spreek, en laat los. Glimpse zet je spraak op je apparaat om in tekst en voegt die in op de plek van je cursor. Basisdicteren werkt offline. Geen account nodig."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_hint"
+msgstr "Druk op je sneltoets en spreek je antwoord in."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.lower"
 msgstr "Vorige media-actie"
@@ -5447,6 +5486,11 @@ msgstr "Bezig met verwerken..."
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
 msgstr "Paars"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.question_label"
+msgstr "Vraag"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -6292,6 +6336,11 @@ msgid "live.expand"
 msgstr "Transcriptie tonen"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_skip"
+msgstr "Overslaan"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.later"
@@ -6586,12 +6635,12 @@ msgstr "Supportmenu"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_confirm"
-msgstr ""
+msgstr "Licentie wisselen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_title"
-msgstr ""
+msgstr "Overschakelen naar een andere licentie?"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -6809,7 +6858,7 @@ msgstr "De microfoon reageert niet meer. De opname gaat verder met {name}."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_downgrade"
-msgstr ""
+msgstr "De nieuwe licentie biedt mogelijk minder dan je huidige licentie."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6829,7 +6878,7 @@ msgstr "Het geselecteerde model is niet geïnstalleerd. Download er een via Inst
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.solo_refunded"
-msgstr ""
+msgstr "De Solo-licentie waarop deze upgrade is gebaseerd, is terugbetaald. Neem contact op met support voor een terugbetaling."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -6864,7 +6913,7 @@ msgstr "Deze build bevat de opdrachtregelhelper niet."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
-msgstr ""
+msgstr "Dit apparaat is van de licentie verwijderd."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -6884,7 +6933,7 @@ msgstr "Deze sleutel is actief op het maximale aantal apparaten. Deactiveer de s
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.no_longer_active"
-msgstr ""
+msgstr "Deze licentie is niet langer actief op dit apparaat."
 
 #. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
@@ -6894,12 +6943,12 @@ msgstr "Deze licentie is niet meer actief."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.disabled"
-msgstr ""
+msgstr "Deze licentiesleutel is gedeactiveerd."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
-msgstr ""
+msgstr "Deze licentie is geüpgraded. Voer hieronder je nieuwe sleutel in."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6909,7 +6958,7 @@ msgstr "Hiermee verwijder je alleen opgeslagen audiobestanden, niet je transcrip
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.refunded"
-msgstr ""
+msgstr "Deze betaling is terugbetaald of betwist."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
@@ -6919,12 +6968,12 @@ msgstr "Deze provider heeft geen modellen opgegeven."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgrade_reused"
-msgstr ""
+msgstr "De upgradeprijs van deze Solo is al gebruikt voor een andere Plus. Neem contact op met support voor een terugbetaling."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.subscription_inactive"
-msgstr ""
+msgstr "Dit abonnement is niet langer actief."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7509,7 +7558,7 @@ msgstr "Je kunt dit later wijzigen via Instellingen."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_message"
-msgstr ""
+msgstr "Je hebt een link geopend voor licentie {new_key}. Als je overschakelt, wordt licentie {current_key} van dit apparaat verwijderd. Schakel alleen over als je de nieuwe licentie net hebt gekocht."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -7539,7 +7588,7 @@ msgstr "Je audio en transcripties blijven op je pc. Glimpse verzamelt geen opnam
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.business_lapsed"
-msgstr ""
+msgstr "Je Business-licentie is niet langer actief op dit apparaat."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

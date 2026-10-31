@@ -162,6 +162,19 @@ msgstr ""
 #~ msgid "member_card.edition_blurb_commercial"
 #~ msgstr "仕事用。1ライセンスにつき1名、年払い。"
 
+#. placeholder {0}: record.question_client
+#. placeholder {1}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question_from"
+#~ msgstr ""
+
+#. placeholder {0}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question"
+#~ msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -307,6 +320,11 @@ msgstr "音声入力{0}語、タイピングはゼロ。@try_glimpse_app"
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, other {今日の音声入力1回あたり約#語}}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title"
+msgstr "{client}からの質問"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -727,6 +745,11 @@ msgid "locked.enter_key"
 msgstr "購入済みですか？ライセンスキーを入力"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title_unnamed"
+msgstr "エージェントからの質問"
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.follower_unnamed"
 msgstr "AIエージェントがこの録音を参照しています。"
@@ -740,6 +763,17 @@ msgstr "匿名で収集されます。文字起こしや音声は含まれませ
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.answer"
 msgstr "回答する"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: record.question_client
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_client"
+msgstr "{0}への回答"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_agent"
+msgstr "エージェントへの回答"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -2529,7 +2563,7 @@ msgstr "終了中..."
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_commercial_short"
-msgstr ""
+msgstr "仕事用、年払い。"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2644,7 +2678,7 @@ msgstr "Glimpseがマイクを開けません。Glimpseを再起動してくだ�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.license_switch_failed"
-msgstr ""
+msgstr "リンクからライセンスを有効化できませんでした。現在のライセンスは変更されていません。"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3023,7 +3057,7 @@ msgstr "ライブラリフォルダー内にコピーを保存します"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_keep"
-msgstr ""
+msgstr "現在のライセンスを維持"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -3198,7 +3232,7 @@ msgstr "ライセンスキー"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_inactive"
-msgstr ""
+msgstr "ライセンスは有効ではありません"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3346,7 +3380,7 @@ msgstr "メジャーリリース"
 #. js-lingui-explicit-id
 #: src/features/license/components/CustomerPortalLink.tsx
 msgid "license.manage_account"
-msgstr ""
+msgstr "アカウントを管理"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4287,6 +4321,11 @@ msgid "faq.how_it_works.answer"
 msgstr "音声入力のショートカットを押して話し、離します。Glimpseが端末上で文字起こしを行い、カーソル位置にテキストを入力します。基本的な音声入力はオフラインで動作します。アカウントは不要です。"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_hint"
+msgstr "ショートカットを押して、回答を話してください。"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.lower"
 msgstr "前のメディア操作"
@@ -4310,6 +4349,11 @@ msgstr "処理中..."
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
 msgstr "紫"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.question_label"
+msgstr "質問"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -5155,6 +5199,11 @@ msgid "live.expand"
 msgstr "文字起こしを表示"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_skip"
+msgstr "スキップ"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.later"
@@ -5449,12 +5498,12 @@ msgstr "サポートメニュー"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_confirm"
-msgstr ""
+msgstr "ライセンスを切り替える"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_title"
-msgstr ""
+msgstr "別のライセンスに切り替えますか？"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -5672,7 +5721,7 @@ msgstr "マイクが応答しなくなりました。{name}で録音を続けま
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_downgrade"
-msgstr ""
+msgstr "新しいライセンスでは、現在より利用できる内容が少ない場合があります。"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5692,7 +5741,7 @@ msgstr "選択したモデルがインストールされていません。設定
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.solo_refunded"
-msgstr ""
+msgstr "このアップグレードの元になったSoloの返金が行われました。返金についてはサポートにお問い合わせください。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -5727,7 +5776,7 @@ msgstr "このビルドにはコマンドラインヘルパーが含まれてい
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
-msgstr ""
+msgstr "このデバイスはライセンスから削除されました。"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -5747,7 +5796,7 @@ msgstr "このキーは上限台数まで使用中です。先に別のデバイ
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.no_longer_active"
-msgstr ""
+msgstr "このデバイスでは、このライセンスは有効ではありません。"
 
 #. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
@@ -5757,12 +5806,12 @@ msgstr "このライセンスは無効になっています。"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.disabled"
-msgstr ""
+msgstr "このライセンスキーは無効にされました。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
-msgstr ""
+msgstr "このライセンスはアップグレードされました。下に新しいキーを入力してください。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5772,7 +5821,7 @@ msgstr "保存済みの音声ファイルのみを削除します。文字起こ
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.refunded"
-msgstr ""
+msgstr "この支払いは返金されたか、異議が申し立てられました。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
@@ -5782,12 +5831,12 @@ msgstr "このプロバイダーからモデル情報が返されませんでし
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgrade_reused"
-msgstr ""
+msgstr "このSoloのアップグレード価格は、別のPlusですでに使用されています。返金についてはサポートにお問い合わせください。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.subscription_inactive"
-msgstr ""
+msgstr "このサブスクリプションは有効ではなくなりました。"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -6372,7 +6421,7 @@ msgstr "これらの設定は後から設定で変更できます。"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_message"
-msgstr ""
+msgstr "ライセンス{new_key}へのリンクを開きました。切り替えると、このデバイスからライセンス{current_key}が削除されます。新しいライセンスを購入したばかりの場合にのみ切り替えてください。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -6402,7 +6451,7 @@ msgstr "音声と文字起こしはPC上に保存されます。Glimpseが録音
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.business_lapsed"
-msgstr ""
+msgstr "このデバイスでは、Businessライセンスは有効ではなくなりました。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

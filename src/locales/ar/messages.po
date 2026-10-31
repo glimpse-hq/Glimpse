@@ -1299,6 +1299,19 @@ msgstr ""
 #~ msgid "member_card.edition_blurb_commercial"
 #~ msgstr "للعمل. شخص واحد لكل مقعد، بفوترة سنوية."
 
+#. placeholder {0}: record.question_client
+#. placeholder {1}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question_from"
+#~ msgstr ""
+
+#. placeholder {0}: record.question
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#~ msgid "transcriptions.item.question"
+#~ msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -1444,6 +1457,11 @@ msgstr "{0} كلمة مُملاة، لم أكتب منها حرفًا. @try_glim
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {حوالي # كلمة لكل إملاء اليوم} other {حوالي # كلمات لكل إملاء اليوم}}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title"
+msgstr "سؤال من {client}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1864,6 +1882,11 @@ msgid "locked.enter_key"
 msgstr "هل اشتريت الترخيص من قبل؟ أدخل مفتاح الترخيص"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_title_unnamed"
+msgstr "سؤال من أحد الوكلاء"
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.follower_unnamed"
 msgstr "يتابع هذا التسجيل وكيل ذكاء اصطناعي."
@@ -1877,6 +1900,17 @@ msgstr "مجهولة الهوية. لا تتضمن نصوص الإملاء أو 
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.answer"
 msgstr "إجابة"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: record.question_client
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_client"
+msgstr "ردّ على {0}"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.answer_to_agent"
+msgstr "ردّ على أحد الوكلاء"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3666,7 +3700,7 @@ msgstr "جارٍ الإنهاء..."
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_commercial_short"
-msgstr ""
+msgstr "للعمل، بفوترة سنوية."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3781,7 +3815,7 @@ msgstr "تعذّر على Glimpse فتح الميكروفون. حاول إعاد
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.license_switch_failed"
-msgstr ""
+msgstr "تعذّر على Glimpse تفعيل الترخيص من هذا الرابط. لم يتغير ترخيصك الحالي."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4160,7 +4194,7 @@ msgstr "الاحتفاظ بنسخة داخل مجلد المكتبة"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_keep"
-msgstr ""
+msgstr "الاحتفاظ بالترخيص الحالي"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4335,7 +4369,7 @@ msgstr "مفتاح الترخيص"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_inactive"
-msgstr ""
+msgstr "الترخيص غير نشط"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4483,7 +4517,7 @@ msgstr "إصدار رئيسي"
 #. js-lingui-explicit-id
 #: src/features/license/components/CustomerPortalLink.tsx
 msgid "license.manage_account"
-msgstr ""
+msgstr "إدارة الحساب"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5424,6 +5458,11 @@ msgid "faq.how_it_works.answer"
 msgstr "اضغط اختصار الإملاء، تحدَّث، ثم أفلت. يقوم Glimpse بتحويل الكلام إلى نص على جهازك ويُدرج النص في موضع المؤشر. تعمل ميزة الإملاء الأساسية دون اتصال بالإنترنت، ولا تتطلب حساباً."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_hint"
+msgstr "اضغط على اختصارك وقل إجابتك."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.lower"
 msgstr "إجراء الوسائط السابق"
@@ -5447,6 +5486,11 @@ msgstr "جارٍ المعالجة..."
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
 msgstr "بنفسجي"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.question_label"
+msgstr "السؤال"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -6292,6 +6336,11 @@ msgid "live.expand"
 msgstr "إظهار النص المكتوب"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ask_skip"
+msgstr "تخطي"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.later"
@@ -6586,12 +6635,12 @@ msgstr "قائمة الدعم"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_confirm"
-msgstr ""
+msgstr "تبديل الترخيص"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_title"
-msgstr ""
+msgstr "هل تريد التبديل إلى ترخيص آخر؟"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -6809,7 +6858,7 @@ msgstr "توقّف الميكروفون عن الاستجابة. يتواصل ا
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_downgrade"
-msgstr ""
+msgstr "قد يتضمن الترخيص الجديد مزايا أقل من ترخيصك الحالي."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6829,7 +6878,7 @@ msgstr "النموذج المحدد غير مثبّت. نزّل نموذجاً �
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.solo_refunded"
-msgstr ""
+msgstr "تم ردّ قيمة Solo التي استُخدمت للترقية. تواصل مع الدعم لطلب استرداد المبلغ."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -6864,7 +6913,7 @@ msgstr "لا يتضمن هذا الإصدار أداة سطر الأوامر."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
-msgstr ""
+msgstr "تمت إزالة هذا الجهاز من الترخيص."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -6884,7 +6933,7 @@ msgstr "هذا المفتاح نشط على أكبر عدد من الأجهزة 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.no_longer_active"
-msgstr ""
+msgstr "لم يعد هذا الترخيص نشطًا على هذا الجهاز."
 
 #. js-lingui-explicit-id
 #: src/features/license/useActivationErrorText.ts
@@ -6894,12 +6943,12 @@ msgstr "هذا الترخيص لم يعد نشطًا."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.disabled"
-msgstr ""
+msgstr "تم إيقاف مفتاح الترخيص هذا."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
-msgstr ""
+msgstr "تمت ترقية هذا الترخيص. أدخل مفتاحك الجديد أدناه."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6909,7 +6958,7 @@ msgstr "يؤدي هذا إلى إزالة ملفات الصوت المحفوظة
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.refunded"
-msgstr ""
+msgstr "تم ردّ هذه الدفعة أو الاعتراض عليها."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
@@ -6919,12 +6968,12 @@ msgstr "لم يعرض هذا المزود أي نماذج."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgrade_reused"
-msgstr ""
+msgstr "سبق استخدام سعر ترقية Solo هذا لشراء Plus آخر. تواصل مع الدعم لطلب استرداد المبلغ."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.subscription_inactive"
-msgstr ""
+msgstr "لم يعد هذا الاشتراك نشطًا."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7509,7 +7558,7 @@ msgstr "يمكنك تغيير هذه الإعدادات لاحقًا في الإ
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.license.switch_message"
-msgstr ""
+msgstr "فتحت رابطًا للترخيص {new_key}. سيؤدي التبديل إلى إزالة الترخيص {current_key} من هذا الجهاز. لا تبدّل إلا إذا كنت قد اشتريت الترخيص الجديد للتو."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -7539,7 +7588,7 @@ msgstr "تبقى ملفاتك الصوتية ونصوصك المُحوَّلة �
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.business_lapsed"
-msgstr ""
+msgstr "لم يعد ترخيص Business نشطًا على هذا الجهاز."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

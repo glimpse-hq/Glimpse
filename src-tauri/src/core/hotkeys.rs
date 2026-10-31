@@ -81,6 +81,10 @@ impl HotkeyCoordinator {
                             break;
                         };
 
+                        if event.is_escape_press() && crate::voice_prompt::skip_shown(&app_handle) {
+                            continue;
+                        }
+
                         for (action, hotkey_state, options) in state.process(event) {
                             pill::handle_registered_hotkey_event(
                                 &app_handle,

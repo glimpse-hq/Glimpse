@@ -193,6 +193,7 @@ fn show(
         "nothing" => {
             crate::announcements::DEV_RELEASE_NOTES.lock().take();
             crate::license::set_dev_license(None, false);
+            crate::voice_prompt::close_all();
             toast::hide(app);
             license_changed(app)?;
         }
@@ -205,6 +206,14 @@ fn show(
 fn show_toast(app: &AppHandle<AppRuntime>, id: &str) -> Result<(), String> {
     if id == "milestone" {
         toast::show_word_milestone(app, 9_999, 10_000);
+        return Ok(());
+    }
+    if id == "ask" {
+        crate::voice_prompt::open(
+            app,
+            "Claude Code",
+            "Should the summary go at the top of the note or the bottom?",
+        )?;
         return Ok(());
     }
     let (toast_type, key, action) = match id {

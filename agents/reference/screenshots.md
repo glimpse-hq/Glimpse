@@ -35,7 +35,7 @@ Debug builds only, and only the sandbox app answers. Use them through the sandbo
 - `glimpse open <view>` and `glimpse open settings --tab account|general|app|about|models|api`
 - `glimpse dev license none|trial|trial-last-day|expired|unlocked-1|unlocked-3`
 - `glimpse dev onboarding reset|complete|<step>|download-failed|disk-full|setup-failed|faq|close`
-- `glimpse dev show trial-ended|release-notes [--markdown <text>]|toast <milestone|update|no-words|disk-full>|nothing`
+- `glimpse dev show trial-ended|release-notes [--markdown <text>]|toast <milestone|update|no-words|disk-full|ask>|nothing`
 - `glimpse dev window <label> info|show|hide|size <w> <h>|position <x> <y>`
 - `glimpse dev focus on|off`: macOS only, for `readme`
 - `glimpse dev wait-idle [--window <label>]`: fonts, queries, images, lazy screens and animations settled. Animations skip to their last frame in the sandbox.

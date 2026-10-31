@@ -1,5 +1,11 @@
 1.4.2
 
+### New Features
+
+- AI agents connected to Glimpse can ask you a question. It appears on screen, and your next dictation answers it instead of being pasted. History shows which dictations were answers.
+- AI agents can read your recent dictations and bookmark moments in a recording. They can also start and finish recordings if you turn that on with `--allow-recording`.
+- `glimpse watch` prints a line whenever a dictation is saved or a Library item changes, so your scripts can react to it.
+
 ### Improvements
 
 - Manage account now opens your new account page, where you can remove a device, copy your license key, add Business seats and manage billing.
