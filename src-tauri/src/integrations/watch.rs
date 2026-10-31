@@ -113,6 +113,9 @@ impl Seen {
             }
         }
         let (mut items, _) = storage.get_library_items_page(LibraryFilter::default(), WINDOW, 0)?;
+        // A recording's date is when it started, so one saved during the watch can
+        // predate it, but it still lands on the newest page.
+        let newest: HashSet<String> = items.iter().map(|item| item.id.clone()).collect();
         // Retried items stay at their old place in the list, past the newest page.
         let active = LibraryFilter {
             status: Some("active".to_string()),
@@ -133,7 +136,7 @@ impl Seen {
             let mut changes = Vec::new();
             let created_since_start = chrono::DateTime::parse_from_rfc3339(&item.created_at)
                 .is_ok_and(|created| created >= self.started_at);
-            if previous.is_none() && created_since_start {
+            if previous.is_none() && (created_since_start || newest.contains(&item.id)) {
                 changes.push("library.added");
             }
             if previous.as_deref() != Some(status.as_str()) {
