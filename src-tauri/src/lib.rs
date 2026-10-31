@@ -40,6 +40,7 @@ mod transcribe;
 mod transcription_api;
 mod tray;
 mod update_checker;
+mod voice_prompt;
 
 pub(crate) use speech::engine as local_transcription;
 pub(crate) use speech::install as model_manager;
@@ -179,13 +180,19 @@ where
         let key = license::deep_link_license_key(raw_url);
         tauri::async_runtime::spawn(async move {
             license::note_checkout_returned(&app);
-            // A link never replaces a license that is already active.
             if let Some(key) = key
                 && let Some(state) = app.try_state::<AppState>()
-                && !license::has_active_license(&state.settings_store)
-                && let Err(err) = activate_license_and_note(&app, &state, key).await
             {
-                tracing::warn!("License from checkout link did not activate: {err}");
+                let result = if license::link_must_not_overwrite(&state.settings_store) {
+                    replace_license_from_link_and_note(&app, &state, key).await
+                } else {
+                    activate_license_and_note(&app, &state, key)
+                        .await
+                        .map(|_| ())
+                };
+                if let Err(err) = result {
+                    tracing::warn!("License from checkout link did not activate: {err}");
+                }
             }
             if let Err(err) = license::handle_deep_link(&app) {
                 tracing::error!("{err}");
@@ -702,6 +709,7 @@ pub fn run() {
             audio::list_input_devices,
             toast::toast_dismissed,
             toast::resize_toast_window,
+            voice_prompt::voice_prompt_skip,
             open_accessibility_settings,
             check_accessibility_permission,
             check_microphone_permission,
@@ -1612,6 +1620,38 @@ async fn activate_license_and_note(
     }
 }
 
+async fn replace_license_from_link_and_note(
+    app: &tauri::AppHandle<AppRuntime>,
+    state: &AppState,
+    key: String,
+) -> Result<(), String> {
+    let input_shape = analytics::activation_input_shape(&key);
+    let trial_day = license::trial_day(&state.settings_store).ok();
+    match license::replace_license_from_link(app, state.http(), &state.settings_store, &key).await {
+        Ok(Some(license_state)) => {
+            note_license_state(app, state, &license_state);
+            analytics::track_license_activated(
+                app,
+                license_state.edition.map(|edition| edition.as_str()),
+                trial_day,
+                input_shape,
+            );
+            Ok(())
+        }
+        Ok(None) => Ok(()),
+        Err(err) => {
+            analytics::track_license_activation_failed(app, &err, input_shape);
+            toast::show(
+                app,
+                "error",
+                None,
+                &toast::native(app, "native.toast.license_switch_failed"),
+            );
+            Err(err)
+        }
+    }
+}
+
 #[tauri::command]
 async fn refresh_license(
     app: tauri::AppHandle<AppRuntime>,
@@ -2062,7 +2102,8 @@ pub(crate) fn persist_recording_async(
             Some(recorder::calculate_rms_i16(&recording.samples)),
         );
         tracing::error!("Recording rejected: {reason}");
-        if let Some(notice) = notice {
+        // The question staying up is the feedback; a notice would displace it.
+        if let Some(notice) = notice.filter(|_| !voice_prompt::is_answering()) {
             toast::show(&app, "warning", None, &toast::native(&app, notice));
         }
 

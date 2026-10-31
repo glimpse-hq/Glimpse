@@ -408,6 +408,50 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               >
                 <TranscriptText text={displayText || ""} />
               </div>
+              {record.question && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditDetails(!showEditDetails)}
+                    aria-expanded={showEditDetails}
+                    className="flex items-center gap-1 mt-1 -ml-0.5 px-1 py-0.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors rounded"
+                  >
+                    {showEditDetails ? (
+                      <ChevronUp size={11} aria-hidden="true" />
+                    ) : (
+                      <ChevronDown size={11} aria-hidden="true" />
+                    )}
+                    {record.question_client
+                      ? t({
+                          id: "transcriptions.item.answer_to_client",
+                          message: `Answer to ${record.question_client}`,
+                        })
+                      : t({
+                          id: "transcriptions.item.answer_to_agent",
+                          message: "Answer to an agent",
+                        })}
+                  </button>
+                  {showEditDetails && (
+                    <>
+                      <div
+                        className="mt-2 h-px w-full bg-border-secondary [mask-image:linear-gradient(to_right,black_70%,transparent)]"
+                        aria-hidden="true"
+                      />
+                      <dl className="mt-2">
+                        <dt className="ui-text-label-strong ui-color-secondary">
+                          {t({
+                            id: "transcriptions.item.question_label",
+                            message: "Question",
+                          })}
+                        </dt>
+                        <dd className="mt-1 ui-text-body-sm ui-color-muted select-text break-words">
+                          {record.question}
+                        </dd>
+                      </dl>
+                    </>
+                  )}
+                </>
+              )}
               {isEdit && (
                 <>
                   <button

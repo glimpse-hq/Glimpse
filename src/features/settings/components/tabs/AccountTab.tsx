@@ -31,8 +31,12 @@ const AccountTab = ({
 
   useEffect(() => {
     const licenseState = licenseQuery.data;
-    if (!licenseState || licenseState.status !== "active") return;
-    if (licenseState.customerName?.trim()) return;
+    if (!licenseState) return;
+    // A lapsed Business customer may have just paid, so check on opening.
+    if (!licenseState.businessLapsed) {
+      if (licenseState.status !== "active") return;
+      if (licenseState.customerName?.trim()) return;
+    }
 
     const identityKey =
       licenseState.displayKey ?? licenseState.customerEmail ?? "active-license";

@@ -10,6 +10,8 @@ export type TranscriptionRecord = {
   raw_text?: string | null;
   selected_text?: string | null;
   edit_instruction?: string | null;
+  question?: string | null;
+  question_client?: string | null;
   audio_path: string;
   audio_available: boolean;
   status: "success" | "error";

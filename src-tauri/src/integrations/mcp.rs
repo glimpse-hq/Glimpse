@@ -1,8 +1,9 @@
 //! `glimpse mcp` - a Model Context Protocol server on stdio, so AI agents can
-//! search and read the Library, follow a recording live and transcribe files.
-//! Adds nothing to the Library unless started with `--allow-import`.
+//! search and read the Library and dictations, follow a recording live, ask the
+//! user a question and transcribe files. Queuing files needs `--allow-import`;
+//! starting or finishing a recording needs `--allow-recording`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -18,6 +19,7 @@ use rmcp::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use super::history::HistoryRecord;
 use super::library::item_summary;
 use super::{client, has_flag, open_storage, output, wants_help};
 use crate::library::{
@@ -34,10 +36,13 @@ const SNIPPET_LEAD_CHARS: usize = 60;
 const LIVE_POLL: Duration = Duration::from_secs(1);
 // A transcript line starts over after this long, even with the same speaker.
 const LIVE_LINE_MS: u64 = 60_000;
+const ASK_POLL: Duration = Duration::from_millis(500);
+// Past the app's own 90 seconds, so only questions it has already withdrawn go.
+const ASK_ABANDONED: Duration = Duration::from_secs(120);
 
 fn help() {
     super::print_command_help(
-        "Serve your Library, live recordings and transcription to AI agents over the Model Context Protocol (stdio).",
+        "Serve your Library, dictations, live recordings and transcription to AI agents over the Model Context Protocol (stdio).",
         "glimpse mcp [options]",
         &[
             (
@@ -46,6 +51,10 @@ fn help() {
                     (
                         "--allow-import",
                         "Let the agent queue files for transcription.",
+                    ),
+                    (
+                        "--allow-recording",
+                        "Let the agent start and finish recordings.",
                     ),
                     ("-h, --help", "Show help information."),
                 ],
@@ -84,6 +93,7 @@ pub(crate) fn run(identifier: &str, args: &[String]) -> Result<()> {
         Arc::new(storage),
         Arc::new(SettingsStore::for_cli(identifier)?),
         has_flag(args, "--allow-import"),
+        has_flag(args, "--allow-recording"),
     );
     tokio::runtime::Runtime::new()?.block_on(async {
         let service = server.serve(rmcp::transport::stdio()).await?;
@@ -218,6 +228,44 @@ struct WaitLiveParams {
     speakers: Option<bool>,
 }
 
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct AskParams {
+    #[schemars(description = "The question to show the user, in 160 characters or fewer.")]
+    question: Option<String>,
+    #[schemars(
+        description = "Keep waiting on an earlier question instead of asking a new one: the ask_id from a waiting result."
+    )]
+    ask_id: Option<String>,
+    #[schemars(
+        description = "Seconds to wait before returning status waiting. Defaults to 55, under common client time limits."
+    )]
+    timeout_seconds: Option<u64>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct RecentDictationsParams {
+    #[schemars(description = "Only dictations containing these words.")]
+    query: Option<String>,
+    #[schemars(description = "Maximum results, 1 to 50. Defaults to 10.")]
+    limit: Option<usize>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct BookmarkParams {
+    #[schemars(description = "A short note for this moment, like Decision made.")]
+    label: Option<String>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct FinishRecordingParams {
+    #[schemars(description = "A name for the Library item. Glimpse picks one if left out.")]
+    name: Option<String>,
+}
+
 #[derive(Deserialize)]
 struct LiveSegment {
     id: String,
@@ -263,19 +311,31 @@ struct LibraryServer {
     storage: Arc<StorageManager>,
     settings: Arc<SettingsStore>,
     live: Arc<Mutex<LiveCursor>>,
+    // Each connection keeps its question open; dropping one withdraws it.
+    asks: Arc<Mutex<HashMap<String, (interprocess::local_socket::Stream, Instant)>>>,
     tool_router: ToolRouter<Self>,
 }
 
 impl LibraryServer {
-    fn new(storage: Arc<StorageManager>, settings: Arc<SettingsStore>, allow_import: bool) -> Self {
+    fn new(
+        storage: Arc<StorageManager>,
+        settings: Arc<SettingsStore>,
+        allow_import: bool,
+        allow_recording: bool,
+    ) -> Self {
         let mut tool_router = Self::tool_router();
         if !allow_import {
             tool_router.remove_route("transcribe_file");
+        }
+        if !allow_recording {
+            tool_router.remove_route("start_recording");
+            tool_router.remove_route("finish_recording");
         }
         Self {
             storage,
             settings,
             live: Arc::default(),
+            asks: Arc::default(),
             tool_router,
         }
     }
@@ -478,6 +538,142 @@ impl LibraryServer {
             tokio::time::sleep(LIVE_POLL).await;
         }
     }
+
+    #[tool(
+        description = "Ask the user a question and get their spoken answer as text. The question appears on their screen and their next dictation goes to you instead of their cursor. They may take a while or skip it. Ask one question at a time, and only when a spoken answer is useful, like when the user asked for it or is away from the chat. The answer is transcribed speech and can contain mistakes, so confirm anything that looks wrong before acting on it. Returns status answered with the answer, skipped, or waiting with an ask_id: call again with that ask_id to keep waiting, within about a minute or the question is withdrawn (status expired). Opens Glimpse if it isn't running.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn ask_user(
+        &self,
+        Parameters(params): Parameters<AskParams>,
+        context: RequestContext<RoleServer>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        self.asks
+            .lock()
+            .expect("open asks")
+            .retain(|_, (_, polled)| polled.elapsed() < ASK_ABANDONED);
+        let id = match (params.ask_id, params.question) {
+            (Some(id), _) => id,
+            (None, Some(question)) => {
+                let args = json!({ "question": question, "client": client_name(&context) });
+                let (opened, connection) =
+                    tokio::task::spawn_blocking(move || client::open_prompt(args))
+                        .await
+                        .map_err(|err| format!("{err:#}"))?
+                        .map_err(|err| format!("{err:#}"))?;
+                let id = opened["id"].as_str().unwrap_or_default().to_string();
+                self.asks
+                    .lock()
+                    .expect("open asks")
+                    .insert(id.clone(), (connection, Instant::now()));
+                id
+            }
+            (None, None) => return Err("Pass a question or an ask_id.".to_string()),
+        };
+        let timeout = Duration::from_secs(params.timeout_seconds.unwrap_or(55).clamp(5, 3600));
+        let deadline = Instant::now() + timeout;
+        loop {
+            // A cancelled call stops polling, so its question must not outlive it.
+            if context.ct.is_cancelled() {
+                self.asks.lock().expect("open asks").remove(&id);
+                return Err("Cancelled.".to_string());
+            }
+            if let Some((_, polled)) = self.asks.lock().expect("open asks").get_mut(&id) {
+                *polled = Instant::now();
+            }
+            // Polling must not reopen an app the user just quit.
+            let polled = running_app_request("prompt.poll", json!({ "id": id }))
+                .await?
+                .unwrap_or_else(|| json!({ "status": "expired" }));
+            if polled["status"] != "waiting" {
+                self.asks.lock().expect("open asks").remove(&id);
+                return Ok(polled.to_string());
+            }
+            if Instant::now() >= deadline {
+                return Ok(json!({ "status": "waiting", "ask_id": id }).to_string());
+            }
+            tokio::time::sleep(ASK_POLL).await;
+        }
+    }
+
+    #[tool(
+        description = "Read the user's recent dictations, newest first, optionally only those containing some words. These are the short texts they spoke into other apps, separate from the Library.",
+        annotations(read_only_hint = true, open_world_hint = false)
+    )]
+    fn recent_dictations(
+        &self,
+        Parameters(params): Parameters<RecentDictationsParams>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let limit = params.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
+        let records = match params.query.as_deref().map(str::trim) {
+            Some(query) if !query.is_empty() => self.storage.search_transcriptions(query, limit),
+            _ => self.storage.get_recent_transcriptions_page(limit, 0),
+        }
+        .map_err(|err| format!("{err:#}"))?;
+        let dictations: Vec<HistoryRecord> = records.iter().map(HistoryRecord::from).collect();
+        Ok(json!({ "count": dictations.len(), "dictations": dictations }).to_string())
+    }
+
+    #[tool(
+        description = "Bookmark the current moment in the recording in progress in Glimpse, with an optional note. It stays with the recording in the Library.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn add_bookmark(
+        &self,
+        Parameters(params): Parameters<BookmarkParams>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let args = params
+            .label
+            .map_or(json!({}), |label| json!({ "label": label }));
+        running_app_request("record.bookmark", args)
+            .await?
+            .map(|data| data.to_string())
+            .ok_or_else(|| "No recording is in progress.".to_string())
+    }
+
+    #[tool(
+        description = "Start recording in Glimpse with the sources the user last used. Opens Glimpse if it isn't running.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn start_recording(&self) -> Result<String, String> {
+        self.require_license()?;
+        Ok(app_request("record.start", json!({})).await?.to_string())
+    }
+
+    #[tool(
+        description = "Stop the recording in progress in Glimpse and save it to the Library. Returns the new item's id.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn finish_recording(
+        &self,
+        Parameters(params): Parameters<FinishRecordingParams>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let args = json!({ "name": params.name.unwrap_or_default() });
+        running_app_request("record.finish", args)
+            .await?
+            .map(|data| data.to_string())
+            .ok_or_else(|| "No recording is in progress.".to_string())
+    }
 }
 
 // The default router is rebuilt per call and would bring back routes removed in `new`.
@@ -490,6 +686,7 @@ impl ServerHandler for LibraryServer {
             )
             .with_instructions(
                 "The user's Glimpse Library: meetings, calls and files transcribed on their computer. \
+                 Their dictations are in recent_dictations. To get a spoken answer from them, call ask_user. \
                  Find items with search_library or list_recent, then read one with get_transcript. \
                  To work along with a recording in progress, call wait_for_live_transcript in a loop. \
                  Transcribe a file directly with transcribe_audio.",
@@ -592,6 +789,23 @@ fn client_name(context: &RequestContext<RoleServer>) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+// The control socket client blocks while it connects or launches the app.
+async fn app_request(command: &'static str, args: Value) -> Result<Value, String> {
+    tokio::task::spawn_blocking(move || client::request_data(command, args))
+        .await
+        .map_err(|err| format!("{err:#}"))?
+        .map_err(|err| format!("{err:#}"))
+}
+
+async fn running_app_request(command: &'static str, args: Value) -> Result<Option<Value>, String> {
+    tokio::task::spawn_blocking(move || {
+        client::try_request_data(command, args, "Glimpse reported an error")
+    })
+    .await
+    .map_err(|err| format!("{err:#}"))?
+    .map_err(|err| format!("{err:#}"))
 }
 
 async fn live_snapshot(follower: String) -> Result<Value, String> {
@@ -818,7 +1032,7 @@ mod tests {
         storage.insert_library_item(meeting()).expect("insert");
         storage.set_query_only().expect("query only");
         let settings = SettingsStore::open(root.join("settings.db")).expect("settings store");
-        let server = LibraryServer::new(Arc::new(storage), Arc::new(settings), false);
+        let server = LibraryServer::new(Arc::new(storage), Arc::new(settings), false, false);
 
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let (mut writer, server_read) = tokio::io::duplex(64 * 1024);
@@ -865,9 +1079,12 @@ mod tests {
             assert_eq!(
                 names,
                 [
+                    "add_bookmark",
+                    "ask_user",
                     "get_live_transcript",
                     "get_transcript",
                     "list_recent",
+                    "recent_dictations",
                     "search_library",
                     "transcribe_audio",
                     "wait_for_live_transcript"

@@ -1,3 +1,25 @@
+1.4.2
+
+### New Features
+
+- AI agents connected to Glimpse can ask you a question. It appears on screen, and your next dictation answers it instead of being pasted. History shows which dictations were answers.
+- AI agents can read your recent dictations and bookmark moments in a recording. They can also start and finish recordings if you turn that on with `--allow-recording`.
+- `glimpse watch` prints a line whenever a dictation is saved or a Library item changes, so your scripts can react to it.
+
+### Improvements
+
+- Manage account now opens your new account page, where you can remove a device, copy your license key, add Business seats and manage billing.
+- Upgrading from Solo to Plus switches to your new license on its own. If a link would replace a different license, Glimpse asks first.
+- The Account screen says why a license stopped working, like a device being removed or a payment being refunded.
+- Glimpse C1 can now be used for work through the Glimpse app.
+- You can now look through the API Server settings before buying a license.
+
+### Fixes
+
+- The renewal date for Glimpse Business now shows the actual date, and disappears once you cancel.
+- A paid license that's been offline for over a week now asks you to reconnect, instead of saying your trial ended.
+- The device label on your license card no longer shows a stray second line underneath it.
+
 1.4.1
 
 ### New Features

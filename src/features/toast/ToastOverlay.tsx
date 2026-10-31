@@ -23,6 +23,7 @@ const DURATIONS: Record<ToastType, number> = {
   warning: 5000,
   update: 0,
   celebration: 6000,
+  ask: 0,
 };
 
 const COLORS: Record<ToastType, { border: string; dot: string }> = {
@@ -32,6 +33,7 @@ const COLORS: Record<ToastType, { border: string; dot: string }> = {
   warning: { border: "border-amber-500/40", dot: "bg-amber-400" },
   update: { border: "border-violet-500/40", dot: "bg-violet-400" },
   celebration: { border: "border-amber-500/30", dot: "bg-amber-400" },
+  ask: { border: "border-cloud-50", dot: "bg-cloud" },
 };
 
 const TwinklingGrid = React.memo(
@@ -134,9 +136,12 @@ const ToastOverlay: React.FC = () => {
     clearTimers();
     setToast(null);
     resetCopied();
-    await invoke("toast_dismissed").catch((err) =>
-      console.error("toast_dismissed failed:", err),
-    );
+    const generation = toastGenerationRef.current;
+    const replaced = await invoke<boolean>("toast_dismissed").catch((err) => {
+      console.error("toast_dismissed failed:", err);
+      return false;
+    });
+    if (replaced || generation !== toastGenerationRef.current) return;
     await getCurrentWindow()
       .hide()
       .catch((err) => console.error("Hiding the toast window failed:", err));
@@ -148,10 +153,19 @@ const ToastOverlay: React.FC = () => {
     dismissAnimationTimerRef.current = setTimeout(() => void hideNow(), 120);
   };
 
+  const closeByUser = async () => {
+    if (toast?.closeAction) {
+      await invoke(toast.closeAction, toast.actionArgs ?? undefined).catch(
+        (err) => console.error("Close action failed:", err),
+      );
+    }
+    await hideNow();
+  };
+
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    void hideNow();
+    void closeByUser();
   };
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -206,7 +220,7 @@ const ToastOverlay: React.FC = () => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && toast) {
         e.preventDefault();
-        void hideNow();
+        void closeByUser();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -229,7 +243,9 @@ const ToastOverlay: React.FC = () => {
 
     const unsub2 = listen("toast:hide", () => dismiss());
     const unsub3 = listen("recording:start", () => {
-      if (toastRef.current) void hideNow();
+      if (toastRef.current && !toastRef.current.keepWhileRecording) {
+        void hideNow();
+      }
     });
 
     return () => {
@@ -247,7 +263,7 @@ const ToastOverlay: React.FC = () => {
   const copySecondary = toast.secondaryAction === "copy_last_transcription";
 
   const handleBackgroundClick = () => {
-    void hideNow();
+    void closeByUser();
   };
 
   return (
@@ -258,9 +274,10 @@ const ToastOverlay: React.FC = () => {
     >
       <div
         className={`
-          relative w-fit max-w-[420px] max-h-[140px] bg-black rounded-2xl border px-4 py-3 overflow-y-auto overflow-x-hidden
+          relative w-fit max-w-[420px] bg-black rounded-2xl border px-4 py-3 overflow-x-hidden
+          ${toast.type === "ask" ? "" : "max-h-[140px] overflow-y-auto"}
           ${colors.border}
-          ${toast.isLeaving ? "animate-toast-out" : "animate-toast-in"}
+          ${toast.isLeaving ? "animate-toast-out" : toast.type === "ask" ? "animate-ask-in" : "animate-toast-in"}
         `}
         onClick={(e) => e.stopPropagation()}
         role={toast.type === "error" ? "alert" : "status"}
@@ -333,7 +350,7 @@ const ToastOverlay: React.FC = () => {
           ) : (
             <div
               aria-hidden="true"
-              className={`w-2 h-2 rounded-full mt-1 shrink-0 ${colors.dot} ${toast.type === "error" ? "animate-pulse" : ""}`}
+              className={`w-2 h-2 rounded-full mt-1 shrink-0 ${colors.dot} ${toast.type === "error" ? "animate-pulse" : ""} ${toast.type === "ask" ? "ask-dot" : ""}`}
             />
           )}
           <div className="flex-1 min-w-0">
@@ -342,14 +359,26 @@ const ToastOverlay: React.FC = () => {
                 GLIMPSE
               </p>
             )}
-            <p className="ui-text-body ui-color-gray-200 leading-relaxed break-words">
+            {toast.type === "ask" && (
+              <p className="ask-reveal ui-text-label ui-color-gray-500 font-medium mb-0.5">
+                {toast.title}
+              </p>
+            )}
+            <p
+              className={`${toast.type === "ask" ? "ask-reveal" : ""} ui-text-body ui-color-gray-200 leading-relaxed break-words`}
+            >
               {toast.message}
             </p>
             {((toast.action && toast.actionLabel) ||
               (toast.secondaryAction && toast.secondaryActionLabel)) && (
               <div
-                className={`mt-2 flex items-center gap-4 ${copySecondary ? "" : "justify-between"}`}
+                className={`mt-2 flex items-center gap-4 ${toast.type === "ask" ? "justify-between -mr-8 ask-reveal-late" : copySecondary ? "" : "justify-between"}`}
               >
+                {toast.detail && (
+                  <p className="min-w-0 ui-text-body-sm ui-color-gray-500">
+                    {toast.detail}
+                  </p>
+                )}
                 {toast.action && toast.actionLabel && (
                   <button
                     type="button"
@@ -358,12 +387,13 @@ const ToastOverlay: React.FC = () => {
                       e.stopPropagation();
                       void handleToastAction(toast.action!);
                     }}
-                    className={`ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : "ui-color-info-strong"} ui-hover-on-solid transition-colors font-medium`}
+                    className={`shrink-0 whitespace-nowrap ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : toast.type === "ask" ? "ui-color-cloud" : "ui-color-info-strong"} ui-hover-on-solid transition-colors font-medium`}
                   >
-                    {toast.actionLabel} <span aria-hidden="true">→</span>
+                    {toast.actionLabel}
+                    {toast.type !== "ask" && <span aria-hidden="true"> →</span>}
                   </button>
                 )}
-                {!copySecondary && (
+                {!copySecondary && toast.type !== "ask" && (
                   <span aria-hidden="true" className="flex-1" />
                 )}
                 {toast.secondaryAction && toast.secondaryActionLabel && (
