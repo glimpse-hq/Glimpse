@@ -11,6 +11,7 @@
 
 - The renewal date for Glimpse Business now shows the actual date, and disappears once you cancel.
 - A paid license that's been offline for over a week now asks you to reconnect, instead of saying your trial ended.
+- The device label on your license card no longer shows a stray second line underneath it.
 
 1.4.1
 

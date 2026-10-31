@@ -834,6 +834,7 @@ export const TierStamp = ({
     textTransform: "uppercase" as const,
     letterSpacing: "0.16em",
     lineHeight: 1,
+    whiteSpace: "nowrap" as const,
   };
 
   return (
