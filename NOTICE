@@ -15,4 +15,15 @@ Additional terms under section 7 of the AGPL-3.0:
   Trademarks (7e). The Glimpse name and logo are not licensed. Modified
   versions and redistributions must use a different name and icon.
 
+Satoshi font:
+
+  public/fonts/Satoshi-Regular.woff2 and public/fonts/Satoshi-Bold.woff2 are
+  not covered by the AGPL-3.0. They are the work of Indian Type Foundry,
+  licensed under the ITF Free Font License v2.0 (public/fonts/Satoshi-FFL.txt)
+  and available from https://www.fontshare.com/fonts/satoshi. Indian Type
+  Foundry has given Glimpse written permission to keep these two unmodified
+  files in its repositories. That permission is limited to Glimpse and does
+  not allow redistribution or use outside the license. Forks need their own
+  copy from Fontshare or another font.
+
 Contact: hello@tryglimpse.cc
