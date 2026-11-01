@@ -147,5 +147,6 @@ Glimpse is open source under the [GNU AGPL-3.0](LICENSE). In short:
 - **Share your changes.** If you distribute a modified version, or run one as a network service, its source must be available under AGPL-3.0.
 - **Keep the attribution.** Copyright and license notices stay intact, and a fork must state that it is based on Glimpse and link back to this repository.
 - **Pick your own name.** The Glimpse name and logo are trademarks and not covered by the license. Forks and redistributions need a different name and icon.
+- **Bring your own Satoshi.** The two [Satoshi](https://www.fontshare.com/fonts/satoshi) font files are not covered by the AGPL. They're in this repo under the [ITF Free Font License](public/fonts/Satoshi-FFL.txt) with permission from Indian Type Foundry, and that permission is only for Glimpse.
 
 The [full license text](LICENSE) and [NOTICE](NOTICE) are what apply; this summary is not a substitute for them.
