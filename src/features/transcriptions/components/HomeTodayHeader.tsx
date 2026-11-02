@@ -16,7 +16,6 @@ import {
 } from "../homeGreeting";
 import { getActiveTodayStatSlide } from "../todayStats";
 import type { StoredSettings, TodayDictationStats } from "../../../types";
-import AskPrompt from "../../asks/components/AskPrompt";
 
 const fadeTransition = { duration: 0.22, ease: "easeOut" as const };
 
@@ -131,8 +130,6 @@ export default function HomeTodayHeader({
           {reminderText || statText}
         </p>
       ) : null}
-
-      <AskPrompt active={active} />
     </header>
   );
 }

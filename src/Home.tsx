@@ -53,6 +53,7 @@ import LibraryView from "./features/library/components/LibraryView";
 import RecordingView from "./features/recording/components/RecordingView";
 import LocalApiSidebarStatus from "./features/settings/components/LocalApiSidebarStatus";
 import NewsMenu from "./features/news/components/NewsMenu";
+import AskPrompt from "./features/asks/components/AskPrompt";
 import AnnouncementScreen from "./features/news/components/AnnouncementScreen";
 import { useAnnouncement } from "./features/news/queries";
 import AccountPill from "./features/license/components/AccountPill";
@@ -71,7 +72,6 @@ import { invoke } from "@tauri-apps/api/core";
 import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings } from "./features/settings/queries";
 import { updateKeys, useUpdateStatus } from "./features/updates/queries";
-import { askKeys } from "./features/asks/queries";
 import { isRemoteSpeechInUse } from "./shared/lib/speechProviders";
 import { isCloudLlmInUse, isLlmInUse } from "./shared/lib/llmProviders";
 import { GITHUB_URL, SUPPORT_EMAIL } from "./shared/lib/links";
@@ -94,7 +94,6 @@ const FIRST_SCREEN_QUERY_ROOTS: readonly string[] = [
   licenseKeys.state()[0],
   transcriptionKeys.all[0],
   updateKeys.status()[0],
-  askKeys.prompt()[0],
 ];
 
 const gatedFeatureName = (view: "brain" | "library" | "record") =>
@@ -1122,6 +1121,10 @@ const Home = ({ onReady }: HomeProps) => {
           />
         )}
       </AnimatePresence>
+
+      <AskPrompt
+        active={homeViewActive && !announcement && !trialEndedScreen}
+      />
 
       <AnimatePresence>
         {announcement && !trialEndedScreen && (
