@@ -72,6 +72,12 @@ impl Ask {
     }
 }
 
+fn commercial(store: &SettingsStore) -> bool {
+    license::get_license_state(store).is_ok_and(|state| {
+        state.business_lapsed || state.edition == Some(license::LicenseEdition::Commercial)
+    })
+}
+
 fn developer_signal(store: &SettingsStore) -> bool {
     if crate::cli_install::cli_install_status().installed {
         return true;
@@ -178,6 +184,9 @@ fn pending_ask(store: &SettingsStore) -> Option<(Ask, AskState)> {
 
 pub fn evaluate_after_use(app: &AppHandle<AppRuntime>) {
     let store = app.state::<AppState>().settings_store.clone();
+    if commercial(&store) {
+        return;
+    }
     let states = load_all(&store);
 
     if states.iter().any(|(_, state)| state.pending()) {
@@ -251,6 +260,9 @@ fn installed_at(store: &SettingsStore) -> Option<DateTime<Utc>> {
 #[tauri::command]
 pub fn get_ask_prompt(app: AppHandle<AppRuntime>) -> AskPrompt {
     let store = app.state::<AppState>().settings_store.clone();
+    if commercial(&store) {
+        return AskPrompt { kind: None };
+    }
     AskPrompt {
         kind: pending_ask(&store).map(|(ask, _)| ask),
     }
