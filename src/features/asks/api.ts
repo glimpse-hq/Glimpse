@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export type AskKind = "survey" | "review" | "star";
+export type AskKind = "review" | "star";
 
 export interface AskPromptState {
   kind: AskKind | null;

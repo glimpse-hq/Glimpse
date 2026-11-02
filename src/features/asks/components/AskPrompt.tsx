@@ -96,21 +96,13 @@ export default function AskPrompt({ active }: AskPromptProps) {
           }),
           accept: t({ id: "home.ask.review.answer", message: "Rate" }),
         };
-      case "star":
+      default:
         return {
           title: t({
             id: "home.ask.star.title",
             message: "Star Glimpse on GitHub?",
           }),
           accept: t({ id: "home.ask.star.answer", message: "Open GitHub" }),
-        };
-      default:
-        return {
-          title: t({
-            id: "home.survey.title",
-            message: "Some questions about how you use Glimpse?",
-          }),
-          accept: t({ id: "home.survey.answer", message: "Answer" }),
         };
     }
   };

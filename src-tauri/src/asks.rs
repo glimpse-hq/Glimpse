@@ -6,7 +6,6 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::{AppRuntime, AppState, license, notifications, platform, settings::SettingsStore};
 
-const SURVEY_URL: &str = "https://tryglimpse.cc/feedback";
 const REPO_URL: &str = "https://github.com/glimpse-hq/Glimpse";
 const STORE_PRODUCT_ID: &str = "9PJWF4W8V4WG";
 
@@ -23,17 +22,15 @@ const OUTCOME_UNREADABLE: &str = "unreadable";
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Ask {
-    Survey,
     Review,
     Star,
 }
 
-const ASKS: [Ask; 3] = [Ask::Survey, Ask::Review, Ask::Star];
+const ASKS: [Ask; 2] = [Ask::Review, Ask::Star];
 
 impl Ask {
     fn storage_key(self) -> &'static str {
         match self {
-            Ask::Survey => "survey_state",
             Ask::Review => "review_state",
             Ask::Star => "star_state",
         }
@@ -41,7 +38,6 @@ impl Ask {
 
     fn min_dictations(self) -> u64 {
         match self {
-            Ask::Survey => 25,
             Ask::Review => 100,
             Ask::Star => 50,
         }
@@ -49,7 +45,6 @@ impl Ask {
 
     fn min_days_installed(self) -> i64 {
         match self {
-            Ask::Survey => 7,
             Ask::Review => 21,
             Ask::Star => 14,
         }
@@ -57,7 +52,6 @@ impl Ask {
 
     fn available(self, store: &SettingsStore) -> bool {
         match self {
-            Ask::Survey => true,
             Ask::Review => platform::is_store_build(),
             Ask::Star => !platform::is_store_build() && developer_signal(store),
         }
@@ -65,7 +59,6 @@ impl Ask {
 
     fn url(self) -> String {
         match self {
-            Ask::Survey => SURVEY_URL.to_string(),
             Ask::Review => format!("ms-windows-store://review/?ProductId={STORE_PRODUCT_ID}"),
             Ask::Star => REPO_URL.to_string(),
         }
@@ -73,7 +66,6 @@ impl Ask {
 
     fn analytics_kind(self) -> &'static str {
         match self {
-            Ask::Survey => "survey",
             Ask::Review => "review",
             Ask::Star => "star",
         }
