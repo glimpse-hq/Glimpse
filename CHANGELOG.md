@@ -1,3 +1,9 @@
+1.4.3
+
+### Fixes
+
+- When your network blocks model downloads, Glimpse now says so instead of saying the model isn't available.
+
 1.4.2
 
 ### New Features

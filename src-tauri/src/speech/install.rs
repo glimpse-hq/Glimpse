@@ -567,7 +567,11 @@ fn download_failed(
     stage: &str,
     err: anyhow::Error,
 ) -> String {
-    let detail = crate::analytics::error_detail(&err);
+    let mut detail = crate::analytics::error_detail(&err);
+    // Model files are public, so a 401 or 403 usually comes from a filter or proxy on the way.
+    if detail.reason == "unauthorized" {
+        detail.reason = "blocked";
+    }
     let reason = download_failure_reason(&err, &detail);
     let stage = match (stage, detail.reason) {
         ("download", "verification") => "verify",
@@ -597,7 +601,7 @@ fn download_failure_reason(
     }
     match (detail.error_type, detail.reason) {
         ("io", "not_found") => "failed",
-        (_, "not_found" | "unauthorized" | "http_4xx") => "unavailable",
+        (_, "not_found" | "http_4xx") => "unavailable",
         (_, "network" | "timeout" | "http_5xx" | "rate_limited") => "network",
         (_, "blocked") => "blocked",
         (_, "verification" | "decode") => "damaged",
