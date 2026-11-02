@@ -4,6 +4,9 @@ import type { ModelInfo } from "../../src/types";
 mock.module("@tauri-apps/api/core", () => ({
   invoke: mock(async () => []),
 }));
+mock.module("@tauri-apps/api/event", () => ({
+  listen: mock(async () => () => {}),
+}));
 
 const {
   modelKeys,

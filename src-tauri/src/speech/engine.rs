@@ -300,9 +300,11 @@ impl LocalTranscriber {
     ) -> Result<glimpse_speech::Transcription> {
         let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
-        // The service loads the model first when it isn't loaded.
         if !was_loaded {
             self.set_loading(Some(&model.key));
+            let loaded = self.service.preload(&model.key);
+            self.end_load(false);
+            loaded?;
         }
         let response = self.service.transcribe(TranscribeRequest {
             audio: AudioInput::PcmI16 {
@@ -315,9 +317,7 @@ impl LocalTranscriber {
             dictionary: dictionary.to_vec(),
             timestamps: granularity.is_some(),
             timestamp_granularity: granularity,
-        });
-        self.end_load(was_loaded);
-        let response = response?;
+        })?;
         tracing::info!(
             "[LocalTranscriber] transcribe took {:.2}s (audio {:.2}s, was_loaded={})",
             started.elapsed().as_secs_f32(),

@@ -165,8 +165,6 @@ struct StallRecovery {
     temporary: bool,
 }
 
-const SLOW_LOAD_NOTICE: Duration = Duration::from_secs(3);
-
 /// Reports once if the dictation is still running well past its expected
 /// time, then ends it so the pill doesn't spin forever. The recording is kept
 /// as a failed entry that can be retried.
@@ -189,27 +187,12 @@ fn watch_for_stall(
     let started = Instant::now();
     let app = app.clone();
     async_runtime::spawn(async move {
-        let transcriber = app.state::<AppState>().local_transcriber();
-        if !remote {
-            // A Neural Engine recompile can hold the load for a minute or more.
-            tokio::time::sleep(SLOW_LOAD_NOTICE).await;
-            if finished.load(Ordering::Relaxed) {
-                return;
-            }
-            if transcriber.is_loading() {
-                toast::show(
-                    &app,
-                    "info",
-                    None,
-                    &toast::native(&app, "native.toast.model_preparing"),
-                );
-            }
-        }
-        tokio::time::sleep(limit.saturating_sub(started.elapsed())).await;
+        tokio::time::sleep(limit).await;
         if finished.load(Ordering::Relaxed) {
             return;
         }
         analytics::track_dictation_stalled(&app, &model, mode, audio_seconds);
+        let transcriber = app.state::<AppState>().local_transcriber();
         loop {
             // A model that is still loading is slow, not stuck.
             let wait = if matches!(
