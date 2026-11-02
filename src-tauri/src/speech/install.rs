@@ -567,11 +567,7 @@ fn download_failed(
     stage: &str,
     err: anyhow::Error,
 ) -> String {
-    let mut detail = crate::analytics::error_detail(&err);
-    // Model files are public, so a 401 or 403 usually comes from a filter or proxy on the way.
-    if detail.reason == "unauthorized" {
-        detail.reason = "blocked";
-    }
+    let detail = download_error_detail(&err);
     let reason = download_failure_reason(&err, &detail);
     let stage = match (stage, detail.reason) {
         ("download", "verification") => "verify",
@@ -589,6 +585,15 @@ fn download_failed(
         },
     );
     message
+}
+
+fn download_error_detail(err: &anyhow::Error) -> crate::analytics::ErrorDetail {
+    let mut detail = crate::analytics::error_detail(err);
+    // Model files are public, so a 401 or 403 usually comes from a filter or proxy on the way.
+    if detail.reason == "unauthorized" {
+        detail.reason = "blocked";
+    }
+    detail
 }
 
 /// The reason shown to the user; the raw message stays in the payload.
@@ -962,5 +967,27 @@ mod whisper_package_tests {
         assert!(encoder_dir.join("coremldata.bin").exists());
 
         let _ = std::fs::remove_dir_all(&cache);
+    }
+}
+
+#[cfg(test)]
+mod download_failure_tests {
+    use super::*;
+
+    #[test]
+    fn http_refusals_read_as_blocked() {
+        for (status, analytics, shown) in [
+            ("401 Unauthorized", "blocked", "blocked"),
+            ("403 Forbidden", "blocked", "blocked"),
+            ("404 Not Found", "not_found", "unavailable"),
+            ("429 Too Many Requests", "rate_limited", "network"),
+        ] {
+            let err = anyhow::anyhow!(
+                "Download failed with status {status} while fetching parakeet-ultra-Q8_0.gguf"
+            );
+            let detail = download_error_detail(&err);
+            assert_eq!(detail.reason, analytics, "{status}");
+            assert_eq!(download_failure_reason(&err, &detail), shown, "{status}");
+        }
     }
 }
