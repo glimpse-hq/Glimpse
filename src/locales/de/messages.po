@@ -3770,7 +3770,7 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr "Ihr Sprachmodell wird vorbereitet. Dies geschieht im Hintergrund."
+msgstr "Ihr Sprachmodell wird vorbereitet."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

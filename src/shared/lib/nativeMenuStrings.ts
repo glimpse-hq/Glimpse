@@ -363,7 +363,7 @@ export const NATIVE_MENU_STRINGS = [
   }),
   msg({
     id: "native.toast.model_preparing",
-    message: "Getting your speech model ready. This runs in the background.",
+    message: "Getting your speech model ready.",
   }),
   msg({
     id: "native.toast.model_none",
