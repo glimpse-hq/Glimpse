@@ -1313,6 +1313,16 @@ msgstr ""
 #~ msgstr "An agent asked: {0}"
 
 #. js-lingui-explicit-id
+#: src/features/asks/components/AskPrompt.tsx
+#~ msgid "home.survey.answer"
+#~ msgstr "Answer"
+
+#. js-lingui-explicit-id
+#: src/features/asks/components/AskPrompt.tsx
+#~ msgid "home.survey.title"
+#~ msgstr "Some questions about how you use Glimpse?"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -1895,11 +1905,6 @@ msgstr "An AI agent is following this recording."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.body.v2"
 msgstr "Anonymous. Never includes transcripts or audio."
-
-#. js-lingui-explicit-id
-#: src/features/asks/components/AskPrompt.tsx
-msgid "home.survey.answer"
-msgstr "Answer"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: record.question_client
@@ -6380,11 +6385,6 @@ msgstr "Small"
 #: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart"
 msgstr "Smart"
-
-#. js-lingui-explicit-id
-#: src/features/asks/components/AskPrompt.tsx
-msgid "home.survey.title"
-msgstr "Some questions about how you use Glimpse?"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx

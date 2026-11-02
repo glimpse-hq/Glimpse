@@ -176,6 +176,16 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/asks/components/AskPrompt.tsx
+#~ msgid "home.survey.answer"
+#~ msgstr "Responder"
+
+#. js-lingui-explicit-id
+#: src/features/asks/components/AskPrompt.tsx
+#~ msgid "home.survey.title"
+#~ msgstr "Algumas perguntas sobre como você usa o Glimpse?"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“O Glimpse transforma minha voz em texto.”"
@@ -758,11 +768,6 @@ msgstr "Um agente de IA está acompanhando esta gravação."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.body.v2"
 msgstr "Anônimas. Nunca incluem transcrições nem áudio."
-
-#. js-lingui-explicit-id
-#: src/features/asks/components/AskPrompt.tsx
-msgid "home.survey.answer"
-msgstr "Responder"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: record.question_client
@@ -5243,11 +5248,6 @@ msgstr "Pequeno"
 #: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart"
 msgstr "Inteligente"
-
-#. js-lingui-explicit-id
-#: src/features/asks/components/AskPrompt.tsx
-msgid "home.survey.title"
-msgstr "Algumas perguntas sobre como você usa o Glimpse?"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx

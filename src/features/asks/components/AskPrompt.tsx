@@ -96,7 +96,7 @@ export default function AskPrompt({ active }: AskPromptProps) {
           }),
           accept: t({ id: "home.ask.review.answer", message: "Rate" }),
         };
-      case "star":
+      default:
         return {
           title: t({
             id: "home.ask.star.title",
@@ -104,51 +104,43 @@ export default function AskPrompt({ active }: AskPromptProps) {
           }),
           accept: t({ id: "home.ask.star.answer", message: "Open GitHub" }),
         };
-      default:
-        return {
-          title: t({
-            id: "home.survey.title",
-            message: "Some questions about how you use Glimpse?",
-          }),
-          accept: t({ id: "home.survey.answer", message: "Answer" }),
-        };
     }
   };
   const { title, accept } = askCopy();
 
   return (
-    <AnimatePresence initial={false}>
-      {data?.kind && (
-        // Grows into place when it turns up mid-session, so the list eases down.
-        <motion.p
-          initial={{ opacity: 0, height: 0, marginTop: 0 }}
-          animate={{ opacity: 1, height: "auto", marginTop: 8 }}
-          exit={{ opacity: 0, height: 0, marginTop: 0 }}
+    <AnimatePresence>
+      {active && data?.kind && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="shrink-0 overflow-hidden ui-text-body-sm ui-color-quiet"
+          className="fixed right-6 bottom-6 z-50 w-[300px] rounded-2xl border border-border-primary bg-surface-overlay p-4 shadow-lg"
         >
-          {title}{" "}
-          <button
-            type="button"
-            disabled={resolving}
-            onClick={() => void resolve("answer")}
-            className="ui-color-cloud transition-colors hover:text-cloud-hover disabled:opacity-50"
-          >
-            <span className="underline underline-offset-2">{accept}</span>
-            <ArrowUpRight size={11} aria-hidden="true" className="inline" />
-          </button>
-          <span aria-hidden="true" className="mx-1.5">
-            ·
-          </span>
-          <button
-            type="button"
-            disabled={resolving}
-            onClick={() => void resolve("dismiss")}
-            className="underline underline-offset-2 transition-colors hover:text-content-secondary disabled:opacity-50"
-          >
-            {t({ id: "home.survey.dismiss", message: "No thanks" })}
-          </button>
-        </motion.p>
+          <p className="ui-text-body-strong text-content-primary text-pretty">
+            {title}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={resolving}
+              onClick={() => void resolve("dismiss")}
+              className="h-8 rounded-lg bg-[var(--surface-interactive-strong)] ui-text-body-sm ui-color-primary transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {t({ id: "home.survey.dismiss", message: "No thanks" })}
+            </button>
+            <button
+              type="button"
+              disabled={resolving}
+              onClick={() => void resolve("answer")}
+              className="ui-button-primary flex h-8 !shadow-none [:root[data-theme=light]_&]:bg-[#161618] [:root[data-theme=light]_&]:hover:opacity-90 items-center justify-center gap-1 rounded-lg ui-text-body-sm"
+            >
+              {accept}
+              <ArrowUpRight size={12} aria-hidden="true" />
+            </button>
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
