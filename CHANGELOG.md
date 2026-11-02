@@ -1,3 +1,9 @@
+1.4.3
+
+### Fixes
+
+- Without a license, every writing model on the Models screen now shows as locked, instead of only Glimpse C1.
+
 1.4.2
 
 ### New Features
