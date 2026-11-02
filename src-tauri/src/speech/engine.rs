@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
@@ -15,7 +14,10 @@ use crate::{
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
+type LoadingListener = Box<dyn Fn(Option<&str>) + Send + Sync>;
+
 pub struct LocalTranscriber {
+    on_loading: LoadingListener,
     service: SpeechService,
     last_used: Mutex<Option<Instant>>,
     idle_wait: Condvar,
@@ -25,13 +27,14 @@ pub struct LocalTranscriber {
     // runtime and clobber the streaming transcript buffer.
     exclusive: Mutex<()>,
     // A dictation can wait on `exclusive` behind a load it didn't start.
-    loading: AtomicBool,
+    loading: Mutex<Option<String>>,
     load_ended: Mutex<Option<Instant>>,
 }
 
 impl LocalTranscriber {
-    pub fn new(model_cache_dir: std::path::PathBuf) -> Self {
+    pub fn new(model_cache_dir: std::path::PathBuf, on_loading: LoadingListener) -> Self {
         Self {
+            on_loading,
             service: SpeechService::new(SpeechConfig {
                 resolver: crate::model_manager::local_resolver(model_cache_dir.clone()),
                 model_cache_dir,
@@ -41,7 +44,7 @@ impl LocalTranscriber {
             idle_wait: Condvar::new(),
             warm_in_flight: Mutex::new(None),
             exclusive: Mutex::new(()),
-            loading: AtomicBool::new(false),
+            loading: Mutex::new(None),
             load_ended: Mutex::new(None),
         }
     }
@@ -111,7 +114,7 @@ impl LocalTranscriber {
         let previous_activity = analytics::activity();
         if !was_loaded {
             analytics::set_activity(Activity::ModelLoading);
-            self.loading.store(true, Ordering::Relaxed);
+            self.set_loading(Some(&model.key));
         }
         let result = self.service.preload_and_warm(&model.key);
         self.end_load(was_loaded);
@@ -164,12 +167,25 @@ impl LocalTranscriber {
         if !was_loaded {
             *self.load_ended.lock() = Some(Instant::now());
         }
-        self.loading.store(false, Ordering::Release);
+        self.set_loading(None);
+    }
+
+    fn set_loading(&self, model: Option<&str>) {
+        let mut loading = self.loading.lock();
+        if loading.as_deref() == model {
+            return;
+        }
+        *loading = model.map(str::to_string);
+        (self.on_loading)(model);
     }
 
     /// Whether a model load is running, whoever started it.
     pub fn is_loading(&self) -> bool {
-        self.loading.load(Ordering::Acquire)
+        self.loading.lock().is_some()
+    }
+
+    pub fn loading_model(&self) -> Option<String> {
+        self.loading.lock().clone()
     }
 
     /// When the last model load finished.
@@ -285,7 +301,9 @@ impl LocalTranscriber {
         let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
         // The service loads the model first when it isn't loaded.
-        self.loading.store(!was_loaded, Ordering::Relaxed);
+        if !was_loaded {
+            self.set_loading(Some(&model.key));
+        }
         let response = self.service.transcribe(TranscribeRequest {
             audio: AudioInput::PcmI16 {
                 samples: samples.to_vec(),
@@ -416,7 +434,7 @@ mod parakeet_ane_tests {
             path: resolved.path,
             engine: resolved.engine,
         };
-        let transcriber = LocalTranscriber::new(cache);
+        let transcriber = LocalTranscriber::new(cache, Box::new(|_| {}));
         transcriber.preload_and_warm(&model)?;
         for recording in recordings.as_array().unwrap() {
             let samples = glimpse_speech::audio::read_audio_samples(std::path::Path::new(

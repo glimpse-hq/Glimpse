@@ -1,3 +1,9 @@
+1.4.3
+
+### Changes
+
+- When a speech model takes a while to load, Glimpse now says it's getting it ready, both when you dictate and on the Models screen.
+
 1.4.2
 
 ### New Features
