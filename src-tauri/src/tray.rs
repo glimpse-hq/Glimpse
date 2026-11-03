@@ -628,7 +628,7 @@ pub(crate) fn handle_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
                 tracing::error!("Failed to open settings window: {err}");
             }
         }
-        MENU_ID_QUIT => quit(app, false),
+        MENU_ID_QUIT => quit(app),
         MENU_ID_CHECK_UPDATES => {
             if let Err(err) = open_settings_page(app, SettingsPage::About) {
                 tracing::error!("Failed to open the About screen: {err}");
@@ -656,15 +656,9 @@ pub(crate) fn handle_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
 
 static QUIT_PROMPT_OPEN: AtomicBool = AtomicBool::new(false);
 
-/// Quits (or restarts) at once, or asks first while a recording is in progress.
-pub(crate) fn quit(app: &AppHandle<AppRuntime>, restart: bool) {
-    let leave = move |app: &AppHandle<AppRuntime>| {
-        if restart {
-            app.request_restart();
-        } else {
-            app.exit(0);
-        }
-    };
+/// Quits at once, or asks first while a recording is in progress.
+pub(crate) fn quit(app: &AppHandle<AppRuntime>) {
+    let leave = |app: &AppHandle<AppRuntime>| app.exit(0);
     let recording = app.state::<AppState>().recording().state();
     if recording.status == "idle" {
         leave(app);

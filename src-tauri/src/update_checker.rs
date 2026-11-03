@@ -342,6 +342,17 @@ fn should_restart_for_auto_update(app: &AppHandle<AppRuntime>, state: &SharedUpd
         && app_state.is_backend_idle()
 }
 
+/// Waits for any dictation or background work to finish.
+async fn wait_until_quiet(app: &AppHandle<AppRuntime>) {
+    loop {
+        let state = app.state::<AppState>();
+        if state.pill().status() == PillStatus::Idle && state.is_backend_idle() {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+}
+
 fn is_settings_window_visible(app: &AppHandle<AppRuntime>) -> bool {
     app.get_webview_window(crate::SETTINGS_WINDOW_LABEL)
         .and_then(|w| w.is_visible().ok())
@@ -487,12 +498,6 @@ pub async fn check_for_updates(app: AppHandle<AppRuntime>) -> Result<UpdateStatu
     Ok(status)
 }
 
-/// Restarts into an installed update, asking first while a recording is in progress.
-#[tauri::command]
-pub fn restart_to_update(app: AppHandle<AppRuntime>) {
-    crate::tray::quit(&app, true);
-}
-
 #[tauri::command]
 pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(), String> {
     if crate::platform::is_store_build() {
@@ -555,6 +560,9 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
         crate::analytics::set_activity(crate::analytics::Activity::Idle);
         return Err(toast::native(&app, "native.update.recording"));
     }
+    if bytes.is_ok() {
+        wait_until_quiet(&app).await;
+    }
     let installed = bytes.and_then(|bytes| update.install(bytes));
     crate::analytics::set_activity(crate::analytics::Activity::Idle);
     if let Err(err) = installed {
@@ -579,8 +587,9 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
         },
     );
 
-    clear_update_state_and_emit(&app);
-
-    info!("update downloaded and installed");
+    info!("update downloaded and installed, restarting");
+    // macOS gives the replaced binary silent mic audio until it restarts.
+    wait_until_quiet(&app).await;
+    app.request_restart();
     Ok(())
 }

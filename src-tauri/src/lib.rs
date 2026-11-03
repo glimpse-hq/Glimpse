@@ -756,8 +756,7 @@ pub fn run() {
             reveal_logs,
             update_checker::get_update_status,
             update_checker::check_for_updates,
-            update_checker::download_and_install_update,
-            update_checker::restart_to_update
+            update_checker::download_and_install_update
         ])
         .build(app_context())
         .map(sandbox_activation_policy)
