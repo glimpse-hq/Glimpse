@@ -675,15 +675,19 @@ const onboardingShots = async () => {
   await dev("onboarding", "setup-failed");
   await shot("setup-done-failed");
   await step("practice");
-  await dev("onboarding", "dictated");
-  await shot("setup-license-trial-dictated");
   for (const license of ["trial", "none", "unlocked-1"]) {
     await dev("license", license);
-    await dev("onboarding", "practice");
     await dev("onboarding", "license");
     await shot(`setup-license-${license}`);
+    await dev("onboarding", "practice");
   }
   await dev("license", "trial");
+  await dev("onboarding", "dictated");
+  await shot("setup-license-trial-dictated");
+  await dev("onboarding", "practice");
+  await shot("setup-practice-dictated");
+  await dev("onboarding", "complete");
+  await dev("onboarding", "reset");
   await dev("onboarding", "practice");
   await dev("onboarding", "download-failed");
   await shot("setup-practice-download-failed");
