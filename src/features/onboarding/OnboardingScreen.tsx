@@ -175,10 +175,12 @@ export default function OnboardingScreen({
     steps.indexOf(currentStep as (typeof steps)[number]),
   );
   useEffect(() => {
-    void invoke("track_onboarding_step_viewed", { step: currentStep }).catch(
-      () => {},
-    );
-  }, [currentStep]);
+    void invoke("track_onboarding_step_viewed", {
+      step: currentStep,
+      afterDictation:
+        currentStep === "license" ? ctx.practiceText !== "" : null,
+    }).catch(() => {});
+  }, [currentStep, ctx.practiceText]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const diarizer = useDiarizerModel().data;
@@ -547,8 +549,8 @@ export default function OnboardingScreen({
     async (firstDictation: boolean) => {
       send({ type: "COMPLETING" });
       try {
+        // Stays completing until the screen unmounts, so a second click can't finish twice.
         await invoke("complete_onboarding", { firstDictation });
-        send({ type: "COMPLETE_SUCCESS" });
         onComplete();
       } catch (err) {
         console.error("Failed to finish onboarding", err);
@@ -618,9 +620,9 @@ export default function OnboardingScreen({
       "import",
       "source",
       "permissions",
-      "license",
       "done",
       "practice",
+      "license",
     ];
     const target = action as OnboardingStep;
     if (order.includes(target)) {
@@ -630,7 +632,13 @@ export default function OnboardingScreen({
         if (order.indexOf(target) < order.indexOf(current)) {
           send({ type: "BACK" });
         } else {
-          send({ type: current === "done" ? "START_PRACTICE" : "NEXT" });
+          send(
+            current === "done"
+              ? { type: "START_PRACTICE" }
+              : current === "practice"
+                ? { type: "FINISH_PRACTICE", practiceText: "" }
+                : { type: "NEXT" },
+          );
         }
       }
       throw new Error(`Setup has no ${target} step here.`);
@@ -642,6 +650,8 @@ export default function OnboardingScreen({
         message: String(action),
         reason: action === "disk-full" ? "disk_full" : "network",
       });
+    } else if (action === "dictated") {
+      send({ type: "FINISH_PRACTICE", practiceText: "This is Glimpse." });
     } else if (action === "setup-failed") {
       send({
         type: "COMPLETE_ERROR",
@@ -870,14 +880,20 @@ export default function OnboardingScreen({
             key="license"
             stepMotionProps={stepMotionProps}
             smartShortcut={ctx.smartShortcut}
+            afterDictation={ctx.practiceText !== ""}
             licenseState={licenseQuery.data ?? null}
             opening={openingLicenseCheckout}
-            openError={licenseOpenError}
+            openError={ctx.completionError ?? licenseOpenError}
             activating={activateLicense.isPending}
             activationError={activateLicense.error}
             onOpenCheckout={openLicenseCheckout}
             onActivate={(key) => activateLicense.mutate(key)}
-            onNext={goNext}
+            onNext={() => {
+              if (!actor.getSnapshot().context.isCompleting) {
+                activateLicense.reset();
+                void handleFinishOnboarding(ctx.practiceText !== "");
+              }
+            }}
           />
         );
       case "done":
@@ -912,7 +928,10 @@ export default function OnboardingScreen({
             modelState={practiceModelState}
             speechModelError={speechModelError}
             onRetrySpeechModel={retrySpeechModel}
-            onFinish={handleFinishOnboarding}
+            practiceText={ctx.practiceText}
+            onFinish={(practiceText) =>
+              send({ type: "FINISH_PRACTICE", practiceText })
+            }
             isFinishing={ctx.isCompleting}
             completionError={ctx.completionError}
           />

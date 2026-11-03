@@ -20,6 +20,7 @@ export type OnboardingContext = {
   showFAQModal: boolean;
   transitionDirection: 1 | -1;
   hasStepTransitioned: boolean;
+  practiceText: string;
 };
 
 export type OnboardingEvent =
@@ -31,6 +32,7 @@ export type OnboardingEvent =
   | { type: "SET_AUTO_LAUNCH"; value: boolean }
   | { type: "SET_SHORTCUT"; shortcut: string }
   | { type: "START_PRACTICE" }
+  | { type: "FINISH_PRACTICE"; practiceText: string }
   | { type: "COMPLETING" }
   | { type: "COMPLETE_SUCCESS" }
   | { type: "COMPLETE_ERROR"; error: string }
@@ -100,6 +102,7 @@ export const onboardingMachine = setup({
     showFAQModal: false,
     transitionDirection: 1,
     hasStepTransitioned: false,
+    practiceText: "",
   },
   on: {
     SET_IMPORTABLE: {
@@ -156,20 +159,20 @@ export const onboardingMachine = setup({
             guard: requiresPermissionsStep,
             actions: "forward",
           },
-          { target: "license", actions: "forward" },
+          { target: "done", actions: "forward" },
         ],
         BACK: { target: "import", guard: hasImportStep, actions: "backward" },
       },
     },
     permissions: {
       on: {
-        NEXT: { target: "license", actions: "forward" },
+        NEXT: { target: "done", actions: "forward" },
         BACK: { target: "source", actions: "backward" },
       },
     },
-    license: {
+    done: {
       on: {
-        NEXT: { target: "done", actions: "forward" },
+        START_PRACTICE: { target: "practice", actions: "forward" },
         BACK: [
           {
             target: "permissions",
@@ -180,15 +183,24 @@ export const onboardingMachine = setup({
         ],
       },
     },
-    done: {
-      on: {
-        START_PRACTICE: { target: "practice", actions: "forward" },
-        BACK: { target: "license", actions: "backward" },
-      },
-    },
     practice: {
       on: {
+        FINISH_PRACTICE: {
+          target: "license",
+          actions: [
+            "forward",
+            assign({
+              practiceText: ({ context, event }) =>
+                event.practiceText || context.practiceText,
+            }),
+          ],
+        },
         BACK: { target: "done", actions: "backward" },
+      },
+    },
+    license: {
+      on: {
+        BACK: { target: "practice", actions: "backward" },
       },
     },
   },

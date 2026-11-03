@@ -113,12 +113,7 @@ export function ReadyStep({
         subtitle={
           speechModelError ? (
             <span role="status">{completionError ?? speechModelError}</span>
-          ) : (
-            t({
-              id: "onboarding.done.subtitle.v2",
-              message: "You can change these later in Settings.",
-            })
-          )
+          ) : null
         }
       />
 
