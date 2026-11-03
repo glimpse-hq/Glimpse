@@ -1889,12 +1889,12 @@ msgstr "क्रॉस‑ओरिजिन ब्राउज़र अनु�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_mac"
-msgstr ""
+msgstr "माइक्रोफ़ोन ऐक्सेस की अनुमति दें, फिर दोबारा कोशिश करें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_blocked"
-msgstr ""
+msgstr "माइक्रोफ़ोन ऐक्सेस की अनुमति दें, फिर दोबारा कोशिश करें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -3726,7 +3726,7 @@ msgstr "पूरा किया जा रहा है..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_dictated"
-msgstr ""
+msgstr "14 दिनों तक आपको बाकी सभी सुविधाएँ भी मिलेंगी।"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3796,7 +3796,7 @@ msgstr "सहायता प्राप्त करें"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.loading"
-msgstr ""
+msgstr "मॉडल तैयार हो रहा है…"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4012,7 +4012,7 @@ msgstr "किसी भी ऐप में डिक्टेशन के ल
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.too_short"
-msgstr ""
+msgstr "बोलते समय थोड़ी देर और दबाकर रखें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5249,7 +5249,7 @@ msgstr "मॉडल खोलें"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.open_settings"
-msgstr ""
+msgstr "सेटिंग्स खोलें"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6440,17 +6440,17 @@ msgstr "लिखित रूपों को क्रमबद्ध कर�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.sound_settings"
-msgstr ""
+msgstr "ध्वनि सेटिंग्स"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.sound_settings"
-msgstr ""
+msgstr "ध्वनि सेटिंग्स"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_quiet"
-msgstr ""
+msgstr "थोड़ा और ज़ोर से बोलें, फिर दोबारा कोशिश करें।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6864,7 +6864,7 @@ msgstr "यह सुनने के लिए बहुत धीमा था
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_dictated"
-msgstr ""
+msgstr "श्रुतलेखन हमेशा निःशुल्क रहेगा।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -7561,7 +7561,7 @@ msgstr "Windows एडमिनिस्ट्रेटर के रूप म�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_windows"
-msgstr ""
+msgstr "Windows माइक्रोफ़ोन के ऐक्सेस को ब्लॉक कर रहा है।"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7684,12 +7684,12 @@ msgstr "आपका माइक्रोफ़ोन उपलब्ध नह
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.no_audio.v2"
-msgstr ""
+msgstr "आपके माइक्रोफ़ोन से कोई आवाज़ नहीं आ रही है।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_no_audio"
-msgstr ""
+msgstr "आपके माइक्रोफ़ोन से कोई आवाज़ नहीं आ रही है।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
