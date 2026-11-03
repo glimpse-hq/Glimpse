@@ -106,7 +106,7 @@ describe("onboarding machine", () => {
     expect(walk(actor, "BACK", 2)).toEqual(["practice", "done"]);
     actor.send({ type: "START_PRACTICE" });
     actor.send({ type: "FINISH_PRACTICE", dictated: false });
-    expect(actor.getSnapshot().context.dictated).toBe(false);
+    expect(actor.getSnapshot().context.dictated).toBe(true);
   });
 
   test("completion errors clear on the next step", () => {

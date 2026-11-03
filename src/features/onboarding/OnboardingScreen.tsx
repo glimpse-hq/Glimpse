@@ -548,8 +548,8 @@ export default function OnboardingScreen({
     async (firstDictation: boolean) => {
       send({ type: "COMPLETING" });
       try {
+        // Stays completing until the screen unmounts, so a second click can't finish twice.
         await invoke("complete_onboarding", { firstDictation });
-        send({ type: "COMPLETE_SUCCESS" });
         onComplete();
       } catch (err) {
         console.error("Failed to finish onboarding", err);
@@ -889,6 +889,7 @@ export default function OnboardingScreen({
             onActivate={(key) => activateLicense.mutate(key)}
             onNext={() => {
               if (!actor.getSnapshot().context.isCompleting) {
+                activateLicense.reset();
                 void handleFinishOnboarding(ctx.dictated);
               }
             }}

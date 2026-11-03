@@ -189,7 +189,10 @@ export const onboardingMachine = setup({
           target: "license",
           actions: [
             "forward",
-            assign({ dictated: ({ event }) => event.dictated }),
+            assign({
+              dictated: ({ context, event }) =>
+                context.dictated || event.dictated,
+            }),
           ],
         },
         BACK: { target: "done", actions: "backward" },
