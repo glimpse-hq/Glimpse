@@ -752,12 +752,12 @@ msgstr "クロスオリジンのブラウザーリクエストを許可"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_mac"
-msgstr ""
+msgstr "マイクへのアクセスを許可してから、もう一度お試しください。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_blocked"
-msgstr ""
+msgstr "マイクへのアクセスを許可してから、もう一度お試しください。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -2589,7 +2589,7 @@ msgstr "終了中..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_dictated"
-msgstr ""
+msgstr "14日間は、ほかのすべての機能も使えます。"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2659,7 +2659,7 @@ msgstr "サポートを受ける"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.loading"
-msgstr ""
+msgstr "準備中…"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2875,7 +2875,7 @@ msgstr "{shortcutLabel}を押したまま話すと、どのアプリでも音声
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.too_short"
-msgstr ""
+msgstr "話しながら、もう少し長く押し続けてください。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4112,7 +4112,7 @@ msgstr "モデルを開く"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.open_settings"
-msgstr ""
+msgstr "設定を開く"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5303,17 +5303,17 @@ msgstr "文字起こしを並べ替え・絞り込み"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.sound_settings"
-msgstr ""
+msgstr "サウンド設定"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.sound_settings"
-msgstr ""
+msgstr "サウンド設定"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_quiet"
-msgstr ""
+msgstr "もう少し大きな声で話してから、もう一度お試しください。"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -5727,7 +5727,7 @@ msgstr "音が小さすぎて聞き取れませんでした。録音を削除し
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_dictated"
-msgstr ""
+msgstr "音声入力はこれからもずっと無料です。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -6424,7 +6424,7 @@ msgstr "管理者として実行中のアプリでは、WindowsがGlimpseのシ�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_windows"
-msgstr ""
+msgstr "Windowsがマイクへのアクセスをブロックしています。"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -6547,12 +6547,12 @@ msgstr "マイクを利用できません。接続を確認してください。
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.no_audio.v2"
-msgstr ""
+msgstr "マイクから音が入力されていません。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_no_audio"
-msgstr ""
+msgstr "マイクから音が入力されていません。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
