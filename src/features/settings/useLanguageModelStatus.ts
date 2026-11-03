@@ -120,12 +120,14 @@ export function useLanguageModelStatus({
             : "none";
 
   // Null while an on-device probe is still answering.
-  const ready: boolean | null =
-    activeProvider === null
+  const ready: boolean | null = !licenseGateActive
+    ? false
+    : activeProvider === null
       ? null
       : activeProvider === "bonsai"
-        ? licenseGateActive &&
-          (cleanupModelStatus === null ? null : cleanupModelStatus.installed)
+        ? cleanupModelStatus === null
+          ? null
+          : cleanupModelStatus.installed
         : activeProvider === "apple"
           ? appleAvailability === null
             ? null

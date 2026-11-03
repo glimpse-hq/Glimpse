@@ -8,6 +8,7 @@
 ### Fixes
 
 - When your network blocks model downloads, Glimpse now says so instead of saying the model isn't available.
+- Without a license, every writing model on the Models screen now shows as locked, instead of only Glimpse C1.
 
 1.4.2
 
