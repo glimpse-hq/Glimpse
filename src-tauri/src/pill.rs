@@ -1090,6 +1090,7 @@ impl PillController {
                                 cancel_token,
                                 origin,
                                 asr_seconds,
+                                mic: recording.input,
                             },
                         );
                     }
