@@ -31,6 +31,7 @@ import {
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import {
   resolveLocalFallbackModel,
+  useLoadingSpeechModel,
   useModelRecommendation,
 } from "../../models-queries";
 import { setLocalModelAuto } from "../../models-api";
@@ -94,6 +95,7 @@ const InstalledModelRow = ({
   recommended,
   unsupportedLanguage,
   aneInstalled,
+  loading,
   shiftHeld,
   onUse,
   onDelete,
@@ -106,6 +108,7 @@ const InstalledModelRow = ({
   /** The dictation language's name, when this model can't transcribe it. */
   unsupportedLanguage: string | null;
   aneInstalled: boolean;
+  loading: boolean;
   shiftHeld: boolean;
   onUse: () => void;
   onDelete: () => void;
@@ -177,7 +180,18 @@ const InstalledModelRow = ({
           )}
         </>
       }
-      facts={facts.join("  ·  ")}
+      facts={
+        loading ? (
+          <span className="ui-color-local">
+            {t({
+              id: "settings.models.installed.loading",
+              message: "Getting ready…",
+            })}
+          </span>
+        ) : (
+          facts.join("  ·  ")
+        )
+      }
       factsWarning={active && !fallback && unsupportedLanguage !== null}
       state={
         active && !fallback
@@ -265,6 +279,7 @@ const ModelsTab = ({
       ? null
       : languageName(language, i18n.locale);
   const recommendedKey = useModelRecommendation().data?.key;
+  const loadingModel = useLoadingSpeechModel();
   const recommendedLabel =
     modelCatalog.find((model) => model.key === recommendedKey)?.label ?? null;
 
@@ -385,6 +400,7 @@ const ModelsTab = ({
               unsupportedLanguage={unsupportedLanguage(model)}
               fallback={remoteSpeechEnabled}
               aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
+              loading={model.key === loadingModel}
               shiftHeld={shiftHeld}
               onUse={() => void chooseModel(model.key)}
               onDelete={() => handleDelete(model.key)}
