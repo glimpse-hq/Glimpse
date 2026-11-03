@@ -6,6 +6,7 @@ import {
   PresenceContext,
 } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { askKeys } from "../features/asks/queries";
 import { licenseKeys } from "../features/license/queries";
 import { useTextScale, useTheme } from "../shared/hooks/useAppearance";
 import { useTauriEvent } from "../shared/hooks/useTauriEvent";
@@ -55,6 +56,7 @@ function QuerySyncBridge() {
   });
   useTauriEvent<LicenseState>("license:changed", (state) => {
     queryClient.setQueryData(licenseKeys.state(), state);
+    queryClient.invalidateQueries({ queryKey: askKeys.prompt() });
   });
   // The backend may have just activated the key from the link. Onboarding
   // has no Home mounted to pick that up.
