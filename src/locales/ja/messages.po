@@ -196,6 +196,11 @@ msgstr ""
 #~ msgstr "Glimpseに進む"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.no_audio"
+#~ msgstr "マイクから音声が入力されませんでした。設定で選択中のマイクを確認してください。"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "「Glimpseは声をテキストに変えてくれます。」"
@@ -743,6 +748,16 @@ msgstr "ブラウザーからのリクエストを許可"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "クロスオリジンのブラウザーリクエストを許可"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_blocked"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -2722,11 +2737,6 @@ msgid "native.toast.accessibility_paste"
 msgstr "アクセシビリティへのアクセスがオフのため、Glimpseは入力できませんでした。テキストはクリップボードにあります。Command-Vで貼り付けてください。"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.no_audio"
-msgstr "マイクから音声が入力されませんでした。設定で選択中のマイクを確認してください。"
-
-#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "Glimpseでエラーが発生しました"
@@ -2861,6 +2871,11 @@ msgstr "長押し"
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
 msgstr "{shortcutLabel}を押したまま話すと、どのアプリでも音声入力できます。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.too_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4095,6 +4110,11 @@ msgid "native.toast.model_action"
 msgstr "モデルを開く"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "設定を開く"
@@ -5281,6 +5301,21 @@ msgid "transcriptions.list.filter.aria"
 msgstr "文字起こしを並べ替え・絞り込み"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_quiet"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_default_name"
 msgstr "話者 {nextIndex}"
@@ -6387,6 +6422,11 @@ msgid "native.toast.admin_app_shortcut"
 msgstr "管理者として実行中のアプリでは、WindowsがGlimpseのショートカットを受け付けません。そのアプリで音声入力するには、Glimpseも管理者として実行してください。"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "語/分"
@@ -6503,6 +6543,16 @@ msgstr "ライセンスキーは購入確認メールに記載されています
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_unavailable"
 msgstr "マイクを利用できません。接続を確認してください。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_audio.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_no_audio"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

@@ -229,9 +229,21 @@ export const NATIVE_MENU_STRINGS = [
       "That app runs as administrator, so Windows doesn't let Glimpse type into it. Your text is on the clipboard. Press Ctrl+V to paste it.",
   }),
   msg({
-    id: "native.toast.no_audio",
-    message:
-      "Glimpse got no sound from your microphone. Check which microphone is selected in Settings.",
+    id: "native.toast.no_audio.v2",
+    message: "Your microphone isn't sending any sound.",
+  }),
+  msg({ id: "native.toast.sound_settings", message: "Sound Settings" }),
+  msg({
+    id: "native.toast.too_short",
+    message: "Hold a little longer while you speak.",
+  }),
+  msg({
+    id: "native.toast.mic_blocked_windows",
+    message: "Windows is blocking microphone access.",
+  }),
+  msg({
+    id: "native.toast.mic_blocked_mac",
+    message: "Allow microphone access, then try again.",
   }),
   msg({
     id: "native.transcription.no_words",

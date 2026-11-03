@@ -146,6 +146,7 @@ pub(crate) struct StreamingTranscriptionInput {
     pub(crate) cancel_token: CancellationToken,
     pub(crate) origin: DictationOrigin,
     pub(crate) asr_seconds: f32,
+    pub(crate) mic: Option<crate::recorder::InputStats>,
 }
 
 // Set when the dictation task ends, however it ends.
@@ -274,6 +275,7 @@ pub(crate) fn queue_transcription(
     let http = state.http();
     let app_handle = app.clone();
     let saved_for_task = saved;
+    let mic = recording.input;
     let recording_for_task = recording;
 
     async_runtime::spawn(async move {
@@ -355,6 +357,8 @@ pub(crate) fn queue_transcription(
                         &saved_for_task.path,
                         saved_for_task.pending_path.as_deref(),
                         temporary,
+                        mic,
+                        Some(origin.trigger),
                     );
                     return;
                 }
@@ -414,6 +418,8 @@ pub(crate) fn queue_transcription(
                             &saved_for_task.path,
                             saved_for_task.pending_path.as_deref(),
                             temporary,
+                            mic,
+                            Some(origin.trigger),
                         );
                         return;
                     }
@@ -710,7 +716,14 @@ async fn transcribe_recovered_recording(
     let asr_seconds = transcription_started_at.elapsed().as_secs_f32();
     let raw_transcript = result.transcript.clone();
     if count_words(&raw_transcript) == 0 {
-        handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref(), false);
+        handle_empty_transcription(
+            app,
+            &saved.path,
+            saved.pending_path.as_deref(),
+            false,
+            None,
+            None,
+        );
         return Ok(RecoveredTranscriptionOutcome::Empty);
     }
 
@@ -736,7 +749,14 @@ async fn transcribe_recovered_recording(
     {
         ProcessTranscriptOutcome::Ready(processed) => processed,
         ProcessTranscriptOutcome::Empty => {
-            handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref(), false);
+            handle_empty_transcription(
+                app,
+                &saved.path,
+                saved.pending_path.as_deref(),
+                false,
+                None,
+                None,
+            );
             return Ok(RecoveredTranscriptionOutcome::Empty);
         }
         ProcessTranscriptOutcome::Cancelled => return Err(anyhow!("Transcription cancelled")),
@@ -804,6 +824,7 @@ async fn transcribe_saved_recording_locally(
             ended_at: saved.ended_at,
             pending_path: None,
             speech_percentage: None,
+            input: None,
         },
         cancel_token,
         prefer_any_installed,
@@ -1550,6 +1571,8 @@ fn handle_empty_transcription(
     audio_path: &Path,
     pending_path: Option<&Path>,
     temporary: bool,
+    mic: Option<crate::recorder::InputStats>,
+    trigger: Option<&str>,
 ) {
     let audio = load_audio_for_transcription(audio_path)
         .ok()
@@ -1564,6 +1587,8 @@ fn handle_empty_transcription(
         audio
             .as_ref()
             .map(|(samples, _)| crate::recorder::calculate_rms_i16(samples)),
+        mic,
+        trigger,
     );
     let keep =
         !temporary && audio_seconds.is_some_and(|seconds| seconds >= KEEP_EMPTY_RECORDING_SECONDS);
@@ -2332,6 +2357,7 @@ pub(crate) fn finalize_streaming_transcription(
         cancel_token,
         origin,
         asr_seconds,
+        mic,
     } = input;
 
     let state = app.state::<AppState>();
@@ -2369,6 +2395,8 @@ pub(crate) fn finalize_streaming_transcription(
                 &audio_path,
                 pending_path.as_deref(),
                 temporary,
+                mic,
+                Some(origin.trigger),
             );
             return;
         }
@@ -2405,6 +2433,8 @@ pub(crate) fn finalize_streaming_transcription(
                     &audio_path,
                     pending_path.as_deref(),
                     temporary,
+                    mic,
+                    Some(origin.trigger),
                 );
                 return;
             }

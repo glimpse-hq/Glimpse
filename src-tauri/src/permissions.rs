@@ -50,6 +50,15 @@ mod macos {
         }
     }
 
+    /// Open System Settings to the sound input devices.
+    pub fn open_sound_settings() -> Result<(), String> {
+        Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.sound?input")
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open System Settings: {e}"))
+    }
+
     /// Open System Settings to the Microphone privacy pane.
     pub fn open_microphone_settings() -> Result<(), String> {
         let result = Command::new("open")
@@ -149,6 +158,14 @@ mod other {
     pub fn open_microphone_settings() -> Result<(), String> {
         std::process::Command::new("explorer")
             .arg("ms-settings:privacy-microphone")
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open Windows Settings: {e}"))
+    }
+
+    pub fn open_sound_settings() -> Result<(), String> {
+        std::process::Command::new("explorer")
+            .arg("ms-settings:sound")
             .spawn()
             .map(|_| ())
             .map_err(|e| format!("Failed to open Windows Settings: {e}"))
