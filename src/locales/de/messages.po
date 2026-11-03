@@ -1323,6 +1323,11 @@ msgstr ""
 #~ msgstr "Einige Fragen dazu, wie du Glimpse verwendest?"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.no_audio"
+#~ msgstr "Glimpse hat kein Audiosignal von deinem Mikrofon erhalten. Prüfe unter Einstellungen, welches Mikrofon ausgewählt ist."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -1870,6 +1875,16 @@ msgstr "Browseranfragen erlauben"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "Browseranfragen über verschiedene Ursprünge hinweg zulassen"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_blocked"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -3848,11 +3863,6 @@ msgid "native.toast.accessibility_paste"
 msgstr "Glimpse konnte dies nicht eingeben, da der Zugriff auf die Bedienungshilfen deaktiviert ist. Dein Text befindet sich in der Zwischenablage, sodass du ihn mit Befehl-V einfügen kannst."
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.no_audio"
-msgstr "Glimpse hat kein Audiosignal von deinem Mikrofon erhalten. Prüfe unter Einstellungen, welches Mikrofon ausgewählt ist."
-
-#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "Bei Glimpse ist ein Fehler aufgetreten"
@@ -3987,6 +3997,11 @@ msgstr "Gedrückt halten"
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
 msgstr "Halte {shortcutLabel} gedrückt und sprich, um in jeder App zu diktieren."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.too_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5221,6 +5236,11 @@ msgid "native.toast.model_action"
 msgstr "Modelle öffnen"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Einstellungen öffnen"
@@ -6407,6 +6427,21 @@ msgid "transcriptions.list.filter.aria"
 msgstr "Transkriptionen sortieren und filtern"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_quiet"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_default_name"
 msgstr "Sprecher {nextIndex}"
@@ -7508,6 +7543,11 @@ msgid "native.toast.admin_app_shortcut"
 msgstr "In Apps, die als Administrator laufen, kann Glimpse deine Tastenkombination nicht erfassen. Starte Glimpse ebenfalls als Administrator, um dort zu diktieren."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "Wörter pro Minute"
@@ -7629,6 +7669,16 @@ msgstr "Ihr Lizenzschlüssel steht in Ihrer Kaufbeleg-E-Mail. Fügen Sie ihn hie
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_unavailable"
 msgstr "Dein Mikrofon ist nicht verfügbar. Prüfe, ob es angeschlossen ist."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_audio.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_no_audio"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

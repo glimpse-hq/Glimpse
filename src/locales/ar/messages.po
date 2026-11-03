@@ -1323,6 +1323,11 @@ msgstr ""
 #~ msgstr "بعض الأسئلة حول كيفية استخدامك لـ Glimpse؟"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.no_audio"
+#~ msgstr "لم يلتقط Glimpse أي صوت من الميكروفون. تحقق من الميكروفون المحدد في الإعدادات."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -1870,6 +1875,16 @@ msgstr "السماح بطلبات المتصفح"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "السماح بطلبات المتصفح عبر الأصول"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_blocked"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -3848,11 +3863,6 @@ msgid "native.toast.accessibility_paste"
 msgstr "تعذّر على Glimpse الكتابة لأن إمكانية الوصول معطّلة. النص موجود في الحافظة، يمكنك لصقه باستخدام Command-V."
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.no_audio"
-msgstr "لم يلتقط Glimpse أي صوت من الميكروفون. تحقق من الميكروفون المحدد في الإعدادات."
-
-#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "واجه Glimpse خطأً"
@@ -3987,6 +3997,11 @@ msgstr "اضغط مع الاستمرار"
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
 msgstr "اضغط مع الاستمرار على {shortcutLabel} وتحدّث للإملاء في أي تطبيق."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.too_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5221,6 +5236,11 @@ msgid "native.toast.model_action"
 msgstr "فتح النماذج"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "فتح الإعدادات"
@@ -6407,6 +6427,21 @@ msgid "transcriptions.list.filter.aria"
 msgstr "ترتيب النصوص المُحوَّلة وتصفيتها"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_quiet"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_default_name"
 msgstr "المتحدث {nextIndex}"
@@ -7508,6 +7543,11 @@ msgid "native.toast.admin_app_shortcut"
 msgstr "لا يسمح Windows لـ Glimpse بالتقاط اختصارك في التطبيقات التي تعمل بصلاحيات المسؤول. للإملاء فيها، شغّل Glimpse بصلاحيات المسؤول أيضًا."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "كلمة في الدقيقة"
@@ -7629,6 +7669,16 @@ msgstr "مفتاح الترخيص موجود في رسالة الإيصال ال
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_unavailable"
 msgstr "الميكروفون غير متاح. تحقق من توصيله."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_audio.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_no_audio"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
