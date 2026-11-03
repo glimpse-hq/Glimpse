@@ -1323,6 +1323,16 @@ msgstr ""
 #~ msgstr "आप Glimpse का उपयोग कैसे करते हैं, इस बारे में कुछ प्रश्न?"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.subtitle.v2"
+#~ msgstr "आप इन्हें बाद में सेटिंग्स में बदल सकते हैं।"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.continue"
+#~ msgstr "Glimpse पर जारी रखें"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -2539,13 +2549,14 @@ msgid "settings.local_api.configuration"
 msgstr "कॉन्फ़िगरेशन"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.continue"
+#: src/features/onboarding/FirstDictationGuide.tsx
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permissions.continue"
 msgstr "जारी रखें"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.permissions.continue"
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.continue"
 msgstr "जारी रखें"
 
 #. js-lingui-explicit-id
@@ -2572,11 +2583,6 @@ msgstr "मुफ़्त में जारी रखें?"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue_trial"
 msgstr "निःशुल्क परीक्षण जारी रखें"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.continue"
-msgstr "Glimpse पर जारी रखें"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3701,6 +3707,11 @@ msgstr "अपडेट इंस्टॉल करने से पहले �
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "पूरा किया जा रहा है..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.line_dictated"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6816,6 +6827,11 @@ msgid "native.toast.too_quiet"
 msgstr "यह सुनने के लिए बहुत धीमा था। रिकॉर्डिंग हटाई गई।"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.title_dictated"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.complete.v2"
 msgstr "बस इतना ही, यही पूरी प्रक्रिया है।"
@@ -7554,11 +7570,6 @@ msgstr "कल"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording_you"
 msgstr "आप"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-msgid "onboarding.done.subtitle.v2"
-msgstr "आप इन्हें बाद में सेटिंग्स में बदल सकते हैं।"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

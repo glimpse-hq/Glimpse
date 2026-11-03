@@ -228,13 +228,21 @@ pub fn track_feature_used_command(app: tauri::AppHandle<AppRuntime>, feature: St
 
 /// Records a bounded onboarding screen identifier without form contents.
 #[tauri::command]
-pub fn track_onboarding_step_viewed(app: tauri::AppHandle<AppRuntime>, step: String) {
+pub fn track_onboarding_step_viewed(
+    app: tauri::AppHandle<AppRuntime>,
+    step: String,
+    after_dictation: Option<bool>,
+) {
     let step = match step.as_str() {
         "welcome" | "import" | "model_downloading" | "source" | "permissions" | "license"
         | "done" | "practice" => step.as_str(),
         _ => "unknown",
     };
-    capture_event(&app, "onboarding_step_viewed", json!({ "step": step }));
+    let mut props = json!({ "step": step });
+    if let (Some(after_dictation), "license") = (after_dictation, step) {
+        props["after_dictation"] = json!(after_dictation);
+    }
+    capture_event(&app, "onboarding_step_viewed", props);
 }
 
 /// Records which speech model onboarding recommended for your languages and

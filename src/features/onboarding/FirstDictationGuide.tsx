@@ -43,7 +43,8 @@ interface FirstDictationGuideProps {
   modelState: "ready" | "downloading" | "failed";
   speechModelError: string | null;
   onRetrySpeechModel: () => void;
-  onFinish: (firstDictation: boolean) => void;
+  practiceText: string;
+  onFinish: (practiceText: string) => void;
   isFinishing: boolean;
   completionError: string | null;
 }
@@ -55,15 +56,18 @@ export default function FirstDictationGuide({
   modelState,
   speechModelError,
   onRetrySpeechModel,
+  practiceText: initialText,
   onFinish,
   isFinishing,
   completionError,
 }: FirstDictationGuideProps) {
   const { t } = useLingui();
   const holdingRef = useRef(false);
-  const [completedDictation, setCompletedDictation] = useState(false);
+  const [completedDictation, setCompletedDictation] = useState(
+    initialText !== "",
+  );
   const [dictationFailed, setDictationFailed] = useState(false);
-  const [practiceText, setPracticeText] = useState("");
+  const [practiceText, setPracticeText] = useState(initialText);
   const [holding, setHolding] = useState(false);
   const [pillStatus, setPillStatus] = useState<PillStatus>("idle");
   const isListening = holding || pillStatus === "listening";
@@ -217,7 +221,7 @@ export default function FirstDictationGuide({
           {showSuccess ? (
             <button
               type="button"
-              onClick={() => onFinish(true)}
+              onClick={() => onFinish(practiceText)}
               disabled={isFinishing}
               aria-busy={isFinishing}
               className={PRIMARY_BUTTON_CLASS}
@@ -232,8 +236,8 @@ export default function FirstDictationGuide({
                 </>
               ) : (
                 t({
-                  id: "onboarding.first_dictation.continue",
-                  message: "Continue to Glimpse",
+                  id: "onboarding.permissions.continue",
+                  message: "Continue",
                 })
               )}
             </button>
@@ -278,7 +282,7 @@ export default function FirstDictationGuide({
           <div className="flex h-5 items-center justify-center">
             <motion.button
               type="button"
-              onClick={() => onFinish(false)}
+              onClick={() => onFinish("")}
               disabled={isFinishing || showSuccess}
               aria-hidden={showSuccess}
               tabIndex={showSuccess ? -1 : 0}
