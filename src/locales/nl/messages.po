@@ -1323,6 +1323,16 @@ msgstr ""
 #~ msgstr "Een paar vragen over hoe je Glimpse gebruikt?"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.subtitle.v2"
+#~ msgstr "Je kunt dit later wijzigen via Instellingen."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.continue"
+#~ msgstr "Ga door naar Glimpse"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 #~ msgid "native.toast.no_audio"
 #~ msgstr "Glimpse heeft geen geluid van je microfoon ontvangen. Controleer welke microfoon is geselecteerd via Instellingen."
@@ -2554,14 +2564,15 @@ msgid "settings.local_api.configuration"
 msgstr "Configuratie"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.continue"
-msgstr "Ga door"
-
-#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.continue"
 msgstr "Doorgaan"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.continue"
+msgstr "Ga door"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/AnnouncementScreen.tsx
@@ -2587,11 +2598,6 @@ msgstr "Gratis doorgaan?"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue_trial"
 msgstr "Ga door met gratis proefversie"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.continue"
-msgstr "Ga door naar Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3716,6 +3722,11 @@ msgstr "Beëindig de opname voordat je de update installeert."
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "Bezig met afronden..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.line_dictated"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6851,6 +6862,11 @@ msgid "native.toast.too_quiet"
 msgstr "Dat was te zacht om te horen. Opname verwijderd."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.title_dictated"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.complete.v2"
 msgstr "Dat is het, dat is alles."
@@ -7594,11 +7610,6 @@ msgstr "Gisteren"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording_you"
 msgstr "Jij"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-msgid "onboarding.done.subtitle.v2"
-msgstr "Je kunt dit later wijzigen via Instellingen."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

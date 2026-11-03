@@ -51,11 +51,11 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["f
 tracing-appender = "0.2"
 symphonia = { version = "0.6.1", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4", "mkv"] }
 hound = "3.5.1"
-parking_lot = "0.12"
+parking_lot = "0.13"
 crossbeam-channel = "0.5"
 rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
-posthog-rs = { version = "0.29", default-features = false, features = ["async-client"] }
+posthog-rs = { version = "0.30", default-features = false, features = ["async-client"] }
 arboard = "3"
 glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", rev = "2ea32cf9cad74055b7c3e0492c4d0b08bdfa2965", features = ["whisper", "transcribe", "api", "cli", "remote", "apple-speech"] }
 glimpse-language = { git = "https://github.com/glimpse-hq/Glimpse-Language.git", tag = "0.1.1", features = ["apple", "bonsai"] }
@@ -66,7 +66,7 @@ sha2 = "0.11"
 # Already in the tree through rustls; verifies the license server's Ed25519 tokens.
 ring = "0.17"
 base64 = { version = "0.23", default-features = false, features = ["std"] }
-rusqlite = { version = "0.40", features = ["bundled"] }
+rusqlite = { version = "0.41", features = ["bundled"] }
 regex = "1"
 fs2 = "0.4"
 tauri-plugin-deep-link = "2.5.0"

@@ -13,6 +13,9 @@ updates:
       - dependency-name: "@typescript/native"
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # Held until @lingui/vite-plugin lists 0.3 as a supported peer.
+      - dependency-name: "@rolldown/plugin-babel"
+        versions: [">=0.3.0"]
 
   - package-ecosystem: cargo
     directory: /src-tauri

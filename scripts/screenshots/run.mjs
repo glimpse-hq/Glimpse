@@ -672,12 +672,6 @@ const onboardingShots = async () => {
     if (!String(error.message).includes("has no")) throw error;
     log("no permissions step on this platform");
   }
-  for (const license of ["trial", "none", "unlocked-1"]) {
-    await dev("license", license);
-    await dev("onboarding", "license");
-    await shot(`setup-license-${license}`);
-  }
-  await dev("license", "trial");
   await step("done");
   await dev("onboarding", "setup-failed");
   await shot("setup-done-failed");
@@ -688,6 +682,20 @@ const onboardingShots = async () => {
     await shot(`toast-${notice}`, "toast");
   }
   await dev("show", "nothing");
+  for (const license of ["trial", "none", "unlocked-1"]) {
+    await dev("license", license);
+    await dev("onboarding", "license");
+    await shot(`setup-license-${license}`);
+    await dev("onboarding", "practice");
+  }
+  await dev("license", "trial");
+  await dev("onboarding", "dictated");
+  await shot("setup-license-trial-dictated");
+  await dev("onboarding", "practice");
+  await shot("setup-practice-dictated");
+  await dev("onboarding", "complete");
+  await dev("onboarding", "reset");
+  await dev("onboarding", "practice");
   await dev("onboarding", "download-failed");
   await shot("setup-practice-download-failed");
   await dev("onboarding", "source");

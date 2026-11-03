@@ -1323,6 +1323,16 @@ msgstr ""
 #~ msgstr "بعض الأسئلة حول كيفية استخدامك لـ Glimpse؟"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.subtitle.v2"
+#~ msgstr "يمكنك تغيير هذه الإعدادات لاحقًا في الإعدادات."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.continue"
+#~ msgstr "المتابعة إلى Glimpse"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 #~ msgid "native.toast.no_audio"
 #~ msgstr "لم يلتقط Glimpse أي صوت من الميكروفون. تحقق من الميكروفون المحدد في الإعدادات."
@@ -2554,13 +2564,14 @@ msgid "settings.local_api.configuration"
 msgstr "الإعداد"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.continue"
+#: src/features/onboarding/FirstDictationGuide.tsx
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permissions.continue"
 msgstr "متابعة"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.permissions.continue"
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.continue"
 msgstr "متابعة"
 
 #. js-lingui-explicit-id
@@ -2587,11 +2598,6 @@ msgstr "متابعة مجانًا؟"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue_trial"
 msgstr "متابعة الإصدار التجريبي المجاني"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.continue"
-msgstr "المتابعة إلى Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3716,6 +3722,11 @@ msgstr "أكمل التسجيل قبل تثبيت التحديث."
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "جارٍ الإنهاء..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.line_dictated"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6851,6 +6862,11 @@ msgid "native.toast.too_quiet"
 msgstr "كان الصوت خافتًا جدًا. تم حذف التسجيل."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.title_dictated"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.complete.v2"
 msgstr "هذا كل شيء، هذا هو المقصود."
@@ -7594,11 +7610,6 @@ msgstr "أمس"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording_you"
 msgstr "أنت"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-msgid "onboarding.done.subtitle.v2"
-msgstr "يمكنك تغيير هذه الإعدادات لاحقًا في الإعدادات."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

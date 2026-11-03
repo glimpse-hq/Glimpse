@@ -186,6 +186,16 @@ msgstr ""
 #~ msgstr "Algumas perguntas sobre como você usa o Glimpse?"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.subtitle.v2"
+#~ msgstr "Você pode alterar essas opções mais tarde em Configurações."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.continue"
+#~ msgstr "Continuar para o Glimpse"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 #~ msgid "native.toast.no_audio"
 #~ msgstr "O Glimpse não recebeu som do microfone. Confira qual microfone está selecionado em Configurações."
@@ -1417,13 +1427,14 @@ msgid "settings.local_api.configuration"
 msgstr "Configuração"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.continue"
+#: src/features/onboarding/FirstDictationGuide.tsx
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permissions.continue"
 msgstr "Continuar"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.permissions.continue"
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.continue"
 msgstr "Continuar"
 
 #. js-lingui-explicit-id
@@ -1450,11 +1461,6 @@ msgstr "Continuar gratuitamente?"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue_trial"
 msgstr "Continuar com o teste gratuito"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.continue"
-msgstr "Continuar para o Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2579,6 +2585,11 @@ msgstr "Finalize a gravação antes de instalar a atualização."
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "Finalizando..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.line_dictated"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -5714,6 +5725,11 @@ msgid "native.toast.too_quiet"
 msgstr "O áudio estava baixo demais para ser ouvido. Gravação excluída."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.title_dictated"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.complete.v2"
 msgstr "Pronto, é só isso."
@@ -6457,11 +6473,6 @@ msgstr "Ontem"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording_you"
 msgstr "Você"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-msgid "onboarding.done.subtitle.v2"
-msgstr "Você pode alterar essas opções mais tarde em Configurações."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
