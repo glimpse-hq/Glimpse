@@ -1313,6 +1313,16 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/asks/components/AskPrompt.tsx
+#~ msgid "home.survey.answer"
+#~ msgstr "Antwort"
+
+#. js-lingui-explicit-id
+#: src/features/asks/components/AskPrompt.tsx
+#~ msgid "home.survey.title"
+#~ msgstr "Einige Fragen dazu, wie du Glimpse verwendest?"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -1895,11 +1905,6 @@ msgstr "Ein KI-Agent folgt dieser Aufnahme."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.body.v2"
 msgstr "Anonym. Transkripte und Audiodaten werden nie erfasst."
-
-#. js-lingui-explicit-id
-#: src/features/asks/components/AskPrompt.tsx
-msgid "home.survey.answer"
-msgstr "Antwort"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: record.question_client
@@ -3763,9 +3768,14 @@ msgid "home.support.title"
 msgstr "Support erhalten"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.installed.loading"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr "Ihr Sprachmodell wird vorbereitet. Dies geschieht im Hintergrund."
+msgstr "Ihr Sprachmodell wird vorbereitet."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6380,11 +6390,6 @@ msgstr "Klein"
 #: src/features/settings/components/ShortcutList.tsx
 msgid "settings.general.shortcuts.smart"
 msgstr "Intelligent"
-
-#. js-lingui-explicit-id
-#: src/features/asks/components/AskPrompt.tsx
-msgid "home.survey.title"
-msgstr "Einige Fragen dazu, wie du Glimpse verwendest?"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx

@@ -33,6 +33,10 @@ export async function checkModelStatus(model: string): Promise<ModelStatus> {
   return invoke<ModelStatus>("check_model_status", { model });
 }
 
+export async function getLoadingSpeechModel(): Promise<string | null> {
+  return invoke<string | null>("loading_speech_model");
+}
+
 export async function downloadModel(
   model: string,
   ane?: boolean,
