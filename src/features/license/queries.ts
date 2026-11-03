@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as licenseApi from "./api";
+import { askKeys } from "../asks/queries";
 import { FALLBACK_PLANS, formatPlanPrice } from "./purchaseConfig";
 
 export const licenseKeys = {
@@ -69,6 +70,7 @@ export function useActivateLicense() {
     onSuccess: (state) => {
       queryClient.setQueryData(licenseKeys.state(), state);
       void queryClient.invalidateQueries({ queryKey: ["settings"] });
+      void queryClient.invalidateQueries({ queryKey: askKeys.prompt() });
     },
   });
 }
@@ -81,6 +83,7 @@ export function useRefreshLicense() {
     onSuccess: (state) => {
       queryClient.setQueryData(licenseKeys.state(), state);
       void queryClient.invalidateQueries({ queryKey: ["settings"] });
+      void queryClient.invalidateQueries({ queryKey: askKeys.prompt() });
     },
   });
 }
@@ -93,6 +96,7 @@ export function useDeactivateLicense() {
     onSuccess: (state) => {
       queryClient.setQueryData(licenseKeys.state(), state);
       void queryClient.invalidateQueries({ queryKey: ["settings"] });
+      void queryClient.invalidateQueries({ queryKey: askKeys.prompt() });
     },
   });
 }
