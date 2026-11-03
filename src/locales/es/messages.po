@@ -1889,12 +1889,12 @@ msgstr "Permitir solicitudes de navegador de orígenes cruzados"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_mac"
-msgstr ""
+msgstr "Permite el acceso al micrófono y vuelve a intentarlo."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_blocked"
-msgstr ""
+msgstr "Permite el acceso al micrófono y vuelve a intentarlo."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -2042,7 +2042,7 @@ msgstr "Visualizador de audio"
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "transcription.language.auto"
-msgstr "Auto"
+msgstr "Detección automática"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2169,7 +2169,7 @@ msgstr "Integrado en macOS"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
-msgstr "Business"
+msgstr "Comercial"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3726,7 +3726,7 @@ msgstr "Finalizando..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_dictated"
-msgstr ""
+msgstr "Durante 14 días, también tendrás acceso a todo lo demás."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3796,7 +3796,7 @@ msgstr "Obtener ayuda"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.loading"
-msgstr ""
+msgstr "Preparando…"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4012,7 +4012,7 @@ msgstr "Mantén pulsado {shortcutLabel} y habla para dictar en cualquier aplicac
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.too_short"
-msgstr ""
+msgstr "Mantén pulsado el atajo o el botón un poco más mientras hablas."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5249,7 +5249,7 @@ msgstr "Abrir modelos"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.open_settings"
-msgstr ""
+msgstr "Abrir ajustes"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6440,17 +6440,17 @@ msgstr "Ordenar y filtrar transcripciones"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.sound_settings"
-msgstr ""
+msgstr "Ajustes de sonido"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.sound_settings"
-msgstr ""
+msgstr "Ajustes de sonido"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_quiet"
-msgstr ""
+msgstr "Habla un poco más alto y vuelve a intentarlo."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6864,7 +6864,7 @@ msgstr "Eso fue demasiado silencioso para oírlo. Grabación eliminada."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_dictated"
-msgstr ""
+msgstr "Es gratis. Para siempre."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -7561,7 +7561,7 @@ msgstr "Windows no permite que Glimpse detecte tu atajo en aplicaciones que se e
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_windows"
-msgstr ""
+msgstr "Windows bloquea el acceso al micrófono."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7684,12 +7684,12 @@ msgstr "El micrófono no está disponible. Comprueba que esté conectado."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.no_audio.v2"
-msgstr ""
+msgstr "El micrófono no está enviando ningún sonido."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_no_audio"
-msgstr ""
+msgstr "El micrófono no está enviando ningún sonido."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

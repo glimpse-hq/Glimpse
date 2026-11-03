@@ -1889,12 +1889,12 @@ msgstr "Cross-origin browserverzoeken toestaan"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_mac"
-msgstr ""
+msgstr "Geef toegang tot de microfoon en probeer het opnieuw."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_blocked"
-msgstr ""
+msgstr "Geef toegang tot de microfoon en probeer het opnieuw."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -2169,7 +2169,7 @@ msgstr "Ingebouwd in macOS"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
-msgstr "Business"
+msgstr "Zakelijk"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3726,7 +3726,7 @@ msgstr "Bezig met afronden..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_dictated"
-msgstr ""
+msgstr "14 dagen lang krijg je er ook alles bij."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3796,7 +3796,7 @@ msgstr "Ondersteuning krijgen"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.loading"
-msgstr ""
+msgstr "Wordt voorbereid…"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4012,7 +4012,7 @@ msgstr "Houd {shortcutLabel} ingedrukt en spreek om in elke app te dicteren."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.too_short"
-msgstr ""
+msgstr "Houd de sneltoets of knop tijdens het spreken iets langer ingedrukt."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5249,7 +5249,7 @@ msgstr "Modellen openen"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.open_settings"
-msgstr ""
+msgstr "Instellingen openen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6440,17 +6440,17 @@ msgstr "Transcripties sorteren en filteren"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.sound_settings"
-msgstr ""
+msgstr "Geluidsinstellingen"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.sound_settings"
-msgstr ""
+msgstr "Geluidsinstellingen"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_quiet"
-msgstr ""
+msgstr "Spreek iets harder en probeer het opnieuw."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6864,7 +6864,7 @@ msgstr "Dat was te zacht om te horen. Opname verwijderd."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_dictated"
-msgstr ""
+msgstr "Dat is gratis. Voor altijd."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -7561,7 +7561,7 @@ msgstr "Windows laat Glimpse je sneltoets niet horen in apps die als beheerder w
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_blocked_windows"
-msgstr ""
+msgstr "Windows blokkeert de toegang tot de microfoon."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7684,12 +7684,12 @@ msgstr "Je microfoon is niet beschikbaar. Controleer of deze is aangesloten."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.no_audio.v2"
-msgstr ""
+msgstr "Je microfoon geeft geen geluid door."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_no_audio"
-msgstr ""
+msgstr "Je microfoon geeft geen geluid door."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
