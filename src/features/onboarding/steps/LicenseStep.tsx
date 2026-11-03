@@ -40,6 +40,7 @@ import {
 interface LicenseStepProps {
   stepMotionProps: StepMotionProps;
   smartShortcut: string;
+  afterDictation: boolean;
   licenseState: LicenseState | null;
   opening: boolean;
   openError: string | null;
@@ -53,6 +54,7 @@ interface LicenseStepProps {
 export function LicenseStep({
   stepMotionProps,
   smartShortcut,
+  afterDictation,
   licenseState,
   opening,
   openError,
@@ -74,31 +76,42 @@ export function LicenseStep({
   // The pricing page offers both plans, so the button shows the lowest price.
   const startingPrice = usePlanPrice("solo", !isActive);
   const isTrial = status === "trial";
+  const dictatedOnTrial = isTrial && afterDictation;
 
   const title = isActive
     ? t({
         id: "onboarding.license_step.title_active",
         message: "Everything is unlocked.",
       })
-    : isTrial
+    : dictatedOnTrial
       ? t({
-          id: "onboarding.license_step.title_trial",
-          message: "Everything is yours for 14 days.",
+          id: "onboarding.license_step.title_dictated",
+          message: "That's free. Forever.",
         })
-      : t({
-          id: "onboarding.license_step.title_free.v3",
-          message: "Unlock everything.",
-        });
+      : isTrial
+        ? t({
+            id: "onboarding.license_step.title_trial",
+            message: "Everything is yours for 14 days.",
+          })
+        : t({
+            id: "onboarding.license_step.title_free.v3",
+            message: "Unlock everything.",
+          });
 
   const line = isActive
     ? t({
         id: "onboarding.license_step.line_active",
         message: "Thanks for supporting Glimpse!",
       })
-    : t({
-        id: "onboarding.license_step.line_free",
-        message: "Dictation stays free forever.",
-      });
+    : dictatedOnTrial
+      ? t({
+          id: "onboarding.license_step.line_dictated",
+          message: "For 14 days, you also get everything else.",
+        })
+      : t({
+          id: "onboarding.license_step.line_free",
+          message: "Dictation stays free forever.",
+        });
 
   return (
     <OnboardingStep
@@ -109,7 +122,7 @@ export function LicenseStep({
     >
       <div className="grid w-full grid-cols-[1fr_430px] items-center gap-10 text-left">
         <div>
-          <h2 className="font-satoshi ui-text-display tracking-tight text-content-primary text-balance">
+          <h2 className="flex min-h-[2lh] items-end font-satoshi ui-text-display tracking-tight text-content-primary text-balance">
             {title}
           </h2>
           <p className="mt-3 ui-text-body-lg text-content-muted">{line}</p>

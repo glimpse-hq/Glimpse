@@ -3,6 +3,7 @@
 ### Changes
 
 - Asks to star Glimpse on GitHub or rate it in the Microsoft Store now appear in a small card at the corner of Home, and Glimpse no longer asks you to take a survey.
+- Setup now shows what the free trial includes after your first dictation instead of before it.
 
 ### Fixes
 

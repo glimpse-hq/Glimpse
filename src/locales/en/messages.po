@@ -1323,6 +1323,11 @@ msgstr ""
 #~ msgstr "Some questions about how you use Glimpse?"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.subtitle.v2"
+#~ msgstr "You can change these later in Settings."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -3701,6 +3706,11 @@ msgstr "Finish the recording before installing the update."
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "Finishing..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.line_dictated"
+msgstr "For 14 days, you also get everything else."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -6811,6 +6821,11 @@ msgid "native.toast.too_quiet"
 msgstr "That was too quiet to hear. Recording deleted."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.title_dictated"
+msgstr "That's free. Forever."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.complete.v2"
 msgstr "That's it, that's the whole thing."
@@ -7549,11 +7564,6 @@ msgstr "Yesterday"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording_you"
 msgstr "You"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-msgid "onboarding.done.subtitle.v2"
-msgstr "You can change these later in Settings."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

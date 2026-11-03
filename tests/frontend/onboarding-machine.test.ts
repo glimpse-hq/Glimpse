@@ -58,28 +58,19 @@ describe("onboarding steps", () => {
 describe("onboarding machine", () => {
   test("walks forward and back through every macOS step", () => {
     const actor = start(mac);
-    expect(walk(actor, "NEXT", 4)).toEqual([
-      "source",
-      "permissions",
-      "license",
-      "done",
-    ]);
+    expect(walk(actor, "NEXT", 3)).toEqual(["source", "permissions", "done"]);
     expect(actor.getSnapshot().context).toMatchObject({
       transitionDirection: 1,
       hasStepTransitioned: true,
     });
-    expect(walk(actor, "BACK", 3)).toEqual([
-      "license",
-      "permissions",
-      "source",
-    ]);
+    expect(walk(actor, "BACK", 2)).toEqual(["permissions", "source"]);
     expect(actor.getSnapshot().context.transitionDirection).toBe(-1);
   });
 
   test("skips permissions on Windows in both directions", () => {
     const actor = start(windows);
-    expect(walk(actor, "NEXT", 3)).toEqual(["source", "license", "done"]);
-    expect(walk(actor, "BACK", 2)).toEqual(["license", "source"]);
+    expect(walk(actor, "NEXT", 2)).toEqual(["source", "done"]);
+    expect(walk(actor, "BACK", 1)).toEqual(["source"]);
   });
 
   test("the import step only shows with importable apps", () => {
@@ -93,12 +84,29 @@ describe("onboarding machine", () => {
     const actor = start(windows);
     actor.send({ type: "START_PRACTICE" });
     expect(actor.getSnapshot().value).toBe("welcome");
-    walk(actor, "NEXT", 3);
+    walk(actor, "NEXT", 2);
     actor.send({ type: "START_PRACTICE" });
     expect(actor.getSnapshot().value).toBe("practice");
     actor.send({ type: "NEXT" });
     expect(actor.getSnapshot().value).toBe("practice");
     expect(walk(actor, "BACK", 1)).toEqual(["done"]);
+  });
+
+  test("license comes after practice and remembers the dictation", () => {
+    const actor = start(windows);
+    actor.send({ type: "FINISH_PRACTICE", dictated: true });
+    expect(actor.getSnapshot().value).toBe("welcome");
+    walk(actor, "NEXT", 2);
+    actor.send({ type: "START_PRACTICE" });
+    actor.send({ type: "FINISH_PRACTICE", dictated: true });
+    expect(actor.getSnapshot().value).toBe("license");
+    expect(actor.getSnapshot().context.dictated).toBe(true);
+    actor.send({ type: "NEXT" });
+    expect(actor.getSnapshot().value).toBe("license");
+    expect(walk(actor, "BACK", 2)).toEqual(["practice", "done"]);
+    actor.send({ type: "START_PRACTICE" });
+    actor.send({ type: "FINISH_PRACTICE", dictated: false });
+    expect(actor.getSnapshot().context.dictated).toBe(false);
   });
 
   test("completion errors clear on the next step", () => {

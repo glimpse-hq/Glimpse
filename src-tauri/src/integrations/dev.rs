@@ -34,7 +34,7 @@ fn help() {
                 ),
                 (
                     "onboarding <action>",
-                    "reset, complete, a step, download-failed, disk-full, setup-failed, faq or close.",
+                    "reset, complete, a step, dictated, download-failed, disk-full, setup-failed, faq or close.",
                 ),
                 (
                     "show <what>",
