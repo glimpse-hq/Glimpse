@@ -1329,6 +1329,11 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.continue"
+#~ msgstr "Continue to Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
 
@@ -2544,13 +2549,14 @@ msgid "settings.local_api.configuration"
 msgstr "Configuration"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.continue"
+#: src/features/onboarding/FirstDictationGuide.tsx
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permissions.continue"
 msgstr "Continue"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.permissions.continue"
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.continue"
 msgstr "Continue"
 
 #. js-lingui-explicit-id
@@ -2577,11 +2583,6 @@ msgstr "Continue for free?"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue_trial"
 msgstr "Continue Free Trial"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.continue"
-msgstr "Continue to Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx

@@ -177,9 +177,10 @@ export default function OnboardingScreen({
   useEffect(() => {
     void invoke("track_onboarding_step_viewed", {
       step: currentStep,
-      afterDictation: currentStep === "license" ? ctx.dictated : null,
+      afterDictation:
+        currentStep === "license" ? ctx.practiceText !== "" : null,
     }).catch(() => {});
-  }, [currentStep, ctx.dictated]);
+  }, [currentStep, ctx.practiceText]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const diarizer = useDiarizerModel().data;
@@ -635,7 +636,7 @@ export default function OnboardingScreen({
             current === "done"
               ? { type: "START_PRACTICE" }
               : current === "practice"
-                ? { type: "FINISH_PRACTICE", dictated: false }
+                ? { type: "FINISH_PRACTICE", practiceText: "" }
                 : { type: "NEXT" },
           );
         }
@@ -650,7 +651,7 @@ export default function OnboardingScreen({
         reason: action === "disk-full" ? "disk_full" : "network",
       });
     } else if (action === "dictated") {
-      send({ type: "FINISH_PRACTICE", dictated: true });
+      send({ type: "FINISH_PRACTICE", practiceText: "This is Glimpse." });
     } else if (action === "setup-failed") {
       send({
         type: "COMPLETE_ERROR",
@@ -879,7 +880,7 @@ export default function OnboardingScreen({
             key="license"
             stepMotionProps={stepMotionProps}
             smartShortcut={ctx.smartShortcut}
-            afterDictation={ctx.dictated}
+            afterDictation={ctx.practiceText !== ""}
             licenseState={licenseQuery.data ?? null}
             opening={openingLicenseCheckout}
             openError={ctx.completionError ?? licenseOpenError}
@@ -890,7 +891,7 @@ export default function OnboardingScreen({
             onNext={() => {
               if (!actor.getSnapshot().context.isCompleting) {
                 activateLicense.reset();
-                void handleFinishOnboarding(ctx.dictated);
+                void handleFinishOnboarding(ctx.practiceText !== "");
               }
             }}
           />
@@ -927,7 +928,10 @@ export default function OnboardingScreen({
             modelState={practiceModelState}
             speechModelError={speechModelError}
             onRetrySpeechModel={retrySpeechModel}
-            onFinish={(dictated) => send({ type: "FINISH_PRACTICE", dictated })}
+            practiceText={ctx.practiceText}
+            onFinish={(practiceText) =>
+              send({ type: "FINISH_PRACTICE", practiceText })
+            }
             isFinishing={ctx.isCompleting}
             completionError={ctx.completionError}
           />

@@ -20,7 +20,7 @@ export type OnboardingContext = {
   showFAQModal: boolean;
   transitionDirection: 1 | -1;
   hasStepTransitioned: boolean;
-  dictated: boolean;
+  practiceText: string;
 };
 
 export type OnboardingEvent =
@@ -32,7 +32,7 @@ export type OnboardingEvent =
   | { type: "SET_AUTO_LAUNCH"; value: boolean }
   | { type: "SET_SHORTCUT"; shortcut: string }
   | { type: "START_PRACTICE" }
-  | { type: "FINISH_PRACTICE"; dictated: boolean }
+  | { type: "FINISH_PRACTICE"; practiceText: string }
   | { type: "COMPLETING" }
   | { type: "COMPLETE_SUCCESS" }
   | { type: "COMPLETE_ERROR"; error: string }
@@ -102,7 +102,7 @@ export const onboardingMachine = setup({
     showFAQModal: false,
     transitionDirection: 1,
     hasStepTransitioned: false,
-    dictated: false,
+    practiceText: "",
   },
   on: {
     SET_IMPORTABLE: {
@@ -190,8 +190,8 @@ export const onboardingMachine = setup({
           actions: [
             "forward",
             assign({
-              dictated: ({ context, event }) =>
-                context.dictated || event.dictated,
+              practiceText: ({ context, event }) =>
+                event.practiceText || context.practiceText,
             }),
           ],
         },

@@ -94,19 +94,19 @@ describe("onboarding machine", () => {
 
   test("license comes after practice and remembers the dictation", () => {
     const actor = start(windows);
-    actor.send({ type: "FINISH_PRACTICE", dictated: true });
+    actor.send({ type: "FINISH_PRACTICE", practiceText: "Hello there." });
     expect(actor.getSnapshot().value).toBe("welcome");
     walk(actor, "NEXT", 2);
     actor.send({ type: "START_PRACTICE" });
-    actor.send({ type: "FINISH_PRACTICE", dictated: true });
+    actor.send({ type: "FINISH_PRACTICE", practiceText: "Hello there." });
     expect(actor.getSnapshot().value).toBe("license");
-    expect(actor.getSnapshot().context.dictated).toBe(true);
+    expect(actor.getSnapshot().context.practiceText).toBe("Hello there.");
     actor.send({ type: "NEXT" });
     expect(actor.getSnapshot().value).toBe("license");
     expect(walk(actor, "BACK", 2)).toEqual(["practice", "done"]);
     actor.send({ type: "START_PRACTICE" });
-    actor.send({ type: "FINISH_PRACTICE", dictated: false });
-    expect(actor.getSnapshot().context.dictated).toBe(true);
+    actor.send({ type: "FINISH_PRACTICE", practiceText: "" });
+    expect(actor.getSnapshot().context.practiceText).toBe("Hello there.");
   });
 
   test("completion errors clear on the next step", () => {
