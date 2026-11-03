@@ -93,6 +93,17 @@ pub fn speech_engine(settings: &UserSettings) -> &'static str {
         .map_or("unknown", crate::speech::catalog::engine_name)
 }
 
+/// Milliseconds as a bucket; `none` when the event never happened.
+pub fn latency_bucket(ms: Option<u32>) -> &'static str {
+    match ms {
+        None => "none",
+        Some(ms) if ms < 100 => "under_100ms",
+        Some(ms) if ms < 300 => "under_300ms",
+        Some(ms) if ms < 1000 => "under_1s",
+        Some(_) => "over_1s",
+    }
+}
+
 /// Buckets a recording's RMS level around the too-quiet rejection threshold.
 pub fn level_bucket(rms: Option<f32>) -> &'static str {
     let threshold = crate::recorder::MIN_RMS_ENERGY;

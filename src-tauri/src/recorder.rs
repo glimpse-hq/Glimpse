@@ -5,10 +5,10 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicI16, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicI16, AtomicU32, AtomicU64, AtomicUsize, Ordering},
     },
     thread::JoinHandle,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use anyhow::{Context, Result, anyhow};
@@ -233,9 +233,69 @@ impl fmt::Display for NoInputDevice {
 
 impl std::error::Error for NoInputDevice {}
 
+/// What the microphone delivered, timed from when the device started opening.
+#[derive(Debug, Clone, Copy)]
+pub struct InputStats {
+    pub open_ms: u32,
+    pub first_audio_ms: Option<u32>,
+    pub peak: f32,
+}
+
+// A live microphone's noise floor stays above this; dead inputs send digital zeros.
+const NO_SIGNAL_PEAK: f32 = 0.0001;
+
+impl InputStats {
+    pub fn no_signal(&self) -> bool {
+        self.first_audio_ms.is_none() || self.peak < NO_SIGNAL_PEAK
+    }
+}
+
+struct InputProbe {
+    opened: Instant,
+    first_audio_us: AtomicU64,
+    peak_bits: AtomicU32,
+}
+
+impl InputProbe {
+    const NO_AUDIO: u64 = u64::MAX;
+
+    fn new(opened: Instant) -> Self {
+        Self {
+            opened,
+            first_audio_us: AtomicU64::new(Self::NO_AUDIO),
+            peak_bits: AtomicU32::new(0),
+        }
+    }
+
+    fn record(&self, peak: f32) {
+        if self.first_audio_us.load(Ordering::Relaxed) == Self::NO_AUDIO {
+            let us = self.opened.elapsed().as_micros() as u64;
+            let _ = self.first_audio_us.compare_exchange(
+                Self::NO_AUDIO,
+                us,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            );
+        }
+        // Non-negative floats order the same as their bits.
+        self.peak_bits.fetch_max(peak.to_bits(), Ordering::Relaxed);
+    }
+
+    fn stats(&self, open_ms: u32) -> InputStats {
+        let first = self.first_audio_us.load(Ordering::Relaxed);
+        InputStats {
+            open_ms,
+            first_audio_ms: (first != Self::NO_AUDIO).then_some((first / 1000) as u32),
+            peak: f32::from_bits(self.peak_bits.load(Ordering::Relaxed)),
+        }
+    }
+}
+
 struct ActiveRecording {
     stream: Stream,
     drain: CaptureDrain,
+    probe: Arc<InputProbe>,
+    open_ms: u32,
     buffer: Arc<Mutex<Vec<i16>>>,
     sample_rate: u32,
     channels: u16,
@@ -343,6 +403,8 @@ pub struct CompletedRecording {
     pub ended_at: DateTime<Local>,
     pub pending_path: Option<PathBuf>,
     pub speech_percentage: Option<f32>,
+    /// None for audio that did not come from a live capture.
+    pub input: Option<InputStats>,
 }
 
 #[derive(Debug, Clone)]
@@ -698,6 +760,7 @@ impl RecorderCore {
         pending_dir: Option<PathBuf>,
         monitor_only: bool,
     ) -> Result<(DateTime<Local>, String)> {
+        let opened = Instant::now();
         let device_name = device
             .description()
             .map(|desc| desc.name().to_string())
@@ -720,7 +783,9 @@ impl RecorderCore {
         let ring = Arc::new(SampleRing::new(
             sample_rate as usize * channels as usize * CAPTURE_RING_SECONDS,
         ));
+        let probe = Arc::new(InputProbe::new(opened));
         let sinks = CallbackSinks {
+            probe: Arc::clone(&probe),
             ring: Arc::clone(&ring),
             spectrum: Arc::clone(&self.spectrum),
             armed: Arc::clone(&self.armed),
@@ -774,6 +839,8 @@ impl RecorderCore {
         self.active = Some(ActiveRecording {
             stream,
             drain,
+            probe,
+            open_ms: opened.elapsed().as_millis() as u32,
             buffer,
             sample_rate,
             channels,
@@ -827,6 +894,7 @@ impl RecorderCore {
                     ended_at,
                     pending_path,
                     speech_percentage: processed.speech_percentage,
+                    input: Some(active.probe.stats(active.open_ms)),
                 }))
             }
             _ => {
@@ -1106,6 +1174,7 @@ fn recover_one_partial(
         ended_at,
         pending_path: Some(path.to_path_buf()),
         speech_percentage: processed.speech_percentage,
+        input: None,
     };
 
     let saved = persist_recording(base_dir.to_path_buf(), &recording)?;
@@ -1546,6 +1615,7 @@ fn cpal_error(what: &str, err: &cpal::Error) -> anyhow::Error {
 }
 
 struct CallbackSinks {
+    probe: Arc<InputProbe>,
     ring: Arc<SampleRing>,
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     armed: Arc<AtomicBool>,
@@ -1578,6 +1648,12 @@ where
     i16: FromSample<T>,
     f32: FromSample<T>,
 {
+    let peak = data
+        .iter()
+        .map(|&sample| f32::from_sample(sample).abs())
+        .fold(0.0_f32, f32::max);
+    sinks.probe.record(peak);
+
     if let Some(mut analysis) = sinks.spectrum.try_lock() {
         for frame in data.chunks(channels) {
             let mono: f32 = frame
@@ -1593,10 +1669,6 @@ where
     }
 
     if !sinks.armed.load(Ordering::Relaxed) {
-        let peak = data
-            .iter()
-            .map(|&sample| f32::from_sample(sample).abs())
-            .fold(0.0_f32, f32::max);
         if peak < ARM_SIGNAL_FLOOR {
             return;
         }

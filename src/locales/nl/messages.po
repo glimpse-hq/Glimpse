@@ -1333,6 +1333,11 @@ msgstr ""
 #~ msgstr "Ga door naar Glimpse"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.no_audio"
+#~ msgstr "Glimpse heeft geen geluid van je microfoon ontvangen. Controleer welke microfoon is geselecteerd via Instellingen."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -1880,6 +1885,16 @@ msgstr "Browseraanvragen toestaan"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "Cross-origin browserverzoeken toestaan"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_blocked"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -3859,11 +3874,6 @@ msgid "native.toast.accessibility_paste"
 msgstr "Glimpse kon dit niet typen omdat Toegankelijkheidstoegang is uitgeschakeld. Je tekst staat op het klembord, dus je kunt deze plakken met Command-V."
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.no_audio"
-msgstr "Glimpse heeft geen geluid van je microfoon ontvangen. Controleer welke microfoon is geselecteerd via Instellingen."
-
-#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "Er is een fout opgetreden in Glimpse"
@@ -3998,6 +4008,11 @@ msgstr "Ingedrukt houden"
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
 msgstr "Houd {shortcutLabel} ingedrukt en spreek om in elke app te dicteren."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.too_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5232,6 +5247,11 @@ msgid "native.toast.model_action"
 msgstr "Modellen openen"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Instellingen openen"
@@ -6418,6 +6438,21 @@ msgid "transcriptions.list.filter.aria"
 msgstr "Transcripties sorteren en filteren"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_quiet"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_default_name"
 msgstr "Spreker {nextIndex}"
@@ -7524,6 +7559,11 @@ msgid "native.toast.admin_app_shortcut"
 msgstr "Windows laat Glimpse je sneltoets niet horen in apps die als beheerder worden uitgevoerd. Om daar te dicteren, voer je Glimpse ook als beheerder uit."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "woorden per minuut"
@@ -7640,6 +7680,16 @@ msgstr "Je licentiesleutel staat in je ontvangstbevestigingsmail. Plak deze hier
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_unavailable"
 msgstr "Je microfoon is niet beschikbaar. Controleer of deze is aangesloten."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_audio.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_no_audio"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

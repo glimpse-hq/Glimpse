@@ -3,6 +3,9 @@ export type TranscriptionCompletePayload = {
   auto_paste: boolean;
 };
 
+export type DiscardNotice =
+  "short" | "no_audio" | "quiet" | "no_speech" | "blocked";
+
 export type TranscriptionRecord = {
   id: string;
   timestamp: string;
