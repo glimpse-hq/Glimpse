@@ -65,8 +65,13 @@ export function WelcomeStep({
         className="flex flex-col items-center will-change-transform"
         animate={
           leaving && !reduceMotion
-            ? { scale: 1.2, opacity: 0, filter: "blur(10px)" }
-            : { scale: 1, opacity: 1, filter: "blur(0px)" }
+            ? {
+                scale: 1.2,
+                opacity: 0,
+                filter: ["blur(0px)", "blur(10px)"],
+              }
+            : // A resting filter clips the tile's glow in WebKit.
+              { scale: 1, opacity: 1 }
         }
         transition={{ duration: 0.45, ease: [0.4, 0, 1, 1] }}
         onAnimationComplete={() => {

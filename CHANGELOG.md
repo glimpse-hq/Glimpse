@@ -8,6 +8,7 @@
 ### Fixes
 
 - When your network blocks model downloads, Glimpse now says so instead of saying the model isn't available.
+- The glow around the logo on the welcome screen is no longer cut off.
 
 1.4.2
 
