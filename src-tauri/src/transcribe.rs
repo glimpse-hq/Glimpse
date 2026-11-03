@@ -804,6 +804,7 @@ async fn transcribe_saved_recording_locally(
             ended_at: saved.ended_at,
             pending_path: None,
             speech_percentage: None,
+            input: None,
         },
         cancel_token,
         prefer_any_installed,
@@ -1564,6 +1565,8 @@ fn handle_empty_transcription(
         audio
             .as_ref()
             .map(|(samples, _)| crate::recorder::calculate_rms_i16(samples)),
+        None,
+        None,
     );
     let keep =
         !temporary && audio_seconds.is_some_and(|seconds| seconds >= KEEP_EMPTY_RECORDING_SECONDS);

@@ -198,6 +198,12 @@ fn show(
             license_changed(app)?;
         }
         "toast" => show_toast(app, words.get(1).copied().unwrap_or_default())?,
+        "discarded" => {
+            let notice = words.get(1).copied().unwrap_or_default();
+            let notice = serde_json::from_value(json!(notice))
+                .map_err(|_| format!("Unknown discard notice `{notice}`."))?;
+            crate::notify_discarded(app, notice);
+        }
         other => return Err(format!("Unknown screen `{other}`.")),
     }
     Ok(json!({ "shown": words.join(" ") }))

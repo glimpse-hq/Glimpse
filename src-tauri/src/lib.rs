@@ -58,7 +58,7 @@ use anyhow::{Context, Result};
 use pill::PillController;
 use recorder::{CompletedRecording, RecorderManager, RecordingRejectionReason, validate_recording};
 use reqwest::Client;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use settings::{SettingsStore, TranscriptionMode, UserSettings};
 use tauri::Emitter;
 use tauri::Listener;
@@ -122,6 +122,7 @@ pub(crate) const EVENT_RECORDING_START: &str = "recording:start";
 pub(crate) const EVENT_AUDIO_SPECTRUM: &str = "audio:spectrum";
 pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
+pub(crate) const EVENT_DICTATION_DISCARDED: &str = "dictation:discarded";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const EVENT_LICENSE_CHECKOUT_RETURNED: &str = "license:checkout-returned";
 #[cfg(target_os = "macos")]
@@ -716,6 +717,7 @@ pub fn run() {
             check_microphone_permission,
             request_microphone_permission,
             open_microphone_settings,
+            open_sound_settings,
             open_input_monitoring_settings,
             open_llm_cleanup_settings,
             open_ffmpeg_install,
@@ -1448,6 +1450,11 @@ fn open_microphone_settings() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn open_sound_settings() -> Result<(), String> {
+    permissions::open_sound_settings()
+}
+
+#[tauri::command]
 fn open_input_monitoring_settings() -> Result<(), String> {
     permissions::open_input_monitoring_settings()
 }
@@ -2046,6 +2053,129 @@ fn cancel_recording(app: AppHandle<AppRuntime>) {
     }
 }
 
+/// Why a dictation was thrown away, as the practice screen shows it.
+#[derive(Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum DiscardNotice {
+    Short,
+    NoAudio,
+    Quiet,
+    NoSpeech,
+    Blocked,
+}
+
+pub(crate) fn notify_discarded(app: &AppHandle<AppRuntime>, notice: DiscardNotice) {
+    let _ = app.emit(EVENT_DICTATION_DISCARDED, notice);
+    // The question staying up is the feedback; a notice would displace it.
+    if voice_prompt::is_answering() && !matches!(notice, DiscardNotice::Blocked) {
+        return;
+    }
+    let (toast_type, key, action) = match notice {
+        DiscardNotice::Short => ("warning", "native.toast.too_short", None),
+        DiscardNotice::Quiet => ("warning", "native.toast.too_quiet", None),
+        DiscardNotice::NoSpeech => ("warning", "native.toast.no_speech", None),
+        DiscardNotice::NoAudio => (
+            "warning",
+            "native.toast.no_audio.v2",
+            Some(("open_sound_settings", "native.toast.sound_settings")),
+        ),
+        DiscardNotice::Blocked => (
+            "error",
+            MIC_BLOCKED_KEY,
+            Some((
+                "open_microphone_settings",
+                "native.toast.open_settings_action",
+            )),
+        ),
+    };
+    toast::emit_toast(
+        app,
+        toast::Payload {
+            toast_type: toast_type.to_string(),
+            message: toast::native(app, key),
+            action: action.map(|(command, _)| command.to_string()),
+            action_label: action.map(|(_, label)| toast::native(app, label)),
+            ..Default::default()
+        },
+    );
+}
+
+#[cfg(target_os = "macos")]
+const MIC_BLOCKED_KEY: &str = "native.toast.mic_blocked_mac";
+#[cfg(not(target_os = "macos"))]
+const MIC_BLOCKED_KEY: &str = "native.toast.mic_blocked_windows";
+
+/// Reports, explains and cleans up a recording that failed validation.
+pub(crate) fn discard_recording(
+    app: &AppHandle<AppRuntime>,
+    recording: &CompletedRecording,
+    rejection: RecordingRejectionReason,
+    trigger: &str,
+) {
+    let no_signal = recording.input.is_some_and(|input| input.no_signal());
+    let (code, reason, notice) = match rejection {
+        RecordingRejectionReason::TooShort {
+            duration_ms,
+            min_ms,
+        } => (
+            "too_short",
+            format!("Recording too short ({duration_ms}ms < {min_ms}ms minimum)"),
+            DiscardNotice::Short,
+        ),
+        RecordingRejectionReason::TooQuiet { rms, threshold } => (
+            "too_quiet",
+            format!("Recording too quiet (energy {rms:.4} < {threshold} threshold)"),
+            if no_signal {
+                DiscardNotice::NoAudio
+            } else {
+                DiscardNotice::Quiet
+            },
+        ),
+        RecordingRejectionReason::NoSpeechDetected => (
+            "no_speech",
+            "No speech detected in recording".to_string(),
+            DiscardNotice::NoSpeech,
+        ),
+        // Quiet audio before the capture arms is dropped, so a short press
+        // with a working microphone also ends up empty.
+        RecordingRejectionReason::EmptyBuffer => (
+            "empty_buffer",
+            "Recording buffer is empty".to_string(),
+            if no_signal {
+                DiscardNotice::NoAudio
+            } else {
+                DiscardNotice::Short
+            },
+        ),
+    };
+    analytics::track_dictation_discarded(
+        app,
+        code,
+        Some((recording.ended_at - recording.started_at).num_milliseconds() as f32 / 1000.0),
+        Some(recorder::calculate_rms_i16(&recording.samples)),
+        recording.input,
+        Some(trigger),
+    );
+    tracing::error!("Recording rejected: {reason}");
+    notify_discarded(app, notice);
+
+    emit_event(
+        app,
+        EVENT_TRANSCRIPTION_COMPLETE,
+        TranscriptionCompletePayload {
+            transcript: String::new(),
+            auto_paste: false,
+            record: None,
+        },
+    );
+
+    if let Some(path) = recording.pending_path.as_deref() {
+        let _ = std::fs::remove_file(path);
+    }
+
+    app.state::<AppState>().pill().finish_processing(app);
+}
+
 pub(crate) fn persist_recording_async(
     app: AppHandle<AppRuntime>,
     recording: CompletedRecording,
@@ -2076,58 +2206,7 @@ pub(crate) fn persist_recording_async(
 
     // Validate before persisting so rejected recordings never touch disk.
     if let Err(rejection) = validate_recording(&recording) {
-        let (code, reason, notice) = match rejection {
-            RecordingRejectionReason::TooShort {
-                duration_ms,
-                min_ms,
-            } => (
-                "too_short",
-                format!("Recording too short ({duration_ms}ms < {min_ms}ms minimum)"),
-                None,
-            ),
-            RecordingRejectionReason::TooQuiet { rms, threshold } => (
-                "too_quiet",
-                format!("Recording too quiet (energy {rms:.4} < {threshold} threshold)"),
-                Some("native.toast.too_quiet"),
-            ),
-            RecordingRejectionReason::NoSpeechDetected => (
-                "no_speech",
-                "No speech detected in recording".to_string(),
-                Some("native.toast.no_speech"),
-            ),
-            RecordingRejectionReason::EmptyBuffer => (
-                "empty_buffer",
-                "Recording buffer is empty".to_string(),
-                Some("native.toast.no_audio"),
-            ),
-        };
-        analytics::track_dictation_discarded(
-            &app,
-            code,
-            Some((recording.ended_at - recording.started_at).num_milliseconds() as f32 / 1000.0),
-            Some(recorder::calculate_rms_i16(&recording.samples)),
-        );
-        tracing::error!("Recording rejected: {reason}");
-        // The question staying up is the feedback; a notice would displace it.
-        if let Some(notice) = notice.filter(|_| !voice_prompt::is_answering()) {
-            toast::show(&app, "warning", None, &toast::native(&app, notice));
-        }
-
-        emit_event(
-            &app,
-            EVENT_TRANSCRIPTION_COMPLETE,
-            TranscriptionCompletePayload {
-                transcript: String::new(),
-                auto_paste: false,
-                record: None,
-            },
-        );
-
-        if let Some(path) = recording.pending_path.as_deref() {
-            let _ = std::fs::remove_file(path);
-        }
-
-        app.state::<AppState>().pill().finish_processing(&app);
+        discard_recording(&app, &recording, rejection, origin.trigger);
         return;
     }
 

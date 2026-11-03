@@ -645,6 +645,7 @@ const LICENSES = [
 ];
 const LOCKED_VIEWS = ["personalization", "library", "record"];
 const TOASTS = ["milestone", "update", "no-words", "disk-full", "ask"];
+const DISCARD_NOTICES = ["short", "no_audio", "quiet", "no_speech", "blocked"];
 
 const onboardingShots = async () => {
   await dev("onboarding", "reset");
@@ -681,6 +682,12 @@ const onboardingShots = async () => {
   await dev("onboarding", "setup-failed");
   await shot("setup-done-failed");
   await step("practice");
+  for (const notice of DISCARD_NOTICES) {
+    await dev("show", "discarded", notice);
+    await shot(`setup-practice-${notice}`);
+    await shot(`toast-${notice}`, "toast");
+  }
+  await dev("show", "nothing");
   await dev("onboarding", "download-failed");
   await shot("setup-practice-download-failed");
   await dev("onboarding", "source");

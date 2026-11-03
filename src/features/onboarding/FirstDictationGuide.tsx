@@ -16,6 +16,7 @@ import {
 } from "react";
 import { shortcutDisplayParts } from "../../shared/lib/shortcuts";
 import type {
+  DiscardNotice,
   PillStatePayload,
   PillStatus,
   TranscriptionCompletePayload,
@@ -35,6 +36,8 @@ const REVEAL_VARIANTS = {
 } as const;
 
 const hasSpokenWords = (text: string) => /\p{L}|\p{N}/u.test(text);
+
+type Failure = DiscardNotice | "empty";
 
 interface FirstDictationGuideProps {
   stepMotionProps: StepMotionProps;
@@ -62,7 +65,7 @@ export default function FirstDictationGuide({
   const { t } = useLingui();
   const holdingRef = useRef(false);
   const [completedDictation, setCompletedDictation] = useState(false);
-  const [dictationFailed, setDictationFailed] = useState(false);
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [practiceText, setPracticeText] = useState("");
   const [holding, setHolding] = useState(false);
   const [pillStatus, setPillStatus] = useState<PillStatus>("idle");
@@ -73,7 +76,7 @@ export default function FirstDictationGuide({
 
   // A shortcut pressed mid-download fails; don't carry that into the ready state.
   useEffect(() => {
-    if (!modelPending) setDictationFailed(false);
+    if (!modelPending) setFailure(null);
   }, [modelPending]);
 
   const stopHold = useCallback(() => {
@@ -102,24 +105,27 @@ export default function FirstDictationGuide({
           if (!hasSpokenWords(transcript)) {
             setPracticeText("");
             setCompletedDictation(false);
-            setDictationFailed(true);
+            setFailure((current) => current ?? "empty");
             return;
           }
           setPracticeText(transcript);
-          setDictationFailed(false);
+          setFailure(null);
           setCompletedDictation(true);
         },
       ),
+      listen<DiscardNotice>("dictation:discarded", (event) => {
+        setFailure(event.payload);
+      }),
       listen("transcription:error", () => {
-        setDictationFailed(true);
+        setFailure((current) => current ?? "empty");
       }),
       listen<PillStatePayload>("pill:state", (event) => {
         setPillStatus(event.payload.status);
         if (event.payload.status === "listening") {
-          setDictationFailed(false);
+          setFailure(null);
         }
         if (event.payload.status === "error") {
-          setDictationFailed(true);
+          setFailure((current) => current ?? "empty");
         }
       }),
     ];
@@ -149,7 +155,7 @@ export default function FirstDictationGuide({
     event.currentTarget.setPointerCapture(event.pointerId);
     holdingRef.current = true;
     setHolding(true);
-    setDictationFailed(false);
+    setFailure(null);
     void invoke("start_hold_recording")
       .then(() => {
         if (!holdingRef.current) {
@@ -160,7 +166,7 @@ export default function FirstDictationGuide({
         if (!holdingRef.current) return;
         holdingRef.current = false;
         setHolding(false);
-        setDictationFailed(true);
+        setFailure((current) => current ?? "empty");
       });
   };
 
@@ -178,6 +184,42 @@ export default function FirstDictationGuide({
           id: "onboarding.first_dictation.hold",
           message: "Hold to dictate",
         });
+
+  let failureBody = t({
+    id: "onboarding.first_dictation.failed_empty_body",
+    message: "Hold a little longer, then try again.",
+  });
+  let failureAction: { label: string; command: string } | null = null;
+  if (failure === "no_audio") {
+    failureBody = t({
+      id: "onboarding.first_dictation.failed_no_audio",
+      message: "Your microphone isn't sending any sound.",
+    });
+    failureAction = {
+      label: t({
+        id: "onboarding.first_dictation.sound_settings",
+        message: "Sound Settings",
+      }),
+      command: "open_sound_settings",
+    };
+  } else if (failure === "blocked") {
+    failureBody = t({
+      id: "onboarding.first_dictation.failed_blocked",
+      message: "Allow microphone access, then try again.",
+    });
+    failureAction = {
+      label: t({
+        id: "onboarding.first_dictation.open_settings",
+        message: "Open Settings",
+      }),
+      command: "open_microphone_settings",
+    };
+  } else if (failure === "quiet" || failure === "no_speech") {
+    failureBody = t({
+      id: "onboarding.first_dictation.failed_quiet",
+      message: "Speak a little louder, then try again.",
+    });
+  }
 
   let waitingMessage = t({
     id: "onboarding.first_dictation.waiting.v5",
@@ -442,7 +484,7 @@ export default function FirstDictationGuide({
                   </motion.li>
                 </ul>
               </motion.div>
-            ) : dictationFailed && !modelPending ? (
+            ) : failure && !modelPending ? (
               <motion.div
                 key="failed"
                 className="w-full"
@@ -458,11 +500,19 @@ export default function FirstDictationGuide({
                   })}
                 </p>
                 <p className="mx-auto mt-1 max-w-sm text-balance ui-text-meta text-content-muted">
-                  {t({
-                    id: "onboarding.first_dictation.failed_empty_body",
-                    message: "Hold a little longer, then try again.",
-                  })}
+                  {failureBody}
                 </p>
+                {failureAction ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void invoke(failureAction.command).catch(() => {})
+                    }
+                    className="mt-1.5 ui-text-meta font-medium ui-color-cloud underline-offset-4 hover:underline"
+                  >
+                    {failureAction.label}
+                  </button>
+                ) : null}
               </motion.div>
             ) : (
               <motion.p
