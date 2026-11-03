@@ -695,6 +695,7 @@ pub fn run() {
             recording::merge_live_speaker,
             model_manager::list_models,
             model_manager::check_model_status,
+            model_manager::loading_speech_model,
             model_manager::download_model,
             model_manager::delete_model,
             model_manager::cancel_download,
@@ -968,8 +969,13 @@ impl AppState {
 
         let model_cache_dir = model_manager::model_cache_dir(app_handle)
             .expect("Failed to resolve local model cache directory");
-        let local_transcriber =
-            Arc::new(local_transcription::LocalTranscriber::new(model_cache_dir));
+        let loading_app = app_handle.clone();
+        let local_transcriber = Arc::new(local_transcription::LocalTranscriber::new(
+            model_cache_dir,
+            Box::new(move |model| {
+                let _ = loading_app.emit("speech:loading", model);
+            }),
+        ));
         local_transcriber.start_idle_monitor();
 
         // Cache readiness before registering shortcuts to keep disk I/O off the keypress path.

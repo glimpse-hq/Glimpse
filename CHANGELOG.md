@@ -2,6 +2,7 @@
 
 ### Changes
 
+- When a speech model takes a while to load, Glimpse now says it's getting it ready, both when you dictate and on the Models screen.
 - Asks to star Glimpse on GitHub or rate it in the Microsoft Store now appear in a small card at the corner of Home, and Glimpse no longer asks you to take a survey.
 
 ### Fixes

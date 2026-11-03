@@ -4,7 +4,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { listen } from "@tauri-apps/api/event";
 import * as modelsApi from "./models-api";
 import type { ModelRecommendation } from "./models-api";
 import { formatTranscriptionSpeechModel } from "../../shared/lib/speechProviders";
@@ -17,6 +18,7 @@ export const modelKeys = {
   speech: () => [...modelKeys.all, "speech"] as const,
   cli: () => [...modelKeys.all, "cli"] as const,
   recommendation: () => [...modelKeys.all, "recommendation"] as const,
+  loading: () => [...modelKeys.all, "loading"] as const,
 };
 
 // The speaker and cleanup models share the catalog but never transcribe. The
@@ -51,6 +53,26 @@ export function useModelRecommendation() {
     queryKey: modelKeys.recommendation(),
     queryFn: modelsApi.getModelRecommendation,
   });
+}
+
+/** The speech model being loaded right now, if any. */
+export function useLoadingSpeechModel() {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const unlisten = listen<string | null>("speech:loading", (event) => {
+      queryClient.setQueryData(modelKeys.loading(), event.payload);
+    });
+    // Events sent before the listener attached are missed.
+    void unlisten.then(() =>
+      queryClient.invalidateQueries({ queryKey: modelKeys.loading() }),
+    );
+    return () => void unlisten.then((dispose) => dispose());
+  }, [queryClient]);
+  return useQuery({
+    queryKey: modelKeys.loading(),
+    queryFn: modelsApi.getLoadingSpeechModel,
+    staleTime: 0,
+  }).data;
 }
 
 export function useDiarizerModel(enabled: boolean = true) {

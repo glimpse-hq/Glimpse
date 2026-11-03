@@ -3768,9 +3768,14 @@ msgid "home.support.title"
 msgstr "सहायता प्राप्त करें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.installed.loading"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr "आपका वाक् मॉडल तैयार किया जा रहा है। यह पृष्ठभूमि में चलता है।"
+msgstr "आपका वाक् मॉडल तैयार किया जा रहा है।"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
