@@ -346,7 +346,9 @@ fn should_restart_for_auto_update(app: &AppHandle<AppRuntime>, state: &SharedUpd
 async fn wait_until_quiet(app: &AppHandle<AppRuntime>) {
     loop {
         let state = app.state::<AppState>();
-        if state.pill().status() == PillStatus::Idle && state.is_backend_idle() {
+        if matches!(state.pill().status(), PillStatus::Idle | PillStatus::Error)
+            && state.is_backend_idle()
+        {
             return;
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
