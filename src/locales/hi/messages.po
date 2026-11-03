@@ -1333,6 +1333,11 @@ msgstr ""
 #~ msgstr "Glimpse पर जारी रखें"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.no_audio"
+#~ msgstr "Glimpse को आपके माइक्रोफ़ोन से कोई आवाज़ नहीं मिली। सेटिंग्स में चुना हुआ माइक्रोफ़ोन जाँचें।"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -1880,6 +1885,16 @@ msgstr "ब्राउज़र अनुरोधों की अनुमत
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "क्रॉस‑ओरिजिन ब्राउज़र अनुरोधों की अनुमति दें"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_blocked"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -3859,11 +3874,6 @@ msgid "native.toast.accessibility_paste"
 msgstr "Glimpse इसे टाइप नहीं कर सका क्योंकि सुगम्यता पहुँच बंद है। आपका टेक्स्ट क्लिपबोर्ड पर है, इसलिए आप इसे Command-V से पेस्ट कर सकते हैं।"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.no_audio"
-msgstr "Glimpse को आपके माइक्रोफ़ोन से कोई आवाज़ नहीं मिली। सेटिंग्स में चुना हुआ माइक्रोफ़ोन जाँचें।"
-
-#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "Glimpse में एक त्रुटि हुई"
@@ -3998,6 +4008,11 @@ msgstr "दबाए रखें"
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
 msgstr "किसी भी ऐप में डिक्टेशन के लिए {shortcutLabel} दबाए रखें और बोलें।"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.too_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5232,6 +5247,11 @@ msgid "native.toast.model_action"
 msgstr "मॉडल खोलें"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "सेटिंग्स खोलें"
@@ -6418,6 +6438,21 @@ msgid "transcriptions.list.filter.aria"
 msgstr "लिखित रूपों को क्रमबद्ध करें और फ़िल्टर करें"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_quiet"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_default_name"
 msgstr "स्पीकर {nextIndex}"
@@ -7524,6 +7559,11 @@ msgid "native.toast.admin_app_shortcut"
 msgstr "Windows एडमिनिस्ट्रेटर के रूप में चल रहे ऐप्स में Glimpse को आपका शॉर्टकट सुनने नहीं देता। वहाँ डिक्टेट करने के लिए Glimpse को भी एडमिनिस्ट्रेटर के रूप में चलाएँ।"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "शब्द प्रति मिनट"
@@ -7640,6 +7680,16 @@ msgstr "आपकी लाइसेंस कुंजी आपके रस�
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_unavailable"
 msgstr "आपका माइक्रोफ़ोन उपलब्ध नहीं है। जाँचें कि वह कनेक्ट है।"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_audio.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_no_audio"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

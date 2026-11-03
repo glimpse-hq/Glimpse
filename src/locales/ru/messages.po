@@ -1333,6 +1333,11 @@ msgstr ""
 #~ msgstr "Перейти в Glimpse"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.no_audio"
+#~ msgstr "Микрофон не передаёт звук в Glimpse. Проверьте, какой микрофон выбран в настройках."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -1880,6 +1885,16 @@ msgstr "Разрешить запросы из браузера"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "Разрешить межсайтовые запросы браузера"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_blocked"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -3859,11 +3874,6 @@ msgid "native.toast.accessibility_paste"
 msgstr "Glimpse не смог ввести текст, так как доступ к специальным возможностям отключён. Текст скопирован в буфер обмена, поэтому вы можете вставить его с помощью Command-V."
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.no_audio"
-msgstr "Микрофон не передаёт звук в Glimpse. Проверьте, какой микрофон выбран в настройках."
-
-#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "В Glimpse произошла ошибка"
@@ -3998,6 +4008,11 @@ msgstr "Удерживайте"
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
 msgstr "Удерживайте {shortcutLabel} и говорите, чтобы диктовать в любом приложении."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.too_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5232,6 +5247,11 @@ msgid "native.toast.model_action"
 msgstr "Открыть модели"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Открыть настройки"
@@ -6418,6 +6438,21 @@ msgid "transcriptions.list.filter.aria"
 msgstr "Сортировка и фильтрация транскрипций"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.sound_settings"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_quiet"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_default_name"
 msgstr "Говорящий {nextIndex}"
@@ -7524,6 +7559,11 @@ msgid "native.toast.admin_app_shortcut"
 msgstr "Windows не позволяет Glimpse распознавать сочетание клавиш в приложениях, запущенных с правами администратора. Чтобы диктовать в них, запустите Glimpse с правами администратора."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_blocked_windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words_a_minute"
 msgstr "слов в минуту"
@@ -7640,6 +7680,16 @@ msgstr "Лицензионный ключ находится в письме с 
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.mic_unavailable"
 msgstr "Микрофон недоступен. Проверьте, подключён ли он."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_audio.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.failed_no_audio"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

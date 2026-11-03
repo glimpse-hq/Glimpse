@@ -1,6 +1,6 @@
 // Product events. Each function says in plain English what it records.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use serde_json::json;
 use tauri::Manager;
@@ -128,6 +128,7 @@ pub fn track_transcription_completed(
     app: &tauri::AppHandle<AppRuntime>,
     props: TranscriptionEvent,
 ) {
+    DISCARD_STREAK.store(0, Ordering::Relaxed);
     let props = serde_json::to_value(&props).unwrap_or_else(|_| json!({}));
     capture_event(app, "transcription_completed", props);
 }
@@ -154,15 +155,23 @@ pub fn track_transcription_failed(
     capture_event(app, "transcription_failed", props);
 }
 
+// Dictations discarded since the last transcript, in this session.
+static DISCARD_STREAK: AtomicU32 = AtomicU32::new(0);
+
 /// Records a dictation the app threw away before it reached you: a bounded
-/// reason code, the audio length and input level as buckets, the speech model,
-/// and its engine family. Never records audio or transcript content.
+/// reason code, the audio length and input level as buckets, how the
+/// microphone behaved as buckets, the trigger, the discards in a row, the
+/// speech model, and its engine family. Never records audio, transcript
+/// content or device names.
 pub fn track_dictation_discarded(
     app: &tauri::AppHandle<AppRuntime>,
     reason: &str,
     audio_seconds: Option<f32>,
     rms: Option<f32>,
+    input: Option<crate::recorder::InputStats>,
+    trigger: Option<&str>,
 ) {
+    let streak = DISCARD_STREAK.fetch_add(1, Ordering::Relaxed) + 1;
     let settings = app.state::<AppState>().current_settings();
     capture_event(
         app,
@@ -171,6 +180,11 @@ pub fn track_dictation_discarded(
             "reason": reason,
             "audio_length": audio_length_bucket(audio_seconds),
             "level": level_bucket(rms),
+            "mic_open": input.map(|input| latency_bucket(Some(input.open_ms))),
+            "first_audio": input.map(|input| latency_bucket(input.first_audio_ms)),
+            "signal": input.map(|input| if input.no_signal() { "none" } else { "live" }),
+            "trigger": trigger,
+            "discard_streak": streak.min(10),
             "model": crate::speech::selected_model(&settings),
             "engine": speech_engine(&settings),
         }),
