@@ -5851,11 +5851,6 @@ msgid "settings.general.auto_dictionary.unsupported_body"
 msgstr "requiere un modelo con compatibilidad con diccionario"
 
 #. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.restart"
-msgstr "Reiniciar"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding"
 msgstr "Reiniciar introducción"
@@ -5864,11 +5859,6 @@ msgstr "Reiniciar introducción"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding_hold_aria"
 msgstr "Reiniciar introducción. Mantén pulsado para confirmar."
-
-#. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.restart_to_apply"
-msgstr "Reiniciar para aplicar"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -7386,11 +7376,6 @@ msgstr "Actualización disponible."
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.check_failed"
 msgstr "Error al comprobar actualizaciones"
-
-#. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.installed"
-msgstr "Actualización instalada"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

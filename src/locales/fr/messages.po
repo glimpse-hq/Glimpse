@@ -5851,11 +5851,6 @@ msgid "settings.general.auto_dictionary.unsupported_body"
 msgstr "nécessite un modèle avec prise en charge du dictionnaire"
 
 #. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.restart"
-msgstr "Redémarrer"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding"
 msgstr "Relancer l'intégration"
@@ -5864,11 +5859,6 @@ msgstr "Relancer l'intégration"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding_hold_aria"
 msgstr "Redémarrer l'intégration. Maintenir pour confirmer."
-
-#. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.restart_to_apply"
-msgstr "Redémarrer pour appliquer"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -7386,11 +7376,6 @@ msgstr "Mise à jour disponible."
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.check_failed"
 msgstr "Échec de la vérification des mises à jour"
-
-#. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.installed"
-msgstr "Mise à jour installée"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

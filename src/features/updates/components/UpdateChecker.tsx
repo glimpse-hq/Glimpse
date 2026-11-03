@@ -1,7 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { getVersion } from "@tauri-apps/api/app";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DownloadSimple as Download,
@@ -26,8 +25,6 @@ interface UpdateDownloadProgressPayload {
   total?: number | null;
   progress?: number | null;
 }
-
-const PENDING_RESTART_KEY = "glimpse_update_pending_restart";
 
 const UPDATE_BOX_CLASS =
   "flex w-full min-w-0 items-center gap-2 rounded-lg px-3 py-2 h-[52px]";
@@ -59,24 +56,9 @@ export function UpdateChecker({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [installed, setInstalled] = useState(false);
-  const availableVersion =
-    installed || !updateStatus?.available ? null : updateStatus.version;
-
-  useEffect(() => {
-    const pendingVersion = localStorage.getItem(PENDING_RESTART_KEY);
-    if (!pendingVersion) return;
-    getVersion()
-      .then((currentVersion) => {
-        if (pendingVersion === currentVersion) {
-          // Update was already applied - clear stale key
-          localStorage.removeItem(PENDING_RESTART_KEY);
-        } else {
-          setInstalled(true);
-        }
-      })
-      .catch((err) => console.error("Failed to read the app version:", err));
-  }, []);
+  const availableVersion = updateStatus?.available
+    ? updateStatus.version
+    : null;
 
   const checkForUpdates = useCallback(async () => {
     setChecking(true);
@@ -133,28 +115,15 @@ export function UpdateChecker({
     setError(null);
     setDownloadError(null);
 
+    // On success the app restarts, so the progress stays up until then.
     try {
-      const pendingVersion = availableVersion;
       await invoke("download_and_install_update");
-
-      setInstalled(true);
-      queryClient.setQueryData(updateKeys.status(), {
-        available: false,
-        version: null,
-      });
-      if (pendingVersion) {
-        localStorage.setItem(PENDING_RESTART_KEY, pendingVersion);
-      }
     } catch (err) {
       console.error("Update failed:", err);
       setDownloadError(formatError(err));
-    } finally {
       setDownloading(false);
     }
   };
-
-  // The pending-restart key clears itself after the restart.
-  const handleRelaunch = () => invoke("restart_to_update");
 
   if (storeBuild) {
     return (
@@ -176,42 +145,6 @@ export function UpdateChecker({
           })}
         </button>
       </div>
-    );
-  }
-
-  if (installed) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`${UPDATE_BOX_CLASS} border border-green-500/20 bg-green-500/10`}
-      >
-        <CheckCircle size={16} className="ui-color-success-strong shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="ui-text-body-sm-strong ui-color-success-strong">
-            {t({
-              id: "updates.installed",
-              message: "Update installed",
-            })}
-          </p>
-          <p className="ui-text-meta ui-color-success-subtle">
-            {t({
-              id: "updates.restart_to_apply",
-              message: "Restart to apply",
-            })}
-          </p>
-        </div>
-        <motion.button
-          onClick={handleRelaunch}
-          className="rounded-md bg-green-500 px-2.5 py-1.5 ui-text-button ui-color-on-solid hover:bg-green-400 transition-colors shrink-0"
-          whileTap={{ scale: 0.97 }}
-        >
-          {t({
-            id: "updates.restart",
-            message: "Restart",
-          })}
-        </motion.button>
-      </motion.div>
     );
   }
 

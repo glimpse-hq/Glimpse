@@ -5851,11 +5851,6 @@ msgid "settings.general.auto_dictionary.unsupported_body"
 msgstr "शब्दकोश समर्थन वाले मॉडल की आवश्यकता"
 
 #. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.restart"
-msgstr "पुनः प्रारंभ करें"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding"
 msgstr "ऑनबोर्डिंग पुनः शुरू करें"
@@ -5864,11 +5859,6 @@ msgstr "ऑनबोर्डिंग पुनः शुरू करें"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding_hold_aria"
 msgstr "ऑनबोर्डिंग दोबारा शुरू करें। पुष्टि करने के लिए दबाए रखें।"
-
-#. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.restart_to_apply"
-msgstr "लागू करने के लिए पुनः प्रारंभ करें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -7386,11 +7376,6 @@ msgstr "अपडेट उपलब्ध है।"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.check_failed"
 msgstr "अपडेट जाँच विफल हुई"
-
-#. js-lingui-explicit-id
-#: src/features/updates/components/UpdateChecker.tsx
-msgid "updates.installed"
-msgstr "अपडेट इंस्टॉल हो गया"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
