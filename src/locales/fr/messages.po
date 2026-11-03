@@ -3779,9 +3779,14 @@ msgid "home.support.title"
 msgstr "Obtenir de l'aide"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.installed.loading"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr "Préparation de votre modèle vocal en cours. Cette opération s'exécute en arrière-plan."
+msgstr "Préparation de votre modèle vocal en cours."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

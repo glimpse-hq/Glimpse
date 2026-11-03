@@ -2,12 +2,14 @@
 
 ### Changes
 
+- When a speech model takes a while to load, Glimpse now says it's getting it ready, both when you dictate and on the Models screen.
 - Asks to star Glimpse on GitHub or rate it in the Microsoft Store now appear in a small card at the corner of Home, and Glimpse no longer asks you to take a survey.
 - Setup now shows what the free trial includes after your first dictation instead of before it.
 
 ### Fixes
 
 - When your network blocks model downloads, Glimpse now says so instead of saying the model isn't available.
+- Without a license, every writing model on the Models screen now shows as locked, instead of only Glimpse C1.
 - The glow around the logo on the welcome screen is no longer cut off.
 
 1.4.2

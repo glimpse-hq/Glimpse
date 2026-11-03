@@ -283,6 +283,13 @@ pub fn check_model_status<R: Runtime>(
     Ok(map_status(status, &manager))
 }
 
+#[tauri::command]
+pub fn loading_speech_model(app: AppHandle<AppRuntime>) -> Option<String> {
+    app.state::<crate::AppState>()
+        .local_transcriber()
+        .loading_model()
+}
+
 const MODEL_UNAVAILABLE: &str = "This model is no longer available for download.";
 
 /// Legacy models stay downloadable while selected or partly downloaded.

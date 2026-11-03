@@ -3779,9 +3779,14 @@ msgid "home.support.title"
 msgstr "Get Support"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.installed.loading"
+msgstr "Getting ready…"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr "Getting your speech model ready. This runs in the background."
+msgstr "Getting your speech model ready."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

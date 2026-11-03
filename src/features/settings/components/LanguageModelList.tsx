@@ -162,16 +162,19 @@ const LanguageModelList = ({
     if (value !== llmProvider) setLlmProvider(value);
   };
 
-  const cleanupModelBlocker = !licenseGateActive
-    ? t({ id: "settings.models.status.locked", message: "Locked" })
-    : cleanupModelInstalled === false
+  const locked = licenseGateActive
+    ? null
+    : t({ id: "settings.models.status.locked", message: "Locked" });
+  const cleanupModelBlocker =
+    locked ??
+    (cleanupModelInstalled === false
       ? cleanupDownload?.status === "downloading"
         ? `${Math.round(cleanupDownload.percent)}%`
         : t({
             id: "settings.models.status.not_installed",
             message: "Not installed",
           })
-      : null;
+      : null);
   const cleanupModelDownloadKey =
     licenseGateActive &&
     cleanupModelInstalled === false &&
@@ -180,7 +183,8 @@ const LanguageModelList = ({
       ? cleanupModel.key
       : null;
   const appleBlocker =
-    appleAvailability === "not_enabled"
+    locked ??
+    (appleAvailability === "not_enabled"
       ? t({ id: "settings.models.status.off", message: "Off" })
       : appleAvailability === "not_ready"
         ? t({
@@ -192,7 +196,7 @@ const LanguageModelList = ({
               id: "settings.models.status.unsupported",
               message: "Not supported",
             })
-          : null;
+          : null);
   // Like the backend: the dictation language, or on Auto the user's
   // languages, one of which the cleanup model has to know.
   const cleanupLanguages = dictationLanguage
@@ -265,13 +269,17 @@ const LanguageModelList = ({
               })
         }
         factsWarning={
-          serviceId !== null && chosenButBlocked(serviceId) && !serviceReady
+          serviceId !== null &&
+          chosenButBlocked(serviceId) &&
+          (!serviceReady || Boolean(locked))
         }
         state={
           serviceId && isActive(serviceId)
             ? active
             : serviceReady && serviceId
-              ? { kind: "use", onUse: () => select(serviceId as LlmProvider) }
+              ? locked
+                ? { kind: "status", text: locked }
+                : { kind: "use", onUse: () => select(serviceId as LlmProvider) }
               : { kind: "status", text: "" }
         }
         trailing={
@@ -320,7 +328,9 @@ const LanguageModelList = ({
         <ModelRow
           title="Apple Intelligence"
           facts={
-            chosenButBlocked("apple") && appleAvailability === "not_enabled"
+            chosenButBlocked("apple") &&
+            !locked &&
+            appleAvailability === "not_enabled"
               ? t({
                   id: "settings.language_model.apple.not_enabled",
                   message:

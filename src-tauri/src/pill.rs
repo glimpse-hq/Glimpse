@@ -21,6 +21,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 const MODEL_NOTICE_INTERVAL: Duration = Duration::from_secs(20);
+const SLOW_LOAD_NOTICE: Duration = Duration::from_secs(3);
 const SMART_MODE_TAP_THRESHOLD: Duration = Duration::from_millis(200);
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
@@ -460,6 +461,24 @@ impl PillController {
         self.emit_state(app);
         if new_status == PillStatus::Idle {
             crate::voice_prompt::pill_became_idle(app);
+        }
+        if new_status == PillStatus::Processing {
+            // A Neural Engine recompile can hold the model load for a minute or more.
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(SLOW_LOAD_NOTICE).await;
+                let state = app.state::<AppState>();
+                if state.pill().status() == PillStatus::Processing
+                    && state.local_transcriber().is_loading()
+                {
+                    toast::show(
+                        &app,
+                        "info",
+                        None,
+                        &toast::native(&app, "native.toast.model_preparing"),
+                    );
+                }
+            });
         }
     }
 
