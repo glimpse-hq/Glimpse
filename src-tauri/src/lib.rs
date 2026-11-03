@@ -2105,6 +2105,8 @@ const MIC_BLOCKED_KEY: &str = "native.toast.mic_blocked_mac";
 #[cfg(not(target_os = "macos"))]
 const MIC_BLOCKED_KEY: &str = "native.toast.mic_blocked_windows";
 
+const NO_SIGNAL_MIN_MS: i64 = 1000;
+
 /// Reports, explains and cleans up a recording that failed validation.
 pub(crate) fn discard_recording(
     app: &AppHandle<AppRuntime>,
@@ -2112,7 +2114,10 @@ pub(crate) fn discard_recording(
     rejection: RecordingRejectionReason,
     trigger: &str,
 ) {
-    let no_signal = recording.input.is_some_and(|input| input.no_signal());
+    let duration_ms = (recording.ended_at - recording.started_at).num_milliseconds();
+    // A working microphone can take a moment to start sending sound.
+    let no_signal =
+        duration_ms >= NO_SIGNAL_MIN_MS && recording.input.is_some_and(|input| input.no_signal());
     let (code, reason, notice) = match rejection {
         RecordingRejectionReason::TooShort {
             duration_ms,
@@ -2151,7 +2156,7 @@ pub(crate) fn discard_recording(
     analytics::track_dictation_discarded(
         app,
         code,
-        Some((recording.ended_at - recording.started_at).num_milliseconds() as f32 / 1000.0),
+        Some(duration_ms as f32 / 1000.0),
         Some(recorder::calculate_rms_i16(&recording.samples)),
         recording.input,
         Some(trigger),
