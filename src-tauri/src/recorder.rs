@@ -210,6 +210,7 @@ struct CoreShared {
     armed: Arc<AtomicBool>,
     #[cfg(target_os = "macos")]
     active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
+    last_device: Arc<Mutex<Option<cpal::Device>>>,
     // Dictation starts that failed in a row.
     #[cfg(windows)]
     start_failures: Arc<std::sync::atomic::AtomicU32>,
@@ -426,6 +427,7 @@ impl Default for RecorderManager {
             armed: Arc::new(AtomicBool::new(false)),
             #[cfg(target_os = "macos")]
             active_device: Arc::new(Mutex::new(None)),
+            last_device: Arc::new(Mutex::new(None)),
             #[cfg(windows)]
             start_failures: Arc::new(std::sync::atomic::AtomicU32::new(0)),
         };
@@ -539,6 +541,11 @@ impl RecorderManager {
 
         let id = self.shared.active_device.lock().clone()?;
         Some(cpal::default_host().device_by_id(&id).is_some())
+    }
+
+    /// The microphone the latest recording opened or tried to open.
+    pub fn last_device(&self) -> Option<cpal::Device> {
+        self.shared.last_device.lock().clone()
     }
 
     pub fn spectrum_snapshot(&self) -> Option<Vec<f32>> {
@@ -674,6 +681,7 @@ struct RecorderCore {
     monitor_only: Arc<AtomicBool>,
     #[cfg(target_os = "macos")]
     active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
+    last_device: Arc<Mutex<Option<cpal::Device>>>,
 }
 
 impl RecorderCore {
@@ -686,6 +694,7 @@ impl RecorderCore {
             monitor_only: Arc::new(AtomicBool::new(false)),
             #[cfg(target_os = "macos")]
             active_device: shared.active_device,
+            last_device: shared.last_device,
         }
     }
 
@@ -761,6 +770,7 @@ impl RecorderCore {
         monitor_only: bool,
     ) -> Result<(DateTime<Local>, String)> {
         let opened = Instant::now();
+        *self.last_device.lock() = Some(device.clone());
         let device_name = device
             .description()
             .map(|desc| desc.name().to_string())
