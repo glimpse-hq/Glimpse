@@ -33,7 +33,6 @@ pub fn init(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime
 
         let behavior = CollectionBehavior::new()
             .can_join_all_spaces()
-            .stationary()
             .ignores_cycle()
             .full_screen_auxiliary();
         panel.set_collection_behavior(behavior.into());
