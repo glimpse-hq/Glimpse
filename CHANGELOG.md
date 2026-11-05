@@ -1,3 +1,9 @@
+1.4.4
+
+### Fixes
+
+- On Mac, the recording pill and notices show up over full-screen apps again after the Glimpse window leaves full screen.
+
 1.4.3
 
 ### Changes
