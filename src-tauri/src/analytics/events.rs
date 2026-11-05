@@ -539,7 +539,8 @@ pub fn track_settings_changes(
 }
 
 /// Records the recording phase, a bounded failure reason, whether the default
-/// or a selected microphone was requested, and how that microphone connects.
+/// or a selected microphone was requested, and how the microphone it opened
+/// or tried to open connects.
 /// Never records its name.
 pub fn track_recording_failed(
     app: &tauri::AppHandle<AppRuntime>,
@@ -547,14 +548,19 @@ pub fn track_recording_failed(
     reason: impl Into<ErrorDetail>,
     input: &str,
 ) {
-    let selected = app.state::<AppState>().current_settings().microphone_device;
-    let mut props = json!({
-        "stage": stage,
-        "input": input,
-        "connection": crate::audio::input_connection(selected.as_deref()),
-    });
+    let mut props = json!({ "stage": stage, "input": input });
     reason.into().insert_into(&mut props);
-    capture_event(app, "recording_failed", props);
+    let Some(mut event) = build_event(app, "recording_failed", props, true) else {
+        return;
+    };
+    let connection = app
+        .state::<AppState>()
+        .pill()
+        .recorder()
+        .last_device()
+        .map_or("unknown", |device| crate::audio::input_connection(&device));
+    let _ = event.insert_prop("connection", connection);
+    send(event);
 }
 
 /// Records when remote speech falls back to a local model, including the

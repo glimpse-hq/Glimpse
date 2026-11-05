@@ -90,12 +90,9 @@ pub(crate) fn find_input_device(selected: Option<&str>) -> Option<cpal::Device> 
         .or_else(|| host.default_input_device())
 }
 
-/// How the microphone a recording would use connects, like `usb` or
-/// `bluetooth`. Never its name.
-pub(crate) fn input_connection(selected: Option<&str>) -> &'static str {
-    find_input_device(selected)
-        .and_then(|device| connection(&device))
-        .unwrap_or("unknown")
+/// How a microphone connects, like `usb` or `bluetooth`. Never its name.
+pub(crate) fn input_connection(device: &cpal::Device) -> &'static str {
+    connection(device).unwrap_or("unknown")
 }
 
 #[cfg(target_os = "macos")]
