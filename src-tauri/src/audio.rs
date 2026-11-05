@@ -90,6 +90,32 @@ pub(crate) fn find_input_device(selected: Option<&str>) -> Option<cpal::Device> 
         .or_else(|| host.default_input_device())
 }
 
+/// How the microphone a recording would use connects, like `usb` or
+/// `bluetooth`. Never its name.
+pub(crate) fn input_connection(selected: Option<&str>) -> &'static str {
+    find_input_device(selected)
+        .and_then(|device| connection(&device))
+        .unwrap_or("unknown")
+}
+
+#[cfg(target_os = "macos")]
+fn connection(device: &cpal::Device) -> Option<&'static str> {
+    crate::platform::macos::audio_devices::connection(device.id().ok()?.id())
+}
+
+#[cfg(windows)]
+fn connection(device: &cpal::Device) -> Option<&'static str> {
+    use cpal::InterfaceType;
+    Some(match device.description().ok()?.interface_type() {
+        InterfaceType::BuiltIn => "built_in",
+        InterfaceType::Usb => "usb",
+        InterfaceType::Bluetooth => "bluetooth",
+        InterfaceType::Virtual | InterfaceType::Aggregate => "virtual",
+        InterfaceType::Unknown => return None,
+        _ => "other",
+    })
+}
+
 /// The default input as a specific device. On Windows, cpal otherwise opens
 /// the default through a virtual device that follows default changes.
 #[cfg(windows)]

@@ -538,15 +538,21 @@ pub fn track_settings_changes(
     }
 }
 
-/// Records the recording phase, a bounded failure reason, and whether the
-/// default or a selected microphone was requested. Never records its name.
+/// Records the recording phase, a bounded failure reason, whether the default
+/// or a selected microphone was requested, and how that microphone connects.
+/// Never records its name.
 pub fn track_recording_failed(
     app: &tauri::AppHandle<AppRuntime>,
     stage: &str,
     reason: impl Into<ErrorDetail>,
     input: &str,
 ) {
-    let mut props = json!({ "stage": stage, "input": input });
+    let selected = app.state::<AppState>().current_settings().microphone_device;
+    let mut props = json!({
+        "stage": stage,
+        "input": input,
+        "connection": crate::audio::input_connection(selected.as_deref()),
+    });
     reason.into().insert_into(&mut props);
     capture_event(app, "recording_failed", props);
 }

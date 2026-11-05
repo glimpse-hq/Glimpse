@@ -3,11 +3,19 @@ use std::ptr::NonNull;
 
 use crossbeam_channel::Sender;
 use objc2_core_audio::{
-    AudioObjectAddPropertyListener, AudioObjectID, AudioObjectPropertyAddress,
-    AudioObjectPropertySelector, AudioObjectRemovePropertyListener, kAudioHardwareNoError,
+    AudioObjectAddPropertyListener, AudioObjectGetPropertyData, AudioObjectID,
+    AudioObjectPropertyAddress, AudioObjectPropertySelector, AudioObjectRemovePropertyListener,
+    kAudioDevicePropertyTransportType, kAudioDeviceTransportTypeAggregate,
+    kAudioDeviceTransportTypeAutoAggregate, kAudioDeviceTransportTypeBluetooth,
+    kAudioDeviceTransportTypeBluetoothLE, kAudioDeviceTransportTypeBuiltIn,
+    kAudioDeviceTransportTypeContinuityCaptureWired,
+    kAudioDeviceTransportTypeContinuityCaptureWireless, kAudioDeviceTransportTypeUSB,
+    kAudioDeviceTransportTypeVirtual, kAudioHardwareNoError,
     kAudioHardwarePropertyDefaultInputDevice, kAudioHardwarePropertyDevices,
-    kAudioObjectPropertyElementMain, kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject,
+    kAudioHardwarePropertyTranslateUIDToDevice, kAudioObjectPropertyElementMain,
+    kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject,
 };
+use objc2_core_foundation::CFString;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, tray};
@@ -43,6 +51,61 @@ fn run_input_device_watcher(app: AppHandle<AppRuntime>) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// How the device with this Core Audio UID connects, as an analytics bucket.
+#[allow(non_upper_case_globals)]
+pub fn connection(uid: &str) -> Option<&'static str> {
+    let uid = CFString::from_str(uid);
+    let uid: *const CFString = &*uid;
+    let device: AudioObjectID = read_u32(
+        kAudioObjectSystemObject as AudioObjectID,
+        kAudioHardwarePropertyTranslateUIDToDevice,
+        &uid,
+    )?;
+    if device == 0 {
+        return None;
+    }
+    Some(
+        match read_u32(device, kAudioDevicePropertyTransportType, &())? {
+            kAudioDeviceTransportTypeBuiltIn => "built_in",
+            kAudioDeviceTransportTypeUSB => "usb",
+            kAudioDeviceTransportTypeBluetooth | kAudioDeviceTransportTypeBluetoothLE => {
+                "bluetooth"
+            }
+            kAudioDeviceTransportTypeContinuityCaptureWired
+            | kAudioDeviceTransportTypeContinuityCaptureWireless => "continuity",
+            kAudioDeviceTransportTypeVirtual
+            | kAudioDeviceTransportTypeAggregate
+            | kAudioDeviceTransportTypeAutoAggregate => "virtual",
+            _ => "other",
+        },
+    )
+}
+
+fn read_u32<Q>(
+    object: AudioObjectID,
+    selector: AudioObjectPropertySelector,
+    qualifier: &Q,
+) -> Option<u32> {
+    let address = AudioObjectPropertyAddress {
+        mSelector: selector,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain,
+    };
+    let mut value: u32 = 0;
+    let mut size = size_of::<u32>() as u32;
+    let status = unsafe {
+        AudioObjectGetPropertyData(
+            object,
+            NonNull::from(&address),
+            size_of::<Q>() as u32,
+            qualifier as *const Q as *const c_void,
+            NonNull::from(&mut size),
+            NonNull::from(&mut value).cast(),
+        )
+    };
+    (status == kAudioHardwareNoError).then_some(value)
 }
 
 fn refresh_native_menus(app: &AppHandle<AppRuntime>) {
