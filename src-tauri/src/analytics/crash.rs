@@ -413,8 +413,9 @@ pub fn end_session() {
 }
 
 /// Records that the previous run ended without quitting: the version that
-/// was running, whether the computer restarted since (`reboot`), an update
-/// was being installed (`update`), or neither (`unknown`), a bucketed uptime, and flags for an interrupted dictation,
+/// was running, whether the computer restarted since without a crash marker
+/// (`reboot`), an update was being installed (`update`), or neither
+/// (`unknown`), a bucketed uptime, and flags for an interrupted dictation,
 /// an unfinished recording session, a pending update, and a crash marker.
 /// When the cause is unknown and no crash marker exists, the OS crash report
 /// for that run is read too (see `os_reports`).
@@ -422,10 +423,11 @@ pub fn report_unclean_exit(app: &tauri::AppHandle<AppRuntime>, previous: &Previo
     if !app.state::<AppState>().analytics_state().0 {
         return;
     }
-    let rebooted = previous
-        .started_at
-        .zip(boot_time())
-        .is_some_and(|(started_at, booted_at)| booted_at > started_at);
+    let rebooted = !previous.had_crash_marker
+        && previous
+            .started_at
+            .zip(boot_time())
+            .is_some_and(|(started_at, booted_at)| booted_at > started_at);
     // Before 1.3.1 the Windows updater quit into the installer without
     // ending the session.
     let cause = if rebooted {
