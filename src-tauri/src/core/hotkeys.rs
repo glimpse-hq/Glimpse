@@ -114,6 +114,16 @@ impl HotkeyCoordinator {
         Ok(())
     }
 
+    /// False when nothing is registered or the listener exited, for example after failing to start.
+    pub(crate) fn is_listening(&self) -> bool {
+        self.registration.lock().as_ref().is_some_and(|session| {
+            session
+                .join_handle
+                .as_ref()
+                .is_some_and(|handle| !handle.is_finished())
+        })
+    }
+
     pub(crate) fn stop_registration(&self) {
         self.registration.lock().take();
     }

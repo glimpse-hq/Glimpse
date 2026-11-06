@@ -92,6 +92,11 @@ pub fn set_activity(activity: Activity) {
     ACTIVITY.store(activity as u8, Ordering::Relaxed);
 }
 
+/// Leaves the activity alone when something else set it since it was `from`.
+pub fn replace_activity(from: Activity, to: Activity) {
+    let _ = ACTIVITY.compare_exchange(from as u8, to as u8, Ordering::Relaxed, Ordering::Relaxed);
+}
+
 pub fn activity() -> Activity {
     Activity::from_u8(ACTIVITY.load(Ordering::Relaxed))
 }

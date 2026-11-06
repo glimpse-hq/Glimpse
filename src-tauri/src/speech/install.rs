@@ -26,6 +26,7 @@ pub struct ModelStatus {
     pub bytes_on_disk: u64,
     pub missing_files: Vec<String>,
     pub directory: String,
+    pub download_percent: Option<u8>,
 }
 
 #[derive(Serialize, Clone)]
@@ -259,6 +260,7 @@ fn map_status(
         bytes_on_disk: status.bytes_on_disk,
         missing_files: status.missing_files,
         directory: status.directory,
+        download_percent: None,
     }
 }
 
@@ -280,7 +282,12 @@ pub fn check_model_status<R: Runtime>(
     let manager = model_manager(&app).map_err(|err| err.to_string())?;
     let spec = installed_spec(&model, &manager).map_err(|err| err.to_string())?;
     let status = manager.status(&spec).map_err(|err| err.to_string())?;
-    Ok(map_status(status, &manager))
+    Ok(ModelStatus {
+        download_percent: app
+            .try_state::<crate::AppState>()
+            .and_then(|state| state.download_percent(&model)),
+        ..map_status(status, &manager)
+    })
 }
 
 #[tauri::command]

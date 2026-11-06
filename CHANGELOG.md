@@ -25,6 +25,11 @@
 - The microphone test in Settings keeps running when a dictation fails to start at the same time.
 - The "model ready" notice only shows for the model you were waiting on.
 - Cancelling a dictation no longer skips recordings Glimpse is recovering after a crash.
+- With Settings open, a change made elsewhere, like a word added to your dictionary, no longer cuts off a dictation you're holding.
+- After Glimpse updates itself, it restarts as soon as you're not using it, even if you turn off automatic updates.
+- Pressing Update again after reopening Settings now waits for the download already running instead of starting another.
+- A failed dictation no longer stops the spinner on History items you're retrying.
+- Reopening Settings during a model download now shows its progress right away.
 
 1.4.4
 
