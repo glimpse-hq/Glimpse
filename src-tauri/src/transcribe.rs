@@ -268,12 +268,11 @@ pub(crate) fn queue_transcription(
     origin: DictationOrigin,
 ) {
     let state = app.state::<AppState>();
-    if !state.claim_pending_path(&saved.path, &cancel_token) {
+    let Some(pending_selected_text) = state.claim_pending_dictation(&saved.path, &cancel_token)
+    else {
         discard_cancelled_recording(&saved.path, saved.pending_path.as_deref());
         return;
-    }
-
-    let pending_selected_text = state.take_pending_selected_text();
+    };
 
     let http = state.http();
     let app_handle = app.clone();
@@ -2363,11 +2362,11 @@ pub(crate) fn finalize_streaming_transcription(
     } = input;
 
     let state = app.state::<AppState>();
-    if !state.claim_pending_path(&audio_path, &cancel_token) {
+    let Some(pending_selected_text) = state.claim_pending_dictation(&audio_path, &cancel_token)
+    else {
         discard_cancelled_recording(&audio_path, pending_path.as_deref());
         return;
-    }
-    let pending_selected_text = state.take_pending_selected_text();
+    };
     let http = state.http();
     let app_handle = app.clone();
 

@@ -1200,14 +1200,19 @@ impl AppState {
             .is_ok()
     }
 
-    /// False once the dictation is cancelled, so a late save can't take the slot.
-    pub fn claim_pending_path(&self, path: &std::path::Path, token: &CancellationToken) -> bool {
+    /// None once the dictation is cancelled, so a late save can't take the slot
+    /// or a newer dictation's selected text. Otherwise the selected text to edit.
+    pub fn claim_pending_dictation(
+        &self,
+        path: &std::path::Path,
+        token: &CancellationToken,
+    ) -> Option<Option<String>> {
         let mut current = self.pending_recording_path.lock();
         if token.is_cancelled() {
-            return false;
+            return None;
         }
         *current = Some(path.to_path_buf());
-        true
+        Some(self.take_pending_selected_text())
     }
 
     pub fn take_pending_path(&self) -> Option<PathBuf> {
