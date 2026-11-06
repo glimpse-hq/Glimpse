@@ -21,6 +21,11 @@ pub(crate) fn disengage(session: Option<MediaSession>) {
     imp::disengage(session);
 }
 
+/// Puts back a ducked volume before the app quits.
+pub(crate) fn restore_volume_now() {
+    imp::restore_volume_now();
+}
+
 mod coord {
     use super::PauseSession;
     use parking_lot::Mutex;
@@ -91,6 +96,18 @@ mod coord {
                 std::mem::drop(async_runtime::spawn_blocking(move || {
                     self.resume_or_keep(target)
                 }));
+            }
+        }
+
+        // Synchronous, for quitting, when a spawned resume would never run.
+        pub(super) fn resume_now(&'static self) {
+            let target = {
+                let mut shared = self.state.lock();
+                shared.active_session = None;
+                shared.paused_target.take()
+            };
+            if let Some(target) = target {
+                (self.resume_fn)(&target, &|| false);
             }
         }
 
@@ -378,6 +395,10 @@ function run(argv) {
         }
     }
 
+    pub(crate) fn restore_volume_now() {
+        DUCK_COORD.resume_now();
+    }
+
     fn pause_now_playing() -> Option<PausedTarget> {
         let stdout = run_osascript(MEDIA_REMOTE_SCRIPT, &["pause"], &|| false)?;
         PausedTarget::from_json(&stdout)
@@ -502,6 +523,10 @@ mod imp {
             Some(super::MediaSession::Duck(session)) => DUCK_COORD.resume_if_paused_by_us(session),
             None => {}
         }
+    }
+
+    pub(crate) fn restore_volume_now() {
+        DUCK_COORD.resume_now();
     }
 
     pub(super) struct SavedVolume {

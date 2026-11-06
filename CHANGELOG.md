@@ -3,6 +3,15 @@
 ### Fixes
 
 - On Mac, the recording pill and notices show up over full-screen apps again after the Glimpse window leaves full screen.
+- Quitting Glimpse while it has lowered your volume now puts the volume back.
+- Changing a shortcut while holding the dictation shortcut no longer leaves the recording running.
+- Pressing the shortcut as a long dictation ends on its own, or as your microphone is unplugged, no longer starts a second recording or shows an error.
+- Cancelling a dictation while it's being saved no longer leaves its audio on disk.
+- The pill no longer gets stuck looking like an error after you start a new dictation.
+- Music no longer stays paused when a dictation is stopped the moment it starts.
+- The microphone test in Settings keeps running when a dictation fails to start at the same time.
+- The "model ready" notice only shows for the model you were waiting on.
+- Cancelling a dictation no longer skips recordings Glimpse is recovering after a crash.
 
 1.4.3
 
