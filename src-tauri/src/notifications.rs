@@ -159,6 +159,7 @@ fn due_notice(
     }
 
     if license_state.trial_active
+        && license_state.display_key.is_none()
         && license_state.trial_days_remaining <= ENDING_SOON_DAYS
         && !state.has_shown(NOTICE_TRIAL_ENDING_SOON)
     {

@@ -672,6 +672,20 @@ pub async fn delete_model(
         let manager = model_manager(&handle).map_err(|err| err.to_string())?;
 
         if let Some(state) = handle.try_state::<crate::AppState>() {
+            // Extracting an archive can't be cancelled and would put files back.
+            if state.cancel_download(&model) {
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(60);
+                while state.download_percent(&model).is_some()
+                    && std::time::Instant::now() < deadline
+                {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+                if state.download_percent(&model).is_some() {
+                    return Err(
+                        "The download is still finishing. Try again in a moment.".to_string()
+                    );
+                }
+            }
             state.ready_models.lock().remove(&model);
             let transcriber = state.local_transcriber();
             if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {
