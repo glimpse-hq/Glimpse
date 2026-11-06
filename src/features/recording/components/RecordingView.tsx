@@ -494,12 +494,22 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     });
   }, [apps]);
 
-  // Tray "Finish Recording" lands here: the backend already paused.
+  // Tray "Finish Recording" lands here: the backend already paused, and the
+  // naming pause clears the request so closing the dialog doesn't reopen it.
   useEffect(() => {
-    if (!state.finish_requested || naming || !active) return;
+    if (!state.finish_requested || !active) return;
+    recordingApi
+      .pauseRecordingSession(true)
+      .then(applyState)
+      .catch(() => {});
+    if (naming) return;
     setNameDraft(defaultRecordingName(new Date()));
     setNaming({ resumeOnCancel: true });
-  }, [state.finish_requested, naming, active]);
+  }, [state.finish_requested, naming, active, applyState]);
+
+  useEffect(() => {
+    if (!active && !saving) setNaming(null);
+  }, [active, saving]);
 
   const systemDefaultLabel = useMemo(() => {
     const fallback = devices.find((device) => device.is_default)?.name;
