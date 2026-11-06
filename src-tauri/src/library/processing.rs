@@ -350,12 +350,13 @@ fn report_import_progress(
     progress: f32,
 ) {
     let progress = progress.clamp(0.0, 1.0);
-    let _ = storage.update_library_item(
+    let _ = storage.update_library_item_if(
         id,
         LibraryItemPatch {
             status: Some(LibraryItemStatus::Importing { progress }),
             ..Default::default()
         },
+        |item| !matches!(item.status, LibraryItemStatus::Cancelling),
     );
     let _ = app.emit(
         EVENT_LIBRARY_IMPORT_PROGRESS,

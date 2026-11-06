@@ -704,12 +704,9 @@ pub(crate) fn quit(app: &AppHandle<AppRuntime>) {
     });
 }
 
-/// Waits up to 10s for a finish started from the Record screen to save.
+/// Waits for a finish started elsewhere to save.
 async fn wait_for_save(app: &AppHandle<AppRuntime>) {
-    for _ in 0..50 {
-        if !app.state::<AppState>().recording().is_active() {
-            return;
-        }
+    while app.state::<AppState>().recording().state().status == "saving" {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     }
 }
