@@ -3412,6 +3412,11 @@ msgid "library.view.empty_state"
 msgstr "Arrastra archivos aquí para crear tu biblioteca."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.permission.accessibility_drag"
+msgstr "Arrastra Glimpse a la lista de arriba"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "Suelta archivos para transcribir"
@@ -5247,11 +5252,6 @@ msgid "native.toast.model_action"
 msgstr "Abrir modelos"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.open_settings"
-msgstr "Abrir ajustes"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Abrir Ajustes"
@@ -5265,6 +5265,11 @@ msgstr "Abrir Ajustes"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
 msgstr "Abrir Ajustes"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr "Abrir ajustes"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

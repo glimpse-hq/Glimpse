@@ -38,16 +38,15 @@ mod macos {
         }
     }
 
-    /// Open System Settings to the Accessibility privacy pane.
-    pub fn open_accessibility_settings() -> Result<(), String> {
-        let result = Command::new("open")
-            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-            .spawn();
-
-        match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(format!("Failed to open System Settings: {}", e)),
+    /// Opens the Accessibility pane with a tile beside it that drags Glimpse
+    /// into the list. Main thread only.
+    pub fn open_accessibility_settings(instruction: &str) -> Result<(), String> {
+        unsafe extern "C" {
+            fn glimpse_show_accessibility_guide(instruction: *const std::ffi::c_char);
         }
+        let instruction = std::ffi::CString::new(instruction).map_err(|e| e.to_string())?;
+        unsafe { glimpse_show_accessibility_guide(instruction.as_ptr()) };
+        Ok(())
     }
 
     /// Open System Settings to the sound input devices.
@@ -132,6 +131,42 @@ mod macos {
         })
     }
 
+    /// Shows macOS's microphone prompt and waits for the answer, or opens the
+    /// Microphone pane when macOS won't ask again.
+    pub async fn ask_microphone_permission() -> Result<(), String> {
+        use objc2::{class, msg_send, runtime::Bool};
+        use objc2_foundation::NSString;
+
+        let answered = {
+            let media = NSString::from_str("soun");
+            let status: isize = unsafe {
+                msg_send![class!(AVCaptureDevice), authorizationStatusForMediaType: &*media]
+            };
+            match status {
+                3 => return Ok(()),
+                0 => {}
+                _ => return open_microphone_settings(),
+            }
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            let tx = std::sync::Mutex::new(Some(tx));
+            let done = block2::RcBlock::new(move |_: Bool| {
+                if let Some(tx) = tx.lock().ok().and_then(|mut tx| tx.take()) {
+                    let _ = tx.send(());
+                }
+            });
+            unsafe {
+                let _: () = msg_send![
+                    class!(AVCaptureDevice),
+                    requestAccessForMediaType: &*media,
+                    completionHandler: &*done
+                ];
+            }
+            rx
+        };
+        let _ = answered.await;
+        Ok(())
+    }
+
     /// Open System Settings to the Input Monitoring privacy pane.
     pub fn open_input_monitoring_settings() -> Result<(), String> {
         let result = Command::new("open")
@@ -151,7 +186,7 @@ mod other {
         true
     }
 
-    pub fn open_accessibility_settings() -> Result<(), String> {
+    pub fn open_accessibility_settings(_instruction: &str) -> Result<(), String> {
         Err("Accessibility settings are only available on macOS".to_string())
     }
 
@@ -212,6 +247,10 @@ mod other {
     }
 
     pub fn request_microphone_permission() -> Result<(), String> {
+        Ok(())
+    }
+
+    pub async fn ask_microphone_permission() -> Result<(), String> {
         Ok(())
     }
 

@@ -3412,6 +3412,11 @@ msgid "library.view.empty_state"
 msgstr "अपनी लाइब्रेरी बनाने के लिए फ़ाइलें यहाँ खींचकर छोड़ें।"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.permission.accessibility_drag"
+msgstr "Glimpse को ऊपर की सूची में खींचें"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "ट्रांसक्राइब करने के लिए फ़ाइलें यहाँ छोड़ें"
@@ -5247,11 +5252,6 @@ msgid "native.toast.model_action"
 msgstr "मॉडल खोलें"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.open_settings"
-msgstr "सेटिंग्स खोलें"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "सेटिंग्स खोलें"
@@ -5264,6 +5264,11 @@ msgstr "सेटिंग्स खोलें"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
+msgstr "सेटिंग्स खोलें"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
 msgstr "सेटिंग्स खोलें"
 
 #. js-lingui-explicit-id

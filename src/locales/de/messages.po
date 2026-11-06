@@ -3412,6 +3412,11 @@ msgid "library.view.empty_state"
 msgstr "Dateien hierher ziehen, um die Mediathek zu erstellen."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.permission.accessibility_drag"
+msgstr "Ziehe Glimpse in die Liste oben"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "Dateien zum Transkribieren hier ablegen"
@@ -5247,11 +5252,6 @@ msgid "native.toast.model_action"
 msgstr "Modelle öffnen"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.open_settings"
-msgstr "Einstellungen öffnen"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Einstellungen öffnen"
@@ -5264,6 +5264,11 @@ msgstr "Einstellungen öffnen"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
+msgstr "Einstellungen öffnen"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
 msgstr "Einstellungen öffnen"
 
 #. js-lingui-explicit-id

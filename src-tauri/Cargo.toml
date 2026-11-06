@@ -35,6 +35,7 @@ strip = false
 opt-level = 3
 
 [build-dependencies]
+cc = "1"
 tauri-build = { version = "2.7.0", features = [] }
 
 [dependencies]

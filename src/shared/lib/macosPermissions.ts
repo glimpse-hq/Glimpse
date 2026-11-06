@@ -10,12 +10,6 @@ export const checkMacAccessibilityPermission = async () => {
   return permissions.checkAccessibilityPermission();
 };
 
-export const requestMacAccessibilityPermission = async () => {
-  if (!isMacRuntime()) return true;
-  const permissions = await loadMacosPermissions();
-  return permissions.requestAccessibilityPermission();
-};
-
 export const checkMacInputMonitoringPermission = async () => {
   if (!isMacRuntime()) return true;
   const permissions = await loadMacosPermissions();

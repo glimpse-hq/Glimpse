@@ -3412,6 +3412,11 @@ msgid "library.view.empty_state"
 msgstr "Sleep bestanden hierheen om je Bibliotheek op te bouwen."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.permission.accessibility_drag"
+msgstr "Sleep Glimpse naar de lijst hierboven"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "Zet bestanden hier neer om te transcriberen"
@@ -5247,11 +5252,6 @@ msgid "native.toast.model_action"
 msgstr "Modellen openen"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.open_settings"
-msgstr "Instellingen openen"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Instellingen openen"
@@ -5265,6 +5265,11 @@ msgstr "Instellingen openen"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
 msgstr "Open Instellingen"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
+msgstr "Instellingen openen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
