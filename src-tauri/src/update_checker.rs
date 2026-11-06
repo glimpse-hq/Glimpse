@@ -23,8 +23,8 @@ const STABLE_UPDATE_ENDPOINT: &str =
 const EVENT_UPDATE_DOWNLOAD_PROGRESS: &str = "update:download-progress";
 const UPDATE_READ_TIMEOUT: Duration = Duration::from_secs(60);
 
-// One download and install at a time, across the manual and automatic paths.
-static INSTALL_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+// One download and install at a time; true once an update is installed and waiting to restart.
+static INSTALL_LOCK: tokio::sync::Mutex<bool> = tokio::sync::Mutex::const_new(false);
 
 #[derive(Default)]
 pub struct UpdateState {
@@ -204,7 +204,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
         info!("auto-update: app is idle and window hidden, downloading update");
 
         // A manual install is already running.
-        let Ok(install) = INSTALL_LOCK.try_lock() else {
+        let Ok(mut install) = INSTALL_LOCK.try_lock() else {
             continue;
         };
 
@@ -228,8 +228,6 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                 crate::analytics::replace_activity(Activity::Updating, Activity::Idle);
                 match installed {
                     Ok(()) => {
-                        // macOS gives the replaced binary silent mic audio until it restarts.
-                        wait_until_quiet(&app, true).await;
                         if !write_marker(&app, "auto") {
                             crate::analytics::track_update_failed(
                                 &app,
@@ -239,6 +237,10 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                                 "storage",
                             );
                         }
+                        *install = true;
+                        drop(install);
+                        // macOS gives the replaced binary silent mic audio until it restarts.
+                        wait_until_quiet(&app, true).await;
                         state.lock().clear();
                         info!("auto-update: installed, restarting");
                         app.request_restart();
@@ -483,7 +485,20 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
         return Err("Updates are managed by the Microsoft Store.".to_string());
     }
     // A second request waits for the running install, which restarts the app on success.
-    let _install = INSTALL_LOCK.lock().await;
+    let install = INSTALL_LOCK.lock().await;
+    if *install {
+        let _ = app.emit(
+            EVENT_UPDATE_DOWNLOAD_PROGRESS,
+            UpdateDownloadProgress {
+                downloaded: 0,
+                total: None,
+                progress: Some(100),
+            },
+        );
+        wait_until_quiet(&app, false).await;
+        app.request_restart();
+        return Ok(());
+    }
     let update = match resolve_available_update(&app, "manual").await {
         Ok(Some(update)) => update,
         Ok(None) => {
