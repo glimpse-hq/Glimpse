@@ -1,3 +1,11 @@
+1.4.5
+
+### Fixes
+
+- After you stop a recording from the live view or the Glimpse menu, Cancel in the naming dialog now closes it instead of opening it again.
+- When an AI agent finishes a recording while you're naming it, the naming dialog closes.
+- Quitting while a recording is saving now waits for the save to finish.
+
 1.4.4
 
 ### Fixes
