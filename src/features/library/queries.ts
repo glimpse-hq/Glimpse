@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import * as libraryApi from "./api";
 import type {
@@ -69,6 +69,10 @@ export function useLibraryItems(
   enabled: boolean = true,
 ) {
   const queryClient = useQueryClient();
+  const filterRef = useRef(filter);
+  useEffect(() => {
+    filterRef.current = filter;
+  }, [filter]);
 
   // Progress and completion events aren't heard while the view is hidden, so
   // reload the list on return.
@@ -96,10 +100,11 @@ export function useLibraryItems(
     const refetchedIds = new Set<string>();
     const refetchIfMissing = (id: string) => {
       const shown = queryClient
-        .getQueryData<LibraryInfiniteData>(libraryKeys.list(filter))
+        .getQueryData<LibraryInfiniteData>(libraryKeys.list(filterRef.current))
         ?.pages.some((page) => page.items.some((item) => item.id === id));
-      if (shown || refetchedIds.has(id)) return;
-      refetchedIds.add(id);
+      const seen = `${JSON.stringify(filterRef.current)} ${id}`;
+      if (shown || refetchedIds.has(seen)) return;
+      refetchedIds.add(seen);
       queryClient.invalidateQueries({ queryKey: libraryKeys.lists() });
     };
 
@@ -242,7 +247,7 @@ export function useLibraryItems(
       cancelled = true;
       unlisteners.forEach((fn) => fn());
     };
-  }, [enabled, queryClient, filter]);
+  }, [enabled, queryClient]);
 
   return useInfiniteQuery({
     queryKey: libraryKeys.list(filter),
