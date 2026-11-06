@@ -1244,6 +1244,7 @@ export function useSettingsForm({
       !didHydrateRef.current ||
       autosaveHydrationRef.current !== hydratedSettings
     ) {
+      clearPendingSettingsSave();
       didHydrateRef.current = true;
       autosaveHydrationRef.current = hydratedSettings;
       autosaveArgsRef.current = args;
@@ -1259,7 +1260,14 @@ export function useSettingsForm({
       saveTimeoutRef.current = null;
       void saveSettingsNow();
     }, 500);
-  }, [active, buildSettingsArgs, hydratedSettings, loading, saveSettingsNow]);
+  }, [
+    active,
+    buildSettingsArgs,
+    clearPendingSettingsSave,
+    hydratedSettings,
+    loading,
+    saveSettingsNow,
+  ]);
 
   const handleOpenDataDir = useCallback(async () => {
     if (!appInfo?.data_dir_path) return;

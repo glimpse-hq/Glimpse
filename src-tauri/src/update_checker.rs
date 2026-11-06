@@ -21,6 +21,7 @@ const AUTO_UPDATE_MARKER_FILE: &str = ".auto_updated";
 const STABLE_UPDATE_ENDPOINT: &str =
     "https://github.com/glimpse-hq/Glimpse/releases/latest/download/latest.json";
 const EVENT_UPDATE_DOWNLOAD_PROGRESS: &str = "update:download-progress";
+const UPDATE_READ_TIMEOUT: Duration = Duration::from_secs(60);
 
 // One download and install at a time, across the manual and automatic paths.
 static INSTALL_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -217,6 +218,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                     let state = app.state::<AppState>();
                     !state.is_backend_idle()
                         || state.pill().status() != crate::pill::PillStatus::Idle
+                        || is_settings_window_visible(&app)
                 };
                 if downloaded.is_ok() && busy {
                     crate::analytics::replace_activity(Activity::Updating, Activity::Idle);
@@ -342,6 +344,8 @@ async fn resolve_available_update(
     let marker_app = app.clone();
     app.updater_builder()
         .endpoints(vec![endpoint])?
+        // A stalled download would otherwise hold the install lock until restart.
+        .configure_client(|client| client.read_timeout(UPDATE_READ_TIMEOUT))
         // Windows exits into the installer inside `download_and_install`, so
         // code after it never runs there.
         .on_before_exit(move || {
