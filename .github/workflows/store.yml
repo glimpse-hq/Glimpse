@@ -48,9 +48,6 @@ jobs:
           # what Windows users get.
           summarize: auto
           platform: windows
-          # Drops Mac-only lines before anything else. Lines that also say "on Windows" stay, and the
-          # summary keeps only their Windows part.
-          exclude-lines-matching: '(?i)^(?!.*\bon windows\b).*(\bmac(os|s)?\b|\bapple\b|\bintel\b|neural engine|\bmetal\b)'
           translate: true
           # Replaces an update still open on the dashboard, like one started by hand.
           replace-open: true
