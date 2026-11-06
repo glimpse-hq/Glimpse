@@ -440,7 +440,9 @@ impl PillController {
         }
     }
 
-    fn emit_state(&self, app: &AppHandle<AppRuntime>, status: PillStatus) {
+    fn emit_state(&self, app: &AppHandle<AppRuntime>) {
+        let status = *self.status.lock();
+
         if let Err(err) = app.emit(EVENT_PILL_STATE, PillStatePayload { status }) {
             tracing::error!("Failed to emit pill state: {err}");
         }
@@ -458,9 +460,17 @@ impl PillController {
                 .store(new_status == PillStatus::Listening, Ordering::Relaxed);
             previous
         };
+        self.announce_transition(app, previous, new_status);
+    }
 
+    fn announce_transition(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        previous: PillStatus,
+        new_status: PillStatus,
+    ) {
         self.update_overlay_visibility(app, previous, new_status);
-        self.emit_state(app, new_status);
+        self.emit_state(app);
         if new_status == PillStatus::Idle {
             crate::voice_prompt::pill_became_idle(app);
         }
@@ -855,7 +865,12 @@ impl PillController {
     }
 
     fn reset_stale_listening_state(&self, app: &AppHandle<AppRuntime>) {
-        if self.status() == PillStatus::Listening && !self.is_recording() {
+        // Checked under the status lock, which a stop holds while it takes the mode.
+        let stale = {
+            let status = self.status.lock();
+            *status == PillStatus::Listening && self.recording_mode.lock().is_none()
+        };
+        if stale {
             self.reset(app);
         }
     }
@@ -980,18 +995,24 @@ impl PillController {
     }
 
     fn stop_and_process_inner(&self, app: &AppHandle<AppRuntime>, auto_paste: bool) {
-        let Some(mode) = self.recording_mode.lock().take() else {
-            return;
-        };
-        let stopped_at = Instant::now();
-        *self.stopped_at.lock() = Some(stopped_at);
         let state = app.state::<AppState>();
-        // Create the cancellation token before Processing, so a rapid cancel can't
-        // slip in before the token exists and leak a paste.
-        let cancel_token = state.create_transcription_token();
-        // Processing before the slower steps below, or a press from another thread
-        // reads Listening without a recording as stale and resets mid-stop.
-        self.transition_to(app, PillStatus::Processing);
+        // One status-locked step, so a press from another thread never reads
+        // Listening without a recording as stale, and a rapid cancel finds the token.
+        let (mode, stopped_at, cancel_token, previous) = {
+            let mut status = self.status.lock();
+            let Some(mode) = self.recording_mode.lock().take() else {
+                return;
+            };
+            let stopped_at = Instant::now();
+            *self.stopped_at.lock() = Some(stopped_at);
+            let cancel_token = state.create_transcription_token();
+            let previous = std::mem::replace(&mut *status, PillStatus::Processing);
+            self.listening.store(false, Ordering::Relaxed);
+            (mode, stopped_at, cancel_token, previous)
+        };
+        if previous != PillStatus::Processing {
+            self.announce_transition(app, previous, PillStatus::Processing);
+        }
         self.stop_audio_spectrum_emitter();
         analytics::set_activity(Activity::Transcribing);
         let trigger = match mode {
