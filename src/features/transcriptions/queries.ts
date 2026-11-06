@@ -175,16 +175,14 @@ export function useRetryTranscription(enabled: boolean = true) {
     const unlisteners: UnlistenFn[] = [];
 
     const clearRetrying = (id?: string) => {
-      setRetryingIds((current) => {
-        if (current.length === 0) return current;
-        if (!id) return [];
-        return current.includes(id)
+      if (!id) return;
+      setRetryingIds((current) =>
+        current.includes(id)
           ? current.filter((entry) => entry !== id)
-          : current;
-      });
+          : current,
+      );
     };
 
-    // Transcription errors carry no record id, so they end every retry.
     // Cleanup errors belong to a cleanup retry, not a transcription one.
     listen<CompletePayload>("transcription:complete", (event) => {
       if (!cancelled) clearRetrying(event.payload?.record?.id);
@@ -197,7 +195,7 @@ export function useRetryTranscription(enabled: boolean = true) {
 
     listen<ErrorPayload>("transcription:error", (event) => {
       if (!cancelled && event.payload?.stage !== "llm_cleanup") {
-        clearRetrying();
+        clearRetrying(event.payload?.id);
       }
     })
       .then((fn) => {

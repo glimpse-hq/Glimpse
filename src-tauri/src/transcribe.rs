@@ -238,6 +238,7 @@ fn watch_for_stall(
                 reset_state: true,
                 temporary: recovery.temporary,
                 show_toast: true,
+                id: None,
             },
         );
     });
@@ -383,6 +384,7 @@ pub(crate) fn queue_transcription(
                             reset_state: true,
                             temporary,
                             show_toast: true,
+                            id: None,
                         },
                     );
                     app_handle
@@ -508,6 +510,7 @@ pub(crate) fn queue_transcription(
                         reset_state: true,
                         temporary,
                         show_toast,
+                        id: None,
                     },
                 );
                 app_handle
@@ -707,6 +710,7 @@ async fn transcribe_recovered_recording(
                     reset_state: false,
                     temporary: false,
                     show_toast: true,
+                    id: None,
                 },
             );
             return Err(err);
@@ -1331,6 +1335,15 @@ pub(crate) fn retry_transcription_async(
                     Ok(record) => record,
                     Err(err) => {
                         tracing::error!("Failed to save retry result: {err}");
+                        crate::emit_event(
+                            &app_handle,
+                            EVENT_TRANSCRIPTION_ERROR,
+                            TranscriptionErrorPayload {
+                                message: err.to_string(),
+                                stage: "transcription".to_string(),
+                                id: Some(retry_id),
+                            },
+                        );
                         return;
                     }
                 };
@@ -1384,6 +1397,7 @@ pub(crate) fn retry_transcription_async(
                         reset_state: false,
                         temporary: false,
                         show_toast,
+                        id: Some(retry_id),
                     },
                 );
             }
@@ -1732,6 +1746,8 @@ struct TranscriptionFailure<'a> {
     reset_state: bool,
     temporary: bool,
     show_toast: bool,
+    // The record a retry failed for.
+    id: Option<String>,
 }
 
 fn emit_transcription_error_inner(app: &AppHandle<AppRuntime>, failure: TranscriptionFailure) {
@@ -1746,6 +1762,7 @@ fn emit_transcription_error_inner(app: &AppHandle<AppRuntime>, failure: Transcri
         reset_state,
         temporary,
         show_toast,
+        id,
     } = failure;
     let reason = reason.unwrap_or_else(|| analytics::classify_failure_reason(&message).into());
     let state = app.state::<AppState>();
@@ -1798,7 +1815,7 @@ fn emit_transcription_error_inner(app: &AppHandle<AppRuntime>, failure: Transcri
         TranscriptionErrorPayload {
             message: message.clone(),
             stage: stage.to_string(),
-            id: None,
+            id,
         },
     );
 

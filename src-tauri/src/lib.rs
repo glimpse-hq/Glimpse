@@ -2323,7 +2323,7 @@ pub(crate) struct TranscriptionCompletePayload {
 pub(crate) struct TranscriptionErrorPayload {
     pub(crate) message: String,
     pub(crate) stage: String,
-    // The record a cleanup retry failed for.
+    // The record a retry or cleanup retry failed for.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) id: Option<String>,
 }
