@@ -490,7 +490,8 @@ pub async fn download_model_now(
     } else if definition(&model).is_some() {
         if super::selected_model(&settings) == status.id {
             super::warm_model(&app, status.id.clone());
-        } else {
+        } else if super::catalog::model_upgrade_target(&settings) != Some(status.id.as_str()) {
+            // An Automatic upgrade target is loaded by follow_model_upgrade.
             super::warm_unselected_model(&app, status.id.clone());
         }
     } else if super::catalog::cleanup_model_definition(&model).is_some() {
