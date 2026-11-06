@@ -227,7 +227,8 @@ pub struct PillController {
     recording_mode: Mutex<Option<RecordingMode>>,
     shortcut_origin: Mutex<Option<hotkeys::ShortcutAction>>,
     recording_options: Mutex<hotkeys::ShortcutOptions>,
-    recording_settings: Mutex<Option<UserSettings>>,
+    // With the preflight generation the settings were read at.
+    recording_settings: Mutex<Option<(UserSettings, u64)>>,
     smart_press_time: Mutex<Option<Instant>>,
     hold_key_down: Mutex<bool>,
     paused_media_session: Mutex<Option<music::MediaSession>>,
@@ -731,9 +732,10 @@ impl PillController {
 
         let state = app.state::<AppState>();
         state.clear_cancellation();
+        let preflight_generation = crate::llm_cleanup::preflight_generation();
         let mut settings = state.current_settings();
         settings.cleanup_enabled = options.cleanup_enabled;
-        *self.recording_settings.lock() = Some(settings.clone());
+        *self.recording_settings.lock() = Some((settings.clone(), preflight_generation));
 
         crate::speech::warm(app, &settings);
         crate::llm_cleanup::prewarm_cleanup(&settings);
@@ -985,16 +987,17 @@ impl PillController {
             .lock()
             .take()
             .map(|started| stopped_at.duration_since(started).as_secs_f32());
-        let settings = self
-            .recording_settings
-            .lock()
-            .take()
-            .unwrap_or_else(|| app.state::<AppState>().current_settings());
+        let (settings, preflight_generation) =
+            self.recording_settings.lock().take().unwrap_or_else(|| {
+                let generation = crate::llm_cleanup::preflight_generation();
+                (app.state::<AppState>().current_settings(), generation)
+            });
         let recording_options = *self.recording_options.lock();
         let origin = crate::transcribe::DictationOrigin {
             trigger,
             cleanup_shortcut: recording_options.cleanup_enabled,
             stopped_at,
+            preflight_generation,
         };
         let state = app.state::<AppState>();
         if auto_paste && !crate::voice_prompt::is_answering() {
@@ -1147,31 +1150,6 @@ impl PillController {
                     }
                 }
             });
-        }
-    }
-
-    pub fn cancel(&self, app: &AppHandle<AppRuntime>, how: &str) {
-        let recording_seconds = self
-            .is_recording()
-            .then(|| *self.recording_started_at.lock())
-            .flatten()
-            .map(|started| started.elapsed().as_secs_f32());
-        self.stop_audio_spectrum_emitter();
-        let _ = app.state::<AppState>().stop_streaming_session(app);
-        collapse_expanded_pill(app);
-        let app_handle = app.clone();
-        if let Err(err) = self
-            .recorder
-            .stop_after_capture_and_discard_pending(move || {
-                app_handle.state::<AppState>().pill().resume_paused_media();
-            })
-        {
-            self.resume_paused_media();
-            tracing::error!("Failed to stop recorder: {err}");
-        }
-        self.reset(app);
-        if let Some(seconds) = recording_seconds {
-            analytics::track_dictation_cancelled(app, "recording", how, Some(seconds), None);
         }
     }
 

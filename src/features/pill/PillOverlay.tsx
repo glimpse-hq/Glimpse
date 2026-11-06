@@ -1,8 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { invoke } from "@tauri-apps/api/core";
 import { usePillState } from "./usePillState";
 import { getExpandedTextSegments } from "../../shared/lib/wordReveal";
 import type { PillStatus, PillTone } from "../../types";
@@ -217,7 +215,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     expandedText,
     pillTone,
     isHovered,
-    dismiss,
   } = usePillState();
   const prevSegmentKeysRef = useRef<Set<number>>(new Set());
   const expandedTextSegments = useMemo(
@@ -813,28 +810,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   useEffect(() => {
     hoverPrevRef.current = isHovered;
   }, [isHovered]);
-
-  const hideWindow = useCallback(async () => {
-    try {
-      await invoke("cancel_recording");
-      const win = getCurrentWindow();
-      await win.hide();
-    } catch (err) {
-      console.error("Failed to hide window:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && pillStatus === "error") {
-        e.preventDefault();
-        dismiss();
-        hideWindow();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pillStatus, dismiss, hideWindow]);
 
   const setupCanvas = useCallback(() => {
     refreshColorPalette();

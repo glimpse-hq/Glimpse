@@ -215,9 +215,9 @@ pub fn track_dictation_stalled(
     );
 }
 
-/// Records that you cancelled a dictation: the step it was on (recording,
-/// transcribing, or cleanup), how (escape or shortcut), the audio length as a
-/// bucket, and for a cancel after stopping, how soon after as a bucket.
+/// Records that you cancelled a dictation: the step it was on (transcribing or
+/// cleanup), how, the audio length as a bucket, and how soon after stopping as
+/// a bucket.
 pub fn track_dictation_cancelled(
     app: &tauri::AppHandle<AppRuntime>,
     stage: &str,
