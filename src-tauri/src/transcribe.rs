@@ -241,6 +241,7 @@ fn watch_for_stall(
                 reset_state: true,
                 temporary: recovery.temporary,
                 show_toast: true,
+                id: None,
             },
         );
     });
@@ -271,9 +272,11 @@ pub(crate) fn queue_transcription(
     origin: DictationOrigin,
 ) {
     let state = app.state::<AppState>();
-    state.set_pending_path(Some(saved.path.clone()));
-
-    let pending_selected_text = state.take_pending_selected_text();
+    let Some(pending_selected_text) = state.claim_pending_dictation(&saved.path, &cancel_token)
+    else {
+        discard_cancelled_recording(&saved.path, saved.pending_path.as_deref());
+        return;
+    };
 
     let http = state.http();
     let app_handle = app.clone();
@@ -386,6 +389,7 @@ pub(crate) fn queue_transcription(
                             reset_state: true,
                             temporary,
                             show_toast: true,
+                            id: None,
                         },
                     );
                     app_handle
@@ -512,6 +516,7 @@ pub(crate) fn queue_transcription(
                         reset_state: true,
                         temporary,
                         show_toast,
+                        id: None,
                     },
                 );
                 app_handle
@@ -721,6 +726,7 @@ async fn transcribe_recovered_recording(
                     reset_state: false,
                     temporary: false,
                     show_toast: true,
+                    id: None,
                 },
             );
             return Err(err);
@@ -1022,8 +1028,7 @@ async fn process_transcript_text(
         return ProcessTranscriptOutcome::Empty;
     }
 
-    let token_cancelled = cancel_token.map(|t| t.is_cancelled()).unwrap_or(false);
-    if token_cancelled || app.state::<AppState>().is_cancelled() {
+    if cancel_token.is_some_and(|t| t.is_cancelled()) {
         return ProcessTranscriptOutcome::Cancelled;
     }
 
@@ -1044,14 +1049,13 @@ async fn process_transcript_text(
             && selected_model_supports_dictionary;
         let transcript_to_paste = final_transcript.clone();
         let token_for_paste = cancel_token.cloned();
-        let app_for_paste = app.clone();
         let paste_result = async_runtime::spawn_blocking(move || {
-            let cancelled = token_for_paste
-                .as_ref()
-                .map(|token| token.is_cancelled())
-                .unwrap_or(false)
-                || app_for_paste.state::<AppState>().is_cancelled();
-            if cancelled {
+            let cancelled = || {
+                token_for_paste
+                    .as_ref()
+                    .is_some_and(|token| token.is_cancelled())
+            };
+            if cancelled() {
                 return None;
             }
             let pre_paste_snapshot = can_read_field
@@ -1063,11 +1067,7 @@ async fn process_transcript_text(
                     match_insertion_capitalization(&transcript_to_paste, &snapshot.value)
                 })
                 .unwrap_or(transcript_to_paste);
-            if token_for_paste
-                .as_ref()
-                .is_some_and(|token| token.is_cancelled())
-                || app_for_paste.state::<AppState>().is_cancelled()
-            {
+            if cancelled() {
                 return None;
             }
             let result = assistive::paste_text(&text);
@@ -1348,6 +1348,15 @@ pub(crate) fn retry_transcription_async(
                     Ok(record) => record,
                     Err(err) => {
                         tracing::error!("Failed to save retry result: {err}");
+                        crate::emit_event(
+                            &app_handle,
+                            EVENT_TRANSCRIPTION_ERROR,
+                            TranscriptionErrorPayload {
+                                message: err.to_string(),
+                                stage: "transcription".to_string(),
+                                id: Some(retry_id),
+                            },
+                        );
                         return;
                     }
                 };
@@ -1401,6 +1410,7 @@ pub(crate) fn retry_transcription_async(
                         reset_state: false,
                         temporary: false,
                         show_toast,
+                        id: Some(retry_id),
                     },
                 );
             }
@@ -1548,6 +1558,11 @@ fn abort_transcription(
         crate::pill::collapse_expanded_pill(app);
     }
     state.pill().finish_processing(app);
+}
+
+fn discard_cancelled_recording(audio_path: &Path, pending_path: Option<&Path>) {
+    let _ = std::fs::remove_file(audio_path);
+    discard_pending_recording(pending_path);
 }
 
 fn discard_pending_recording(path: Option<&Path>) {
@@ -1749,6 +1764,8 @@ struct TranscriptionFailure<'a> {
     reset_state: bool,
     temporary: bool,
     show_toast: bool,
+    // The record a retry failed for.
+    id: Option<String>,
 }
 
 fn emit_transcription_error_inner(app: &AppHandle<AppRuntime>, failure: TranscriptionFailure) {
@@ -1763,6 +1780,7 @@ fn emit_transcription_error_inner(app: &AppHandle<AppRuntime>, failure: Transcri
         reset_state,
         temporary,
         show_toast,
+        id,
     } = failure;
     let reason = reason.unwrap_or_else(|| analytics::classify_failure_reason(&message).into());
     let state = app.state::<AppState>();
@@ -1815,7 +1833,7 @@ fn emit_transcription_error_inner(app: &AppHandle<AppRuntime>, failure: Transcri
         TranscriptionErrorPayload {
             message: message.clone(),
             stage: stage.to_string(),
-            id: None,
+            id,
         },
     );
 
@@ -2378,7 +2396,11 @@ pub(crate) fn finalize_streaming_transcription(
     } = input;
 
     let state = app.state::<AppState>();
-    let pending_selected_text = state.take_pending_selected_text();
+    let Some(pending_selected_text) = state.claim_pending_dictation(&audio_path, &cancel_token)
+    else {
+        discard_cancelled_recording(&audio_path, pending_path.as_deref());
+        return;
+    };
     let http = state.http();
     let app_handle = app.clone();
 

@@ -8,6 +8,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_updater::UpdaterExt;
 use tracing::{debug, error, info, warn};
 
+use crate::analytics::Activity;
 use crate::pill::PillStatus;
 use crate::{AppRuntime, AppState, toast};
 
@@ -20,6 +21,10 @@ const AUTO_UPDATE_MARKER_FILE: &str = ".auto_updated";
 const STABLE_UPDATE_ENDPOINT: &str =
     "https://github.com/glimpse-hq/Glimpse/releases/latest/download/latest.json";
 const EVENT_UPDATE_DOWNLOAD_PROGRESS: &str = "update:download-progress";
+const UPDATE_READ_TIMEOUT: Duration = Duration::from_secs(60);
+
+// One download and install at a time; true once an update is installed and waiting to restart.
+static INSTALL_LOCK: tokio::sync::Mutex<bool> = tokio::sync::Mutex::const_new(false);
 
 #[derive(Default)]
 pub struct UpdateState {
@@ -198,51 +203,48 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
 
         info!("auto-update: app is idle and window hidden, downloading update");
 
+        // A manual install is already running.
+        let Ok(mut install) = INSTALL_LOCK.try_lock() else {
+            continue;
+        };
+
         match resolve_available_update(&app, "auto").await {
             Ok(Some(update)) => {
                 let version = update.version.clone();
-                crate::analytics::set_activity(crate::analytics::Activity::Updating);
+                crate::analytics::replace_activity(Activity::Idle, Activity::Updating);
                 let downloaded = update.download(|_, _| {}, || {}).await;
                 // Windows quits into the installer, so recheck after the download.
                 let busy = {
                     let state = app.state::<AppState>();
                     !state.is_backend_idle()
                         || state.pill().status() != crate::pill::PillStatus::Idle
+                        || is_settings_window_visible(&app)
                 };
                 if downloaded.is_ok() && busy {
-                    crate::analytics::set_activity(crate::analytics::Activity::Idle);
+                    crate::analytics::replace_activity(Activity::Updating, Activity::Idle);
                     continue;
                 }
                 let installed = downloaded.and_then(|bytes| update.install(bytes));
-                crate::analytics::set_activity(crate::analytics::Activity::Idle);
+                crate::analytics::replace_activity(Activity::Updating, Activity::Idle);
                 match installed {
                     Ok(()) => {
-                        info!("auto-update: installed, waiting for restart conditions");
-                        // Marker-write failures repeat every poll; report once per install.
-                        let mut marker_failure_reported = false;
-                        // Wait for restart conditions without re-downloading.
-                        loop {
-                            tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
-                            if !app.state::<AppState>().is_auto_update_enabled() {
-                                break;
-                            }
-                            // Restart only after the same quiet stretch as the
-                            // download, not right after a dictation ends.
-                            if !wait_for_idle(&app, idle_duration).await {
-                                continue;
-                            }
-                            if should_restart_for_auto_update(&app, &state)
-                                && restart_after_auto_update(
-                                    &app,
-                                    &state,
-                                    &version,
-                                    &mut marker_failure_reported,
-                                )
-                            {
-                                return;
-                            }
+                        if !write_marker(&app, "auto") {
+                            crate::analytics::track_update_failed(
+                                &app,
+                                "automatic",
+                                "restart_marker",
+                                Some(&version),
+                                "storage",
+                            );
                         }
-                        continue;
+                        *install = true;
+                        drop(install);
+                        // macOS gives the replaced binary silent mic audio until it restarts.
+                        wait_until_quiet(&app, true).await;
+                        state.lock().clear();
+                        info!("auto-update: installed, restarting");
+                        app.request_restart();
+                        return;
                     }
                     Err(err) => {
                         warn!(error = %err, "auto-update: download/install failed");
@@ -268,6 +270,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                 );
             }
         }
+        drop(install);
         tokio::time::sleep(Duration::from_secs(CHECK_INTERVAL_HOURS * 60 * 60)).await;
     }
 }
@@ -306,33 +309,6 @@ async fn wait_for_idle(app: &AppHandle<AppRuntime>, required: Duration) -> bool 
     true
 }
 
-/// Writes the restart marker and requests a restart. False when the marker write failed.
-fn restart_after_auto_update(
-    app: &AppHandle<AppRuntime>,
-    state: &SharedUpdateState,
-    version: &str,
-    marker_failure_reported: &mut bool,
-) -> bool {
-    if write_marker(app, "auto") {
-        state.lock().clear();
-        info!("auto-update: installed, restarting");
-        app.request_restart();
-        return true;
-    }
-    warn!("auto-update: installed, but marker write failed");
-    if !*marker_failure_reported {
-        crate::analytics::track_update_failed(
-            app,
-            "automatic",
-            "restart_marker",
-            Some(version),
-            "storage",
-        );
-        *marker_failure_reported = true;
-    }
-    false
-}
-
 fn should_restart_for_auto_update(app: &AppHandle<AppRuntime>, state: &SharedUpdateState) -> bool {
     let app_state = app.state::<AppState>();
     app_state.is_auto_update_enabled()
@@ -342,12 +318,13 @@ fn should_restart_for_auto_update(app: &AppHandle<AppRuntime>, state: &SharedUpd
         && app_state.is_backend_idle()
 }
 
-/// Waits for any dictation or background work to finish.
-async fn wait_until_quiet(app: &AppHandle<AppRuntime>) {
+/// Waits for any dictation or background work to finish, and for Settings to close when `settings_closed`.
+async fn wait_until_quiet(app: &AppHandle<AppRuntime>, settings_closed: bool) {
     loop {
         let state = app.state::<AppState>();
         if matches!(state.pill().status(), PillStatus::Idle | PillStatus::Error)
             && state.is_backend_idle()
+            && !(settings_closed && is_settings_window_visible(app))
         {
             return;
         }
@@ -370,6 +347,8 @@ async fn resolve_available_update(
     let marker_app = app.clone();
     app.updater_builder()
         .endpoints(vec![endpoint])?
+        // A stalled download would otherwise hold the install lock until restart.
+        .configure_client(|client| client.read_timeout(UPDATE_READ_TIMEOUT))
         // Windows exits into the installer inside `download_and_install`, so
         // code after it never runs there.
         .on_before_exit(move || {
@@ -505,6 +484,21 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
     if crate::platform::is_store_build() {
         return Err("Updates are managed by the Microsoft Store.".to_string());
     }
+    // A second request waits for the running install, which restarts the app on success.
+    let install = INSTALL_LOCK.lock().await;
+    if *install {
+        let _ = app.emit(
+            EVENT_UPDATE_DOWNLOAD_PROGRESS,
+            UpdateDownloadProgress {
+                downloaded: 0,
+                total: None,
+                progress: Some(100),
+            },
+        );
+        wait_until_quiet(&app, false).await;
+        app.request_restart();
+        return Ok(());
+    }
     let update = match resolve_available_update(&app, "manual").await {
         Ok(Some(update)) => update,
         Ok(None) => {
@@ -529,7 +523,7 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
     let mut total: Option<u64> = None;
     let progress_app = app.clone();
 
-    crate::analytics::set_activity(crate::analytics::Activity::Updating);
+    crate::analytics::replace_activity(Activity::Idle, Activity::Updating);
     let bytes = update
         .download(
             |chunk_length, content_length| {
@@ -559,14 +553,14 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
         .await;
     // Windows quits into the installer, and a restart would cut the recording off.
     if bytes.is_ok() && app.state::<AppState>().recording().is_active() {
-        crate::analytics::set_activity(crate::analytics::Activity::Idle);
+        crate::analytics::replace_activity(Activity::Updating, Activity::Idle);
         return Err(toast::native(&app, "native.update.recording"));
     }
     if bytes.is_ok() {
-        wait_until_quiet(&app).await;
+        wait_until_quiet(&app, false).await;
     }
     let installed = bytes.and_then(|bytes| update.install(bytes));
-    crate::analytics::set_activity(crate::analytics::Activity::Idle);
+    crate::analytics::replace_activity(Activity::Updating, Activity::Idle);
     if let Err(err) = installed {
         let err = anyhow::Error::from(err);
         crate::analytics::track_update_failed(
@@ -591,7 +585,7 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
 
     info!("update downloaded and installed, restarting");
     // macOS gives the replaced binary silent mic audio until it restarts.
-    wait_until_quiet(&app).await;
+    wait_until_quiet(&app, false).await;
     app.request_restart();
     Ok(())
 }

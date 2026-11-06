@@ -26,6 +26,7 @@ pub struct ModelStatus {
     pub bytes_on_disk: u64,
     pub missing_files: Vec<String>,
     pub directory: String,
+    pub download_percent: Option<u8>,
 }
 
 #[derive(Serialize, Clone)]
@@ -259,6 +260,7 @@ fn map_status(
         bytes_on_disk: status.bytes_on_disk,
         missing_files: status.missing_files,
         directory: status.directory,
+        download_percent: None,
     }
 }
 
@@ -280,7 +282,12 @@ pub fn check_model_status<R: Runtime>(
     let manager = model_manager(&app).map_err(|err| err.to_string())?;
     let spec = installed_spec(&model, &manager).map_err(|err| err.to_string())?;
     let status = manager.status(&spec).map_err(|err| err.to_string())?;
-    Ok(map_status(status, &manager))
+    Ok(ModelStatus {
+        download_percent: app
+            .try_state::<crate::AppState>()
+            .and_then(|state| state.download_percent(&model)),
+        ..map_status(status, &manager)
+    })
 }
 
 #[tauri::command]
@@ -381,6 +388,7 @@ pub async fn download_model_now(
     impl Drop for DownloadGuard<'_> {
         fn drop(&mut self) {
             refresh_model_readiness(self.0, &self.1);
+            crate::pill::take_model_ready_announcement(&self.1);
             self.0
                 .state::<crate::AppState>()
                 .clear_download_token(&self.1);
@@ -499,7 +507,8 @@ pub async fn download_model_now(
     }
 
     crate::tray::refresh_menus(&app, &settings);
-    if super::selected_model(&settings) == status.id && crate::pill::take_model_ready_announcement()
+    if crate::pill::take_model_ready_announcement(&status.id)
+        && super::selected_model(&settings) == status.id
     {
         crate::toast::show(
             &app,

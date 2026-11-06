@@ -445,10 +445,18 @@ pub(crate) fn update_settings(
 
     state.request_preflight_refresh();
 
-    let shortcut_error = pill::register_shortcuts(app).err().map(|err| {
-        crate::analytics::track_shortcut_failed("register", crate::analytics::error_detail(&err));
-        err.to_string()
-    });
+    // Re-registering ends a held recording, so it only runs when it can change something.
+    let shortcut_error = if shortcuts_changed(&prev, &next) || !state.hotkeys.is_listening() {
+        pill::register_shortcuts(app).err().map(|err| {
+            crate::analytics::track_shortcut_failed(
+                "register",
+                crate::analytics::error_detail(&err),
+            );
+            err.to_string()
+        })
+    } else {
+        None
+    };
 
     if prev.transcription_mode != next.transcription_mode
         || prev.local_model != next.local_model
@@ -495,6 +503,13 @@ pub(crate) fn update_settings(
 fn follows_new_languages(prev: &UserSettings, next: &UserSettings) -> bool {
     use crate::speech::catalog::user_languages;
     next.local_model_auto && user_languages(prev) != user_languages(next)
+}
+
+fn shortcuts_changed(prev: &UserSettings, next: &UserSettings) -> bool {
+    prev.shortcut_bindings != next.shortcut_bindings
+        || prev.smart_enabled != next.smart_enabled
+        || prev.hold_enabled != next.hold_enabled
+        || prev.toggle_enabled != next.toggle_enabled
 }
 
 #[cfg(test)]
