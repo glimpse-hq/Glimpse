@@ -381,6 +381,7 @@ pub async fn download_model_now(
     impl Drop for DownloadGuard<'_> {
         fn drop(&mut self) {
             refresh_model_readiness(self.0, &self.1);
+            crate::pill::take_model_ready_announcement(&self.1);
             self.0
                 .state::<crate::AppState>()
                 .clear_download_token(&self.1);
@@ -499,7 +500,8 @@ pub async fn download_model_now(
     }
 
     crate::tray::refresh_menus(&app, &settings);
-    if super::selected_model(&settings) == status.id && crate::pill::take_model_ready_announcement()
+    if crate::pill::take_model_ready_announcement(&status.id)
+        && super::selected_model(&settings) == status.id
     {
         crate::toast::show(
             &app,

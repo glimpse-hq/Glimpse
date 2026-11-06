@@ -795,6 +795,7 @@ pub fn run() {
                 let state = handler.state::<AppState>();
                 state.local_transcriber.unload_if_idle();
                 state.stop_preflight_loop();
+                music::restore_volume_now();
                 let now = Instant::now();
                 let counters = state.session_counters.lock();
                 analytics::track_app_exited(
@@ -913,7 +914,6 @@ pub struct AppState {
     hotkeys: core::hotkeys::HotkeyCoordinator,
     shortcut_capture_active: AtomicBool,
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
-    transcription_cancelled: AtomicBool,
     transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
     ffmpeg_toast_shown: AtomicBool,
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
@@ -1002,7 +1002,6 @@ impl AppState {
             hotkeys: core::hotkeys::HotkeyCoordinator::default(),
             shortcut_capture_active: AtomicBool::new(false),
             tray: parking_lot::Mutex::new(None),
-            transcription_cancelled: AtomicBool::new(false),
             transcription_token: parking_lot::Mutex::new(None),
             ffmpeg_toast_shown: AtomicBool::new(false),
             pending_recording_path: parking_lot::Mutex::new(None),
@@ -1186,18 +1185,12 @@ impl AppState {
     }
 
     pub fn request_cancellation(&self) {
-        self.transcription_cancelled.store(true, Ordering::SeqCst);
         if let Some(token) = self.transcription_token.lock().as_ref() {
             token.cancel();
         }
     }
 
-    pub fn is_cancelled(&self) -> bool {
-        self.transcription_cancelled.load(Ordering::SeqCst)
-    }
-
     pub fn clear_cancellation(&self) {
-        self.transcription_cancelled.store(false, Ordering::SeqCst);
         *self.transcription_token.lock() = None;
     }
 
@@ -1213,8 +1206,19 @@ impl AppState {
             .is_ok()
     }
 
-    pub fn set_pending_path(&self, path: Option<PathBuf>) {
-        *self.pending_recording_path.lock() = path;
+    /// None once the dictation is cancelled, so a late save can't take the slot
+    /// or a newer dictation's selected text. Otherwise the selected text to edit.
+    pub fn claim_pending_dictation(
+        &self,
+        path: &std::path::Path,
+        token: &CancellationToken,
+    ) -> Option<Option<String>> {
+        let mut current = self.pending_recording_path.lock();
+        if token.is_cancelled() {
+            return None;
+        }
+        *current = Some(path.to_path_buf());
+        Some(self.take_pending_selected_text())
     }
 
     pub fn take_pending_path(&self) -> Option<PathBuf> {

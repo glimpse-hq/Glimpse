@@ -21,21 +21,29 @@ pub(crate) fn disengage(session: Option<MediaSession>) {
     imp::disengage(session);
 }
 
+/// Puts back a ducked volume before the app quits.
+pub(crate) fn restore_volume_now() {
+    imp::restore_volume_now();
+}
+
 mod coord {
     use super::PauseSession;
-    use parking_lot::Mutex;
+    use parking_lot::{Condvar, Mutex};
+    use std::time::Duration;
     use tauri::async_runtime;
 
     struct MediaState<T> {
         next_session: u64,
         active_session: Option<PauseSession>,
         paused_target: Option<T>,
+        in_flight: usize,
     }
 
     pub(super) type CancelFn<'a> = &'a dyn Fn() -> bool;
 
     pub(super) struct Coordinator<T: Send + 'static> {
         state: Mutex<MediaState<T>>,
+        settled: Condvar,
         pause_fn: fn() -> Option<T>,
         resume_fn: fn(&T, CancelFn<'_>) -> bool,
     }
@@ -50,7 +58,9 @@ mod coord {
                     next_session: 0,
                     active_session: None,
                     paused_target: None,
+                    in_flight: 0,
                 }),
+                settled: Condvar::new(),
                 pause_fn,
                 resume_fn,
             }
@@ -65,6 +75,7 @@ mod coord {
                 }
                 let session = PauseSession(shared.next_session);
                 shared.active_session = Some(session);
+                shared.in_flight += 1;
                 session
             };
 
@@ -72,6 +83,7 @@ mod coord {
                 let pause_fn = self.pause_fn;
                 let target = pause_fn();
                 self.finish_pause(session, target);
+                self.settle();
             }));
 
             session
@@ -84,13 +96,39 @@ mod coord {
                     return;
                 }
                 shared.active_session = None;
-                shared.paused_target.take()
+                let target = shared.paused_target.take();
+                shared.in_flight += usize::from(target.is_some());
+                target
             };
 
             if let Some(target) = target {
                 std::mem::drop(async_runtime::spawn_blocking(move || {
-                    self.resume_or_keep(target)
+                    self.resume_or_keep(target);
+                    self.settle();
                 }));
+            }
+        }
+
+        fn settle(&self) {
+            self.state.lock().in_flight -= 1;
+            self.settled.notify_all();
+        }
+
+        // Synchronous, for quitting, when a spawned resume would never run.
+        pub(super) fn resume_now(&'static self) {
+            let target = {
+                let mut shared = self.state.lock();
+                shared.active_session = None;
+                // A pause or restore still running would leave the volume lowered after exit.
+                self.settled.wait_while_for(
+                    &mut shared,
+                    |shared| shared.in_flight > 0,
+                    Duration::from_secs(3),
+                );
+                shared.paused_target.take()
+            };
+            if let Some(target) = target {
+                (self.resume_fn)(&target, &|| false);
             }
         }
 
@@ -378,6 +416,10 @@ function run(argv) {
         }
     }
 
+    pub(crate) fn restore_volume_now() {
+        DUCK_COORD.resume_now();
+    }
+
     fn pause_now_playing() -> Option<PausedTarget> {
         let stdout = run_osascript(MEDIA_REMOTE_SCRIPT, &["pause"], &|| false)?;
         PausedTarget::from_json(&stdout)
@@ -502,6 +544,10 @@ mod imp {
             Some(super::MediaSession::Duck(session)) => DUCK_COORD.resume_if_paused_by_us(session),
             None => {}
         }
+    }
+
+    pub(crate) fn restore_volume_now() {
+        DUCK_COORD.resume_now();
     }
 
     pub(super) struct SavedVolume {
