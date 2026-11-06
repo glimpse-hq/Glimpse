@@ -675,6 +675,11 @@ pub async fn delete_model(
                 {
                     std::thread::sleep(std::time::Duration::from_millis(100));
                 }
+                if state.download_percent(&model).is_some() {
+                    return Err(
+                        "The download is still finishing. Try again in a moment.".to_string()
+                    );
+                }
             }
             state.ready_models.lock().remove(&model);
             let transcriber = state.local_transcriber();

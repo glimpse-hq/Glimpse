@@ -1151,11 +1151,11 @@ pub(crate) fn retry_transcription_async(
     app: &AppHandle<AppRuntime>,
     saved: RecordingSaved,
     settings: UserSettings,
+    preflight_generation: u64,
     original_id: String,
     saved_mode: (Option<String>, Option<String>),
     cancel_token: CancellationToken,
 ) {
-    let preflight_generation = llm_cleanup::preflight_generation();
     let http = app.state::<AppState>().http();
     let app_handle = app.clone();
     let saved_for_task = saved.clone();

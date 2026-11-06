@@ -228,7 +228,9 @@ impl LicenseFailure {
 // or a deactivation.
 static LICENSE_CHANGE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
-static GATE_CACHE: Mutex<Option<(bool, DateTime<Utc>)>> = Mutex::new(None);
+type CachedGate = Option<(bool, DateTime<Utc>)>;
+// The generation stops a check that read the old license from caching after an invalidation.
+static GATE_CACHE: Mutex<(u64, CachedGate)> = Mutex::new((0, None));
 const GATE_CACHE_TTL_SECONDS: i64 = 60;
 
 pub fn license_gate_active(store: &SettingsStore) -> bool {
@@ -237,16 +239,23 @@ pub fn license_gate_active(store: &SettingsStore) -> bool {
     }
 
     let now = Utc::now();
-    if let Some((gate, valid_until)) = *GATE_CACHE.lock()
-        && now < valid_until
-    {
-        return gate;
-    }
+    let generation = {
+        let cache = GATE_CACHE.lock();
+        if let Some((gate, valid_until)) = cache.1
+            && now < valid_until
+        {
+            return gate;
+        }
+        cache.0
+    };
 
     let gate = get_license_state(store)
         .map(|state| state.license_gate_active)
         .unwrap_or(false);
-    *GATE_CACHE.lock() = Some((gate, now + Duration::seconds(GATE_CACHE_TTL_SECONDS)));
+    let mut cache = GATE_CACHE.lock();
+    if cache.0 == generation {
+        cache.1 = Some((gate, now + Duration::seconds(GATE_CACHE_TTL_SECONDS)));
+    }
     gate
 }
 
@@ -265,7 +274,9 @@ pub(crate) fn secure_grant_refresh_needed(store: &SettingsStore) -> Result<bool,
 }
 
 fn invalidate_gate_cache() {
-    *GATE_CACHE.lock() = None;
+    let mut cache = GATE_CACHE.lock();
+    cache.0 = cache.0.wrapping_add(1);
+    cache.1 = None;
 }
 
 pub(crate) fn developer_license_bypass_active() -> bool {
