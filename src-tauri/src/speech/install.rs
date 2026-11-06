@@ -484,15 +484,19 @@ pub async fn download_model_now(
 
     crate::analytics::track_model_downloaded(&app, &status.id);
 
+    let settings = state.current_settings();
     if ane && !replaces_files && super::catalog::ane_encoder_dir(&model).is_some() {
         super::compile_ane_encoder(&app, status.id.clone());
     } else if definition(&model).is_some() {
-        super::warm_model(&app, status.id.clone());
+        if super::selected_model(&settings) == status.id {
+            super::warm_model(&app, status.id.clone());
+        } else {
+            super::warm_unselected_model(&app, status.id.clone());
+        }
     } else if super::catalog::cleanup_model_definition(&model).is_some() {
         crate::cleanup_model::finish_install();
     }
 
-    let settings = state.current_settings();
     crate::tray::refresh_menus(&app, &settings);
     if super::selected_model(&settings) == status.id && crate::pill::take_model_ready_announcement()
     {

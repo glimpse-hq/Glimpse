@@ -1,3 +1,10 @@
+1.4.5
+
+### Fixes
+
+- Downloading a model you haven't selected no longer makes dictation wait while it gets ready.
+- Pressing Delete twice on a model no longer shows an error.
+
 1.4.4
 
 ### Fixes
