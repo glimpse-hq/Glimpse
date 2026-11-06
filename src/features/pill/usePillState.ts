@@ -81,10 +81,6 @@ export function usePillState() {
     [clearErrorFlashTimer, resetAudioState, triggerErrorFlash],
   );
 
-  const dismiss = useCallback(() => {
-    applyStatus("idle");
-  }, [applyStatus]);
-
   useEffect(() => clearErrorFlashTimer, [clearErrorFlashTimer]);
 
   useTauriEvent<PillStatePayload>("pill:state", ({ status }) => {
@@ -122,6 +118,5 @@ export function usePillState() {
     expandedText,
     pillTone,
     isHovered,
-    dismiss,
   };
 }

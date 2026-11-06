@@ -924,8 +924,9 @@ fn write_license(store: &SettingsStore, key: &str, grant: LicenseGrant) -> Resul
                 tracing::error!("Could not restore a license value after a failed write: {err}");
             }
         }
-        invalidate_gate_cache();
     }
+    // A gate check between the two writes can cache a state without the key.
+    invalidate_gate_cache();
     result
 }
 

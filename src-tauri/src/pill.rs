@@ -1150,31 +1150,6 @@ impl PillController {
         }
     }
 
-    pub fn cancel(&self, app: &AppHandle<AppRuntime>, how: &str) {
-        let recording_seconds = self
-            .is_recording()
-            .then(|| *self.recording_started_at.lock())
-            .flatten()
-            .map(|started| started.elapsed().as_secs_f32());
-        self.stop_audio_spectrum_emitter();
-        let _ = app.state::<AppState>().stop_streaming_session(app);
-        collapse_expanded_pill(app);
-        let app_handle = app.clone();
-        if let Err(err) = self
-            .recorder
-            .stop_after_capture_and_discard_pending(move || {
-                app_handle.state::<AppState>().pill().resume_paused_media();
-            })
-        {
-            self.resume_paused_media();
-            tracing::error!("Failed to stop recorder: {err}");
-        }
-        self.reset(app);
-        if let Some(seconds) = recording_seconds {
-            analytics::track_dictation_cancelled(app, "recording", how, Some(seconds), None);
-        }
-    }
-
     pub fn cancel_processing(&self, app: &AppHandle<AppRuntime>, how: &str) {
         if self.status() != PillStatus::Processing {
             return;

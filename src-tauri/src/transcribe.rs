@@ -858,6 +858,7 @@ async fn process_transcript_text(
     let llm_available = llm_cleanup::is_llm_available(settings);
     let should_refine_transcript = llm_cleanup::should_refine_transcript(settings);
     let llm_needed = is_edit_mode || should_refine_transcript;
+    let preflight_generation = llm_cleanup::preflight_generation();
     let preflight_unavailable =
         llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
     let llm_wanted = if is_edit_mode {
@@ -908,7 +909,7 @@ async fn process_transcript_text(
                         );
                     }
                     if !llm_cleanup::is_transient_llm_error(&err) {
-                        llm_cleanup::note_preflight_failure();
+                        llm_cleanup::note_preflight_failure(preflight_generation);
                     }
                     maybe_warn_llm_issue(
                         app,
@@ -947,7 +948,7 @@ async fn process_transcript_text(
                         tracing::error!("Cleanup failed, using raw transcript: {message}");
                     }
                     if !llm_cleanup::is_transient_llm_error(&err) {
-                        llm_cleanup::note_preflight_failure();
+                        llm_cleanup::note_preflight_failure(preflight_generation);
                     }
                     maybe_warn_llm_issue(
                         app,
@@ -1225,6 +1226,7 @@ pub(crate) fn retry_transcription_async(
                 }
 
                 let should_refine_transcript = llm_cleanup::should_refine_transcript(&settings);
+                let preflight_generation = llm_cleanup::preflight_generation();
                 let preflight_unavailable = should_refine_transcript
                     && matches!(llm_cleanup::cached_preflight_available(), Some(false));
                 let routed =
@@ -1262,7 +1264,7 @@ pub(crate) fn retry_transcription_async(
                                 &err,
                                 llm_cleanup::is_transient_llm_error(&err),
                             );
-                            llm_cleanup::note_preflight_failure();
+                            llm_cleanup::note_preflight_failure(preflight_generation);
                             maybe_warn_llm_unavailable(&app_handle, false);
                             (raw_transcript.clone(), false)
                         }

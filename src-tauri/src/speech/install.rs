@@ -667,6 +667,7 @@ pub async fn delete_model(
         let manager = model_manager(&handle).map_err(|err| err.to_string())?;
 
         if let Some(state) = handle.try_state::<crate::AppState>() {
+            state.cancel_download(&model);
             state.ready_models.lock().remove(&model);
             let transcriber = state.local_transcriber();
             if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {

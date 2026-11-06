@@ -726,7 +726,6 @@ pub fn run() {
             speech::set_local_model_auto,
             start_hold_recording,
             pill::stop_hold_recording,
-            cancel_recording,
             start_microphone_test,
             stop_microphone_test,
             view_recovered_transcriptions,
@@ -2031,25 +2030,6 @@ async fn undo_llm_cleanup(
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     core::transcriptions::undo_llm_cleanup(id, &app, &state)
-}
-
-pub(crate) fn hide_overlay(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().reset(app);
-}
-
-pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().cancel(app, "escape");
-}
-
-#[tauri::command]
-fn cancel_recording(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    if state.pill().status() == pill::PillStatus::Processing {
-        state.pill().cancel_processing(&app, "escape");
-    } else {
-        stop_active_recording(&app);
-        hide_overlay(&app);
-    }
 }
 
 /// Why a dictation was thrown away, as the practice screen shows it.
