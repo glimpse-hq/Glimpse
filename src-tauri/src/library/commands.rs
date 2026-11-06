@@ -551,6 +551,10 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     };
 
     for item in items {
+        // Deferred recovery can find a job the user started after activating.
+        if state.library_job_pending(&item.id) {
+            continue;
+        }
         // A transcript that was being replaced when the app quit comes back,
         // and a recovered job keeps it again while it runs.
         let previous = storage

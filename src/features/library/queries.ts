@@ -39,8 +39,7 @@ function patchItemInCache(
   queryClient: ReturnType<typeof useQueryClient>,
   id: string,
   updater: (item: LibraryItem) => LibraryItem,
-): boolean {
-  let found = false;
+) {
   queryClient.setQueriesData<LibraryInfiniteData>(
     { queryKey: libraryKeys.lists() },
     (old) => {
@@ -51,7 +50,6 @@ function patchItemInCache(
           ...page,
           items: page.items.map((item) => {
             if (item.id !== id) return item;
-            found = true;
             return updater(item);
           }),
         })),
@@ -64,7 +62,6 @@ function patchItemInCache(
     queryKey: libraryKeys.item(id),
     exact: true,
   });
-  return found;
 }
 
 export function useLibraryItems(
@@ -97,8 +94,11 @@ export function useLibraryItems(
     // Items created outside this view (e.g. CLI imports) are missing from a
     // cached list; refetch once per unknown id.
     const refetchedIds = new Set<string>();
-    const refetchIfMissing = (id: string, found: boolean) => {
-      if (found || refetchedIds.has(id)) return;
+    const refetchIfMissing = (id: string) => {
+      const shown = queryClient
+        .getQueryData<LibraryInfiniteData>(libraryKeys.list(filter))
+        ?.pages.some((page) => page.items.some((item) => item.id === id));
+      if (shown || refetchedIds.has(id)) return;
       refetchedIds.add(id);
       queryClient.invalidateQueries({ queryKey: libraryKeys.lists() });
     };
@@ -116,7 +116,7 @@ export function useLibraryItems(
           total_chunks,
           detecting_speakers,
         } = event.payload;
-        const found = patchItemInCache(queryClient, id, (item) => {
+        patchItemInCache(queryClient, id, (item) => {
           if (!isProgressable(item.status)) return item;
           let nextTranscript = item.transcript;
           let updateTranscript = false;
@@ -154,7 +154,7 @@ export function useLibraryItems(
             ...(updateSegments ? { segments: nextSegments } : {}),
           };
         });
-        refetchIfMissing(id, found);
+        refetchIfMissing(id);
         // A list read that started before this update was saved would drop it.
         if (
           (chunk_text ||
@@ -221,7 +221,7 @@ export function useLibraryItems(
     listen<LibraryImportProgressPayload>("library:import_progress", (event) => {
       if (cancelled) return;
       const { id, progress } = event.payload;
-      const found = patchItemInCache(queryClient, id, (item) => {
+      patchItemInCache(queryClient, id, (item) => {
         if (
           item.status.type === "transcribing" ||
           item.status.type === "complete" ||
@@ -232,7 +232,7 @@ export function useLibraryItems(
         }
         return { ...item, status: { type: "importing" as const, progress } };
       });
-      refetchIfMissing(id, found);
+      refetchIfMissing(id);
     }).then((fn) => {
       if (cancelled) fn();
       else unlisteners.push(fn);
@@ -242,7 +242,7 @@ export function useLibraryItems(
       cancelled = true;
       unlisteners.forEach((fn) => fn());
     };
-  }, [enabled, queryClient]);
+  }, [enabled, queryClient, filter]);
 
   return useInfiniteQuery({
     queryKey: libraryKeys.list(filter),
