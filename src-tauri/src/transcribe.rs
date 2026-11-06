@@ -54,6 +54,8 @@ struct ProcessTranscriptInput<'a> {
     keep_pill_expanded: bool,
     audio_duration_seconds: f32,
     stopped_at: Option<Instant>,
+    /// Read with `settings`, so a failure on settings changed since is ignored.
+    preflight_generation: u64,
 }
 
 /// How a dictation was started, carried from the pill for analytics.
@@ -64,6 +66,7 @@ pub(crate) struct DictationOrigin {
     pub(crate) cleanup_shortcut: bool,
     /// When the shortcut was released or pressed to stop.
     pub(crate) stopped_at: Instant,
+    pub(crate) preflight_generation: u64,
 }
 
 /// Optional `transcription_completed` fields that only some paths know.
@@ -269,9 +272,11 @@ pub(crate) fn queue_transcription(
     origin: DictationOrigin,
 ) {
     let state = app.state::<AppState>();
-    state.set_pending_path(Some(saved.path.clone()));
-
-    let pending_selected_text = state.take_pending_selected_text();
+    let Some(pending_selected_text) = state.claim_pending_dictation(&saved.path, &cancel_token)
+    else {
+        discard_cancelled_recording(&saved.path, saved.pending_path.as_deref());
+        return;
+    };
 
     let http = state.http();
     let app_handle = app.clone();
@@ -409,6 +414,7 @@ pub(crate) fn queue_transcription(
                         keep_pill_expanded: false,
                         audio_duration_seconds,
                         stopped_at: Some(origin.stopped_at),
+                        preflight_generation: origin.preflight_generation,
                     },
                 )
                 .await
@@ -614,10 +620,19 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
             },
         );
 
+        let preflight_generation = llm_cleanup::preflight_generation();
         let settings = app.state::<AppState>().current_settings();
         let mut saved_count = 0usize;
         for (saved, recording) in recovered {
-            match transcribe_recovered_recording(&app, &saved, recording, &settings).await {
+            match transcribe_recovered_recording(
+                &app,
+                &saved,
+                recording,
+                &settings,
+                preflight_generation,
+            )
+            .await
+            {
                 Ok(RecoveredTranscriptionOutcome::Saved) => {
                     saved_count += 1;
                 }
@@ -672,6 +687,7 @@ async fn transcribe_recovered_recording(
     saved: &RecordingSaved,
     recording: CompletedRecording,
     settings: &UserSettings,
+    preflight_generation: u64,
 ) -> Result<RecoveredTranscriptionOutcome> {
     let transcription_started_at = Instant::now();
     let audio_duration_seconds = compute_audio_duration_seconds(saved);
@@ -747,6 +763,7 @@ async fn transcribe_recovered_recording(
             keep_pill_expanded: false,
             audio_duration_seconds,
             stopped_at: None,
+            preflight_generation,
         },
     )
     .await
@@ -854,6 +871,7 @@ async fn process_transcript_text(
         keep_pill_expanded,
         audio_duration_seconds,
         stopped_at,
+        preflight_generation,
     } = input;
 
     let previous_activity = analytics::activity();
@@ -912,7 +930,7 @@ async fn process_transcript_text(
                         );
                     }
                     if !llm_cleanup::is_transient_llm_error(&err) {
-                        llm_cleanup::note_preflight_failure();
+                        llm_cleanup::note_preflight_failure(preflight_generation);
                     }
                     maybe_warn_llm_issue(
                         app,
@@ -951,7 +969,7 @@ async fn process_transcript_text(
                         tracing::error!("Cleanup failed, using raw transcript: {message}");
                     }
                     if !llm_cleanup::is_transient_llm_error(&err) {
-                        llm_cleanup::note_preflight_failure();
+                        llm_cleanup::note_preflight_failure(preflight_generation);
                     }
                     maybe_warn_llm_issue(
                         app,
@@ -1010,8 +1028,7 @@ async fn process_transcript_text(
         return ProcessTranscriptOutcome::Empty;
     }
 
-    let token_cancelled = cancel_token.map(|t| t.is_cancelled()).unwrap_or(false);
-    if token_cancelled || app.state::<AppState>().is_cancelled() {
+    if cancel_token.is_some_and(|t| t.is_cancelled()) {
         return ProcessTranscriptOutcome::Cancelled;
     }
 
@@ -1032,14 +1049,13 @@ async fn process_transcript_text(
             && selected_model_supports_dictionary;
         let transcript_to_paste = final_transcript.clone();
         let token_for_paste = cancel_token.cloned();
-        let app_for_paste = app.clone();
         let paste_result = async_runtime::spawn_blocking(move || {
-            let cancelled = token_for_paste
-                .as_ref()
-                .map(|token| token.is_cancelled())
-                .unwrap_or(false)
-                || app_for_paste.state::<AppState>().is_cancelled();
-            if cancelled {
+            let cancelled = || {
+                token_for_paste
+                    .as_ref()
+                    .is_some_and(|token| token.is_cancelled())
+            };
+            if cancelled() {
                 return None;
             }
             let pre_paste_snapshot = can_read_field
@@ -1051,11 +1067,7 @@ async fn process_transcript_text(
                     match_insertion_capitalization(&transcript_to_paste, &snapshot.value)
                 })
                 .unwrap_or(transcript_to_paste);
-            if token_for_paste
-                .as_ref()
-                .is_some_and(|token| token.is_cancelled())
-                || app_for_paste.state::<AppState>().is_cancelled()
-            {
+            if cancelled() {
                 return None;
             }
             let result = assistive::paste_text(&text);
@@ -1139,6 +1151,7 @@ pub(crate) fn retry_transcription_async(
     app: &AppHandle<AppRuntime>,
     saved: RecordingSaved,
     settings: UserSettings,
+    preflight_generation: u64,
     original_id: String,
     saved_mode: (Option<String>, Option<String>),
     cancel_token: CancellationToken,
@@ -1266,7 +1279,7 @@ pub(crate) fn retry_transcription_async(
                                 &err,
                                 llm_cleanup::is_transient_llm_error(&err),
                             );
-                            llm_cleanup::note_preflight_failure();
+                            llm_cleanup::note_preflight_failure(preflight_generation);
                             maybe_warn_llm_unavailable(&app_handle, false);
                             (raw_transcript.clone(), false)
                         }
@@ -1545,6 +1558,11 @@ fn abort_transcription(
         crate::pill::collapse_expanded_pill(app);
     }
     state.pill().finish_processing(app);
+}
+
+fn discard_cancelled_recording(audio_path: &Path, pending_path: Option<&Path>) {
+    let _ = std::fs::remove_file(audio_path);
+    discard_pending_recording(pending_path);
 }
 
 fn discard_pending_recording(path: Option<&Path>) {
@@ -2378,7 +2396,11 @@ pub(crate) fn finalize_streaming_transcription(
     } = input;
 
     let state = app.state::<AppState>();
-    let pending_selected_text = state.take_pending_selected_text();
+    let Some(pending_selected_text) = state.claim_pending_dictation(&audio_path, &cancel_token)
+    else {
+        discard_cancelled_recording(&audio_path, pending_path.as_deref());
+        return;
+    };
     let http = state.http();
     let app_handle = app.clone();
 
@@ -2439,6 +2461,7 @@ pub(crate) fn finalize_streaming_transcription(
                 keep_pill_expanded: true,
                 audio_duration_seconds: duration_seconds,
                 stopped_at: Some(origin.stopped_at),
+                preflight_generation: origin.preflight_generation,
             },
         )
         .await

@@ -43,6 +43,7 @@ pub(crate) fn retry_transcription(
         pending_path: None,
     };
 
+    let preflight_generation = llm_cleanup::preflight_generation();
     let mut settings = state.current_settings();
     // Stands in for the shortcut flag the original dictation ran with.
     settings.cleanup_enabled = record.llm_cleaned;
@@ -50,7 +51,15 @@ pub(crate) fn retry_transcription(
     let cancel_token = state
         .register_retry_transcription(id.clone())
         .ok_or_else(|| "Already retrying".to_string())?;
-    transcribe::retry_transcription_async(app, saved, settings, id, saved_mode, cancel_token);
+    transcribe::retry_transcription_async(
+        app,
+        saved,
+        settings,
+        preflight_generation,
+        id,
+        saved_mode,
+        cancel_token,
+    );
 
     Ok(())
 }

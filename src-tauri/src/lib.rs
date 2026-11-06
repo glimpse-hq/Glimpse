@@ -473,6 +473,8 @@ pub fn run() {
                 speech::upgrade_whisper_decoder(handle);
                 speech::replace_onnx_models(handle);
             }
+            let library_resumable =
+                license::license_gate_active(&handle.state::<AppState>().settings_store);
             {
                 let h = handle.clone();
                 async_runtime::spawn(async move {
@@ -480,6 +482,9 @@ pub fn run() {
                     // Start after the refresh so the license gate reflects current state.
                     let settings = h.state::<AppState>().current_settings();
                     local_api::start_from_settings(&h, &settings);
+                    if !library_resumable {
+                        library::commands::recover_interrupted_library_items(&h);
+                    }
 
                     // Retries a failed launch check, and keeps a long-running app's
                     // license inside its offline trust window.
@@ -492,7 +497,9 @@ pub fn run() {
             analytics::set_crash_phase("services");
             integrations::start_control_server(handle.clone());
             library::commands::purge_deleted_library_items(handle);
-            library::commands::recover_interrupted_library_items(handle);
+            if library_resumable {
+                library::commands::recover_interrupted_library_items(handle);
+            }
             recording::recover_interrupted_sessions(handle);
             register_deep_link_handlers(app);
 
@@ -726,7 +733,6 @@ pub fn run() {
             speech::set_local_model_auto,
             start_hold_recording,
             pill::stop_hold_recording,
-            cancel_recording,
             start_microphone_test,
             stop_microphone_test,
             view_recovered_transcriptions,
@@ -789,6 +795,7 @@ pub fn run() {
                 let state = handler.state::<AppState>();
                 state.local_transcriber.unload_if_idle();
                 state.stop_preflight_loop();
+                music::restore_volume_now();
                 let now = Instant::now();
                 let counters = state.session_counters.lock();
                 analytics::track_app_exited(
@@ -907,7 +914,6 @@ pub struct AppState {
     hotkeys: core::hotkeys::HotkeyCoordinator,
     shortcut_capture_active: AtomicBool,
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
-    transcription_cancelled: AtomicBool,
     transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
     ffmpeg_toast_shown: AtomicBool,
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
@@ -996,7 +1002,6 @@ impl AppState {
             hotkeys: core::hotkeys::HotkeyCoordinator::default(),
             shortcut_capture_active: AtomicBool::new(false),
             tray: parking_lot::Mutex::new(None),
-            transcription_cancelled: AtomicBool::new(false),
             transcription_token: parking_lot::Mutex::new(None),
             ffmpeg_toast_shown: AtomicBool::new(false),
             pending_recording_path: parking_lot::Mutex::new(None),
@@ -1180,18 +1185,12 @@ impl AppState {
     }
 
     pub fn request_cancellation(&self) {
-        self.transcription_cancelled.store(true, Ordering::SeqCst);
         if let Some(token) = self.transcription_token.lock().as_ref() {
             token.cancel();
         }
     }
 
-    pub fn is_cancelled(&self) -> bool {
-        self.transcription_cancelled.load(Ordering::SeqCst)
-    }
-
     pub fn clear_cancellation(&self) {
-        self.transcription_cancelled.store(false, Ordering::SeqCst);
         *self.transcription_token.lock() = None;
     }
 
@@ -1207,8 +1206,19 @@ impl AppState {
             .is_ok()
     }
 
-    pub fn set_pending_path(&self, path: Option<PathBuf>) {
-        *self.pending_recording_path.lock() = path;
+    /// None once the dictation is cancelled, so a late save can't take the slot
+    /// or a newer dictation's selected text. Otherwise the selected text to edit.
+    pub fn claim_pending_dictation(
+        &self,
+        path: &std::path::Path,
+        token: &CancellationToken,
+    ) -> Option<Option<String>> {
+        let mut current = self.pending_recording_path.lock();
+        if token.is_cancelled() {
+            return None;
+        }
+        *current = Some(path.to_path_buf());
+        Some(self.take_pending_selected_text())
     }
 
     pub fn take_pending_path(&self) -> Option<PathBuf> {
@@ -2031,25 +2041,6 @@ async fn undo_llm_cleanup(
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     core::transcriptions::undo_llm_cleanup(id, &app, &state)
-}
-
-pub(crate) fn hide_overlay(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().reset(app);
-}
-
-pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().cancel(app, "escape");
-}
-
-#[tauri::command]
-fn cancel_recording(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    if state.pill().status() == pill::PillStatus::Processing {
-        state.pill().cancel_processing(&app, "escape");
-    } else {
-        stop_active_recording(&app);
-        hide_overlay(&app);
-    }
 }
 
 /// Why a dictation was thrown away, as the practice screen shows it.

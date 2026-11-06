@@ -26,12 +26,18 @@ const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
 const CAPTURE_ARM_DELAY: Duration = Duration::from_millis(280);
 // A press this soon after stopping is a double press, not a request to cancel.
 const CANCEL_PRESS_GRACE: Duration = Duration::from_millis(200);
-// Set when a press found the model still downloading, so the finished
-// download can say the shortcut works now.
-static ANNOUNCE_MODEL_READY: AtomicBool = AtomicBool::new(false);
+// The model a press found still downloading, so its finished download can
+// say the shortcut works now.
+static ANNOUNCE_MODEL_READY: Mutex<Option<String>> = Mutex::new(None);
 
-pub(crate) fn take_model_ready_announcement() -> bool {
-    ANNOUNCE_MODEL_READY.swap(false, Ordering::SeqCst)
+/// Clears the announcement when `model` is the one it waits for.
+pub(crate) fn take_model_ready_announcement(model: &str) -> bool {
+    let mut pending = ANNOUNCE_MODEL_READY.lock();
+    if pending.as_deref() != Some(model) {
+        return false;
+    }
+    *pending = None;
+    true
 }
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
@@ -227,7 +233,8 @@ pub struct PillController {
     recording_mode: Mutex<Option<RecordingMode>>,
     shortcut_origin: Mutex<Option<hotkeys::ShortcutAction>>,
     recording_options: Mutex<hotkeys::ShortcutOptions>,
-    recording_settings: Mutex<Option<UserSettings>>,
+    // With the preflight generation the settings were read at.
+    recording_settings: Mutex<Option<(UserSettings, u64)>>,
     smart_press_time: Mutex<Option<Instant>>,
     hold_key_down: Mutex<bool>,
     paused_media_session: Mutex<Option<music::MediaSession>>,
@@ -368,7 +375,7 @@ impl PillController {
         }
 
         if state.download_percent(&model).is_some() {
-            ANNOUNCE_MODEL_READY.store(true, Ordering::SeqCst);
+            *ANNOUNCE_MODEL_READY.lock() = Some(model.clone());
         }
         if self.model_notice_is_due() {
             match state.download_percent(&model) {
@@ -385,7 +392,7 @@ impl PillController {
                 None => {
                     let downloading = start_model_download(app, &model);
                     if downloading {
-                        ANNOUNCE_MODEL_READY.store(true, Ordering::SeqCst);
+                        *ANNOUNCE_MODEL_READY.lock() = Some(model.clone());
                     }
                     toast::show_with_action(
                         app,
@@ -454,7 +461,15 @@ impl PillController {
                 .store(new_status == PillStatus::Listening, Ordering::Relaxed);
             previous
         };
+        self.announce_transition(app, previous, new_status);
+    }
 
+    fn announce_transition(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        previous: PillStatus,
+        new_status: PillStatus,
+    ) {
         self.update_overlay_visibility(app, previous, new_status);
         self.emit_state(app);
         if new_status == PillStatus::Idle {
@@ -497,9 +512,6 @@ impl PillController {
             return false;
         }
         tracing::error!("[Pill] {message}");
-        if let Err(err) = self.recorder.stop() {
-            tracing::error!("[Pill] Failed to stop recorder during error transition: {err}");
-        }
         self.resume_paused_media();
         self.reset_recording_state();
         self.set_hold_key_down(false);
@@ -731,9 +743,10 @@ impl PillController {
 
         let state = app.state::<AppState>();
         state.clear_cancellation();
+        let preflight_generation = crate::llm_cleanup::preflight_generation();
         let mut settings = state.current_settings();
         settings.cleanup_enabled = options.cleanup_enabled;
-        *self.recording_settings.lock() = Some(settings.clone());
+        *self.recording_settings.lock() = Some((settings.clone(), preflight_generation));
 
         crate::speech::warm(app, &settings);
         crate::llm_cleanup::prewarm_cleanup(&settings);
@@ -761,6 +774,13 @@ impl PillController {
                 self.start_audio_spectrum_emitter(app);
                 self.pause_media_if_playing(app);
                 self.start_streaming_session_if_supported(app, &settings);
+                // A stop from another thread may have run its cleanup before these started.
+                if !self.is_recording() {
+                    self.stop_audio_spectrum_emitter();
+                    self.resume_paused_media();
+                    let _ = state.stop_streaming_session(app);
+                    return true;
+                }
                 self.spawn_recording_cap(app, generation);
 
                 emit_event(
@@ -847,7 +867,12 @@ impl PillController {
     }
 
     fn reset_stale_listening_state(&self, app: &AppHandle<AppRuntime>) {
-        if self.status() == PillStatus::Listening && !self.is_recording() {
+        // Checked under the status lock, which a stop holds while it takes the mode.
+        let stale = {
+            let status = self.status.lock();
+            *status == PillStatus::Listening && self.recording_mode.lock().is_none()
+        };
+        if stale {
             self.reset(app);
         }
     }
@@ -972,31 +997,47 @@ impl PillController {
     }
 
     fn stop_and_process_inner(&self, app: &AppHandle<AppRuntime>, auto_paste: bool) {
+        let state = app.state::<AppState>();
+        // One status-locked step, so a press from another thread never reads
+        // Listening without a recording as stale, and a rapid cancel finds the token.
+        let (mode, stopped_at, cancel_token, previous) = {
+            let mut status = self.status.lock();
+            let Some(mode) = self.recording_mode.lock().take() else {
+                return;
+            };
+            let stopped_at = Instant::now();
+            *self.stopped_at.lock() = Some(stopped_at);
+            let cancel_token = state.create_transcription_token();
+            let previous = std::mem::replace(&mut *status, PillStatus::Processing);
+            self.listening.store(false, Ordering::Relaxed);
+            (mode, stopped_at, cancel_token, previous)
+        };
+        if previous != PillStatus::Processing {
+            self.announce_transition(app, previous, PillStatus::Processing);
+        }
         self.stop_audio_spectrum_emitter();
-        let stopped_at = Instant::now();
-        *self.stopped_at.lock() = Some(stopped_at);
         analytics::set_activity(Activity::Transcribing);
-        let trigger = match self.recording_mode.lock().take() {
-            Some(RecordingMode::Toggle) => "toggle",
-            _ => "hold",
+        let trigger = match mode {
+            RecordingMode::Toggle => "toggle",
+            RecordingMode::Hold => "hold",
         };
         *self.stopped_audio_seconds.lock() = self
             .recording_started_at
             .lock()
             .take()
             .map(|started| stopped_at.duration_since(started).as_secs_f32());
-        let settings = self
-            .recording_settings
-            .lock()
-            .take()
-            .unwrap_or_else(|| app.state::<AppState>().current_settings());
+        let (settings, preflight_generation) =
+            self.recording_settings.lock().take().unwrap_or_else(|| {
+                let generation = crate::llm_cleanup::preflight_generation();
+                (app.state::<AppState>().current_settings(), generation)
+            });
         let recording_options = *self.recording_options.lock();
         let origin = crate::transcribe::DictationOrigin {
             trigger,
             cleanup_shortcut: recording_options.cleanup_enabled,
             stopped_at,
+            preflight_generation,
         };
-        let state = app.state::<AppState>();
         if auto_paste && !crate::voice_prompt::is_answering() {
             self.capture_selected_text_if_enabled(app, &settings);
         } else {
@@ -1004,13 +1045,7 @@ impl PillController {
             state.set_pending_selected_text(None);
         }
 
-        let has_streaming = state.has_streaming_session();
-        // Create the cancellation token up front, before the worker spawns, so a
-        // rapid cancel can't slip in before the token exists and leak a paste.
-        let cancel_token = state.create_transcription_token();
-
-        if has_streaming {
-            self.transition_to(app, PillStatus::Processing);
+        if state.has_streaming_session() {
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
             let resume_app = app_handle.clone();
@@ -1073,10 +1108,6 @@ impl PillController {
                                 return;
                             }
                         };
-                        app_handle
-                            .state::<AppState>()
-                            .set_pending_path(Some(saved.path.clone()));
-
                         crate::transcribe::finalize_streaming_transcription(
                             &app_handle,
                             crate::transcribe::StreamingTranscriptionInput {
@@ -1112,7 +1143,6 @@ impl PillController {
                 }
             });
         } else {
-            self.transition_to(app, PillStatus::Processing);
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
             let resume_app = app_handle.clone();
@@ -1147,31 +1177,6 @@ impl PillController {
                     }
                 }
             });
-        }
-    }
-
-    pub fn cancel(&self, app: &AppHandle<AppRuntime>, how: &str) {
-        let recording_seconds = self
-            .is_recording()
-            .then(|| *self.recording_started_at.lock())
-            .flatten()
-            .map(|started| started.elapsed().as_secs_f32());
-        self.stop_audio_spectrum_emitter();
-        let _ = app.state::<AppState>().stop_streaming_session(app);
-        collapse_expanded_pill(app);
-        let app_handle = app.clone();
-        if let Err(err) = self
-            .recorder
-            .stop_after_capture_and_discard_pending(move || {
-                app_handle.state::<AppState>().pill().resume_paused_media();
-            })
-        {
-            self.resume_paused_media();
-            tracing::error!("Failed to stop recorder: {err}");
-        }
-        self.reset(app);
-        if let Some(seconds) = recording_seconds {
-            analytics::track_dictation_cancelled(app, "recording", how, Some(seconds), None);
         }
     }
 
@@ -1440,7 +1445,8 @@ pub(crate) fn handle_registered_hotkey_event(
     options: hotkeys::ShortcutOptions,
     occurred_at: Instant,
 ) {
-    if shortcuts_paused(app) {
+    // Releases still pass, so a key held when capture starts ends its recording.
+    if state == HotkeyState::Pressed && shortcuts_paused(app) {
         return;
     }
 
