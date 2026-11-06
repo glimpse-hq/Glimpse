@@ -1,3 +1,9 @@
+1.4.5
+
+### Changes
+
+- On Mac, turning on Accessibility now opens a small card beside System Settings that you drag Glimpse from into the list.
+
 1.4.4
 
 ### Fixes
