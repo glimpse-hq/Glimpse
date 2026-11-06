@@ -9,6 +9,8 @@
 - Cancelling a Library transcription no longer leaves it stuck on Cancelling or starts it again the next time Glimpse opens.
 - Library transcripts no longer skip a part while they come in, and progress stays current while you search.
 - If an edit to a Library transcript couldn't be saved, retranscribing no longer throws it away.
+- Downloading a model you haven't selected no longer makes dictation wait while it gets ready.
+- Pressing Delete twice on a model no longer shows an error.
 
 1.4.4
 
