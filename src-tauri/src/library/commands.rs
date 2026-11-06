@@ -540,10 +540,7 @@ pub fn get_library_tags(state: tauri::State<'_, AppState>) -> Result<Vec<String>
 
 pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
-    if !crate::license::license_gate_active(&state.settings_store) {
-        return;
-    }
-
+    let resumable = crate::license::license_gate_active(&state.settings_store);
     let storage = state.storage();
     let items = match storage.get_recoverable_library_items() {
         Ok(items) => items,
@@ -567,7 +564,8 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
             .ok()
             .flatten();
         match item.status {
-            LibraryItemStatus::Cancelling => {
+            // Without a license the job can't run, so it ends as cancelled and can be retried later.
+            _ if !resumable || matches!(item.status, LibraryItemStatus::Cancelling) => {
                 if let Some(previous) = previous {
                     let _ = storage.update_library_item(
                         &item.id,

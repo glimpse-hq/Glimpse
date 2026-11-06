@@ -3358,6 +3358,12 @@ const LibraryDetail = ({
               models={models}
               onCancel={() => setShowRetranscribe(false)}
               onConfirm={async (options) => {
+                // An unsaved edit would be dropped once the transcript is replaced.
+                writeTranscript();
+                await transcriptChain.current;
+                if (transcriptPending.current !== null) {
+                  throw new Error("Transcript edit not saved");
+                }
                 await onRetranscribe(options);
                 setShowRetranscribe(false);
               }}

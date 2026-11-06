@@ -1,3 +1,12 @@
+1.4.5
+
+### Fixes
+
+- A Library transcription that was running when Glimpse quit no longer stays stuck after your trial ends.
+- Cancelling a Library transcription no longer leaves it stuck on Cancelling or starts it again the next time Glimpse opens.
+- Library transcripts no longer skip a part while they come in, and progress stays current while you search.
+- If an edit to a Library transcript couldn't be saved, retranscribing no longer throws it away.
+
 1.4.4
 
 ### Fixes
