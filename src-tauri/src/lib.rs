@@ -473,6 +473,8 @@ pub fn run() {
                 speech::upgrade_whisper_decoder(handle);
                 speech::replace_onnx_models(handle);
             }
+            let library_resumable =
+                license::license_gate_active(&handle.state::<AppState>().settings_store);
             {
                 let h = handle.clone();
                 async_runtime::spawn(async move {
@@ -480,6 +482,9 @@ pub fn run() {
                     // Start after the refresh so the license gate reflects current state.
                     let settings = h.state::<AppState>().current_settings();
                     local_api::start_from_settings(&h, &settings);
+                    if !library_resumable {
+                        library::commands::recover_interrupted_library_items(&h);
+                    }
 
                     // Retries a failed launch check, and keeps a long-running app's
                     // license inside its offline trust window.
@@ -492,7 +497,9 @@ pub fn run() {
             analytics::set_crash_phase("services");
             integrations::start_control_server(handle.clone());
             library::commands::purge_deleted_library_items(handle);
-            library::commands::recover_interrupted_library_items(handle);
+            if library_resumable {
+                library::commands::recover_interrupted_library_items(handle);
+            }
             recording::recover_interrupted_sessions(handle);
             register_deep_link_handlers(app);
 
@@ -726,7 +733,6 @@ pub fn run() {
             speech::set_local_model_auto,
             start_hold_recording,
             pill::stop_hold_recording,
-            cancel_recording,
             start_microphone_test,
             stop_microphone_test,
             view_recovered_transcriptions,
@@ -2035,25 +2041,6 @@ async fn undo_llm_cleanup(
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     core::transcriptions::undo_llm_cleanup(id, &app, &state)
-}
-
-pub(crate) fn hide_overlay(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().reset(app);
-}
-
-pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().cancel(app, "escape");
-}
-
-#[tauri::command]
-fn cancel_recording(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    if state.pill().status() == pill::PillStatus::Processing {
-        state.pill().cancel_processing(&app, "escape");
-    } else {
-        stop_active_recording(&app);
-        hide_overlay(&app);
-    }
 }
 
 /// Why a dictation was thrown away, as the practice screen shows it.

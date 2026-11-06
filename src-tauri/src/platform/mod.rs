@@ -180,17 +180,22 @@ pub fn remove_dir_all_compat(dir: &Path) -> io::Result<()> {
         Err(err) => return Err(err),
     };
 
+    // Another delete of the same folder can remove entries first.
+    let missing_ok = |result: io::Result<()>| match result {
+        Err(err) if err.kind() == io::ErrorKind::NotFound => Ok(()),
+        other => other,
+    };
     for entry in entries {
         let entry = entry?;
         let path = entry.path();
         if entry.file_type()?.is_dir() {
             remove_dir_all_compat(&path)?;
         } else {
-            remove_file_compat(&path)?;
+            missing_ok(remove_file_compat(&path))?;
         }
     }
 
-    fs::remove_dir(dir)
+    missing_ok(fs::remove_dir(dir))
 }
 
 /// Moves a file or folder to the Trash (Recycle Bin on Windows).

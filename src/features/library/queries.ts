@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import * as libraryApi from "./api";
 import type {
@@ -26,6 +26,7 @@ const LIBRARY_STALE_TIME = 5 * 60 * 1000;
 
 export const libraryKeys = {
   all: ["library"] as const,
+  lists: () => [...libraryKeys.all, "list"] as const,
   list: (filter: LibraryFilter) =>
     [...libraryKeys.all, "list", filter] as const,
   tags: () => [...libraryKeys.all, "tags"] as const,
@@ -36,13 +37,11 @@ type LibraryInfiniteData = { pages: LibraryItemsPage[]; pageParams: number[] };
 
 function patchItemInCache(
   queryClient: ReturnType<typeof useQueryClient>,
-  filter: LibraryFilter,
   id: string,
   updater: (item: LibraryItem) => LibraryItem,
-): boolean {
-  let found = false;
-  queryClient.setQueryData<LibraryInfiniteData>(
-    libraryKeys.list(filter),
+) {
+  queryClient.setQueriesData<LibraryInfiniteData>(
+    { queryKey: libraryKeys.lists() },
     (old) => {
       if (!old) return old;
       return {
@@ -51,7 +50,6 @@ function patchItemInCache(
           ...page,
           items: page.items.map((item) => {
             if (item.id !== id) return item;
-            found = true;
             return updater(item);
           }),
         })),
@@ -64,7 +62,6 @@ function patchItemInCache(
     queryKey: libraryKeys.item(id),
     exact: true,
   });
-  return found;
 }
 
 export function useLibraryItems(
@@ -72,6 +69,10 @@ export function useLibraryItems(
   enabled: boolean = true,
 ) {
   const queryClient = useQueryClient();
+  const filterRef = useRef(filter);
+  useEffect(() => {
+    filterRef.current = filter;
+  }, [filter]);
 
   // Progress and completion events aren't heard while the view is hidden, so
   // reload the list on return.
@@ -97,10 +98,14 @@ export function useLibraryItems(
     // Items created outside this view (e.g. CLI imports) are missing from a
     // cached list; refetch once per unknown id.
     const refetchedIds = new Set<string>();
-    const refetchIfMissing = (id: string, found: boolean) => {
-      if (found || refetchedIds.has(id)) return;
-      refetchedIds.add(id);
-      queryClient.invalidateQueries({ queryKey: libraryKeys.list(filter) });
+    const refetchIfMissing = (id: string) => {
+      const shown = queryClient
+        .getQueryData<LibraryInfiniteData>(libraryKeys.list(filterRef.current))
+        ?.pages.some((page) => page.items.some((item) => item.id === id));
+      const seen = `${JSON.stringify(filterRef.current)} ${id}`;
+      if (shown || refetchedIds.has(seen)) return;
+      refetchedIds.add(seen);
+      queryClient.invalidateQueries({ queryKey: libraryKeys.lists() });
     };
 
     listen<LibraryProgressPayload>(
@@ -116,7 +121,7 @@ export function useLibraryItems(
           total_chunks,
           detecting_speakers,
         } = event.payload;
-        const found = patchItemInCache(queryClient, filter, id, (item) => {
+        patchItemInCache(queryClient, id, (item) => {
           if (!isProgressable(item.status)) return item;
           let nextTranscript = item.transcript;
           let updateTranscript = false;
@@ -154,7 +159,21 @@ export function useLibraryItems(
             ...(updateSegments ? { segments: nextSegments } : {}),
           };
         });
-        refetchIfMissing(id, found);
+        refetchIfMissing(id);
+        // A list read that started before this update was saved would drop it.
+        if (
+          (chunk_text ||
+            chunk_segments ||
+            (current_chunk === 0 && total_chunks === 0)) &&
+          queryClient.isFetching({ queryKey: libraryKeys.lists() }) > 0
+        ) {
+          // Invalidate alone joins a first load that has no data yet.
+          void queryClient
+            .cancelQueries({ queryKey: libraryKeys.lists() })
+            .then(() =>
+              queryClient.invalidateQueries({ queryKey: libraryKeys.lists() }),
+            );
+        }
       },
     ).then((fn) => {
       if (cancelled) fn();
@@ -168,7 +187,7 @@ export function useLibraryItems(
         queryClient.invalidateQueries({ queryKey: libraryKeys.all });
         return;
       }
-      patchItemInCache(queryClient, filter, id, (item) => ({
+      patchItemInCache(queryClient, id, (item) => ({
         ...item,
         status: { type: "complete" as const },
       }));
@@ -183,7 +202,7 @@ export function useLibraryItems(
       (event) => {
         if (cancelled) return;
         const { id, message, cancelled: wasCancelled } = event.payload;
-        patchItemInCache(queryClient, filter, id, (item) => ({
+        patchItemInCache(queryClient, id, (item) => ({
           ...item,
           status: wasCancelled
             ? { type: "cancelled" as const }
@@ -207,7 +226,7 @@ export function useLibraryItems(
     listen<LibraryImportProgressPayload>("library:import_progress", (event) => {
       if (cancelled) return;
       const { id, progress } = event.payload;
-      const found = patchItemInCache(queryClient, filter, id, (item) => {
+      patchItemInCache(queryClient, id, (item) => {
         if (
           item.status.type === "transcribing" ||
           item.status.type === "complete" ||
@@ -218,7 +237,7 @@ export function useLibraryItems(
         }
         return { ...item, status: { type: "importing" as const, progress } };
       });
-      refetchIfMissing(id, found);
+      refetchIfMissing(id);
     }).then((fn) => {
       if (cancelled) fn();
       else unlisteners.push(fn);
@@ -228,7 +247,7 @@ export function useLibraryItems(
       cancelled = true;
       unlisteners.forEach((fn) => fn());
     };
-  }, [enabled, queryClient, filter]);
+  }, [enabled, queryClient]);
 
   return useInfiniteQuery({
     queryKey: libraryKeys.list(filter),
