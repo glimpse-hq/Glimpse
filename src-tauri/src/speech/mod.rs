@@ -377,12 +377,7 @@ pub(crate) fn compile_ane_encoder(app: &AppHandle<AppRuntime>, model: String) {
     }
     let app = app.clone();
     std::thread::spawn(move || {
-        let service = SpeechService::new(SpeechConfig {
-            resolver: install::local_resolver(models_dir.clone()),
-            model_cache_dir: models_dir,
-            loose_paths: false,
-        })
-        .loading_compiling_encoders();
+        let service = detached_service(models_dir).loading_compiling_encoders();
         let started = std::time::Instant::now();
         if let Err(err) = service.preload_and_warm(&model) {
             tracing::warn!("[speech] {model} encoder compile failed: {err:#}");
@@ -401,6 +396,26 @@ pub(crate) fn compile_ane_encoder(app: &AppHandle<AppRuntime>, model: String) {
         if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {
             transcriber.unload();
             warm_model(&app, model);
+        }
+    });
+}
+
+fn detached_service(models_dir: PathBuf) -> SpeechService {
+    SpeechService::new(SpeechConfig {
+        resolver: install::local_resolver(models_dir.clone()),
+        model_cache_dir: models_dir,
+        loose_paths: false,
+    })
+}
+
+/// Warms a model on its own service, so the selected model stays loaded.
+pub(crate) fn warm_unselected_model(app: &AppHandle<AppRuntime>, model: String) {
+    let Ok(models_dir) = install::model_cache_dir(app) else {
+        return;
+    };
+    std::thread::spawn(move || {
+        if let Err(err) = detached_service(models_dir).preload_and_warm(&model) {
+            tracing::warn!("[speech] {model} first load failed: {err:#}");
         }
     });
 }

@@ -237,10 +237,12 @@ fn start_library_transcription_internal(
         }
     };
 
-    if matches!(
-        item.status,
-        LibraryItemStatus::Cancelling | LibraryItemStatus::Cancelled
-    ) {
+    if matches!(item.status, LibraryItemStatus::Cancelling) {
+        handle_library_job_error(app, state, &id, cancelled_error());
+        return;
+    }
+
+    if matches!(item.status, LibraryItemStatus::Cancelled) {
         release_library_slot(app, state, &id);
         return;
     }
@@ -1453,7 +1455,7 @@ fn report_progress(
         chunk_segments,
     } = update;
 
-    let _ = storage.update_library_item(
+    let _ = storage.update_library_item_if(
         id,
         LibraryItemPatch {
             status: Some(LibraryItemStatus::Transcribing { progress }),
@@ -1461,6 +1463,7 @@ fn report_progress(
             segments,
             ..Default::default()
         },
+        |item| !matches!(item.status, LibraryItemStatus::Cancelling),
     );
     let _ = app.emit(
         EVENT_LIBRARY_PROGRESS,
@@ -1483,12 +1486,13 @@ fn report_detecting_speakers(
     id: &str,
     progress: f32,
 ) {
-    let _ = state.storage().update_library_item(
+    let _ = state.storage().update_library_item_if(
         id,
         LibraryItemPatch {
             status: Some(LibraryItemStatus::Transcribing { progress }),
             ..Default::default()
         },
+        |item| !matches!(item.status, LibraryItemStatus::Cancelling),
     );
     let _ = app.emit(
         EVENT_LIBRARY_PROGRESS,
