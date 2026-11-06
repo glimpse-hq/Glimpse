@@ -54,6 +54,8 @@ struct ProcessTranscriptInput<'a> {
     keep_pill_expanded: bool,
     audio_duration_seconds: f32,
     stopped_at: Option<Instant>,
+    /// Read with `settings`, so a failure on settings changed since is ignored.
+    preflight_generation: u64,
 }
 
 /// How a dictation was started, carried from the pill for analytics.
@@ -64,6 +66,7 @@ pub(crate) struct DictationOrigin {
     pub(crate) cleanup_shortcut: bool,
     /// When the shortcut was released or pressed to stop.
     pub(crate) stopped_at: Instant,
+    pub(crate) preflight_generation: u64,
 }
 
 /// Optional `transcription_completed` fields that only some paths know.
@@ -407,6 +410,7 @@ pub(crate) fn queue_transcription(
                         keep_pill_expanded: false,
                         audio_duration_seconds,
                         stopped_at: Some(origin.stopped_at),
+                        preflight_generation: origin.preflight_generation,
                     },
                 )
                 .await
@@ -611,10 +615,19 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
             },
         );
 
+        let preflight_generation = llm_cleanup::preflight_generation();
         let settings = app.state::<AppState>().current_settings();
         let mut saved_count = 0usize;
         for (saved, recording) in recovered {
-            match transcribe_recovered_recording(&app, &saved, recording, &settings).await {
+            match transcribe_recovered_recording(
+                &app,
+                &saved,
+                recording,
+                &settings,
+                preflight_generation,
+            )
+            .await
+            {
                 Ok(RecoveredTranscriptionOutcome::Saved) => {
                     saved_count += 1;
                 }
@@ -669,6 +682,7 @@ async fn transcribe_recovered_recording(
     saved: &RecordingSaved,
     recording: CompletedRecording,
     settings: &UserSettings,
+    preflight_generation: u64,
 ) -> Result<RecoveredTranscriptionOutcome> {
     let transcription_started_at = Instant::now();
     let audio_duration_seconds = compute_audio_duration_seconds(saved);
@@ -743,6 +757,7 @@ async fn transcribe_recovered_recording(
             keep_pill_expanded: false,
             audio_duration_seconds,
             stopped_at: None,
+            preflight_generation,
         },
     )
     .await
@@ -850,6 +865,7 @@ async fn process_transcript_text(
         keep_pill_expanded,
         audio_duration_seconds,
         stopped_at,
+        preflight_generation,
     } = input;
 
     let previous_activity = analytics::activity();
@@ -858,7 +874,6 @@ async fn process_transcript_text(
     let llm_available = llm_cleanup::is_llm_available(settings);
     let should_refine_transcript = llm_cleanup::should_refine_transcript(settings);
     let llm_needed = is_edit_mode || should_refine_transcript;
-    let preflight_generation = llm_cleanup::preflight_generation();
     let preflight_unavailable =
         llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
     let llm_wanted = if is_edit_mode {
@@ -1140,6 +1155,7 @@ pub(crate) fn retry_transcription_async(
     saved_mode: (Option<String>, Option<String>),
     cancel_token: CancellationToken,
 ) {
+    let preflight_generation = llm_cleanup::preflight_generation();
     let http = app.state::<AppState>().http();
     let app_handle = app.clone();
     let saved_for_task = saved.clone();
@@ -1226,7 +1242,6 @@ pub(crate) fn retry_transcription_async(
                 }
 
                 let should_refine_transcript = llm_cleanup::should_refine_transcript(&settings);
-                let preflight_generation = llm_cleanup::preflight_generation();
                 let preflight_unavailable = should_refine_transcript
                     && matches!(llm_cleanup::cached_preflight_available(), Some(false));
                 let routed =
@@ -2424,6 +2439,7 @@ pub(crate) fn finalize_streaming_transcription(
                 keep_pill_expanded: true,
                 audio_duration_seconds: duration_seconds,
                 stopped_at: Some(origin.stopped_at),
+                preflight_generation: origin.preflight_generation,
             },
         )
         .await

@@ -353,12 +353,12 @@ fn ane_compile_marker(models_dir: &Path, model: &str) -> Option<PathBuf> {
     )
 }
 
-// A failed compile leaves a non-empty marker, so loads keep skipping the
-// encoder without waiting for or retrying the compile.
+// A failed compile writes the app version into the marker, so loads keep skipping
+// the encoder and the compile retries only after an update.
 fn ane_compile_pending(models_dir: &Path, model: &str) -> bool {
     ane_compile_marker(models_dir, model)
         .and_then(|marker| std::fs::read(marker).ok())
-        .is_some_and(|contents| contents.is_empty())
+        .is_some_and(|contents| contents != env!("CARGO_PKG_VERSION").as_bytes())
 }
 
 /// The first Neural Engine load compiles the encoder, which can take minutes.
@@ -387,7 +387,7 @@ pub(crate) fn compile_ane_encoder(app: &AppHandle<AppRuntime>, model: String) {
         if let Err(err) = service.preload_and_warm(&model) {
             tracing::warn!("[speech] {model} encoder compile failed: {err:#}");
             if marker.is_file() {
-                let _ = std::fs::write(&marker, b"failed");
+                let _ = std::fs::write(&marker, env!("CARGO_PKG_VERSION"));
             }
             return;
         }

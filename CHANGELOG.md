@@ -1,14 +1,19 @@
+1.4.5
+
+### Fixes
+
+- On Mac, when a model can't be optimized for the Neural Engine, Glimpse no longer retries at every launch or holds back the move to a newer model.
+- Removing a model while it downloads now stops the download, so the model doesn't come back.
+- Paid features unlock right away after you activate a license.
+- If you bought Glimpse during the trial and were offline for over a week, you no longer get a notice that the trial is ending.
+- Fixing your writing model's settings while a dictation is in progress no longer turns off cleanup for a few minutes.
+- The local API no longer shows as running for a moment when it fails to start.
+
 1.4.4
 
 ### Fixes
 
 - On Mac, the recording pill and notices show up over full-screen apps again after the Glimpse window leaves full screen.
-- On Mac, when a model can't be optimized for the Neural Engine, Glimpse no longer retries at every launch or holds back the move to a newer model.
-- Removing a model while it downloads now stops the download, so the model doesn't come back.
-- Paid features unlock right away after you activate a license.
-- If you bought Glimpse during the trial, you no longer get a notice that the trial is ending.
-- Fixing your writing model's key during a dictation no longer turns off cleanup for a few minutes.
-- The local API no longer shows as running for a moment when it fails to start.
 
 1.4.3
 
