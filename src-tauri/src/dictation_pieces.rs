@@ -45,6 +45,7 @@ pub struct PieceSession {
 struct Progress {
     text: String,
     language: Option<String>,
+    compute: Option<&'static str>,
     /// Capture frames transcribed so far.
     done: usize,
 }
@@ -53,6 +54,7 @@ struct Progress {
 pub struct Pieces {
     text: String,
     language: Option<String>,
+    compute: Option<&'static str>,
     tail: Vec<i16>,
 }
 
@@ -133,6 +135,7 @@ impl PieceSession {
         Some(Pieces {
             text: progress.text,
             language: progress.language,
+            compute: progress.compute,
             tail,
         })
     }
@@ -160,6 +163,7 @@ impl Pieces {
     ) -> Result<TranscriptionSuccess> {
         let mut transcript = self.text;
         let mut detected = self.language;
+        let mut compute = self.compute;
         if !self.tail.is_empty() {
             let tail = crate::transcribe::transcribe_parakeet(
                 transcriber,
@@ -171,6 +175,7 @@ impl Pieces {
             )?;
             crate::transcribe::append_deduped_chunk(&mut transcript, &tail.transcript);
             detected = detected.or(tail.language);
+            compute = compute.or(tail.compute);
         }
         Ok(TranscriptionSuccess {
             transcript,
@@ -178,6 +183,7 @@ impl Pieces {
             segments: None,
             words: None,
             language: detected,
+            compute,
         })
     }
 }
@@ -239,6 +245,7 @@ fn run(
                 if progress.language.is_none() {
                     progress.language = piece.language;
                 }
+                progress.compute = progress.compute.or(piece.compute);
                 crate::transcribe::append_deduped_chunk(&mut progress.text, &piece.transcript);
                 progress.done = cut;
             }

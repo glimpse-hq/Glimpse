@@ -267,6 +267,7 @@ impl LocalTranscriber {
             segments: result.segments,
             words: result.words,
             language: result.language,
+            compute: result.compute,
         })
     }
 
@@ -441,6 +442,7 @@ fn plain_success(
         segments: None,
         words: None,
         language: result.language,
+        compute: result.compute,
     }
 }
 
