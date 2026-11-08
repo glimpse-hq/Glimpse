@@ -113,7 +113,7 @@ pub(crate) fn import_library_file(
     Ok(item)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_library_items_page(
     filter: Option<LibraryFilter>,
     limit: u32,
@@ -130,7 +130,7 @@ pub fn get_library_items_page(
         .map_err(|err| format!("Failed to load library items page: {err}"))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_library_item(
     id: String,
     state: tauri::State<'_, AppState>,
@@ -449,7 +449,7 @@ pub async fn rediarize_library_item(
     Ok(updated)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_library_item_to_path(
     id: String,
     format: ExportFormat,

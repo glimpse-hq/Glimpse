@@ -1914,7 +1914,7 @@ fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(),
         .map_err(|err| format!("Failed to open path: {err}"))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_transcriptions_page(
     search: Option<String>,
     after_ms: Option<i64>,
@@ -1949,7 +1949,7 @@ fn get_today_dictation_stats(
         .map_err(|err| format!("Failed to get today's dictation stats: {err}"))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
     check_share_image(std::path::Path::new(&path), &bytes)?;
     std::fs::write(&path, bytes).map_err(|err| format!("Failed to save image: {err}"))

@@ -1,6 +1,9 @@
 //! Live view: a frameless sidebar that follows an active recording while the
 //! main window is out of the way.
 
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
+
 use parking_lot::Mutex;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
@@ -18,8 +21,11 @@ const HEIGHT_RATIO: f64 = 0.7;
 const COMPACT_HEIGHT: f64 = 52.0;
 const EDGE_INSET: f64 = 12.0;
 
+const FREE_DELAY: Duration = Duration::from_secs(2);
+
 static EXPANDED_HEIGHT: Mutex<Option<f64>> = Mutex::new(None);
 static OPENING: Mutex<()> = Mutex::new(());
+static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 fn build(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWindow<AppRuntime>> {
     let settings = app.state::<crate::AppState>().current_settings();
@@ -97,6 +103,34 @@ pub(super) fn hide_window(app: &AppHandle<AppRuntime>) {
     }
 }
 
+/// Hides at once, then frees the webview unless the view reopens first.
+pub(super) fn close_window(app: &AppHandle<AppRuntime>) {
+    if app.get_webview_window(WINDOW_LABEL).is_none() {
+        return;
+    }
+    hide_window(app);
+    let generation = GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(FREE_DELAY).await;
+        let main = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            let Some(_opening) = OPENING.try_lock() else {
+                return;
+            };
+            if GENERATION.load(Ordering::SeqCst) != generation {
+                return;
+            }
+            *EXPANDED_HEIGHT.lock() = None;
+            #[cfg(target_os = "macos")]
+            crate::platform::macos::live::release(&main);
+            if let Some(window) = main.get_webview_window(WINDOW_LABEL) {
+                let _ = window.destroy();
+            }
+        });
+    });
+}
+
 #[tauri::command]
 pub async fn open_live_view(app: AppHandle<AppRuntime>) -> Result<(), String> {
     // Window creation must run outside Windows' webview callback, and only once.
@@ -107,6 +141,7 @@ pub async fn open_live_view(app: AppHandle<AppRuntime>) -> Result<(), String> {
     if !matches!(session.status, "recording" | "paused") || session.finish_requested {
         return Err("not_recording".into());
     }
+    GENERATION.fetch_add(1, Ordering::SeqCst);
     let window = match app.get_webview_window(WINDOW_LABEL) {
         Some(existing) => existing,
         None => {

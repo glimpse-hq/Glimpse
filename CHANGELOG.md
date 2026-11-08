@@ -30,6 +30,11 @@
 - Pressing Update again after reopening Settings now waits for the download already running instead of starting another.
 - A failed dictation no longer stops the spinner on History items you're retrying.
 - Reopening Settings during a model download now shows its progress right away.
+- Dictating after a few minutes away no longer waits for the speech model to reload before your text appears.
+- On Mac, an image on the clipboard no longer slows down pasting your dictation.
+- Opening the Library, History or the app list no longer freezes Glimpse for a moment.
+- Glimpse no longer uses a full CPU core in the background after a speech model fails to load.
+- The live view no longer holds on to memory after a recording ends.
 
 1.4.4
 
