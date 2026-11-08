@@ -237,19 +237,23 @@ pub fn list_website_icons(
     Ok(icons)
 }
 
-#[tauri::command(async)]
-pub fn list_installed_apps(app: AppHandle<AppRuntime>) -> Result<Vec<InstalledApp>, String> {
-    #[cfg(target_os = "macos")]
-    let apps = platform::macos::icons::list_installed_apps(&app)?;
-    #[cfg(target_os = "windows")]
-    let apps = platform::windows::icons::list_installed_apps(&app)?;
+#[tauri::command]
+pub async fn list_installed_apps(app: AppHandle<AppRuntime>) -> Result<Vec<InstalledApp>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        #[cfg(target_os = "macos")]
+        let apps = platform::macos::icons::list_installed_apps(&app)?;
+        #[cfg(target_os = "windows")]
+        let apps = platform::windows::icons::list_installed_apps(&app)?;
 
-    if let Some(cache_dir) = app_icon_cache_dir(&app) {
-        let keep: HashSet<PathBuf> = apps
-            .iter()
-            .map(|installed| icon_cache_file_path(Path::new(&installed.path), &cache_dir))
-            .collect();
-        prune_icon_cache(&cache_dir, &keep, &["png"]);
-    }
-    Ok(apps)
+        if let Some(cache_dir) = app_icon_cache_dir(&app) {
+            let keep: HashSet<PathBuf> = apps
+                .iter()
+                .map(|installed| icon_cache_file_path(Path::new(&installed.path), &cache_dir))
+                .collect();
+            prune_icon_cache(&cache_dir, &keep, &["png"]);
+        }
+        Ok(apps)
+    })
+    .await
+    .map_err(|err| err.to_string())?
 }
