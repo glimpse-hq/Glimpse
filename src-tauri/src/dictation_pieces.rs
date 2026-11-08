@@ -92,13 +92,12 @@ impl PieceSession {
                         && transcriber.loaded_model_id().as_deref() == Some(model.key.as_str())
                 };
                 run(&thread_live, recording, idle, |samples| {
-                    crate::transcribe::transcribe_parakeet(
-                        &transcriber,
+                    transcriber.try_transcribe_loaded(
                         &model,
                         samples,
+                        16_000,
                         &dictionary,
-                        &language,
-                        None,
+                        Some(&language),
                     )
                 })
             })
@@ -187,11 +186,13 @@ fn run(
     live: &LiveBufferState,
     recording: impl Fn() -> bool,
     idle: impl Fn() -> bool,
-    mut transcribe: impl FnMut(&[i16]) -> Result<TranscriptionSuccess>,
+    mut transcribe: impl FnMut(&[i16]) -> Option<Result<TranscriptionSuccess>>,
 ) -> Option<Progress> {
     let rate = live.sample_rate as usize;
     let channels = live.channels.max(1) as usize;
     let min_piece = rate * MIN_PIECE_MS / 1000;
+    // Longer audio is left for release, which transcribes it in chunks.
+    let max_piece = rate * crate::speech::PARAKEET_CHUNK_SECONDS as usize;
     let mut progress = Progress::default();
     let mut scanned = 0usize;
     loop {
@@ -218,20 +219,30 @@ fn run(
             )
         };
         let from = (progress.done + min_piece).saturating_sub(start);
-        let Some(cut) = find_pause(&window, live.sample_rate, from).map(|at| start + at) else {
+        let Some(cut) = find_pause(&window, live.sample_rate, from)
+            .map(|at| start + at)
+            .filter(|&cut| cut - progress.done <= max_piece)
+        else {
             continue;
         };
         let raw = live.buffer.lock()[progress.done * channels..cut * channels].to_vec();
         let samples = recorder::prepare_samples(&raw, live.sample_rate, live.channels);
+        if recorder::speech_percentage(&samples, 16_000)
+            < crate::speech::VAD_MIN_SPEECH_PERCENT_FILE
+        {
+            progress.done = cut;
+            continue;
+        }
         match transcribe(&samples) {
-            Ok(piece) => {
+            None => continue,
+            Some(Ok(piece)) => {
                 if progress.language.is_none() {
                     progress.language = piece.language;
                 }
                 crate::transcribe::append_deduped_chunk(&mut progress.text, &piece.transcript);
                 progress.done = cut;
             }
-            Err(err) => {
+            Some(Err(err)) => {
                 tracing::warn!("[pieces] piece failed, transcribing the whole recording: {err:#}");
                 return None;
             }
