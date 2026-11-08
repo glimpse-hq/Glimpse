@@ -1,10 +1,10 @@
 use anyhow::{Result, anyhow};
 
 use arboard::Error as ClipboardError;
-#[cfg(target_os = "macos")]
-use arboard::{Clipboard, ImageData, SetExtApple};
 #[cfg(target_os = "windows")]
 use arboard::{Clipboard, ImageData, SetExtWindows};
+#[cfg(target_os = "macos")]
+use arboard::{Clipboard, SetExtApple};
 #[cfg(target_os = "macos")]
 use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
 #[cfg(target_os = "macos")]
@@ -630,6 +630,9 @@ fn copy_selection_via_clipboard(settle: Duration) -> Option<String> {
 struct ClipboardBackup {
     text: Option<String>,
     html: Option<String>,
+    #[cfg(target_os = "macos")]
+    image: Option<(String, Vec<u8>)>,
+    #[cfg(target_os = "windows")]
     image: Option<ImageData<'static>>,
 }
 
@@ -638,7 +641,10 @@ impl ClipboardBackup {
         Self {
             text: clipboard.get_text().ok(),
             html: clipboard.get().html().ok(),
-            image: clipboard.get_image().ok().map(|img| img.to_owned()),
+            #[cfg(target_os = "macos")]
+            image: pasteboard_image(),
+            #[cfg(target_os = "windows")]
+            image: clipboard.get_image().ok(),
         }
     }
 
@@ -663,6 +669,9 @@ impl ClipboardBackup {
         }
 
         if let Some(image) = image {
+            #[cfg(target_os = "macos")]
+            set_pasteboard_image(image);
+            #[cfg(target_os = "windows")]
             let _ = clipboard.set_image(image);
             return;
         }
@@ -673,6 +682,36 @@ impl ClipboardBackup {
             let _ = clipboard.clear();
         }
     }
+}
+
+// Copies the image as stored, undecoded; asking for TIFF makes macOS convert
+// a PNG screenshot first.
+#[cfg(target_os = "macos")]
+fn pasteboard_image() -> Option<(String, Vec<u8>)> {
+    use objc2_app_kit::{NSPasteboard, NSPasteboardTypePNG, NSPasteboardTypeTIFF};
+    use objc2_foundation::NSArray;
+
+    // Runs on a reused blocking-pool thread, which drains no pool of its own.
+    objc2::rc::autoreleasepool(|_| {
+        let pasteboard = NSPasteboard::generalPasteboard();
+        let types = unsafe { NSArray::from_slice(&[NSPasteboardTypePNG, NSPasteboardTypeTIFF]) };
+        let image_type = pasteboard.availableTypeFromArray(&types)?;
+        let data = pasteboard.dataForType(&image_type)?;
+        Some((image_type.to_string(), data.to_vec()))
+    })
+}
+
+#[cfg(target_os = "macos")]
+fn set_pasteboard_image((image_type, bytes): (String, Vec<u8>)) {
+    use objc2_app_kit::NSPasteboard;
+    use objc2_foundation::{NSData, NSString};
+
+    let pasteboard = NSPasteboard::generalPasteboard();
+    pasteboard.clearContents();
+    pasteboard.setData_forType(
+        Some(&NSData::from_vec(bytes)),
+        &NSString::from_str(&image_type),
+    );
 }
 
 // Marks keys Glimpse sends so its own shortcut hook ignores them.

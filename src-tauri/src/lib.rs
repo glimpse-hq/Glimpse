@@ -11,6 +11,7 @@ mod cli_install;
 mod core;
 mod crypto;
 mod data_export;
+mod dictation_pieces;
 mod dictionary;
 mod import;
 mod integrations;
@@ -933,6 +934,7 @@ pub struct AppState {
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
     streaming_session: parking_lot::Mutex<Option<streaming_transcription::StreamingSession>>,
+    piece_session: parking_lot::Mutex<Option<dictation_pieces::PieceSession>>,
     should_start_in_background: bool,
     /// Cached so analytics can tag events without touching the settings DB.
     license_snapshot: parking_lot::Mutex<Option<LicenseSnapshot>>,
@@ -1023,6 +1025,7 @@ impl AppState {
                 transcription_count: 0,
             }),
             streaming_session: parking_lot::Mutex::new(None),
+            piece_session: parking_lot::Mutex::new(None),
             license_snapshot: parking_lot::Mutex::new(None),
             should_start_in_background,
             recording: recording::RecordingManager::new(),
@@ -1054,6 +1057,20 @@ impl AppState {
 
     pub fn has_streaming_session(&self) -> bool {
         self.streaming_session.lock().is_some()
+    }
+
+    pub fn start_piece_session(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        model: model_manager::ReadyModel,
+        settings: &settings::UserSettings,
+    ) {
+        let session = dictation_pieces::PieceSession::start(app, model, settings);
+        *self.piece_session.lock() = session;
+    }
+
+    pub fn take_piece_session(&self) -> Option<dictation_pieces::PieceSession> {
+        self.piece_session.lock().take()
     }
 
     /// Read analytics state from the in-memory cache (single lock acquisition).
@@ -1915,18 +1932,18 @@ fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(),
 }
 
 #[tauri::command]
-fn get_transcriptions_page(
+async fn get_transcriptions_page(
     search: Option<String>,
     after_ms: Option<i64>,
     before_ms: Option<i64>,
     sort: storage::TranscriptionSort,
     limit: usize,
     offset: usize,
-    state: tauri::State<AppState>,
+    state: tauri::State<'_, AppState>,
 ) -> Result<storage::TranscriptionPage, String> {
-    state
-        .storage()
-        .get_transcriptions_page(
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || {
+        storage.get_transcriptions_page(
             search.as_deref(),
             after_ms,
             before_ms,
@@ -1934,7 +1951,10 @@ fn get_transcriptions_page(
             limit.clamp(1, 200),
             offset,
         )
-        .map_err(|err| format!("Failed to get transcriptions: {err}"))
+    })
+    .await
+    .map_err(|err| err.to_string())?
+    .map_err(|err| format!("Failed to get transcriptions: {err}"))
 }
 
 #[tauri::command]
@@ -1950,9 +1970,12 @@ fn get_today_dictation_stats(
 }
 
 #[tauri::command]
-fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
+async fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
     check_share_image(std::path::Path::new(&path), &bytes)?;
-    std::fs::write(&path, bytes).map_err(|err| format!("Failed to save image: {err}"))
+    tauri::async_runtime::spawn_blocking(move || std::fs::write(&path, bytes))
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|err| format!("Failed to save image: {err}"))
 }
 
 const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
@@ -2171,6 +2194,7 @@ pub(crate) fn discard_recording(
     app.state::<AppState>().pill().finish_processing(app);
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn persist_recording_async(
     app: AppHandle<AppRuntime>,
     recording: CompletedRecording,
@@ -2179,6 +2203,7 @@ pub(crate) fn persist_recording_async(
     auto_paste: bool,
     cancel_token: CancellationToken,
     origin: transcribe::DictationOrigin,
+    pieces: Option<dictation_pieces::PieceSession>,
 ) {
     let input = pill::microphone_input_kind(&settings);
     let base_dir = match recordings_root(&app) {
@@ -2219,6 +2244,7 @@ pub(crate) fn persist_recording_async(
                 auto_paste,
                 cancel_token,
                 origin,
+                pieces,
             ),
             Ok(Err(err)) => {
                 analytics::track_recording_failed(

@@ -72,10 +72,11 @@ impl AudioSpectrumState {
     }
 }
 
-struct LiveBufferState {
-    buffer: Arc<Mutex<Vec<i16>>>,
-    sample_rate: u32,
-    channels: u16,
+#[derive(Clone)]
+pub struct LiveBufferState {
+    pub buffer: Arc<Mutex<Vec<i16>>>,
+    pub sample_rate: u32,
+    pub channels: u16,
 }
 
 // Seconds of audio the ring holds if the drain thread stalls.
@@ -585,6 +586,12 @@ impl RecorderManager {
         Some((mono, sample_rate, new_offset))
     }
 
+    /// The raw capture buffer of the active recording. It keeps the final samples
+    /// after the recording stops.
+    pub fn live_buffer(&self) -> Option<LiveBufferState> {
+        self.shared.live_buffer.lock().clone()
+    }
+
     pub fn start(
         &self,
         device_id: Option<String>,
@@ -920,6 +927,11 @@ struct ProcessedAudio {
     sample_rate: u32,
     channels: u16,
     speech_percentage: Option<f32>,
+}
+
+/// Raw capture samples as the stopped recording would have them: 16 kHz mono.
+pub fn prepare_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> Vec<i16> {
+    process_raw_samples(raw_samples, sample_rate, channels).samples
 }
 
 fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> ProcessedAudio {
