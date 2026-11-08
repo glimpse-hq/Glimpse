@@ -430,14 +430,20 @@ impl PillController {
         settings: &UserSettings,
     ) {
         let selected_model = crate::speech::selected_model(settings);
+        let streaming = model_manager::is_streaming_model(&selected_model);
         if crate::remote_speech::is_remote_model(&selected_model)
-            || !model_manager::is_streaming_model(&selected_model)
+            || !(streaming || crate::dictation_pieces::supports(&selected_model))
         {
             return;
         }
 
         if let Ok(ready) = model_manager::ensure_model_ready(app, &selected_model) {
-            app.state::<AppState>().start_streaming_session(app, &ready);
+            let state = app.state::<AppState>();
+            if streaming {
+                state.start_streaming_session(app, &ready);
+            } else {
+                state.start_piece_session(app, ready, settings);
+            }
         }
     }
 
@@ -779,6 +785,7 @@ impl PillController {
                     self.stop_audio_spectrum_emitter();
                     self.resume_paused_media();
                     let _ = state.stop_streaming_session(app);
+                    state.take_piece_session();
                     return true;
                 }
                 self.spawn_recording_cap(app, generation);
@@ -1090,6 +1097,7 @@ impl PillController {
                                 auto_paste,
                                 cancel_token,
                                 origin,
+                                None,
                             );
                             return;
                         }
@@ -1147,6 +1155,7 @@ impl PillController {
             let app_handle = app.clone();
             let resume_app = app_handle.clone();
             let settings_for_transcription = settings.clone();
+            let pieces = state.take_piece_session();
             std::thread::spawn(move || {
                 match recorder.stop_after_capture(move || {
                     resume_app.state::<AppState>().pill().resume_paused_media();
@@ -1160,6 +1169,7 @@ impl PillController {
                             auto_paste,
                             cancel_token,
                             origin,
+                            pieces,
                         );
                     }
                     Ok(None) => {
@@ -1190,6 +1200,7 @@ impl PillController {
         self.stop_audio_spectrum_emitter();
         let state = app.state::<AppState>();
         let _ = state.stop_streaming_session(app);
+        state.take_piece_session();
         collapse_expanded_pill(app);
         state.request_cancellation();
         let app_handle = app.clone();

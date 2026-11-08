@@ -1,5 +1,9 @@
 1.4.5
 
+### Changes
+
+- Long dictations with Parakeet appear sooner after you let go: Glimpse transcribes them at your pauses while you talk.
+
 ### Fixes
 
 - After you stop a recording from the live view or the Glimpse menu, Cancel in the naming dialog now closes it instead of opening it again.

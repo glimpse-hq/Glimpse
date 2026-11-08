@@ -273,6 +273,7 @@ pub(crate) fn queue_transcription(
     auto_paste: bool,
     cancel_token: CancellationToken,
     origin: DictationOrigin,
+    pieces: Option<crate::dictation_pieces::PieceSession>,
 ) {
     let state = app.state::<AppState>();
     let Some(pending_selected_text) = state.claim_pending_dictation(&saved.path, &cancel_token)
@@ -334,6 +335,7 @@ pub(crate) fn queue_transcription(
                     recording_for_task,
                     Some(cancel_for_local),
                     use_remote,
+                    pieces,
                 )
             },
         )
@@ -537,6 +539,7 @@ async fn transcribe_completed_recording_locally(
     recording: CompletedRecording,
     cancel_token: Option<CancellationToken>,
     prefer_any_installed: bool,
+    pieces: Option<crate::dictation_pieces::PieceSession>,
 ) -> Result<transcription_api::TranscriptionSuccess> {
     let ready_model = if prefer_any_installed {
         model_manager::ensure_local_fallback_model(app, &settings.local_model)?
@@ -547,8 +550,18 @@ async fn transcribe_completed_recording_locally(
     let language = settings.language.clone();
     let transcriber = app.state::<AppState>().local_transcriber();
     let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
+    let pieces = pieces.filter(|pieces| pieces.model_key() == ready_model.key);
 
     match async_runtime::spawn_blocking(move || {
+        if let Some(pieces) = pieces.and_then(crate::dictation_pieces::PieceSession::finish) {
+            return pieces.complete(
+                &transcriber,
+                &ready_model,
+                &dictionary_terms,
+                &language,
+                cancel_token.as_ref(),
+            );
+        }
         let (chunk_seconds, overlap_seconds, leading_pad_seconds, strip_hallucinated_thank_you) =
             if is_whisper {
                 (
@@ -711,7 +724,9 @@ async fn transcribe_recovered_recording(
         false,
         || false,
         |success| success,
-        move || transcribe_completed_recording_locally(app, settings, recording, None, use_remote),
+        move || {
+            transcribe_completed_recording_locally(app, settings, recording, None, use_remote, None)
+        },
     )
     .await
     {
@@ -854,6 +869,7 @@ async fn transcribe_saved_recording_locally(
         },
         cancel_token,
         prefer_any_installed,
+        None,
     )
     .await
 }
@@ -2057,6 +2073,32 @@ struct LocalChunkingConfig<'a> {
     leading_pad_seconds: f32,
     cancel_token: Option<&'a CancellationToken>,
     strip_hallucinated_thank_you: bool,
+}
+
+/// 16 kHz audio through Parakeet, the way a dictation is transcribed.
+pub(crate) fn transcribe_parakeet(
+    transcriber: &crate::local_transcription::LocalTranscriber,
+    model: &model_manager::ReadyModel,
+    samples: &[i16],
+    dictionary: &[String],
+    language: &str,
+    cancel_token: Option<&CancellationToken>,
+) -> Result<transcription_api::TranscriptionSuccess> {
+    transcribe_local_chunked(
+        transcriber,
+        model,
+        samples,
+        16_000,
+        LocalChunkingConfig {
+            dictionary,
+            language: Some(language),
+            chunk_seconds: speech::PARAKEET_CHUNK_SECONDS as f32,
+            overlap_seconds: speech::PARAKEET_CHUNK_OVERLAP_SECONDS as f32,
+            leading_pad_seconds: 0.0,
+            cancel_token,
+            strip_hallucinated_thank_you: false,
+        },
+    )
 }
 
 fn transcribe_local_chunked(
