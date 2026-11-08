@@ -340,7 +340,7 @@ const TRANSCRIBE_ANE_ENCODERS: &[TranscribeAneEncoder] = &[
         url: "https://huggingface.co/Glimpse-Dictation/Nemotron-Unified-ASR-0.6B-coreml/resolve/main/nemotron-labs-unified-asr-0.6b-Q8_0-encoder-mf3.mlmodelc.zip",
         size_bytes: 528_801_748,
         sha256: "5c0a5013c51a754d2df184265f7a75df95f5f9ee3a27bdea03d1a27b35c94906",
-        unpacked_bytes: None,
+        unpacked_bytes: Some(606_660_784),
     },
     TranscribeAneEncoder {
         model: "nemotron_unified",
@@ -350,7 +350,7 @@ const TRANSCRIBE_ANE_ENCODERS: &[TranscribeAneEncoder] = &[
         url: "https://huggingface.co/Glimpse-Dictation/Nemotron-Unified-ASR-0.6B-coreml/resolve/main/nemotron-labs-unified-asr-0.6b-Q8_0-encoder-macos14.mlmodelc.zip",
         size_bytes: 523_425_830,
         sha256: "12f0445595ca165ae74d8ea5773f9c11fd16fe47ff9f800647deda362daf7257",
-        unpacked_bytes: None,
+        unpacked_bytes: Some(595_883_300),
     },
     TranscribeAneEncoder {
         model: "parakeet_unified_en_int8",
