@@ -1915,18 +1915,18 @@ fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(),
 }
 
 #[tauri::command]
-fn get_transcriptions_page(
+async fn get_transcriptions_page(
     search: Option<String>,
     after_ms: Option<i64>,
     before_ms: Option<i64>,
     sort: storage::TranscriptionSort,
     limit: usize,
     offset: usize,
-    state: tauri::State<AppState>,
+    state: tauri::State<'_, AppState>,
 ) -> Result<storage::TranscriptionPage, String> {
-    state
-        .storage()
-        .get_transcriptions_page(
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || {
+        storage.get_transcriptions_page(
             search.as_deref(),
             after_ms,
             before_ms,
@@ -1934,7 +1934,10 @@ fn get_transcriptions_page(
             limit.clamp(1, 200),
             offset,
         )
-        .map_err(|err| format!("Failed to get transcriptions: {err}"))
+    })
+    .await
+    .map_err(|err| err.to_string())?
+    .map_err(|err| format!("Failed to get transcriptions: {err}"))
 }
 
 #[tauri::command]
@@ -1950,9 +1953,12 @@ fn get_today_dictation_stats(
 }
 
 #[tauri::command]
-fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
+async fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
     check_share_image(std::path::Path::new(&path), &bytes)?;
-    std::fs::write(&path, bytes).map_err(|err| format!("Failed to save image: {err}"))
+    tauri::async_runtime::spawn_blocking(move || std::fs::write(&path, bytes))
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|err| format!("Failed to save image: {err}"))
 }
 
 const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";

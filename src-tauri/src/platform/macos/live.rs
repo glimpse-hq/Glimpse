@@ -73,6 +73,14 @@ pub fn show(app: &AppHandle<AppRuntime>, _live_window: &WebviewWindow<AppRuntime
     Ok(())
 }
 
+/// Turns the panel back into a plain window so destroying it releases the
+/// window once. Main thread only.
+pub fn release(app: &AppHandle<AppRuntime>) {
+    if let Ok(panel) = app.get_webview_panel(WINDOW_LABEL) {
+        panel.to_window();
+    }
+}
+
 pub fn hide(app: &AppHandle<AppRuntime>, _live_window: &WebviewWindow<AppRuntime>) -> Result<()> {
     let app_clone = app.clone();
     let _ = app.run_on_main_thread(move || {
