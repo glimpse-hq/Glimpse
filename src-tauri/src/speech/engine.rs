@@ -78,9 +78,12 @@ impl LocalTranscriber {
 
     fn check_idle_unload(&self) {
         if !self.service.is_loaded() {
+            *self.last_used.lock() = None;
             return;
         }
 
+        // Decided under `exclusive` so a use that ends while waiting for it counts.
+        let _exclusive = self.exclusive.lock();
         let should_unload = self
             .last_used
             .lock()
@@ -92,7 +95,8 @@ impl LocalTranscriber {
                 "[LocalTranscriber] Unloading model after {} seconds of inactivity",
                 IDLE_TIMEOUT.as_secs()
             );
-            self.unload();
+            self.service.unload();
+            *self.last_used.lock() = None;
         }
     }
 
@@ -139,6 +143,7 @@ impl LocalTranscriber {
                 "[LocalTranscriber] warm {} skipped (already loaded)",
                 model.key
             );
+            self.touch();
             return Ok(());
         }
 

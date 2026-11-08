@@ -114,7 +114,7 @@ pub(crate) fn import_library_file(
 }
 
 #[tauri::command]
-pub fn get_library_items_page(
+pub async fn get_library_items_page(
     filter: Option<LibraryFilter>,
     limit: u32,
     offset: u32,
@@ -123,21 +123,25 @@ pub fn get_library_items_page(
     let filter = filter.unwrap_or_default();
     let limit = limit.clamp(1, 200) as usize;
     let offset = offset as usize;
-    state
-        .storage()
-        .get_library_items_page(filter, limit, offset)
-        .map(|(items, has_more)| LibraryItemsPage { items, has_more })
-        .map_err(|err| format!("Failed to load library items page: {err}"))
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || {
+        storage.get_library_items_page(filter, limit, offset)
+    })
+    .await
+    .map_err(|err| err.to_string())?
+    .map(|(items, has_more)| LibraryItemsPage { items, has_more })
+    .map_err(|err| format!("Failed to load library items page: {err}"))
 }
 
 #[tauri::command]
-pub fn get_library_item(
+pub async fn get_library_item(
     id: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<Option<LibraryItem>, String> {
-    state
-        .storage()
-        .get_library_item(&id)
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || storage.get_library_item(&id))
+        .await
+        .map_err(|err| err.to_string())?
         .map_err(|err| format!("Failed to load library item: {err}"))
 }
 
@@ -450,7 +454,7 @@ pub async fn rediarize_library_item(
 }
 
 #[tauri::command]
-pub fn export_library_item_to_path(
+pub async fn export_library_item_to_path(
     id: String,
     format: ExportFormat,
     output_path: String,
@@ -459,21 +463,25 @@ pub fn export_library_item_to_path(
 ) -> Result<(), String> {
     require_library_license(&state)?;
 
-    let item = state
-        .storage()
-        .get_library_item(&id)
-        .map_err(|err| format!("Failed to load library item: {err}"))?
-        .ok_or_else(|| "Library item not found".to_string())?;
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || {
+        let item = storage
+            .get_library_item(&id)
+            .map_err(|err| format!("Failed to load library item: {err}"))?
+            .ok_or_else(|| "Library item not found".to_string())?;
 
-    let output_path = PathBuf::from(&output_path);
-    check_export_path(&output_path, &format)?;
+        let output_path = PathBuf::from(&output_path);
+        check_export_path(&output_path, &format)?;
 
-    let content = build_export_content(&item, format)
-        .map_err(|err| format!("Failed to build export: {err}"))?;
+        let content = build_export_content(&item, format)
+            .map_err(|err| format!("Failed to build export: {err}"))?;
 
-    fs::write(&output_path, content.as_bytes())
-        .with_context(|| "Failed to write export file".to_string())
-        .map_err(|err| err.to_string())?;
+        fs::write(&output_path, content.as_bytes())
+            .with_context(|| "Failed to write export file".to_string())
+            .map_err(|err| err.to_string())
+    })
+    .await
+    .map_err(|err| err.to_string())??;
 
     crate::analytics::track_feature_used(&app, "library");
     Ok(())

@@ -1194,7 +1194,7 @@ pub(crate) fn has_unfinished_session(app: &AppHandle<AppRuntime>) -> bool {
 fn emit_state(app: &AppHandle<AppRuntime>, shared: &Shared) {
     let state = shared.state();
     if !matches!(state.status, "recording" | "paused") || state.finish_requested {
-        live_window::hide_window(app);
+        live_window::close_window(app);
     }
     let _ = app.emit(EVENT_STATE, state);
 }
