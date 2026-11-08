@@ -197,6 +197,11 @@ impl LocalTranscriber {
         self.service.loaded_model_id()
     }
 
+    /// Whether a transcription or load holds the model right now.
+    pub fn is_busy(&self) -> bool {
+        self.exclusive.is_locked()
+    }
+
     pub fn transcribe(
         &self,
         model: &ReadyModel,
