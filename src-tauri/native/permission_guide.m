@@ -16,15 +16,17 @@ static NSUInteger settingsRequest;
 @property(nonatomic, strong) NSURL *bundleURL;
 @property(nonatomic, strong) NSImage *appIcon;
 @property(nonatomic, copy) NSString *appName;
+@property(nonatomic, copy) NSString *hint;
 @property(nonatomic, strong) NSEvent *mouseDownEvent;
 @end
 
 @implementation GlimpseDragView
 
-- (instancetype)initWithFrame:(NSRect)frame bundleURL:(NSURL *)bundleURL {
+- (instancetype)initWithFrame:(NSRect)frame bundleURL:(NSURL *)bundleURL hint:(NSString *)hint {
     self = [super initWithFrame:frame];
     if (self) {
         _bundleURL = bundleURL;
+        _hint = [hint copy];
         _appIcon = [[NSWorkspace sharedWorkspace] iconForFile:bundleURL.path];
         _appIcon.size = NSMakeSize(32, 32);
         _appName = [[NSFileManager defaultManager] displayNameAtPath:bundleURL.path].stringByDeletingPathExtension;
@@ -57,6 +59,31 @@ static NSUInteger settingsRequest;
 }
 
 - (BOOL)acceptsFirstMouse:(NSEvent *)event {
+    return YES;
+}
+
+// VoiceOver can't drag, so pressing the tile asks macOS to add Glimpse to the
+// list instead, leaving only its switch to turn on.
+- (BOOL)isAccessibilityElement {
+    return YES;
+}
+
+- (NSAccessibilityRole)accessibilityRole {
+    return NSAccessibilityButtonRole;
+}
+
+- (NSString *)accessibilityLabel {
+    return self.appName;
+}
+
+- (NSString *)accessibilityHelp {
+    return self.hint;
+}
+
+- (BOOL)accessibilityPerformPress {
+    AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)@{
+        (__bridge NSString *)kAXTrustedCheckOptionPrompt: @YES
+    });
     return YES;
 }
 
@@ -201,7 +228,7 @@ static void openSettingsPane(NSURL *url) {
         for (NSNumber *delay in @[ @0.35, @1.2 ]) {
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay.doubleValue * NSEC_PER_SEC)),
                            dispatch_get_main_queue(), ^{
-                if (request == settingsRequest) {
+                if (request == settingsRequest && settingsPid() != 0) {
                     [[NSWorkspace sharedWorkspace] openURL:url];
                 }
             });
@@ -210,6 +237,8 @@ static void openSettingsPane(NSURL *url) {
 }
 
 static void closeGuide(void) {
+    // Cancels the pane retries of a cold launch.
+    settingsRequest += 1;
     [guideTimer invalidate];
     guideTimer = nil;
     [guidePanel orderOut:nil];
@@ -321,14 +350,16 @@ void glimpse_show_accessibility_guide(const char *instruction) {
     mask.capInsets = NSEdgeInsetsMake(radius, radius, radius, radius);
     content.maskImage = mask;
 
-    NSTextField *label = [NSTextField labelWithString:[NSString stringWithUTF8String:instruction]];
+    NSString *hint = [NSString stringWithUTF8String:instruction];
+    NSTextField *label = [NSTextField labelWithString:hint];
     label.frame = NSMakeRect(16, 70, size.width - 32, 20);
     label.font = [NSFont systemFontOfSize:13 weight:NSFontWeightMedium];
     label.lineBreakMode = NSLineBreakByTruncatingTail;
     [content addSubview:label];
     [content addSubview:[[GlimpseDragView alloc]
                             initWithFrame:NSMakeRect(16, 16, size.width - 32, 44)
-                                bundleURL:bundleURL]];
+                                bundleURL:bundleURL
+                                     hint:hint]];
     guidePanel.contentView = content;
 
     guideTimer = [NSTimer scheduledTimerWithTimeInterval:0.12 repeats:YES block:^(__unused NSTimer *timer) {

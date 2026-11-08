@@ -251,7 +251,10 @@ mod other {
     }
 
     pub async fn ask_microphone_permission() -> Result<(), String> {
-        Ok(())
+        if check_microphone_permission() {
+            return Ok(());
+        }
+        open_microphone_settings()
     }
 
     pub fn open_input_monitoring_settings() -> Result<(), String> {
