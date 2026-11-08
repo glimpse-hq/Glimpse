@@ -2,6 +2,7 @@
 
 ### Changes
 
+- On Mac, turning on Accessibility now opens a small card beside System Settings that you drag Glimpse from into the list.
 - Long dictations with Parakeet appear sooner after you let go: Glimpse transcribes them at your pauses while you talk.
 
 ### Fixes

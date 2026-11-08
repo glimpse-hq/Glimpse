@@ -2275,6 +2275,11 @@ msgid "library.view.empty_state"
 msgstr "ここにファイルをドラッグして、ライブラリを作成します。"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.permission.accessibility_drag"
+msgstr "Glimpseを上のリストにドラッグしてください"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "ファイルをドロップして文字起こし"
@@ -4110,11 +4115,6 @@ msgid "native.toast.model_action"
 msgstr "モデルを開く"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.open_settings"
-msgstr "設定を開く"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "設定を開く"
@@ -4127,6 +4127,11 @@ msgstr "設定を開く"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
+msgstr "設定を開く"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
 msgstr "設定を開く"
 
 #. js-lingui-explicit-id

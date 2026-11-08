@@ -1435,7 +1435,13 @@ pub(crate) fn end_shortcut_capture(app: &AppHandle<AppRuntime>) -> Result<(), St
 
 #[tauri::command]
 fn open_accessibility_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    permissions::open_accessibility_settings()?;
+    let instruction = toast::native(&app, "native.permission.accessibility_drag");
+    app.run_on_main_thread(move || {
+        if let Err(err) = permissions::open_accessibility_settings(&instruction) {
+            tracing::warn!("{err}");
+        }
+    })
+    .map_err(|e| e.to_string())?;
     analytics::track_permission_prompt_opened(&app, "accessibility");
     Ok(())
 }
@@ -1466,8 +1472,8 @@ fn stop_microphone_test(app: AppHandle<AppRuntime>) {
 }
 
 #[tauri::command]
-fn request_microphone_permission() -> Result<(), String> {
-    permissions::request_microphone_permission()
+async fn request_microphone_permission() -> Result<(), String> {
+    permissions::ask_microphone_permission().await
 }
 
 #[tauri::command]
