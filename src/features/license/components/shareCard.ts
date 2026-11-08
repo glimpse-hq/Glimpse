@@ -239,9 +239,7 @@ export async function preloadShareAssets() {
   if (!assetsReady) {
     assetsReady = Promise.allSettled([
       document.fonts.load("400 36px Satoshi"),
-      new FontFace("Glimpse Editorial", "url(/fonts/Fraunces.ttf)", {
-        variationSettings: '"wght" 500, "opsz" 48',
-      })
+      new FontFace("Glimpse Editorial", "url(/fonts/Fraunces.woff2)")
         .load()
         .then((font) => document.fonts.add(font)),
       ...(["words", "speed", "activity"] as const).map(async (style) => {

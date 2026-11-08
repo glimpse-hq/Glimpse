@@ -132,7 +132,7 @@ impl LocalApiController {
             }
             state.starting = true;
         }
-        let _starting_guard = StartingGuard {
+        let starting_guard = StartingGuard {
             controller: self,
             app: &app,
         };
@@ -258,9 +258,8 @@ impl LocalApiController {
 
         match ready_rx.await {
             Ok(Ok(())) => {
-                let status = self.status();
-                self.emit_status(&app);
-                Ok(status)
+                drop(starting_guard);
+                Ok(self.status())
             }
             Ok(Err(err)) => Err(err),
             Err(_) => Err("Local API stopped before it was ready".to_string()),
@@ -372,8 +371,9 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
     let logs = state.logs.iter().cloned().collect();
     if let Some(running) = &state.running {
         LocalApiStatus {
-            running: true,
-            starting: false,
+            // Until the server listens, a failed bind can still clear `running`.
+            running: !state.starting,
+            starting: state.starting,
             host: running.host.clone(),
             port: running.port,
             model: running.model.clone(),

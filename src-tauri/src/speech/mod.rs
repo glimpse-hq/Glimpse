@@ -213,10 +213,9 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
 
         let state = app.state::<AppState>();
         // Loading during a Neural Engine compile would compile the encoder twice.
-        let compiling = ane_compile_marker(&models_dir, target);
         while state.pill().status() != crate::pill::PillStatus::Idle
             || !state.is_backend_idle()
-            || compiling.as_ref().is_some_and(|marker| marker.is_file())
+            || ane_compile_pending(&models_dir, target)
         {
             tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         }
@@ -354,6 +353,14 @@ fn ane_compile_marker(models_dir: &Path, model: &str) -> Option<PathBuf> {
     )
 }
 
+// A failed compile writes the app version into the marker, so loads keep skipping
+// the encoder and the compile retries only after an update.
+fn ane_compile_pending(models_dir: &Path, model: &str) -> bool {
+    ane_compile_marker(models_dir, model)
+        .and_then(|marker| std::fs::read(marker).ok())
+        .is_some_and(|contents| contents != env!("CARGO_PKG_VERSION").as_bytes())
+}
+
 /// The first Neural Engine load compiles the encoder, which can take minutes.
 /// It runs on its own service; other loads skip the encoder until it finishes.
 pub(crate) fn compile_ane_encoder(app: &AppHandle<AppRuntime>, model: String) {
@@ -370,15 +377,13 @@ pub(crate) fn compile_ane_encoder(app: &AppHandle<AppRuntime>, model: String) {
     }
     let app = app.clone();
     std::thread::spawn(move || {
-        let service = SpeechService::new(SpeechConfig {
-            resolver: install::local_resolver(models_dir.clone()),
-            model_cache_dir: models_dir,
-            loose_paths: false,
-        })
-        .loading_compiling_encoders();
+        let service = detached_service(models_dir).loading_compiling_encoders();
         let started = std::time::Instant::now();
         if let Err(err) = service.preload_and_warm(&model) {
             tracing::warn!("[speech] {model} encoder compile failed: {err:#}");
+            if marker.is_file() {
+                let _ = std::fs::write(&marker, env!("CARGO_PKG_VERSION"));
+            }
             return;
         }
         drop(service);
@@ -395,13 +400,33 @@ pub(crate) fn compile_ane_encoder(app: &AppHandle<AppRuntime>, model: String) {
     });
 }
 
+fn detached_service(models_dir: PathBuf) -> SpeechService {
+    SpeechService::new(SpeechConfig {
+        resolver: install::local_resolver(models_dir.clone()),
+        model_cache_dir: models_dir,
+        loose_paths: false,
+    })
+}
+
+/// Warms a model on its own service, so the selected model stays loaded.
+pub(crate) fn warm_unselected_model(app: &AppHandle<AppRuntime>, model: String) {
+    let Ok(models_dir) = install::model_cache_dir(app) else {
+        return;
+    };
+    std::thread::spawn(move || {
+        if let Err(err) = detached_service(models_dir).preload_and_warm(&model) {
+            tracing::warn!("[speech] {model} first load failed: {err:#}");
+        }
+    });
+}
+
 pub(crate) fn compile_pending_ane_encoders(app: &AppHandle<AppRuntime>) {
     let Ok(models_dir) = install::model_cache_dir(app) else {
         return;
     };
     for manifest in catalog::local_manifests() {
         if !catalog::ane_replaces_model_files(manifest.id)
-            && ane_compile_marker(&models_dir, manifest.id).is_some_and(|marker| marker.is_file())
+            && ane_compile_pending(&models_dir, manifest.id)
         {
             compile_ane_encoder(app, manifest.id.to_string());
         }
@@ -420,8 +445,7 @@ pub(crate) fn warm_ane_encoder(app: &AppHandle<AppRuntime>) {
         return;
     };
     // A pending first compile loads the encoder itself.
-    let compiling = ane_compile_marker(&models_dir, model).is_some_and(|marker| marker.is_file());
-    if compiling
+    if ane_compile_pending(&models_dir, model)
         || !models_dir.join(model).join(dir_name).exists()
         || !install::check_model_installed_at(&models_dir, model)
     {

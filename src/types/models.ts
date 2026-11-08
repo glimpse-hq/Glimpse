@@ -43,6 +43,7 @@ export type ModelStatus = {
   bytes_on_disk: number;
   missing_files: string[];
   directory: string;
+  download_percent: number | null;
 };
 
 export type DownloadProgressPayload = {

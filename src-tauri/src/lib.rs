@@ -11,6 +11,7 @@ mod cli_install;
 mod core;
 mod crypto;
 mod data_export;
+mod dictation_pieces;
 mod dictionary;
 mod import;
 mod integrations;
@@ -473,6 +474,8 @@ pub fn run() {
                 speech::upgrade_whisper_decoder(handle);
                 speech::replace_onnx_models(handle);
             }
+            let library_resumable =
+                license::license_gate_active(&handle.state::<AppState>().settings_store);
             {
                 let h = handle.clone();
                 async_runtime::spawn(async move {
@@ -480,6 +483,9 @@ pub fn run() {
                     // Start after the refresh so the license gate reflects current state.
                     let settings = h.state::<AppState>().current_settings();
                     local_api::start_from_settings(&h, &settings);
+                    if !library_resumable {
+                        library::commands::recover_interrupted_library_items(&h);
+                    }
 
                     // Retries a failed launch check, and keeps a long-running app's
                     // license inside its offline trust window.
@@ -492,7 +498,9 @@ pub fn run() {
             analytics::set_crash_phase("services");
             integrations::start_control_server(handle.clone());
             library::commands::purge_deleted_library_items(handle);
-            library::commands::recover_interrupted_library_items(handle);
+            if library_resumable {
+                library::commands::recover_interrupted_library_items(handle);
+            }
             recording::recover_interrupted_sessions(handle);
             register_deep_link_handlers(app);
 
@@ -726,7 +734,6 @@ pub fn run() {
             speech::set_local_model_auto,
             start_hold_recording,
             pill::stop_hold_recording,
-            cancel_recording,
             start_microphone_test,
             stop_microphone_test,
             view_recovered_transcriptions,
@@ -789,6 +796,7 @@ pub fn run() {
                 let state = handler.state::<AppState>();
                 state.local_transcriber.unload_if_idle();
                 state.stop_preflight_loop();
+                music::restore_volume_now();
                 let now = Instant::now();
                 let counters = state.session_counters.lock();
                 analytics::track_app_exited(
@@ -907,7 +915,6 @@ pub struct AppState {
     hotkeys: core::hotkeys::HotkeyCoordinator,
     shortcut_capture_active: AtomicBool,
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
-    transcription_cancelled: AtomicBool,
     transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
     ffmpeg_toast_shown: AtomicBool,
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
@@ -927,6 +934,7 @@ pub struct AppState {
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
     streaming_session: parking_lot::Mutex<Option<streaming_transcription::StreamingSession>>,
+    piece_session: parking_lot::Mutex<Option<dictation_pieces::PieceSession>>,
     should_start_in_background: bool,
     /// Cached so analytics can tag events without touching the settings DB.
     license_snapshot: parking_lot::Mutex<Option<LicenseSnapshot>>,
@@ -996,7 +1004,6 @@ impl AppState {
             hotkeys: core::hotkeys::HotkeyCoordinator::default(),
             shortcut_capture_active: AtomicBool::new(false),
             tray: parking_lot::Mutex::new(None),
-            transcription_cancelled: AtomicBool::new(false),
             transcription_token: parking_lot::Mutex::new(None),
             ffmpeg_toast_shown: AtomicBool::new(false),
             pending_recording_path: parking_lot::Mutex::new(None),
@@ -1018,6 +1025,7 @@ impl AppState {
                 transcription_count: 0,
             }),
             streaming_session: parking_lot::Mutex::new(None),
+            piece_session: parking_lot::Mutex::new(None),
             license_snapshot: parking_lot::Mutex::new(None),
             should_start_in_background,
             recording: recording::RecordingManager::new(),
@@ -1049,6 +1057,20 @@ impl AppState {
 
     pub fn has_streaming_session(&self) -> bool {
         self.streaming_session.lock().is_some()
+    }
+
+    pub fn start_piece_session(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        model: model_manager::ReadyModel,
+        settings: &settings::UserSettings,
+    ) {
+        let session = dictation_pieces::PieceSession::start(app, model, settings);
+        *self.piece_session.lock() = session;
+    }
+
+    pub fn take_piece_session(&self) -> Option<dictation_pieces::PieceSession> {
+        self.piece_session.lock().take()
     }
 
     /// Read analytics state from the in-memory cache (single lock acquisition).
@@ -1180,18 +1202,12 @@ impl AppState {
     }
 
     pub fn request_cancellation(&self) {
-        self.transcription_cancelled.store(true, Ordering::SeqCst);
         if let Some(token) = self.transcription_token.lock().as_ref() {
             token.cancel();
         }
     }
 
-    pub fn is_cancelled(&self) -> bool {
-        self.transcription_cancelled.load(Ordering::SeqCst)
-    }
-
     pub fn clear_cancellation(&self) {
-        self.transcription_cancelled.store(false, Ordering::SeqCst);
         *self.transcription_token.lock() = None;
     }
 
@@ -1207,8 +1223,19 @@ impl AppState {
             .is_ok()
     }
 
-    pub fn set_pending_path(&self, path: Option<PathBuf>) {
-        *self.pending_recording_path.lock() = path;
+    /// None once the dictation is cancelled, so a late save can't take the slot
+    /// or a newer dictation's selected text. Otherwise the selected text to edit.
+    pub fn claim_pending_dictation(
+        &self,
+        path: &std::path::Path,
+        token: &CancellationToken,
+    ) -> Option<Option<String>> {
+        let mut current = self.pending_recording_path.lock();
+        if token.is_cancelled() {
+            return None;
+        }
+        *current = Some(path.to_path_buf());
+        Some(self.take_pending_selected_text())
     }
 
     pub fn take_pending_path(&self) -> Option<PathBuf> {
@@ -1911,18 +1938,18 @@ fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(),
 }
 
 #[tauri::command]
-fn get_transcriptions_page(
+async fn get_transcriptions_page(
     search: Option<String>,
     after_ms: Option<i64>,
     before_ms: Option<i64>,
     sort: storage::TranscriptionSort,
     limit: usize,
     offset: usize,
-    state: tauri::State<AppState>,
+    state: tauri::State<'_, AppState>,
 ) -> Result<storage::TranscriptionPage, String> {
-    state
-        .storage()
-        .get_transcriptions_page(
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || {
+        storage.get_transcriptions_page(
             search.as_deref(),
             after_ms,
             before_ms,
@@ -1930,7 +1957,10 @@ fn get_transcriptions_page(
             limit.clamp(1, 200),
             offset,
         )
-        .map_err(|err| format!("Failed to get transcriptions: {err}"))
+    })
+    .await
+    .map_err(|err| err.to_string())?
+    .map_err(|err| format!("Failed to get transcriptions: {err}"))
 }
 
 #[tauri::command]
@@ -1946,9 +1976,12 @@ fn get_today_dictation_stats(
 }
 
 #[tauri::command]
-fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
+async fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
     check_share_image(std::path::Path::new(&path), &bytes)?;
-    std::fs::write(&path, bytes).map_err(|err| format!("Failed to save image: {err}"))
+    tauri::async_runtime::spawn_blocking(move || std::fs::write(&path, bytes))
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|err| format!("Failed to save image: {err}"))
 }
 
 const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
@@ -2037,25 +2070,6 @@ async fn undo_llm_cleanup(
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     core::transcriptions::undo_llm_cleanup(id, &app, &state)
-}
-
-pub(crate) fn hide_overlay(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().reset(app);
-}
-
-pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().cancel(app, "escape");
-}
-
-#[tauri::command]
-fn cancel_recording(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    if state.pill().status() == pill::PillStatus::Processing {
-        state.pill().cancel_processing(&app, "escape");
-    } else {
-        stop_active_recording(&app);
-        hide_overlay(&app);
-    }
 }
 
 /// Why a dictation was thrown away, as the practice screen shows it.
@@ -2186,6 +2200,7 @@ pub(crate) fn discard_recording(
     app.state::<AppState>().pill().finish_processing(app);
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn persist_recording_async(
     app: AppHandle<AppRuntime>,
     recording: CompletedRecording,
@@ -2194,6 +2209,7 @@ pub(crate) fn persist_recording_async(
     auto_paste: bool,
     cancel_token: CancellationToken,
     origin: transcribe::DictationOrigin,
+    pieces: Option<dictation_pieces::PieceSession>,
 ) {
     let input = pill::microphone_input_kind(&settings);
     let base_dir = match recordings_root(&app) {
@@ -2234,6 +2250,7 @@ pub(crate) fn persist_recording_async(
                 auto_paste,
                 cancel_token,
                 origin,
+                pieces,
             ),
             Ok(Err(err)) => {
                 analytics::track_recording_failed(
@@ -2329,7 +2346,7 @@ pub(crate) struct TranscriptionCompletePayload {
 pub(crate) struct TranscriptionErrorPayload {
     pub(crate) message: String,
     pub(crate) stage: String,
-    // The record a cleanup retry failed for.
+    // The record a retry or cleanup retry failed for.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) id: Option<String>,
 }

@@ -1434,6 +1434,8 @@ struct PreflightState {
     last_checked_at: Option<Instant>,
     available: Option<bool>,
     last_notice_at: Option<Instant>,
+    // Bumped each time the cache clears, as on a settings change.
+    generation: u64,
 }
 
 static PREFLIGHT_STATE: OnceLock<Mutex<PreflightState>> = OnceLock::new();
@@ -1464,8 +1466,17 @@ pub fn should_show_unavailable_notice() -> bool {
     true
 }
 
-pub fn note_preflight_failure() {
+pub fn preflight_generation() -> u64 {
+    preflight_state().lock().generation
+}
+
+/// Ignored when settings changed since `generation` was read, so a request on
+/// the old settings can't disable cleanup for the new ones.
+pub fn note_preflight_failure(generation: u64) {
     let mut state = preflight_state().lock();
+    if state.generation != generation {
+        return;
+    }
     state.last_checked_at = Some(Instant::now());
     state.available = Some(false);
 }
@@ -1474,6 +1485,7 @@ pub fn clear_preflight_cache() {
     let mut state = preflight_state().lock();
     state.last_checked_at = None;
     state.available = None;
+    state.generation += 1;
 }
 
 fn preflight_availability_from_models(models: &[String]) -> Option<bool> {

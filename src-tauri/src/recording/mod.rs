@@ -421,7 +421,7 @@ enum WorkerCommand {
         reply: Sender<Result<SessionOutput>>,
     },
     Discard {
-        reply: Sender<()>,
+        reply: Sender<bool>,
     },
     SetMicrophonePaused {
         paused: bool,
@@ -498,8 +498,7 @@ impl Default for RecordingManager {
                             let _ = reply.send(worker.finish());
                         }
                         WorkerCommand::Discard { reply } => {
-                            worker.discard();
-                            let _ = reply.send(());
+                            let _ = reply.send(worker.discard());
                         }
                         WorkerCommand::SetMicrophonePaused { paused, reply } => {
                             worker.set_microphone(|mic| mic.paused = paused);
@@ -561,11 +560,10 @@ impl RecordingManager {
             .map_err(|_| anyhow!("Recording worker did not respond"))?
     }
 
-    fn send_discard(&self) {
+    /// False when there was no session left to discard, as when a finish took it.
+    fn send_discard(&self) -> bool {
         let (reply, rx) = bounded(1);
-        if self.tx.send(WorkerCommand::Discard { reply }).is_ok() {
-            let _ = rx.recv();
-        }
+        self.tx.send(WorkerCommand::Discard { reply }).is_ok() && rx.recv().unwrap_or(false)
     }
 
     fn pause(&self) -> bool {
@@ -1084,10 +1082,12 @@ impl Worker {
         }
     }
 
-    fn discard(&mut self) {
-        if let Some(session) = self.active.take() {
-            discard_session(session);
-        }
+    fn discard(&mut self) -> bool {
+        let Some(session) = self.active.take() else {
+            return false;
+        };
+        discard_session(session);
+        true
     }
 }
 
@@ -1194,7 +1194,7 @@ pub(crate) fn has_unfinished_session(app: &AppHandle<AppRuntime>) -> bool {
 fn emit_state(app: &AppHandle<AppRuntime>, shared: &Shared) {
     let state = shared.state();
     if !matches!(state.status, "recording" | "paused") || state.finish_requested {
-        live_window::hide_window(app);
+        live_window::close_window(app);
     }
     let _ = app.emit(EVENT_STATE, state);
 }
@@ -1661,29 +1661,29 @@ pub fn remove_recording_bookmark(app: AppHandle<AppRuntime>, id: String) -> Reco
 
 /// Throws the session away: files deleted, nothing added to the Library.
 #[tauri::command]
-pub async fn discard_recording_session(app: AppHandle<AppRuntime>) -> RecordingSessionState {
-    let summary = {
-        let state = app.state::<AppState>();
-        let shared = &state.recording().shared;
-        shared.is_active().then(|| shared.summary())
-    };
+pub async fn discard_recording_session(
+    app: AppHandle<AppRuntime>,
+) -> Result<RecordingSessionState, String> {
+    let summary = app.state::<AppState>().recording().shared.summary();
     let app_for_task = app.clone();
-    let _ = tauri::async_runtime::spawn_blocking(move || {
-        app_for_task.state::<AppState>().recording().send_discard();
+    let discarded = tauri::async_runtime::spawn_blocking(move || {
+        app_for_task.state::<AppState>().recording().send_discard()
     })
-    .await;
+    .await
+    .map_err(|err| err.to_string())?;
+    if !discarded {
+        return Err("not_recording".into());
+    }
     let state = app.state::<AppState>();
     let manager = state.recording();
     manager.shared.reset(false);
     manager.shared.live.publish(&app, false);
-    if let Some(summary) = summary {
-        analytics::set_activity(Activity::Idle);
-        analytics::track_recording_session_ended(&app, "discarded", &summary, None);
-    }
+    analytics::set_activity(Activity::Idle);
+    analytics::track_recording_session_ended(&app, "discarded", &summary, None);
     refresh_menus(&app);
     sync_tray(&app, &manager.shared.state());
     emit_state(&app, &manager.shared);
-    manager.state()
+    Ok(manager.state())
 }
 
 #[tauri::command]
@@ -1719,7 +1719,7 @@ pub async fn finish_recording_session(
             .map_err(|err| ("save", err))
     })
     .await
-    .map_err(|err| err.to_string())?;
+    .unwrap_or_else(|err| Err(("save", anyhow!("{err}"))));
 
     // Another finish took the session first and is still saving it.
     if let Err(("finish", err)) = &result

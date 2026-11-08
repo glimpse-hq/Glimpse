@@ -308,6 +308,10 @@ export function useSettingsForm({
     boolean | null
   >(null);
   const didHydrateRef = useRef(false);
+  const [hydratedSettings, setHydratedSettings] =
+    useState<StoredSettings | null>(null);
+  const autosaveHydrationRef = useRef<StoredSettings | null>(null);
+  const autosaveArgsRef = useRef("");
   const hydratedSettingsRef = useRef<StoredSettings | null>(null);
   const sentMenuSettingsRef = useRef<MenuSettings | null>(null);
   const isSavingRef = useRef(false);
@@ -454,6 +458,7 @@ export function useSettingsForm({
   const hydrateFromSettings = useCallback(
     (s: StoredSettings) => {
       hydratedSettingsRef.current = s;
+      setHydratedSettings(s);
       sentMenuSettingsRef.current = null;
       const hydratedBindings = bindingsFromSettings(s);
       persistedShortcutBindingsRef.current = hydratedBindings;
@@ -1232,10 +1237,21 @@ export function useSettingsForm({
     if (!active) return;
     if (loading) return;
     if (captureActiveRef.current) return;
-    if (!didHydrateRef.current) {
+    const args = JSON.stringify(buildSettingsArgs());
+    // Only edits save. Saving what was loaded or refetched would write over
+    // changes made elsewhere and re-register shortcuts mid-recording.
+    if (
+      !didHydrateRef.current ||
+      autosaveHydrationRef.current !== hydratedSettings
+    ) {
+      clearPendingSettingsSave();
       didHydrateRef.current = true;
+      autosaveHydrationRef.current = hydratedSettings;
+      autosaveArgsRef.current = args;
       return;
     }
+    if (args === autosaveArgsRef.current) return;
+    autosaveArgsRef.current = args;
 
     if (saveTimeoutRef.current !== null) {
       clearTimeout(saveTimeoutRef.current);
@@ -1244,7 +1260,14 @@ export function useSettingsForm({
       saveTimeoutRef.current = null;
       void saveSettingsNow();
     }, 500);
-  }, [active, loading, saveSettingsNow]);
+  }, [
+    active,
+    buildSettingsArgs,
+    clearPendingSettingsSave,
+    hydratedSettings,
+    loading,
+    saveSettingsNow,
+  ]);
 
   const handleOpenDataDir = useCallback(async () => {
     if (!appInfo?.data_dir_path) return;
@@ -1731,6 +1754,22 @@ export function useSettingsForm({
     }
   }, [showSettingsError]);
 
+  // A reopened window shows a download that was already running.
+  const shownDownloadState = Object.entries(modelStatus).reduce(
+    (shown, [key, status]) =>
+      status.download_percent === null || shown[key]
+        ? shown
+        : {
+            ...shown,
+            [key]: {
+              status: "downloading" as const,
+              percent: status.download_percent,
+              file: "",
+            },
+          },
+    downloadState,
+  );
+
   return {
     loading,
     error,
@@ -1764,7 +1803,7 @@ export function useSettingsForm({
     modelCatalog,
     diarizerModel,
     modelStatus,
-    downloadState,
+    downloadState: shownDownloadState,
     appInfo,
     appInfoFailed,
 

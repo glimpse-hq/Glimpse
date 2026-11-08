@@ -3,6 +3,43 @@
 ### Changes
 
 - On Mac, turning on Accessibility now opens a small card beside System Settings that you drag Glimpse from into the list.
+- Long dictations with Parakeet appear sooner after you let go: Glimpse transcribes them at your pauses while you talk.
+
+### Fixes
+
+- After you stop a recording from the live view or the Glimpse menu, Cancel in the naming dialog now closes it instead of opening it again.
+- When an AI agent finishes a recording while you're naming it, the naming dialog closes.
+- Quitting while a recording is saving now waits for the save to finish.
+- A Library transcription that was running when Glimpse quit no longer stays stuck after your trial ends.
+- Cancelling a Library transcription no longer leaves it stuck on Cancelling or starts it again the next time Glimpse opens.
+- Library transcripts no longer skip a part while they come in, and progress stays current while you search.
+- If an edit to a Library transcript couldn't be saved, retranscribing no longer throws it away.
+- Downloading a model you haven't selected no longer makes dictation wait while it gets ready.
+- Pressing Delete twice on a model no longer shows an error.
+- On Mac, when a model can't be optimized for the Neural Engine, Glimpse no longer retries at every launch or holds back the move to a newer model.
+- Removing a model while it downloads now stops the download, so the model doesn't come back.
+- Paid features unlock right away after you activate a license.
+- If you bought Glimpse during the trial and were offline for over a week, you no longer get a notice that the trial is ending.
+- Fixing your writing model's settings while a dictation is in progress no longer turns off cleanup for a few minutes.
+- The local API no longer shows as running for a moment when it fails to start.
+- Quitting Glimpse while it has lowered your volume now puts the volume back.
+- Changing a shortcut while holding the dictation shortcut no longer leaves the recording running.
+- Pressing the shortcut as a long dictation ends on its own, or as your microphone is unplugged, no longer starts a second recording or shows an error.
+- Cancelling a dictation while it's being saved no longer leaves its audio on disk.
+- On Mac, unplugging your microphone as a dictation starts no longer leaves music paused.
+- The microphone test in Settings keeps running when a dictation fails to start at the same time.
+- The "model ready" notice only shows for the model you were waiting on.
+- Cancelling a dictation no longer skips recordings Glimpse is recovering after a crash.
+- With Settings open, a change made elsewhere, like a word added to your dictionary, no longer cuts off a dictation you're holding.
+- After Glimpse updates itself, it restarts as soon as you're not using it, even if you turn off automatic updates.
+- Pressing Update again after reopening Settings now waits for the download already running instead of starting another.
+- A failed dictation no longer stops the spinner on History items you're retrying.
+- Reopening Settings during a model download now shows its progress right away.
+- Dictating after a few minutes away no longer waits for the speech model to reload before your text appears.
+- On Mac, an image on the clipboard no longer slows down pasting your dictation.
+- Opening the Library, History or the app list no longer freezes Glimpse for a moment.
+- Glimpse no longer uses a full CPU core in the background after a speech model fails to load.
+- The live view no longer holds on to memory after a recording ends.
 
 1.4.4
 
