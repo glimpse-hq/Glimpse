@@ -32,6 +32,7 @@ const VAD_FRAME: usize = 320;
 /// models already transcribe live.
 pub fn supports(model_key: &str) -> bool {
     catalog::definition(model_key).is_some_and(|model| model.languages == Languages::ParakeetV3)
+        && !catalog::is_streaming_model(model_key)
 }
 
 pub struct PieceSession {

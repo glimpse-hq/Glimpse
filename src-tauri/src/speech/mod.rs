@@ -461,54 +461,54 @@ fn unpacked_bytes(manifest: &Path) -> Option<u64> {
     entries.iter().map(|entry| entry["size"].as_u64()).sum()
 }
 
-/// Replaces a Parakeet TDT V3 encoder that isn't this build's (older CPU or fp16
-/// ones, or the other macOS variant). Only the selected model upgrades.
-pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
-    const MODEL: &str = "parakeet_tdt_v3_gguf";
+/// Replaces the selected model's Neural Engine encoder when it isn't this
+/// build's (an older CPU or fp16 one, or the other macOS variant after an OS
+/// upgrade).
+pub(crate) fn upgrade_ane_encoder(app: &AppHandle<AppRuntime>) {
+    let settings = app.state::<AppState>().current_settings();
+    let model = settings.local_model.clone();
     let (Some(dir_name), Some(expected), Some(mut spec), Ok(models_dir)) = (
-        catalog::ane_encoder_dir(MODEL),
-        catalog::ane_encoder_unpacked_bytes(MODEL),
-        catalog::install_spec(MODEL, true),
+        catalog::ane_encoder_dir(&model),
+        catalog::ane_encoder_unpacked_bytes(&model),
+        catalog::install_spec(&model, true),
         install::model_cache_dir(app),
     ) else {
         return;
     };
-    let model_dir = models_dir.join(MODEL);
+    let model_dir = models_dir.join(&model);
     let encoder = model_dir.join(&dir_name);
     let manifest = format!(".{dir_name}.manifest.json");
     let installed_manifest = model_dir.join(&manifest);
     let is_old =
         move |manifest: &Path| unpacked_bytes(manifest).is_some_and(|bytes| bytes != expected);
     let staging = model_dir.join(".encoder-upgrade");
-    let settings = app.state::<AppState>().current_settings();
     // A model about to be replaced is deleted, staging directory included.
-    if !is_old(&installed_manifest)
-        || settings.local_model != MODEL
-        || catalog::model_upgrade_target(&settings).is_some()
-    {
+    if !is_old(&installed_manifest) || catalog::model_upgrade_target(&settings).is_some() {
         // A partial download from an upgrade that no longer applies.
         let _ = crate::platform::remove_dir_all_compat(&staging);
         return;
     }
     spec.files.retain(|file| file.extract);
     let manager = glimpse_speech::models::ModelInstallManager::new(staging.clone());
-    let staged_dir = manager.model_dir(MODEL);
+    let staged_dir = manager.model_dir(&model);
     if let Err(err) = install::ensure_disk_space(&staged_dir, &spec) {
-        return tracing::warn!("[speech] {MODEL} encoder upgrade skipped: {err:#}");
+        return tracing::warn!("[speech] {model} encoder upgrade skipped: {err:#}");
     }
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         match manager.install(&spec, Default::default()).await {
             Ok(status) if status.installed => {}
-            Ok(_) => return tracing::warn!("[speech] {MODEL} encoder upgrade did not finish"),
-            Err(err) => return tracing::warn!("[speech] {MODEL} encoder upgrade failed: {err:#}"),
+            Ok(_) => return tracing::warn!("[speech] {model} encoder upgrade did not finish"),
+            Err(err) => return tracing::warn!("[speech] {model} encoder upgrade failed: {err:#}"),
         }
+        let swapping = model.clone();
         let swapped = tauri::async_runtime::spawn_blocking(move || {
+            let model = swapping;
             if is_old(&installed_manifest) {
                 // Keeps the old encoder loaded for dictation until the new one compiles,
                 // and waits out an in-flight load so the rename can't land mid-load.
-                if app.state::<AppState>().current_settings().local_model == MODEL
-                    && let Ok(ready) = install::ensure_model_ready(&app, MODEL)
+                if app.state::<AppState>().current_settings().local_model == model
+                    && let Ok(ready) = install::ensure_model_ready(&app, &model)
                 {
                     let transcriber = app.state::<AppState>().local_transcriber();
                     let _ = transcriber.preload_and_warm(&ready);
@@ -526,13 +526,13 @@ pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
                     return Err(err);
                 }
                 let _ = crate::platform::remove_dir_all_compat(&backup);
-                compile_ane_encoder(&app, MODEL.to_string());
+                compile_ane_encoder(&app, model);
             }
             crate::platform::remove_dir_all_compat(&staging)
         })
         .await;
         if let Ok(Err(err)) = swapped {
-            tracing::warn!("[speech] {MODEL} encoder swap failed: {err}");
+            tracing::warn!("[speech] {model} encoder swap failed: {err}");
         }
     });
 }
