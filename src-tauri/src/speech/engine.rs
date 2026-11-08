@@ -202,6 +202,11 @@ impl LocalTranscriber {
         self.service.loaded_model_id()
     }
 
+    /// Whether a transcription or load holds the model right now.
+    pub fn is_busy(&self) -> bool {
+        self.exclusive.is_locked()
+    }
+
     pub fn transcribe(
         &self,
         model: &ReadyModel,
@@ -212,14 +217,28 @@ impl LocalTranscriber {
     ) -> Result<TranscriptionSuccess> {
         let result =
             self.transcribe_internal(model, samples, sample_rate, dictionary, language, None)?;
+        Ok(plain_success(model, result))
+    }
 
-        Ok(TranscriptionSuccess {
-            transcript: normalize_transcript(&result.text),
-            speech_model: Some(model_manager::model_label(&model.key)),
-            segments: None,
-            words: None,
-            language: result.language,
-        })
+    /// Like `transcribe`, but returns `None` instead of waiting when the
+    /// transcriber is busy or holds another model, so the caller never queues
+    /// behind other work or swaps models.
+    pub fn try_transcribe_loaded(
+        &self,
+        model: &ReadyModel,
+        samples: &[i16],
+        sample_rate: u32,
+        dictionary: &[String],
+        language: Option<&str>,
+    ) -> Option<Result<TranscriptionSuccess>> {
+        let _exclusive = self.exclusive.try_lock()?;
+        if self.loaded_model_id().as_deref() != Some(model.key.as_str()) {
+            return None;
+        }
+        Some(
+            self.transcribe_locked(model, samples, sample_rate, dictionary, language, None)
+                .map(|result| plain_success(model, result)),
+        )
     }
 
     /// Whisper computes word timings in an extra pass, so ask for
@@ -409,6 +428,19 @@ impl StreamingGuard<'_> {
         let transcript = self.transcriber.service.streaming_finalize();
         self.transcriber.service.streaming_reset();
         transcript
+    }
+}
+
+fn plain_success(
+    model: &ReadyModel,
+    result: glimpse_speech::Transcription,
+) -> TranscriptionSuccess {
+    TranscriptionSuccess {
+        transcript: normalize_transcript(&result.text),
+        speech_model: Some(model_manager::model_label(&model.key)),
+        segments: None,
+        words: None,
+        language: result.language,
     }
 }
 
