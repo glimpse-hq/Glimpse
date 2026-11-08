@@ -3412,6 +3412,11 @@ msgid "library.view.empty_state"
 msgstr "Trascina i file qui per creare la tua Libreria."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.permission.accessibility_drag"
+msgstr "Trascina Glimpse nell’elenco qui sopra"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "Trascina i file per trascrivere"
@@ -5247,11 +5252,6 @@ msgid "native.toast.model_action"
 msgstr "Apri Modelli"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.open_settings"
-msgstr "Apri Impostazioni"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "Apri Impostazioni"
@@ -5264,6 +5264,11 @@ msgstr "Apri Impostazioni"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
+msgstr "Apri Impostazioni"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
 msgstr "Apri Impostazioni"
 
 #. js-lingui-explicit-id

@@ -177,9 +177,23 @@ fn link_clang_runtime() {
     println!("cargo:rustc-link-lib=static=clang_rt.osx");
 }
 
+fn compile_permission_guide() {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
+        return;
+    }
+    println!("cargo:rerun-if-changed=native/permission_guide.m");
+    println!("cargo:rustc-link-lib=framework=AppKit");
+    println!("cargo:rustc-link-lib=framework=QuartzCore");
+    cc::Build::new()
+        .file("native/permission_guide.m")
+        .flag("-fobjc-arc")
+        .compile("permission_guide");
+}
+
 fn main() {
     generate_native_menu_catalog();
     link_clang_runtime();
+    compile_permission_guide();
 
     // Forward build-time env vars from workspace .env and the build environment.
     let compile_time_keys = [
