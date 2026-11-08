@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
   checkMacInputMonitoringPermission,
-  requestMacAccessibilityPermission,
   requestMacInputMonitoringPermission,
 } from "../../shared/lib/macosPermissions";
 import type {
@@ -135,13 +134,10 @@ export async function checkMicrophonePermission(): Promise<boolean> {
 
 export async function requestMicrophonePermission(): Promise<boolean> {
   await invoke("request_microphone_permission").catch(() => {});
-  const granted = await checkMicrophonePermission().catch(() => false);
-  if (!granted) await invoke("open_microphone_settings").catch(() => {});
-  return granted;
+  return checkMicrophonePermission().catch(() => false);
 }
 
 export async function requestAccessibilityPermission(): Promise<boolean> {
-  await requestMacAccessibilityPermission().catch(() => {});
   const granted = await checkAccessibilityPermission().catch(() => false);
   if (!granted) await invoke("open_accessibility_settings").catch(() => {});
   return granted;

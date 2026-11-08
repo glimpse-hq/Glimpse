@@ -3412,6 +3412,11 @@ msgid "library.view.empty_state"
 msgstr "اسحب الملفات إلى هنا لإنشاء مكتبتك."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.permission.accessibility_drag"
+msgstr "اسحب Glimpse إلى القائمة أعلاه"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "أفلت الملفات لنسخها"
@@ -5247,11 +5252,6 @@ msgid "native.toast.model_action"
 msgstr "فتح النماذج"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.open_settings"
-msgstr "فتح الإعدادات"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings_action"
 msgstr "فتح الإعدادات"
@@ -5264,6 +5264,11 @@ msgstr "فتح الإعدادات"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
+msgstr "فتح الإعدادات"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.open_settings"
 msgstr "فتح الإعدادات"
 
 #. js-lingui-explicit-id

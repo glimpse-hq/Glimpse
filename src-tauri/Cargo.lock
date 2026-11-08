@@ -11,6 +11,7 @@ dependencies = [
  "arboard",
  "base64 0.23.1",
  "block2",
+ "cc",
  "chrono",
  "core-foundation 0.10.1",
  "core-graphics",
@@ -2220,8 +2221,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "3.0.3"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.3#de545c53f871e2d5f6dc24ebb15871053c8741ee"
+version = "3.0.4"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.4#d65b418bc6833eee3fa910b39b2b9cba0f816f10"
 dependencies = [
  "anyhow",
  "axum",
@@ -6035,7 +6036,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",

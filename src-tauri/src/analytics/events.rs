@@ -120,6 +120,10 @@ pub struct TranscriptionEvent<'a> {
     pub detected_language: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tracks: Option<u8>,
+    /// What ran the local speech model: coreml, metal, vulkan_discrete,
+    /// vulkan_integrated, cpu, apple, or other.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub compute: Option<&'static str>,
 }
 
 /// Records that a transcription succeeded, with the fields described on

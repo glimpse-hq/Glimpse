@@ -81,6 +81,7 @@ struct DictationStats {
     personality: Option<&'static str>,
     language: Option<&'static str>,
     detected_language: Option<&'static str>,
+    compute: Option<&'static str>,
 }
 
 impl DictationStats {
@@ -90,6 +91,7 @@ impl DictationStats {
         personality: Option<&Personality>,
         asr_seconds: Option<f32>,
         detected_language: Option<&str>,
+        compute: Option<&'static str>,
     ) -> Self {
         let language = analytics::language_label(&settings.language);
         Self {
@@ -102,6 +104,7 @@ impl DictationStats {
             detected_language: detected_language
                 .filter(|_| language == "auto")
                 .map(analytics::language_label),
+            compute,
             ..Default::default()
         }
     }
@@ -450,6 +453,7 @@ pub(crate) fn queue_transcription(
                     active_mode.as_ref(),
                     Some(asr_seconds),
                     result.language.as_deref(),
+                    result.compute,
                 )
                 .with_origin(origin, is_edit);
                 let mut metadata = build_transcription_metadata(TranscriptionMetadataInput {
@@ -804,6 +808,7 @@ async fn transcribe_recovered_recording(
         active_mode.as_ref(),
         Some(asr_seconds),
         result.language.as_deref(),
+        result.compute,
     );
     let metadata = build_transcription_metadata(TranscriptionMetadataInput {
         saved,
@@ -1391,6 +1396,7 @@ pub(crate) fn retry_transcription_async(
                         audio_source: "microphone",
                         retry: true,
                         llm_model: metadata.llm_model.as_deref().map(analytics::llm_model_id),
+                        compute: result.compute,
                         ..Default::default()
                     },
                 );
@@ -1474,6 +1480,7 @@ fn emit_transcription_complete_with_cleanup(
             personality: stats.personality,
             language: stats.language,
             detected_language: stats.detected_language,
+            compute: stats.compute,
             ..Default::default()
         },
     );
@@ -2123,6 +2130,7 @@ fn transcribe_local_chunked(
             segments: None,
             words: None,
             language: None,
+            compute: None,
         });
     }
 
@@ -2147,6 +2155,7 @@ fn transcribe_local_chunked(
     let mut start = 0usize;
     let mut model_label = None;
     let mut language_detected = None;
+    let mut compute = None;
 
     while start < samples.len() {
         if let Some(token) = cancel_token
@@ -2198,6 +2207,7 @@ fn transcribe_local_chunked(
                 if model_label.is_none() {
                     model_label = result.speech_model.clone();
                 }
+                compute = compute.or(result.compute);
                 if language_detected.is_none() {
                     language_detected = result.language.clone();
                 }
@@ -2212,6 +2222,7 @@ fn transcribe_local_chunked(
                 if model_label.is_none() {
                     model_label = result.speech_model.clone();
                 }
+                compute = compute.or(result.compute);
                 if language_detected.is_none() {
                     language_detected = result.language;
                 }
@@ -2241,6 +2252,7 @@ fn transcribe_local_chunked(
         segments: None,
         words: None,
         language: language_detected,
+        compute,
     })
 }
 
@@ -2536,6 +2548,7 @@ pub(crate) fn finalize_streaming_transcription(
             &processed,
             active_mode.as_ref(),
             Some(asr_seconds),
+            None,
             None,
         )
         .with_origin(origin, is_edit);

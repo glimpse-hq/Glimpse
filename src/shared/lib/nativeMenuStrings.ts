@@ -406,6 +406,10 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.toast.open_system_settings",
     message: "Open System Settings",
   }),
+  msg({
+    id: "native.permission.accessibility_drag",
+    message: "Drag Glimpse into the list above",
+  }),
 
   msg({
     id: "native.toast.model_switched_title",
