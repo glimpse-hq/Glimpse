@@ -219,6 +219,7 @@ impl LocalTranscriber {
             segments: None,
             words: None,
             language: result.language,
+            compute: result.compute,
         })
     }
 
@@ -248,6 +249,7 @@ impl LocalTranscriber {
             segments: result.segments,
             words: result.words,
             language: result.language,
+            compute: result.compute,
         })
     }
 
