@@ -119,6 +119,13 @@ const PARAKEET_UNIFIED_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
     sha256: Some("4b50b6dd862bf6e346929aaf4f5eaacec003bfa3f56462d6c874b41ef2f38795"),
 }];
 
+const NEMOTRON_UNIFIED_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
+    url: "https://huggingface.co/Glimpse-Dictation/Nemotron-Unified-ASR-0.6B-coreml/resolve/main/nemotron-labs-unified-asr-0.6b-Q8_0.gguf",
+    path: "nemotron-labs-unified-asr-0.6b-Q8_0.gguf",
+    size_bytes: Some(740_361_088),
+    sha256: Some("f16e51ce73739b86aa0af2527a680950680c3067c2c788121370de7bdb633052"),
+}];
+
 const NEMOTRON_35_STREAMING_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
     url: "https://huggingface.co/Glimpse-Dictation/Nemotron-3.5-ASR-Streaming-0.6B-gguf/resolve/main/nemotron-3.5-asr-streaming-0.6b-Q8_0.gguf",
     path: "nemotron-3.5-asr-streaming-0.6b-Q8_0.gguf",
@@ -324,7 +331,27 @@ const TRANSCRIBE_ANE_ENCODERS: &[TranscribeAneEncoder] = &[
         sha256: ANE_QWEN3_ASR_0_6B_ZIP_SHA256,
         unpacked_bytes: None,
     },
-    // Keeps the full GGUF: live streaming still runs its ggml encoder.
+    // Unified models keep the full GGUF: live streaming still runs its ggml encoder.
+    TranscribeAneEncoder {
+        model: "nemotron_unified",
+        replacement_files: None,
+        min_macos: 15,
+        dir_name: "nemotron-labs-unified-asr-0.6b-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Nemotron-Unified-ASR-0.6B-coreml/resolve/main/nemotron-labs-unified-asr-0.6b-Q8_0-encoder-mf3.mlmodelc.zip",
+        size_bytes: 528_801_748,
+        sha256: "5c0a5013c51a754d2df184265f7a75df95f5f9ee3a27bdea03d1a27b35c94906",
+        unpacked_bytes: None,
+    },
+    TranscribeAneEncoder {
+        model: "nemotron_unified",
+        replacement_files: None,
+        min_macos: 14,
+        dir_name: "nemotron-labs-unified-asr-0.6b-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Nemotron-Unified-ASR-0.6B-coreml/resolve/main/nemotron-labs-unified-asr-0.6b-Q8_0-encoder-macos14.mlmodelc.zip",
+        size_bytes: 523_425_830,
+        sha256: "12f0445595ca165ae74d8ea5773f9c11fd16fe47ff9f800647deda362daf7257",
+        unpacked_bytes: None,
+    },
     TranscribeAneEncoder {
         model: "parakeet_unified_en_int8",
         replacement_files: None,
@@ -798,12 +825,29 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         capabilities: &[MODEL_CAPABILITY_DICTIONARY],
     },
     LocalModelManifest {
+        id: "nemotron_unified",
+        family: "nemotron-unified",
+        label: "Nemotron Unified",
+        description: "Fast multilingual transcription with streaming support.",
+        tags: &["Multilingual", "Fast", "Streaming"],
+        category: "experimental",
+        engine: LocalModelEngine::Transcribe,
+        languages: Languages::ParakeetV3,
+        variant: "Q8_0",
+        files: NEMOTRON_UNIFIED_GGUF_FILES,
+        capabilities: &[
+            MODEL_CAPABILITY_DICTIONARY,
+            MODEL_CAPABILITY_TIMESTAMPS,
+            MODEL_CAPABILITY_STREAMING,
+        ],
+    },
+    LocalModelManifest {
         id: "parakeet_unified_en_int8",
         family: "parakeet-unified",
         label: "Parakeet Unified",
         description: "Fast English local transcription with streaming support.",
         tags: &["English", "Fast", "Streaming"],
-        category: "experimental",
+        category: "legacy",
         engine: LocalModelEngine::Transcribe,
         languages: Languages::English,
         variant: "Q8_0",
@@ -820,7 +864,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Nemotron 3.5 Streaming",
         description: "Multilingual streaming transcription with punctuation and capitalization.",
         tags: &["Multilingual", "Streaming"],
-        category: "experimental",
+        category: "legacy",
         engine: LocalModelEngine::Transcribe,
         languages: Languages::Nemotron35,
         variant: "Q8_0",
@@ -1238,7 +1282,7 @@ pub const RECOMMENDED: &[&str] = &[
 
 /// (old, new): `old` is being retired in favor of `new`. Any line is safe to
 /// delete, since a stale model falls back to [`recommended_model`].
-pub const SUCCESSORS: &[(&str, &str)] = &[];
+pub const SUCCESSORS: &[(&str, &str)] = &[("parakeet_unified_en_int8", "nemotron_unified")];
 
 fn usable_here(manifest: &LocalModelManifest) -> bool {
     match manifest.engine {

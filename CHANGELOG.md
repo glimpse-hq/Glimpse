@@ -1,5 +1,9 @@
 1.4.5
 
+### Changes
+
+- Nemotron Unified, a new experimental model, shows text as you speak in 25 languages. It replaces Parakeet Unified, and Nemotron 3.5 Streaming moves to Legacy.
+
 ### Fixes
 
 - After you stop a recording from the live view or the Glimpse menu, Cancel in the naming dialog now closes it instead of opening it again.
