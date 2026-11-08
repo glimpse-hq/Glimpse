@@ -6,6 +6,8 @@ pub struct TranscriptionSuccess {
     pub words: Option<Vec<glimpse_speech::TranscriptionSegment>>,
     /// Language the engine detected, when it reports one.
     pub language: Option<String>,
+    /// What ran the local model; see `glimpse_speech::Transcription::compute`.
+    pub compute: Option<&'static str>,
 }
 
 pub fn normalize_transcript(input: &str) -> String {

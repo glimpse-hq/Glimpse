@@ -124,6 +124,7 @@ pub(crate) async fn transcribe_file(
             segments: response.segments,
             words: response.words,
             language: response.language,
+            compute: response.compute,
         },
         diarized_segments,
     })
