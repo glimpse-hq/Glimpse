@@ -1380,6 +1380,7 @@ pub(crate) fn retry_transcription_async(
                         audio_source: "microphone",
                         retry: true,
                         llm_model: metadata.llm_model.as_deref().map(analytics::llm_model_id),
+                        compute: result.compute,
                         ..Default::default()
                     },
                 );
