@@ -194,7 +194,7 @@ pub(crate) fn set_local_model_auto(
 /// current model keeps working until the new one is installed and verified.
 pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
     let settings = app.state::<AppState>().current_settings();
-    if !settings.onboarding_completed {
+    if !settings.onboarding_completed || engine::check_cpu().is_err() {
         return;
     }
     let Some(target) = catalog::model_upgrade_target(&settings) else {
@@ -414,7 +414,9 @@ pub(crate) fn warm_unselected_model(app: &AppHandle<AppRuntime>, model: String) 
         return;
     };
     std::thread::spawn(move || {
-        if let Err(err) = detached_service(models_dir).preload_and_warm(&model) {
+        if let Err(err) =
+            engine::check_cpu().and_then(|()| detached_service(models_dir).preload_and_warm(&model))
+        {
             tracing::warn!("[speech] {model} first load failed: {err:#}");
         }
     });

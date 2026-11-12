@@ -544,7 +544,7 @@ pub(crate) async fn download_verified(
 }
 
 /// Free space a download must leave behind, so a model never fills the disk.
-const DISK_HEADROOM_BYTES: u64 = 5 * 1024 * 1024 * 1024;
+const DISK_HEADROOM_BYTES: u64 = 3 * 1024 * 1024 * 1024;
 
 /// Refuses a download that would leave less than `DISK_HEADROOM_BYTES` free.
 /// Archives count twice: the zip and its extracted copy exist together.
@@ -595,7 +595,11 @@ fn download_failed(
         ("download", "storage" | "cross_device") => "install",
         _ => stage,
     };
-    crate::analytics::track_model_download_failed(app, model, stage, detail);
+    let free_bytes = (detail.reason == "storage")
+        .then(|| model_cache_dir(app).ok())
+        .flatten()
+        .and_then(|dir| crate::platform::available_space(&dir).ok());
+    crate::analytics::track_model_download_failed(app, model, stage, detail, free_bytes);
     let message = format!("{err:#}");
     let _ = app.emit(
         "download:error",
@@ -786,6 +790,7 @@ pub fn ensure_local_fallback_model<R: Runtime>(
     app: &AppHandle<R>,
     preferred: &str,
 ) -> Result<ReadyModel> {
+    super::engine::check_cpu()?;
     let model = installed_local_model(app, preferred)
         .ok_or_else(|| anyhow!("No local transcription model is installed for fallback"))?;
     if model.key != preferred {

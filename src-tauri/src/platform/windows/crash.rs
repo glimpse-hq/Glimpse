@@ -165,17 +165,17 @@ unsafe extern "system" fn handler(info: *const EXCEPTION_POINTERS) -> i32 {
         unsafe { ((*record).ExceptionCode.0 as u32, (*record).ExceptionAddress) }
     };
     // Group on a module-relative offset, not the absolute (ASLR-randomized) address.
-    let (module, location) = match unsafe { faulting_module(address) } {
-        Some((name, base)) => {
+    let (module, location, driver_store) = match unsafe { faulting_module(address) } {
+        Some((name, base, driver_store)) => {
             let offset = (address as usize).saturating_sub(base);
-            (name.clone(), format!("{name}+{offset:#x}"))
+            (name.clone(), format!("{name}+{offset:#x}"), driver_store)
         }
-        None => ("unknown".to_string(), "unknown".to_string()),
+        None => ("unknown".to_string(), "unknown".to_string(), false),
     };
 
     // First three lines match the panic marker; analytics folds in the rest.
     let marker_body = format!(
-        "{APP_VERSION}\n{location}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\nminidump={}\ncrash_phase={}\nactivity={}\n",
+        "{APP_VERSION}\n{location}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\ndriver_store={driver_store}\nminidump={}\ncrash_phase={}\nactivity={}\n",
         if dump_written { DUMP_FILE_NAME } else { "none" },
         crate::analytics::crash_phase(),
         crate::analytics::activity().as_str(),
@@ -217,9 +217,10 @@ unsafe fn write_minidump(paths: &CrashPaths, info: *const EXCEPTION_POINTERS) ->
     .is_ok()
 }
 
-// Returns the faulting module's file name and its base address, so the caller
-// can record an ASLR-independent module-relative offset.
-unsafe fn faulting_module(address: *mut core::ffi::c_void) -> Option<(String, usize)> {
+// Returns the faulting module's file name, its base address, so the caller
+// can record an ASLR-independent module-relative offset, and whether Windows
+// loaded it from the driver store, where graphics drivers live.
+unsafe fn faulting_module(address: *mut core::ffi::c_void) -> Option<(String, usize, bool)> {
     if address.is_null() {
         return None;
     }
@@ -240,5 +241,8 @@ unsafe fn faulting_module(address: *mut core::ffi::c_void) -> Option<(String, us
     }
     let path = String::from_utf16_lossy(&buffer[..len as usize]);
     let name = path.rsplit(['\\', '/']).next().unwrap_or(&path).to_string();
-    Some((name, module.0 as usize))
+    let driver_store = path
+        .to_ascii_lowercase()
+        .contains("\\driverstore\\filerepository\\");
+    Some((name, module.0 as usize, driver_store))
 }

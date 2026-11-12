@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "Glimpse non ha ricevuto audio dal microfono. Controlla quale microfono è selezionato in Impostazioni."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "La dettatura è gratuita con qualsiasi modello: trascrizione locale, dizionario, sostituzioni e cronologia, senza limiti di parole né abbonamento. Libreria, Registrazione, Pulizia AI e Personalizzazione sono incluse con una licenza Glimpse, con un pagamento unico di 25 $ per un Mac o PC oppure 39 $ per un massimo di tre dispositivi. Puoi provarle gratuitamente per 14 giorni. Il server API locale e la riga di comando richiedono una licenza acquistata e non sono inclusi nella prova. Inserisci la chiave di licenza in Impostazioni → Account."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "Usa un server API locale per le trascrizioni e lo strumento da riga di comando. Richiedono una licenza acquistata e non sono inclusi nella prova."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "La riga di comando è inclusa con una licenza Glimpse acquistata. Non è inclusa nella prova."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse trasforma la mia voce in testo.»"
@@ -3265,8 +3280,13 @@ msgstr "La dettatura di questa scorciatoia viene incollata, ma l’audio e la tr
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "La dettatura è gratuita con qualsiasi modello: trascrizione locale, dizionario, sostituzioni e cronologia, senza limiti di parole né abbonamento. Libreria, Registrazione, Pulizia AI e Personalizzazione sono incluse con una licenza Glimpse, con un pagamento unico di 25 $ per un Mac o PC oppure 39 $ per un massimo di tre dispositivi. Puoi provarle gratuitamente per 14 giorni. Il server API locale e la riga di comando richiedono una licenza acquistata e non sono inclusi nella prova. Inserisci la chiave di licenza in Impostazioni → Account."
+msgid "faq.free.answer.v8"
+msgstr "La dettatura è gratuita con qualsiasi modello: trascrizione locale, dizionario, sostituzioni e cronologia, senza limiti di parole né abbonamento. Libreria, Registrazione, Pulizia AI, Personalizzazione, il server API locale e la riga di comando sono inclusi con una licenza Glimpse, con un pagamento unico di 25 $ per un Mac o PC oppure 39 $ per un massimo di tre dispositivi. Puoi provarli gratuitamente per 14 giorni. Inserisci la chiave di licenza in Impostazioni → Account."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "La dettatura è più lenta a causa di un problema del driver grafico. Aggiornare il driver può risolverlo."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "Glimpse C1 non può essere eseguito sulla grafica di questo computer."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4508,6 +4533,11 @@ msgstr "API locale"
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.group.server"
 msgstr "Server locale"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "I modelli vocali locali non possono essere eseguiti sul processore di questo computer."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5989,8 +6019,8 @@ msgstr "adesso"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "Usa un server API locale per le trascrizioni e lo strumento da riga di comando. Richiedono una licenza acquistata e non sono inclusi nella prova."
+msgid "locked.api.line.v3"
+msgstr "Usa un server API locale per le trascrizioni e lo strumento da riga di comando."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6880,11 +6910,6 @@ msgstr "Il server API non si è fermato, quindi non è stato possibile riavviarl
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "Il modello di Pulizia AI non supporta ancora questa lingua."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "La riga di comando è inclusa con una licenza Glimpse acquistata. Non è inclusa nella prova."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

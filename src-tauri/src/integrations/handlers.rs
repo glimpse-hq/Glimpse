@@ -46,10 +46,9 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
     }
 }
 
-/// Mutating CLI commands require an active license; reads stay free. Uses the
-/// same `require_active_license` gate as the CLI installer and API server.
+/// Mutating CLI commands require a license or trial; reads stay free.
 fn require_license(state: &AppState) -> Result<(), String> {
-    crate::license::require_active_license(&state.settings_store, "the Glimpse CLI")
+    crate::license::require_license_gate(&state.settings_store, "the Glimpse CLI")
 }
 
 fn arg_str(args: &Value, key: &str) -> Result<String, String> {
@@ -240,7 +239,7 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
 
 fn api_start(app: &AppHandle<AppRuntime>, overrides: &Value) -> Result<Value, String> {
     let state = app.state::<AppState>();
-    crate::license::require_active_license(&state.settings_store, "the API server")?;
+    crate::license::require_license_gate(&state.settings_store, "the API server")?;
     let settings = state.current_settings_unmasked();
     let requested = overrides.get("model").and_then(Value::as_str);
     if requested.is_some_and(crate::remote_speech::is_remote_model) {
@@ -471,6 +470,7 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
             transcription_duration_seconds: started.elapsed().as_secs_f32(),
             word_count: word_count as u32,
             audio_source: "cli",
+            compute: success.compute,
             ..Default::default()
         },
     );

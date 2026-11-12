@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "Glimpse got no sound from your microphone. Check which microphone is selected in Settings."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "Dictation is free with every model: local transcription, dictionary, replacements, and history, with no word limits or subscription. Library, Record, Cleanup, and Personalization come with a Glimpse license, a single payment of $25 for one Mac or PC or $39 for up to three. You can try them free for 14 days. The local API server and the command line need a purchased license and aren't part of the trial. Enter your license key in Settings → Account."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "Run a local transcription API and the command line tool. They aren't part of the trial."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "The command line comes with a purchased Glimpse license. It isn't part of the trial."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -3265,8 +3280,13 @@ msgstr "Dictation from this shortcut is pasted, but its audio and transcript are
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "Dictation is free with every model: local transcription, dictionary, replacements, and history, with no word limits or subscription. Library, Record, Cleanup, and Personalization come with a Glimpse license, a single payment of $25 for one Mac or PC or $39 for up to three. You can try them free for 14 days. The local API server and the command line need a purchased license and aren't part of the trial. Enter your license key in Settings → Account."
+msgid "faq.free.answer.v8"
+msgstr "Dictation is free with every model: local transcription, dictionary, replacements, and history, with no word limits or subscription. Library, Record, Cleanup, Personalization, the local API server, and the command line come with a Glimpse license, a single payment of $25 for one Mac or PC or $39 for up to three. You can try them free for 14 days. Enter your license key in Settings → Account."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "Dictation is slower because of a graphics driver problem. Updating the driver can fix this."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "Glimpse C1 can't run on this computer's graphics."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4508,6 +4533,11 @@ msgstr "Local API"
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.group.server"
 msgstr "Local server"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "Local speech models can't run on this computer's processor."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5989,8 +6019,8 @@ msgstr "right now"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "Run a local transcription API and the command line tool. They aren't part of the trial."
+msgid "locked.api.line.v3"
+msgstr "Run a local transcription API and the command line tool."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6880,11 +6910,6 @@ msgstr "The API server didn't stop, so it couldn't restart."
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "The cleanup model doesn't support this language yet."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "The command line comes with a purchased Glimpse license. It isn't part of the trial."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

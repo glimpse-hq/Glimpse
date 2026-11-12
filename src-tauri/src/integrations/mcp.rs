@@ -342,7 +342,7 @@ impl LibraryServer {
 
     // The server can outlive the license it started with.
     fn require_license(&self) -> Result<(), String> {
-        crate::license::require_active_license(&self.settings, "glimpse mcp")
+        crate::license::require_license_gate(&self.settings, "glimpse mcp")
     }
 }
 

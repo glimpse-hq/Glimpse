@@ -32,6 +32,8 @@ struct ProcessedTranscript {
     llm_seconds: Option<f32>,
     llm_outcome: &'static str,
     insert_latency_seconds: Option<f32>,
+    field_read_ms: Option<u32>,
+    paste_ms: Option<u32>,
 }
 
 enum ProcessTranscriptOutcome {
@@ -64,6 +66,8 @@ pub(crate) struct DictationOrigin {
     /// hold or toggle.
     pub(crate) trigger: &'static str,
     pub(crate) cleanup_shortcut: bool,
+    /// When the recording started, before the model load it kicks off.
+    pub(crate) started_at: Option<Instant>,
     /// When the shortcut was released or pressed to stop.
     pub(crate) stopped_at: Instant,
     pub(crate) preflight_generation: u64,
@@ -82,6 +86,14 @@ struct DictationStats {
     language: Option<&'static str>,
     detected_language: Option<&'static str>,
     compute: Option<&'static str>,
+    mic_open_ms: Option<u32>,
+    first_audio_ms: Option<u32>,
+    trailing_silence_ms: Option<u32>,
+    model_loaded: Option<bool>,
+    model_load_ms: Option<u32>,
+    release_to_transcribe_ms: Option<u32>,
+    field_read_ms: Option<u32>,
+    paste_ms: Option<u32>,
 }
 
 impl DictationStats {
@@ -105,11 +117,18 @@ impl DictationStats {
                 .filter(|_| language == "auto")
                 .map(analytics::language_label),
             compute,
+            field_read_ms: processed.field_read_ms,
+            paste_ms: processed.paste_ms,
             ..Default::default()
         }
     }
 
-    fn with_origin(self, origin: DictationOrigin, is_edit: bool) -> Self {
+    fn with_origin(
+        self,
+        origin: DictationOrigin,
+        is_edit: bool,
+        mic: Option<crate::recorder::InputStats>,
+    ) -> Self {
         let action = if is_edit {
             "edit"
         } else if origin.cleanup_shortcut {
@@ -120,6 +139,27 @@ impl DictationStats {
         Self {
             trigger: Some(origin.trigger),
             action: Some(action),
+            mic_open_ms: mic.map(|mic| mic.open_ms),
+            first_audio_ms: mic.and_then(|mic| mic.first_audio_ms),
+            trailing_silence_ms: mic.and_then(|mic| mic.trailing_silence_ms),
+            ..self
+        }
+    }
+
+    /// A model load that ended after the recording started means the model
+    /// wasn't loaded when the shortcut was pressed.
+    fn with_model_load(
+        self,
+        started_at: Option<Instant>,
+        last_load: Option<(Instant, Instant)>,
+    ) -> Self {
+        let Some(started_at) = started_at else {
+            return self;
+        };
+        let load = last_load.filter(|(_, ended)| *ended > started_at);
+        Self {
+            model_loaded: Some(load.is_none()),
+            model_load_ms: load.map(|(start, end)| end.duration_since(start).as_millis() as u32),
             ..self
         }
     }
@@ -210,8 +250,8 @@ fn watch_for_stall(
                 limit
             } else {
                 // The clock restarts when a load ends during this dictation.
-                match transcriber.load_ended_at() {
-                    Some(ended) if ended > started => {
+                match transcriber.last_load() {
+                    Some((_, ended)) if ended > started => {
                         (ended + limit).saturating_duration_since(Instant::now())
                     }
                     _ => Duration::ZERO,
@@ -341,6 +381,10 @@ pub(crate) fn queue_transcription(
         )
         .await;
         let asr_seconds = transcription_started_at.elapsed().as_secs_f32();
+        let last_load = app_handle
+            .state::<AppState>()
+            .local_transcriber()
+            .last_load();
         let active_context = context_task.await.ok().flatten();
         let active_mode =
             mode_context::resolve_active_personality(&settings, active_context.as_ref());
@@ -447,7 +491,7 @@ pub(crate) fn queue_transcription(
                     return;
                 }
 
-                let stats = DictationStats::new(
+                let mut stats = DictationStats::new(
                     &settings,
                     &processed,
                     active_mode.as_ref(),
@@ -455,7 +499,15 @@ pub(crate) fn queue_transcription(
                     result.language.as_deref(),
                     result.compute,
                 )
-                .with_origin(origin, is_edit);
+                .with_origin(origin, is_edit, mic);
+                stats.release_to_transcribe_ms = Some(
+                    transcription_started_at
+                        .duration_since(origin.stopped_at)
+                        .as_millis() as u32,
+                );
+                if !use_remote {
+                    stats = stats.with_model_load(origin.started_at, last_load);
+                }
                 let mut metadata = build_transcription_metadata(TranscriptionMetadataInput {
                     saved: &saved_for_task,
                     settings: &settings,
@@ -1055,6 +1107,8 @@ async fn process_transcript_text(
 
     let mut pasted = false;
     let mut insert_latency_seconds = None;
+    let mut field_read_ms = None;
+    let mut paste_ms = None;
     let answered = auto_paste
         .then(|| crate::voice_prompt::answer(app, &final_transcript))
         .flatten();
@@ -1079,9 +1133,11 @@ async fn process_transcript_text(
             if cancelled() {
                 return None;
             }
+            let read_started = Instant::now();
             let pre_paste_snapshot = can_read_field
                 .then(assistive::focused_text_snapshot)
                 .flatten();
+            let field_read = can_read_field.then(|| read_started.elapsed());
             let text = pre_paste_snapshot
                 .as_ref()
                 .map(|snapshot| {
@@ -1091,15 +1147,19 @@ async fn process_transcript_text(
             if cancelled() {
                 return None;
             }
+            let paste_started = Instant::now();
             let result = assistive::paste_text(&text);
-            Some((result, pre_paste_snapshot, text))
+            let paste = paste_started.elapsed();
+            Some((result, pre_paste_snapshot, text, field_read, paste))
         })
         .await;
         end_step(Activity::Inserting, previous_activity);
         match paste_result {
             Ok(None) => return ProcessTranscriptOutcome::Cancelled,
-            Ok(Some((Ok(()), pre_paste_snapshot, pasted_text))) => {
+            Ok(Some((Ok(()), pre_paste_snapshot, pasted_text, field_read, paste))) => {
                 pasted = true;
+                field_read_ms = field_read.map(|read| read.as_millis() as u32);
+                paste_ms = Some(paste.as_millis() as u32);
                 insert_latency_seconds = stopped_at.map(|at| at.elapsed().as_secs_f32());
                 if let (true, Some(pre_paste_snapshot)) =
                     (should_watch_auto_dictionary, pre_paste_snapshot)
@@ -1115,7 +1175,7 @@ async fn process_transcript_text(
                     );
                 }
             }
-            Ok(Some((Err(err), _, _))) => {
+            Ok(Some((Err(err), ..))) => {
                 #[cfg(target_os = "macos")]
                 let accessibility_missing = err.is::<assistive::AccessibilityMissing>();
                 #[cfg(not(target_os = "macos"))]
@@ -1165,6 +1225,8 @@ async fn process_transcript_text(
         llm_seconds,
         llm_outcome,
         insert_latency_seconds,
+        field_read_ms,
+        paste_ms,
     })
 }
 
@@ -1481,6 +1543,14 @@ fn emit_transcription_complete_with_cleanup(
             language: stats.language,
             detected_language: stats.detected_language,
             compute: stats.compute,
+            mic_open_ms: stats.mic_open_ms,
+            first_audio_ms: stats.first_audio_ms,
+            trailing_silence_ms: stats.trailing_silence_ms,
+            model_loaded: stats.model_loaded,
+            model_load_ms: stats.model_load_ms,
+            release_to_transcribe_ms: stats.release_to_transcribe_ms,
+            field_read_ms: stats.field_read_ms,
+            paste_ms: stats.paste_ms,
             ..Default::default()
         },
     );
@@ -1555,12 +1625,14 @@ fn emit_transcription_complete_with_cleanup(
 
     let settings = app.state::<AppState>().current_settings();
     crate::tray::refresh_menus(app, &settings);
+    let local = !remote_speech::is_configured(&settings);
 
     crate::auto_delete::schedule_prune(app.clone(), settings);
 
     let update_state = app.state::<AppState>().update_state().clone();
-    let update_toast_shown = update_checker::maybe_show_update_toast(app, &update_state);
-    crate::notifications::evaluate_after_use(app, !update_toast_shown);
+    let toast_shown = (local && crate::speech::engine::show_cpu_fallback_notice(app))
+        || update_checker::maybe_show_update_toast(app, &update_state);
+    crate::notifications::evaluate_after_use(app, !toast_shown);
     crate::asks::evaluate_after_use(app);
 
     persisted
@@ -1892,6 +1964,8 @@ fn transcription_error_key(message: &str) -> &'static str {
         "native.error.microphone"
     } else if msg_lower.contains("permission") {
         "native.error.permission"
+    } else if msg_lower.contains("processor") {
+        "native.error.cpu_unsupported"
     } else if msg_lower.contains("timed out") {
         "native.error.transcription_timeout"
     } else if msg_lower.contains("auto paste") {
@@ -2456,6 +2530,7 @@ pub(crate) fn finalize_streaming_transcription(
         return;
     };
     let http = state.http();
+    let last_load = state.local_transcriber().last_load();
     let app_handle = app.clone();
 
     tauri::async_runtime::spawn(async move {
@@ -2551,7 +2626,8 @@ pub(crate) fn finalize_streaming_transcription(
             None,
             None,
         )
-        .with_origin(origin, is_edit);
+        .with_origin(origin, is_edit, mic)
+        .with_model_load(origin.started_at, last_load);
         let metadata = storage::TranscriptionMetadata {
             speech_model: resolve_speech_model_label(&settings),
             llm_model: processed.llm_model,

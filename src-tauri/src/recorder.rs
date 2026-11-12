@@ -241,6 +241,8 @@ pub struct InputStats {
     pub open_ms: u32,
     pub first_audio_ms: Option<u32>,
     pub peak: f32,
+    /// From the last frame the voice detector marked as speech to the stop.
+    pub trailing_silence_ms: Option<u32>,
 }
 
 // A live microphone's noise floor stays above this; dead inputs send digital zeros.
@@ -289,6 +291,7 @@ impl InputProbe {
             open_ms,
             first_audio_ms: (first != Self::NO_AUDIO).then_some((first / 1000) as u32),
             peak: f32::from_bits(self.peak_bits.load(Ordering::Relaxed)),
+            trailing_silence_ms: None,
         }
     }
 }
@@ -911,7 +914,10 @@ impl RecorderCore {
                     ended_at,
                     pending_path,
                     speech_percentage: processed.speech_percentage,
-                    input: Some(active.probe.stats(active.open_ms)),
+                    input: Some(InputStats {
+                        trailing_silence_ms: processed.trailing_silence_ms,
+                        ..active.probe.stats(active.open_ms)
+                    }),
                 }))
             }
             _ => {
@@ -927,6 +933,7 @@ struct ProcessedAudio {
     sample_rate: u32,
     channels: u16,
     speech_percentage: Option<f32>,
+    trailing_silence_ms: Option<u32>,
 }
 
 /// Raw capture samples as the stopped recording would have them: 16 kHz mono.
@@ -942,6 +949,7 @@ fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> 
             sample_rate,
             channels,
             speech_percentage: None,
+            trailing_silence_ms: None,
         };
     }
 
@@ -954,7 +962,7 @@ fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> 
         resample_audio(&mono, sample_rate, WAV_SAMPLE_RATE)
     };
 
-    let (trimmed, speech_percentage) = trim_silence(&mono, WAV_SAMPLE_RATE);
+    let (trimmed, speech_percentage, trailing_silence_ms) = trim_silence(&mono, WAV_SAMPLE_RATE);
     let mut processed = if trimmed.is_empty() { mono } else { trimmed };
 
     apply_compression(&mut processed);
@@ -971,6 +979,7 @@ fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> 
         sample_rate: WAV_SAMPLE_RATE,
         channels: 1,
         speech_percentage,
+        trailing_silence_ms,
     }
 }
 
@@ -1445,18 +1454,19 @@ fn apply_peak_limiter(samples: &mut [f32]) {
 }
 
 /// Returns the trimmed samples plus the speech percentage of the kept audio,
-/// so validation can reuse this VAD pass instead of running its own. Returns
-/// None when no usable measurement was made (e.g. no speech detected here -
+/// so validation can reuse this VAD pass instead of running its own, and the
+/// silence after the last speech frame. Returns None when no usable
+/// measurement was made (e.g. no speech detected here -
 /// compression/normalization may still surface quiet speech for validation).
-fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
+fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>, Option<u32>) {
     if samples.is_empty() {
-        return (Vec::new(), None);
+        return (Vec::new(), None, None);
     }
 
     let to_i16 = |s: &f32| (s.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16;
     let analysis_i16: Vec<i16> = samples.iter().map(to_i16).collect();
     let Some(speech) = glimpse_speech::vad::analyze(&analysis_i16, sample_rate) else {
-        return (samples.to_vec(), None);
+        return (samples.to_vec(), None, None);
     };
 
     // Silero analyzes at 16 kHz whatever the input rate.
@@ -1465,8 +1475,14 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
     let frame_len = (vad_rate as usize * frame_ms) / 1000;
     let speech_frames = speech.frames(frame_len);
     if speech_frames.iter().all(|flag| !*flag) {
-        return (samples.to_vec(), None);
+        return (samples.to_vec(), None, None);
     }
+    let trailing_frames = speech_frames
+        .iter()
+        .rev()
+        .take_while(|flag| !**flag)
+        .count();
+    let trailing_silence_ms = Some((trailing_frames * frame_ms) as u32);
     let keep_mask = keep_frames(&speech.regions(frame_len), frame_ms);
 
     // Speech share of the kept frames, mirroring what a VAD pass over the
@@ -1503,7 +1519,7 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
     }
 
     if intervals.is_empty() {
-        return (samples.to_vec(), speech_percentage);
+        return (samples.to_vec(), speech_percentage, trailing_silence_ms);
     }
 
     let mut output = Vec::new();
@@ -1516,9 +1532,9 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
     }
 
     if output.is_empty() {
-        (samples.to_vec(), speech_percentage)
+        (samples.to_vec(), speech_percentage, trailing_silence_ms)
     } else {
-        (output, speech_percentage)
+        (output, speech_percentage, trailing_silence_ms)
     }
 }
 

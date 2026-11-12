@@ -26,9 +26,20 @@ pub fn track_analytics_opt_in(app: &tauri::AppHandle<AppRuntime>) {
 /// your profile with license status, the selected speech model, lifetime
 /// dictation counts, the dictation language (auto, a supported language code,
 /// or other), the app and OS display languages, and on macOS whether the
-/// microphone and accessibility permissions are granted.
-pub fn track_app_started(app: &tauri::AppHandle<AppRuntime>) {
-    let Some(mut event) = build_event(app, "app_started", json!({}), true) else {
+/// microphone and accessibility permissions are granted. `ready_ms` is the
+/// time from process start until the tray and shortcuts are set up,
+/// `cpu_fallback` says why local speech models were moved to the CPU, and on
+/// Windows `cpu_features` lists the processor's instruction set extensions.
+pub fn track_app_started(app: &tauri::AppHandle<AppRuntime>, ready_ms: u64) {
+    let mut props = json!({ "ready_ms": ready_ms });
+    if let Some(reason) = crate::speech::engine::cpu_fallback() {
+        props["cpu_fallback"] = reason.into();
+    }
+    #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+    {
+        props["cpu_features"] = cpu_features().into();
+    }
+    let Some(mut event) = build_event(app, "app_started", props, true) else {
         return;
     };
     let state = app.state::<AppState>();
@@ -124,16 +135,41 @@ pub struct TranscriptionEvent<'a> {
     /// vulkan_integrated, cpu, apple, or other.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub compute: Option<&'static str>,
+    /// Microphone dictations only, in milliseconds from the device starting to open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mic_open_ms: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_audio_ms: Option<u32>,
+    /// Last detected speech to the stop.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trailing_silence_ms: Option<u32>,
+    /// Whether the local speech model was loaded when the recording started.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model_loaded: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model_load_ms: Option<u32>,
+    /// Stop to the speech model starting: audio cleanup, voice detection, WAV save.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub release_to_transcribe_ms: Option<u32>,
+    /// Reading the focused field before pasting.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field_read_ms: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paste_ms: Option<u32>,
 }
 
 /// Records that a transcription succeeded, with the fields described on
-/// `TranscriptionEvent`. The transcribed text itself is never included.
+/// `TranscriptionEvent` and, when local speech models were moved to the CPU,
+/// why (`cpu_fallback`). The transcribed text itself is never included.
 pub fn track_transcription_completed(
     app: &tauri::AppHandle<AppRuntime>,
     props: TranscriptionEvent,
 ) {
     DISCARD_STREAK.store(0, Ordering::Relaxed);
-    let props = serde_json::to_value(&props).unwrap_or_else(|_| json!({}));
+    let mut props = serde_json::to_value(&props).unwrap_or_else(|_| json!({}));
+    if let Some(reason) = crate::speech::engine::cpu_fallback() {
+        props["cpu_fallback"] = reason.into();
+    }
     capture_event(app, "transcription_completed", props);
 }
 
@@ -593,16 +629,31 @@ pub fn track_model_downloaded(app: &tauri::AppHandle<AppRuntime>, model: &str) {
     capture_event(app, "model_downloaded", json!({ "model": model }));
 }
 
-/// Records a model download/install phase and bounded failure reason.
+/// Records a model download/install phase and bounded failure reason, plus
+/// free disk space as a bucket when the reason is storage.
 pub fn track_model_download_failed(
     app: &tauri::AppHandle<AppRuntime>,
     model: &str,
     stage: &str,
     reason: impl Into<ErrorDetail>,
+    free_bytes: Option<u64>,
 ) {
     let mut props = json!({ "model": model, "stage": stage });
     reason.into().insert_into(&mut props);
+    if let Some(bytes) = free_bytes {
+        props["free_space"] = free_space_bucket(bytes).into();
+    }
     capture_event(app, "model_download_failed", props);
+}
+
+// Splits around the 3 GiB headroom plus a default model, and the old 5 GiB one.
+fn free_space_bucket(bytes: u64) -> &'static str {
+    match bytes as f64 / (1u64 << 30) as f64 {
+        gib if gib < 1.0 => "under_1gb",
+        gib if gib < 4.0 => "1_to_4gb",
+        gib if gib < 6.0 => "4_to_6gb",
+        _ => "over_6gb",
+    }
 }
 
 /// Records a manual or automatic update phase and bounded failure reason.

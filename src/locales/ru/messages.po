@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "Микрофон не передаёт звук в Glimpse. Проверьте, какой микрофон выбран в настройках."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "Диктовка бесплатна с любой моделью: локальная транскрипция, словарь, замены и история без ограничений по количеству слов и без подписки. Библиотека, Запись, Очистка и Персонализация входят в лицензию Glimpse, разовая покупка за $25 для одного Mac или ПК либо за $39 для использования не более чем на трёх устройствах. Их можно бесплатно попробовать в течение 14 дней. Для локального API-сервера и командной строки нужна купленная лицензия, на пробный период они не распространяются. Введите ключ лицензии в разделе «Настройки» → «Аккаунт»."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "Запустите локальный API-сервер транскрипции и инструмент командной строки. Они не входят в пробный период."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "Для командной строки нужна купленная лицензия Glimpse. Она не входит в пробный период."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -3265,8 +3280,13 @@ msgstr "Диктовка с этим сочетанием клавиш вста�
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "Диктовка бесплатна с любой моделью: локальная транскрипция, словарь, замены и история без ограничений по количеству слов и без подписки. Библиотека, Запись, Очистка и Персонализация входят в лицензию Glimpse, разовая покупка за $25 для одного Mac или ПК либо за $39 для использования не более чем на трёх устройствах. Их можно бесплатно попробовать в течение 14 дней. Для локального API-сервера и командной строки нужна купленная лицензия, на пробный период они не распространяются. Введите ключ лицензии в разделе «Настройки» → «Аккаунт»."
+msgid "faq.free.answer.v8"
+msgstr "Диктовка бесплатна с любой моделью: локальная транскрипция, словарь, замены и история без ограничений по количеству слов и без подписки. Библиотека, Запись, Очистка, Персонализация, локальный API-сервер и командная строка входят в лицензию Glimpse, разовая покупка за $25 для одного Mac или ПК либо за $39 для использования не более чем на трёх устройствах. Их можно бесплатно попробовать в течение 14 дней. Введите ключ лицензии в разделе «Настройки» → «Аккаунт»."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "Диктовка работает медленнее из-за проблемы с графическим драйвером. Обновление драйвера может её исправить."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "Glimpse C1 не может работать на графическом процессоре этого компьютера."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4508,6 +4533,11 @@ msgstr "Локальный API"
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.group.server"
 msgstr "Локальный сервер"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "Локальные речевые модели не могут работать на процессоре этого компьютера."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5989,8 +6019,8 @@ msgstr "прямо сейчас"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "Запустите локальный API-сервер транскрипции и инструмент командной строки. Они не входят в пробный период."
+msgid "locked.api.line.v3"
+msgstr "Запустите локальный API-сервер транскрипции и инструмент командной строки."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6880,11 +6910,6 @@ msgstr "Сервер API не остановился, поэтому перез�
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "Модель очистки пока не поддерживает этот язык."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "Для командной строки нужна купленная лицензия Glimpse. Она не входит в пробный период."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

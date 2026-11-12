@@ -1,4 +1,7 @@
+#[cfg(target_os = "windows")]
+use std::path::Path;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
@@ -28,7 +31,7 @@ pub struct LocalTranscriber {
     exclusive: Mutex<()>,
     // A dictation can wait on `exclusive` behind a load it didn't start.
     loading: Mutex<Option<String>>,
-    load_ended: Mutex<Option<Instant>>,
+    last_load: Mutex<Option<(Instant, Instant)>>,
 }
 
 impl LocalTranscriber {
@@ -45,7 +48,7 @@ impl LocalTranscriber {
             warm_in_flight: Mutex::new(None),
             exclusive: Mutex::new(()),
             loading: Mutex::new(None),
-            load_ended: Mutex::new(None),
+            last_load: Mutex::new(None),
         }
     }
 
@@ -113,6 +116,7 @@ impl LocalTranscriber {
 
     // Caller must hold `exclusive` (directly or via a streaming session).
     fn warm_locked(&self, model: &ReadyModel) -> Result<()> {
+        check_cpu()?;
         let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
         let previous_activity = analytics::activity();
@@ -121,7 +125,7 @@ impl LocalTranscriber {
             self.set_loading(Some(&model.key));
         }
         let result = self.service.preload_and_warm(&model.key);
-        self.end_load(was_loaded);
+        self.end_load(was_loaded, started);
         // A dictation step that started meanwhile keeps its own activity.
         if analytics::activity() == Activity::ModelLoading {
             analytics::set_activity(previous_activity);
@@ -168,9 +172,9 @@ impl LocalTranscriber {
         result
     }
 
-    fn end_load(&self, was_loaded: bool) {
+    fn end_load(&self, was_loaded: bool, started: Instant) {
         if !was_loaded {
-            *self.load_ended.lock() = Some(Instant::now());
+            *self.last_load.lock() = Some((started, Instant::now()));
         }
         self.set_loading(None);
     }
@@ -193,9 +197,9 @@ impl LocalTranscriber {
         self.loading.lock().clone()
     }
 
-    /// When the last model load finished.
-    pub fn load_ended_at(&self) -> Option<Instant> {
-        *self.load_ended.lock()
+    /// When the last model load started and finished.
+    pub fn last_load(&self) -> Option<(Instant, Instant)> {
+        *self.last_load.lock()
     }
 
     pub fn loaded_model_id(&self) -> Option<String> {
@@ -323,12 +327,13 @@ impl LocalTranscriber {
         language: Option<&str>,
         granularity: Option<TimestampGranularity>,
     ) -> Result<glimpse_speech::Transcription> {
+        check_cpu()?;
         let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
         if !was_loaded {
             self.set_loading(Some(&model.key));
             let loaded = self.service.preload(&model.key);
-            self.end_load(false);
+            self.end_load(false, started);
             loaded?;
         }
         let response = self.service.transcribe(TranscribeRequest {
@@ -430,6 +435,91 @@ impl StreamingGuard<'_> {
         self.transcriber.service.streaming_reset();
         transcript
     }
+}
+
+/// Fails on a processor missing an instruction set the Windows speech engine is
+/// built for (AVX2 baseline with FMA, F16C and BMI2), where engine code would
+/// end the process.
+pub fn check_cpu() -> Result<()> {
+    #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+    if !(std::arch::is_x86_feature_detected!("avx")
+        && std::arch::is_x86_feature_detected!("avx2")
+        && std::arch::is_x86_feature_detected!("fma")
+        && std::arch::is_x86_feature_detected!("f16c")
+        && std::arch::is_x86_feature_detected!("bmi2"))
+    {
+        anyhow::bail!("Local speech models can't run on this computer's processor.");
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+const CPU_FALLBACK_FILE: &str = "cpu_fallback.txt";
+static CPU_FALLBACK: AtomicBool = AtomicBool::new(false);
+static CPU_FALLBACK_NOTICE: AtomicBool = AtomicBool::new(false);
+
+/// Why local speech models run on the CPU instead of the GPU, if they do.
+pub fn cpu_fallback() -> Option<&'static str> {
+    CPU_FALLBACK
+        .load(Ordering::Relaxed)
+        .then_some("driver_crash")
+}
+
+/// After this app version crashed inside a graphics driver, keeps local speech
+/// models on the CPU until the app or a graphics driver changes. Reads the
+/// crash marker before analytics removes it, and must run before any model
+/// loads.
+#[cfg(target_os = "windows")]
+pub fn choose_compute(crash_marker: &Path) {
+    let path = crash_marker.with_file_name(CPU_FALLBACK_FILE);
+    let key = format!(
+        "version={}\ndriver={}\n",
+        env!("CARGO_PKG_VERSION"),
+        crate::platform::windows::graphics_drivers()
+    );
+    let saved = std::fs::read_to_string(&path).unwrap_or_default();
+    if !saved.starts_with(&key) {
+        let _ = std::fs::remove_file(&path);
+        // A crash while already on the CPU doesn't count against the new driver.
+        let crashed_in_driver = saved.is_empty()
+            && std::fs::read_to_string(crash_marker)
+                .is_ok_and(|marker| analytics::crashed_in_driver(&marker));
+        if !crashed_in_driver {
+            return;
+        }
+        analytics::write_marker_atomically(&path, &key);
+    }
+    if let Err(err) = check_cpu().and_then(|()| Ok(glimpse_speech::use_cpu_only()?)) {
+        tracing::error!("Failed to keep speech models off the GPU: {err}");
+        return;
+    }
+    tracing::info!("Speech models run on the CPU after a graphics driver crash");
+    CPU_FALLBACK.store(true, Ordering::Relaxed);
+    CPU_FALLBACK_NOTICE.store(!saved.ends_with("notified\n"), Ordering::Relaxed);
+}
+
+/// Tells the user once that local speech models moved to the CPU.
+pub fn show_cpu_fallback_notice(app: &tauri::AppHandle<crate::AppRuntime>) -> bool {
+    if !CPU_FALLBACK_NOTICE.swap(false, Ordering::Relaxed) {
+        return false;
+    }
+    #[cfg(target_os = "windows")]
+    if let Ok(dir) = tauri::Manager::path(app).app_data_dir() {
+        let path = dir.join(CPU_FALLBACK_FILE);
+        if let Ok(saved) = std::fs::read_to_string(&path) {
+            analytics::write_marker_atomically(&path, &format!("{saved}notified\n"));
+        }
+    }
+    crate::toast::emit_toast(
+        app,
+        crate::toast::Payload {
+            toast_type: "warning".to_string(),
+            message: crate::toast::native(app, "native.toast.cpu_fallback"),
+            duration: Some(10_000),
+            ..Default::default()
+        },
+    );
+    true
 }
 
 fn plain_success(

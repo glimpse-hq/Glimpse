@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "Glimpse"
-version = "1.4.5"
+version = "1.5.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -2203,8 +2203,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-language"
-version = "0.1.1"
-source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?tag=0.1.1#1f2a89cb57eca0ce9de7b1f9b4a0f62c8cd224c3"
+version = "0.2.0"
+source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?rev=ac84da52ce6ec4927ff546a9f0df862a6eff77d2#ac84da52ce6ec4927ff546a9f0df862a6eff77d2"
 dependencies = [
  "ash",
  "dispatch2",
@@ -2221,8 +2221,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "3.0.4"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.4#d65b418bc6833eee3fa910b39b2b9cba0f816f10"
+version = "3.0.5"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?rev=0410ffb77c233713b92b640e6894119bccef6796#0410ffb77c233713b92b640e6894119bccef6796"
 dependencies = [
  "anyhow",
  "axum",
@@ -6439,8 +6439,8 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp"
-version = "0.4.1"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=652cef8138df583c75344dc65411ddc4a550d065#652cef8138df583c75344dc65411ddc4a550d065"
+version = "0.4.2"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=bfbccc66ad7b261121688cc163330c8d6f9cf47d#bfbccc66ad7b261121688cc163330c8d6f9cf47d"
 dependencies = [
  "log",
  "thiserror 2.0.21",
@@ -6449,8 +6449,8 @@ dependencies = [
 
 [[package]]
 name = "transcribe-cpp-sys"
-version = "0.4.1"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=652cef8138df583c75344dc65411ddc4a550d065#652cef8138df583c75344dc65411ddc4a550d065"
+version = "0.4.2"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=bfbccc66ad7b261121688cc163330c8d6f9cf47d#bfbccc66ad7b261121688cc163330c8d6f9cf47d"
 dependencies = [
  "cmake",
  "serde_json",

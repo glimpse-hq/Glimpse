@@ -8,6 +8,7 @@ use reqwest::header::RETRY_AFTER;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashSet;
+use std::ops::ControlFlow;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
@@ -18,6 +19,11 @@ use crate::settings::{Personality, TranscriptionMode, UserSettings};
 
 const CHAT_TIMEOUT: Duration = Duration::from_secs(60);
 const MODELS_TIMEOUT: Duration = Duration::from_secs(5);
+// A cleanup model run gets the base, plus 10 ms per input token and 50 ms per output token allowed. The
+// slowest working GPUs prefill in up to 2.4 s and write 57 tokens a second.
+const BONSAI_BASE_BUDGET: Duration = Duration::from_secs(10);
+const BONSAI_INPUT_TOKEN_BUDGET: Duration = Duration::from_millis(10);
+const BONSAI_OUTPUT_TOKEN_BUDGET: Duration = Duration::from_millis(50);
 
 const CLEANUP_TASK: &str = "Clean up this speech-to-text dictation for insertion into a document.";
 
@@ -117,6 +123,13 @@ pub async fn cleanup_transcription_with_context(
     } else {
         edited_global_rules(settings, context)
     };
+    let bound = if has_style_guidance {
+        OutputBound::Mode
+    } else if custom_rules.is_some() {
+        OutputBound::Rules
+    } else {
+        OutputBound::Cleanup
+    };
 
     let result = run_text_task(
         client,
@@ -132,7 +145,7 @@ pub async fn cleanup_transcription_with_context(
             uses_bonsai_provider(settings),
         ),
         text,
-        !has_style_guidance,
+        bound,
     )
     .await?;
     let result = restore_input_escapes(text, &result);
@@ -181,7 +194,7 @@ pub async fn edit_transcription(
             false,
         ),
         selected_text,
-        false,
+        OutputBound::Edit,
     )
     .await?;
 
@@ -515,6 +528,39 @@ impl TextTaskKind {
     }
 }
 
+/// How long on-device output may get, by request.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum OutputBound {
+    /// Cleanup with the default rules, which keeps about the input's length.
+    Cleanup,
+    /// Cleanup with edited Global rules, which can restyle or translate.
+    Rules,
+    Mode,
+    Edit,
+}
+
+impl OutputBound {
+    // A spoken numbered list the safety check still accepts takes 3.8 times its input's tokens.
+    // Modes, edited rules and edits can also add greetings, sign-offs or new text.
+    fn bonsai_max_tokens(self, input_tokens: usize) -> usize {
+        match self {
+            Self::Cleanup => input_tokens * 4 + 32,
+            Self::Rules | Self::Mode => input_tokens * 4 + 128,
+            Self::Edit => input_tokens * 4 + 512,
+        }
+    }
+}
+
+/// What the cleanup model gets for `text` (`input_tokens` long) with the default rules: system
+/// prompt, user turn, output cap.
+pub(crate) fn bonsai_cleanup_request(text: &str, input_tokens: usize) -> (String, String, usize) {
+    (
+        build_cleanup_system_prompt(&UserSettings::default(), None, None),
+        build_user_content(TextTaskKind::Cleanup, text, None, false, true),
+        OutputBound::Cleanup.bonsai_max_tokens(input_tokens),
+    )
+}
+
 #[derive(Debug, Serialize)]
 struct ChatRequest {
     model: String,
@@ -732,26 +778,18 @@ async fn run_text_task(
     system_prompt: String,
     user_content: String,
     fallback_text: &str,
-    output_tracks_input: bool,
+    bound: OutputBound,
 ) -> Result<String, RemoteError> {
-    // On-device models can loop until their context is full (Apple's took 53 s
-    // on an empty transcript in testing). Cleanup output tracks input length.
-    let on_device_max_tokens = if output_tracks_input {
-        task.max_tokens()
-            .min(u32::try_from(fallback_text.len() / 2 + 256).unwrap_or(u32::MAX))
-    } else {
-        task.max_tokens()
-    };
     if uses_bonsai_provider(settings) {
         let model = crate::cleanup_model::resolve()
             .ok_or_else(|| remote_lib::config_error("The cleanup model is not installed"))?;
         let raw = run_bonsai_text_task(
             model,
             task,
-            on_device_max_tokens,
+            bound,
             system_prompt,
             user_content,
-            fallback_text.split_whitespace().count(),
+            fallback_text,
         )
         .await?;
         return Ok(
@@ -759,7 +797,15 @@ async fn run_text_task(
         );
     }
     if uses_apple_provider(settings) {
-        let raw = run_apple_text_task(task, on_device_max_tokens, system_prompt, user_content)
+        // On-device models can loop until their context is full (Apple's took 53 s
+        // on an empty transcript in testing). Cleanup output tracks input length.
+        let max_tokens = if matches!(bound, OutputBound::Cleanup | OutputBound::Rules) {
+            task.max_tokens()
+                .min(u32::try_from(fallback_text.len() / 2 + 256).unwrap_or(u32::MAX))
+        } else {
+            task.max_tokens()
+        };
+        let raw = run_apple_text_task(task, max_tokens, system_prompt, user_content)
             .await
             .map_err(|err| {
                 let mut error =
@@ -848,41 +894,71 @@ async fn run_apple_text_task(
 async fn run_bonsai_text_task(
     model: &'static str,
     task: TextTaskKind,
-    max_tokens: u32,
+    bound: OutputBound,
     system_prompt: String,
     user_content: String,
-    input_words: usize,
+    input: &str,
 ) -> Result<String, RemoteError> {
     let started = Instant::now();
+    let task_failed =
+        |err| remote_lib::transport_error(format!("Cleanup model task failed: {err}"));
+    let timed_out = || remote_lib::transport_error("The cleanup model timed out");
+    let open = tokio::task::spawn_blocking({
+        let input = input.to_string();
+        move || {
+            let session = crate::cleanup_model::open(model)?;
+            let input_tokens = session.count_tokens(&input)?;
+            Ok((session, input_tokens))
+        }
+    });
+    let (session, input_tokens) = tokio::time::timeout(CHAT_TIMEOUT, open)
+        .await
+        .map_err(|_| timed_out())?
+        .map_err(task_failed)?
+        .map_err(bonsai_error)?;
+    let max_tokens = bound
+        .bonsai_max_tokens(input_tokens)
+        .min(task.max_tokens() as usize);
+    let word_limit = (bound == OutputBound::Cleanup)
+        .then(|| cleanup_word_limit(input))
+        .flatten();
+    let budget = (BONSAI_BASE_BUDGET
+        + BONSAI_INPUT_TOKEN_BUDGET * input_tokens as u32
+        + BONSAI_OUTPUT_TOKEN_BUDGET * max_tokens as u32)
+        .min(CHAT_TIMEOUT);
     let cancel = Arc::new(AtomicBool::new(false));
     let generate = tokio::task::spawn_blocking({
         let cancel = Arc::clone(&cancel);
         move || {
-            crate::cleanup_model::generate(
-                model,
+            let mut text = String::new();
+            session.generate(
                 &system_prompt,
                 &user_content,
-                max_tokens as usize,
+                max_tokens,
                 &cancel,
+                |piece| {
+                    text.push_str(piece);
+                    if word_limit.is_some_and(|limit| exceeds_word_limit(&text, limit)) {
+                        ControlFlow::Break(())
+                    } else {
+                        ControlFlow::Continue(())
+                    }
+                },
             )
         }
     });
-    let run = match tokio::time::timeout(CHAT_TIMEOUT, generate).await {
-        Ok(joined) => joined
-            .map_err(|err| {
-                remote_lib::transport_error(format!("Cleanup model task failed: {err}"))
-            })?
-            .map_err(bonsai_error)?,
+    let run = match tokio::time::timeout(budget, generate).await {
+        Ok(joined) => joined.map_err(task_failed)?.map_err(bonsai_error)?,
         Err(_) => {
             cancel.store(true, Ordering::Relaxed);
-            return Err(remote_lib::transport_error("The cleanup model timed out"));
+            return Err(timed_out());
         }
     };
     let task = match task {
         TextTaskKind::Cleanup => "cleanup",
         TextTaskKind::Edit => "edit",
     };
-    crate::analytics::dictation::track_cleanup_model_run(task, model, &run, input_words);
+    crate::analytics::dictation::track_cleanup_model_run(task, model, &run, input);
     let generation = run.generation;
     let stats = &generation.stats;
     tracing::info!(
@@ -893,8 +969,9 @@ async fn run_bonsai_text_task(
         stats.generated_tokens,
         generation.stop
     );
-    // A stop short of the end-of-turn token can cut the text off mid-sentence.
-    if generation.stop != StopReason::Eos {
+    // A stop short of the end-of-turn token can cut the text off mid-sentence. An early stop is
+    // output the safety check rejects.
+    if !matches!(generation.stop, StopReason::Eos | StopReason::Stopped) {
         let mut error = remote_lib::transport_error("Cleanup model output may be cut off");
         error.code = Some(INPUT_UNSUITABLE_CODE.to_string());
         return Err(error);
@@ -1289,25 +1366,47 @@ fn cleanup_result_looks_safe(
         return true;
     }
 
-    let source_words = word_count(source);
-    if source_words < 4 {
+    let Some(max_words) = cleanup_word_limit(source) else {
         return true;
-    }
+    };
 
     let source_tokens = significant_tokens(source);
-    if source_tokens.len() < 3 {
-        return true;
-    }
-
     let candidate_tokens = significant_tokens(candidate);
     let shared = source_tokens.intersection(&candidate_tokens).count() as f32;
     // Corrections drop source words on purpose; answers, commentary and translations add new ones.
     let grounded = shared / candidate_tokens.len().max(1) as f32;
     let kept = shared / source_tokens.len() as f32;
     let candidate_words = word_count(candidate) as f32;
-    let max_words = (source_words as f32 * 1.35) + 8.0;
 
     grounded >= 0.8 && kept >= 0.25 && candidate_words <= max_words
+}
+
+/// The most words `cleanup_result_looks_safe` accepts from a cleanup with the default
+/// rules, when the source is long enough for it to count them.
+fn cleanup_word_limit(source: &str) -> Option<f32> {
+    let source = source.trim();
+    let words = word_count(source);
+    (words >= 4 && significant_tokens(source).len() >= 3).then_some(words as f32 * 1.35 + 8.0)
+}
+
+/// Whether any output that starts with `prefix` has more than `limit` words after
+/// `extract_plain_text`, which only unwraps output that opens with a wrapper and only
+/// strips control tokens, so its text before an unclosed `<|` (or a final `<`) is final.
+fn exceeds_word_limit(prefix: &str, limit: f32) -> bool {
+    let prefix = prefix.trim_start();
+    if ["<output>", "```", "{", "["]
+        .iter()
+        .any(|start| prefix.starts_with(start))
+    {
+        return false;
+    }
+    let stripped = strip_control_tokens(prefix);
+    let settled = stripped
+        .split("<|")
+        .next()
+        .unwrap_or_default()
+        .trim_end_matches('<');
+    word_count(settled) as f32 > limit
 }
 
 // Catch obvious translation/transliteration even on short, unsegmented text.

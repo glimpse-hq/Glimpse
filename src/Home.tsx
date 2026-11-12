@@ -565,7 +565,7 @@ const Home = ({ onReady }: HomeProps) => {
                     )}
                     {panes.map((paneDef) => {
                       const locked =
-                        paneDef.licensed === true && !activeLicense;
+                        paneDef.licensed === true && !licenseGateActive;
                       return (
                         <SidebarItem
                           key={paneDef.id}

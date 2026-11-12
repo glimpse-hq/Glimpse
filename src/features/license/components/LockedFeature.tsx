@@ -58,9 +58,8 @@ const LockedFeature = ({
         message: "The API server comes with a Glimpse license",
       }),
       line: t({
-        id: "locked.api.line.v2",
-        message:
-          "Run a local transcription API and the command line tool. They aren't part of the trial.",
+        id: "locked.api.line.v3",
+        message: "Run a local transcription API and the command line tool.",
       }),
     },
   };

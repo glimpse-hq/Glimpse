@@ -201,6 +201,21 @@ msgstr ""
 #~ msgstr "マイクから音声が入力されませんでした。設定で選択中のマイクを確認してください。"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "音声入力はすべてのモデルで無料です。ローカル文字起こし、辞書、置換、履歴を、単語数の制限やサブスクリプションなしで使えます。ライブラリ、録音モード、AI整形、パーソナライズはGlimpseライセンスに含まれます。料金は1台のMacまたはPCで$25、最大3台で$39の買い切りです。14日間無料でお試しいただけます。ローカルAPIサーバーとコマンドラインには購入済みライセンスが必要で、試用期間には含まれません。設定 → アカウントでライセンスキーを入力してください。"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "ローカル文字起こしAPIとコマンドラインツールを実行できます。これらは試用期間に含まれません。"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "コマンドラインは購入済みのGlimpseライセンスに含まれます。試用期間には含まれません。"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "「Glimpseは声をテキストに変えてくれます。」"
@@ -2128,8 +2143,13 @@ msgstr "このショートカットの音声入力は貼り付けられますが
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "音声入力はすべてのモデルで無料です。ローカル文字起こし、辞書、置換、履歴を、単語数の制限やサブスクリプションなしで使えます。ライブラリ、録音モード、AI整形、パーソナライズはGlimpseライセンスに含まれます。料金は1台のMacまたはPCで$25、最大3台で$39の買い切りです。14日間無料でお試しいただけます。ローカルAPIサーバーとコマンドラインには購入済みライセンスが必要で、試用期間には含まれません。設定 → アカウントでライセンスキーを入力してください。"
+msgid "faq.free.answer.v8"
+msgstr "音声入力はすべてのモデルで無料です。ローカル文字起こし、辞書、置換、履歴を、単語数の制限やサブスクリプションなしで使えます。ライブラリ、録音モード、AI整形、パーソナライズ、ローカルAPIサーバー、コマンドラインはGlimpseライセンスに含まれます。料金は1台のMacまたはPCで$25、最大3台で$39の買い切りです。14日間無料でお試しいただけます。設定 → アカウントでライセンスキーを入力してください。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "グラフィックドライバの問題により、音声入力が遅くなっています。ドライバを更新すると改善する場合があります。"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2705,6 +2725,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "このコンピュータのグラフィックスでは、Glimpse C1を実行できません。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -3371,6 +3396,11 @@ msgstr "ローカルAPI"
 #: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.group.server"
 msgstr "ローカルサーバー"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "このコンピュータのプロセッサでは、ローカルの音声認識モデルを実行できません。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -4852,8 +4882,8 @@ msgstr "今すぐ"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "ローカル文字起こしAPIとコマンドラインツールを実行できます。これらは試用期間に含まれません。"
+msgid "locked.api.line.v3"
+msgstr "ローカル文字起こしAPIとコマンドラインツールを実行できます。"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -5743,11 +5773,6 @@ msgstr "APIサーバーを停止できなかったため、再起動できませ
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "AI整形モデルはまだこの言語に対応していません。"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "コマンドラインは購入済みのGlimpseライセンスに含まれます。試用期間には含まれません。"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
