@@ -113,6 +113,7 @@ impl LocalTranscriber {
 
     // Caller must hold `exclusive` (directly or via a streaming session).
     fn warm_locked(&self, model: &ReadyModel) -> Result<()> {
+        check_cpu()?;
         let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
         let previous_activity = analytics::activity();
@@ -323,6 +324,7 @@ impl LocalTranscriber {
         language: Option<&str>,
         granularity: Option<TimestampGranularity>,
     ) -> Result<glimpse_speech::Transcription> {
+        check_cpu()?;
         let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
         let started = Instant::now();
         if !was_loaded {
@@ -430,6 +432,22 @@ impl StreamingGuard<'_> {
         self.transcriber.service.streaming_reset();
         transcript
     }
+}
+
+/// Fails on a processor missing an instruction set the Windows speech engine is
+/// built for (AVX2 baseline with FMA, F16C and BMI2), where engine code would
+/// end the process.
+pub fn check_cpu() -> Result<()> {
+    #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+    if !(std::arch::is_x86_feature_detected!("avx")
+        && std::arch::is_x86_feature_detected!("avx2")
+        && std::arch::is_x86_feature_detected!("fma")
+        && std::arch::is_x86_feature_detected!("f16c")
+        && std::arch::is_x86_feature_detected!("bmi2"))
+    {
+        anyhow::bail!("Local speech models can't run on this computer's processor.");
+    }
+    Ok(())
 }
 
 fn plain_success(

@@ -61,6 +61,7 @@ pub(super) fn track_speaker(item: &LibraryItem, default: Speaker) -> Speaker {
 
 /// Runs the diarizer over a whole audio file so labels stay consistent across it.
 pub(super) fn diarize_file(model_path: &Path, audio_path: &Path) -> Result<Vec<SpeakerTurn>> {
+    crate::speech::engine::check_cpu()?;
     // The diarizer resamples to 16 kHz anyway; decoding straight to it keeps the buffer small.
     let samples = read_wav_resampled(audio_path, TARGET_SAMPLE_RATE)?;
     // Settings have no GPU preference; local transcription picks its backend automatically too.

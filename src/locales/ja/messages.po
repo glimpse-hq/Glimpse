@@ -3373,6 +3373,11 @@ msgid "settings.models.group.server"
 msgstr "ローカルサーバー"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "このコンピュータのプロセッサでは、ローカルの音声認識モデルを実行できません。"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.locked"
 msgstr "ロック中"

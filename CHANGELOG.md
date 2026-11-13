@@ -3,6 +3,11 @@
 ### Changes
 
 - Cleanup removes filler words your sentence doesn't need, like "you know" or "I mean".
+- Model downloads now start when they would leave at least 3 GB free on your disk, instead of 5 GB.
+
+### Fixes
+
+- On older Windows PCs whose processor can't run local speech models, Glimpse now says so when you dictate instead of quitting.
 
 1.4.5
 
