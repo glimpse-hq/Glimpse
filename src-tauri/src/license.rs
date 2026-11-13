@@ -1712,8 +1712,9 @@ pub fn get_trial_ended_screen(
     let installed_models = PAID_ONLY_MODELS
         .into_iter()
         .filter(|(model, _)| {
+            // Counts a model waiting on a newer file: leaving the trial removes it too.
             crate::speech::install::check_model_status(app.clone(), model.to_string())
-                .is_ok_and(|status| status.installed)
+                .is_ok_and(|status| status.bytes_on_disk > 0)
         })
         .map(|(_, kind)| kind)
         .collect();

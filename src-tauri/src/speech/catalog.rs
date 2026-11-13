@@ -195,7 +195,7 @@ macro_rules! c1_file {
     ($file:literal, $path:expr, $size_bytes:literal, $sha256:literal) => {
         CatalogFile {
             url: concat!(
-                "https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B/resolve/174b6092dc5e3dacd3e473e844831246d690e6a0/",
+                "https://huggingface.co/Glimpse-Dictation/Glimpse-C1-2B/resolve/5edd492637fe4098df74fec4959d82f72b56a932/",
                 $file
             ),
             path: $path,
@@ -207,7 +207,7 @@ macro_rules! c1_file {
 
 /// Named after its sha256, so a new adapter is a missing file, which installs
 /// that have the base model fetch at launch (`cleanup_model::update_in_background`).
-pub const CLEANUP_MODEL_ADAPTER: &str = "adapter-23d65c13.safetensors";
+pub const CLEANUP_MODEL_ADAPTER: &str = "adapter-e619eafc.safetensors";
 
 const CLEANUP_MODEL_FILES: &[CatalogFile] = &[
     c1_file!(
@@ -232,7 +232,7 @@ const CLEANUP_MODEL_FILES: &[CatalogFile] = &[
         "adapter.safetensors",
         CLEANUP_MODEL_ADAPTER,
         31_293_680,
-        "23d65c138d8f081c1a4eab20d3ca41fa7e67836c834a0c6b9234dc4432901484"
+        "e619eafc61e2cb5e7bbd126e603bbd8f44db0f338dd4e6973e2f55ae2e05bc35"
     ),
     c1_file!(
         "LICENSE",

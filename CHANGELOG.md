@@ -1,3 +1,9 @@
+1.4.6
+
+### Changes
+
+- Cleanup removes filler words your sentence doesn't need, like "you know" or "I mean".
+
 1.4.5
 
 ### Changes
