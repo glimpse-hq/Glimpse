@@ -1892,6 +1892,8 @@ fn transcription_error_key(message: &str) -> &'static str {
         "native.error.microphone"
     } else if msg_lower.contains("permission") {
         "native.error.permission"
+    } else if msg_lower.contains("processor") {
+        "native.error.cpu_unsupported"
     } else if msg_lower.contains("timed out") {
         "native.error.transcription_timeout"
     } else if msg_lower.contains("auto paste") {

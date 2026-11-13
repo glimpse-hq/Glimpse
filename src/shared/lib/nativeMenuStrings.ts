@@ -188,6 +188,10 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.error.microphone", message: "Microphone error" }),
   msg({ id: "native.error.permission", message: "Permission denied" }),
   msg({
+    id: "native.error.cpu_unsupported",
+    message: "Local speech models can't run on this computer's processor.",
+  }),
+  msg({
     id: "native.error.pasted_to_clipboard",
     message: "Pasted to clipboard instead",
   }),

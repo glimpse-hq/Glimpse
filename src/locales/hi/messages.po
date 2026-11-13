@@ -4510,6 +4510,11 @@ msgid "settings.models.group.server"
 msgstr "स्थानीय सर्वर"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "इस कंप्यूटर के प्रोसेसर पर स्थानीय स्पीच मॉडल नहीं चल सकते।"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.locked"
 msgstr "लॉक है"

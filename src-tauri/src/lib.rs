@@ -274,6 +274,7 @@ pub fn run_cli() -> Result<()> {
         return glimpse_speech::cli::run_blocking();
     }
 
+    speech::engine::check_cpu()?;
     require_cli_license(&app_context().config().identifier)?;
     glimpse_speech::cli::run_blocking()
 }
