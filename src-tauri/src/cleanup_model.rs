@@ -169,7 +169,12 @@ pub fn update_in_background(app: &AppHandle<AppRuntime>) {
     let Some(runtime) = RUNTIME.get() else {
         return;
     };
-    if runtime.models_dir.join(CLEANUP_MODEL_MANIFEST.id).is_dir() {
+    let dir = runtime.models_dir.join(CLEANUP_MODEL_MANIFEST.id);
+    // A quit right after an adapter download can leave the old one behind.
+    if dir.join(CLEANUP_MODEL_ADAPTER).is_file() {
+        remove_stale_files(&dir);
+    }
+    if dir.is_dir() {
         install_in_background(app);
     }
 }
