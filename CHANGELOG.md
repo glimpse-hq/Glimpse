@@ -15,7 +15,7 @@
 
 ### Changes
 
-- Cleanup removes filler words your sentence doesn't need, like "you know" or "I mean".
+- Glimpse C1.1, a new version of the cleanup model, is a little better at cleaning up what you say.
 - Model downloads now start when they would leave at least 3 GB free on your disk, instead of 5 GB.
 
 ### Fixes
