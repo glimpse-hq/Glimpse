@@ -4510,6 +4510,11 @@ msgid "settings.models.group.server"
 msgstr "خادم محلي"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "لا يمكن تشغيل نماذج الكلام المحلية على معالج هذا الكمبيوتر."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.locked"
 msgstr "مقفل"

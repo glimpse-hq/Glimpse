@@ -114,6 +114,7 @@ impl LocalApiController {
         if args.port == 0 {
             return Err("Port must be between 1 and 65535".to_string());
         }
+        crate::speech::engine::check_cpu().map_err(|err| err.to_string())?;
         let model = if args.model.trim().is_empty() {
             "auto".to_string()
         } else {

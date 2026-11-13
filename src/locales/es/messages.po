@@ -4510,6 +4510,11 @@ msgid "settings.models.group.server"
 msgstr "Servidor local"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.cpu_unsupported"
+msgstr "Los modelos de voz locales no pueden ejecutarse en el procesador de este equipo."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.locked"
 msgstr "Bloqueado"

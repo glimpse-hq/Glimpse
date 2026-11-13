@@ -368,9 +368,21 @@ impl PillController {
     fn model_is_ready(&self, app: &AppHandle<AppRuntime>) -> bool {
         let state = app.state::<AppState>();
         let model = crate::speech::selected_model(&state.current_settings());
-        if crate::remote_speech::is_remote_model(&model)
-            || state.ready_models.lock().contains(&model)
-        {
+        if crate::remote_speech::is_remote_model(&model) {
+            return true;
+        }
+        if crate::speech::engine::check_cpu().is_err() {
+            toast::show_with_action(
+                app,
+                "warning",
+                None,
+                &toast::native(app, "native.error.cpu_unsupported"),
+                "open_models_page",
+                &toast::native(app, "native.toast.model_action"),
+            );
+            return false;
+        }
+        if state.ready_models.lock().contains(&model) {
             return true;
         }
 

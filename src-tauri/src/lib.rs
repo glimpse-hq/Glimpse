@@ -274,6 +274,13 @@ pub fn run_cli() -> Result<()> {
         return glimpse_speech::cli::run_blocking();
     }
 
+    // `models` only manages files, so it stays available.
+    if args
+        .iter()
+        .any(|arg| matches!(arg.as_str(), "transcribe" | "serve"))
+    {
+        speech::engine::check_cpu()?;
+    }
     require_cli_license(&app_context().config().identifier)?;
     glimpse_speech::cli::run_blocking()
 }
