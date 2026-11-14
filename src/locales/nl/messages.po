@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "Glimpse heeft geen geluid van je microfoon ontvangen. Controleer welke microfoon is geselecteerd via Instellingen."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "Dicteren is gratis met elk model: lokale transcriptie, woordenboek, vervangingen en geschiedenis, zonder woordlimiet of abonnement. Bibliotheek, Opnemen, Opschonen en Personalisatie zijn inbegrepen bij een Glimpse-licentie. Een licentie kost eenmalig $25 voor één Mac of pc of $39 voor maximaal drie apparaten. Je kunt deze functies 14 dagen gratis proberen. Voor de lokale API-server en de opdrachtregel heb je een gekochte licentie nodig; deze zijn niet inbegrepen bij de proefperiode. Voer je licentiesleutel in via Instellingen → Account."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "Gebruik een lokale transcriptie-API en de opdrachtregeltool. Deze maken geen deel uit van de proefperiode."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "De opdrachtregeltool is inbegrepen bij een gekochte Glimpse-licentie. Deze maakt geen deel uit van de proefperiode."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -3265,8 +3280,13 @@ msgstr "Dictaat via deze snelkoppeling wordt geplakt, maar de audio en het trans
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "Dicteren is gratis met elk model: lokale transcriptie, woordenboek, vervangingen en geschiedenis, zonder woordlimiet of abonnement. Bibliotheek, Opnemen, Opschonen en Personalisatie zijn inbegrepen bij een Glimpse-licentie. Een licentie kost eenmalig $25 voor één Mac of pc of $39 voor maximaal drie apparaten. Je kunt deze functies 14 dagen gratis proberen. Voor de lokale API-server en de opdrachtregel heb je een gekochte licentie nodig; deze zijn niet inbegrepen bij de proefperiode. Voer je licentiesleutel in via Instellingen → Account."
+msgid "faq.free.answer.v8"
+msgstr "Dicteren is gratis met elk model: lokale transcriptie, woordenboek, vervangingen en geschiedenis, zonder woordlimiet of abonnement. Bibliotheek, Opnemen, Opschonen, Personalisatie, de lokale API-server en de opdrachtregel zijn inbegrepen bij een Glimpse-licentie. Een licentie kost eenmalig $25 voor één Mac of pc of $39 voor maximaal drie apparaten. Je kunt deze functies 14 dagen gratis proberen. Voer je licentiesleutel in via Instellingen → Account."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "Dicteren is trager door een probleem met het grafische stuurprogramma. Het stuurprogramma bijwerken kan dit oplossen."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "Glimpse C1 kan niet draaien op de grafische hardware van deze computer."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5994,8 +6019,8 @@ msgstr "op dit moment"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "Gebruik een lokale transcriptie-API en de opdrachtregeltool. Deze maken geen deel uit van de proefperiode."
+msgid "locked.api.line.v3"
+msgstr "Gebruik een lokale transcriptie-API en de opdrachtregeltool."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6885,11 +6910,6 @@ msgstr "De API-server is niet gestopt en kon daarom niet opnieuw worden gestart.
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "Het opschoonmodel ondersteunt deze taal nog niet."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "De opdrachtregeltool is inbegrepen bij een gekochte Glimpse-licentie. Deze maakt geen deel uit van de proefperiode."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

@@ -359,6 +359,7 @@ fn start_library_transcription_internal(
                             word_count: count_words(&final_transcript),
                             audio_source: source.as_str(),
                             tracks,
+                            compute: result.compute,
                             ..Default::default()
                         },
                     );
@@ -854,6 +855,7 @@ fn merge_track_results(
         words: (!words.is_empty()).then_some(words),
         speech_model: first.speech_model.or(second.speech_model),
         speakers: None,
+        compute: first.compute.or(second.compute),
     }
 }
 
@@ -1019,6 +1021,7 @@ fn transcribe_remote(
                 words,
                 speech_model: result.speech_model,
                 speakers,
+                compute: result.compute,
             }))
         }
         remote_speech::RemoteAttempt::Cancelled => Err(cancelled_error()),
@@ -1047,6 +1050,7 @@ fn transcribe_direct(run: &LocalRun, audio_path: &Path) -> Result<LibraryTranscr
         words: result.words.as_deref().map(convert_segments_to_ms),
         speech_model: None,
         speakers: None,
+        compute: result.compute,
     })
 }
 
@@ -1113,6 +1117,7 @@ struct ChunkedTrack {
     words: Vec<TranscriptSegment>,
     last_end_ms: u64,
     last_word_end_ms: u64,
+    compute: Option<&'static str>,
 }
 
 /// What one chunk added: its text (None when nothing new) and new segments.
@@ -1152,6 +1157,7 @@ impl ChunkedTrack {
             words: Vec::new(),
             last_end_ms: 0,
             last_word_end_ms: 0,
+            compute: None,
         })
     }
 
@@ -1216,6 +1222,7 @@ impl ChunkedTrack {
         if run.token.is_cancelled() {
             return Err(cancelled_error());
         }
+        self.compute = self.compute.or(result.compute);
 
         let regions = match strategy {
             ChunkStrategy::Whisper => glimpse_speech::vad::speech_regions(chunk, sample_rate),
@@ -1339,6 +1346,7 @@ impl ChunkedTrack {
             words: (!self.words.is_empty()).then_some(self.words),
             speech_model: None,
             speakers: None,
+            compute: self.compute,
         }
     }
 }

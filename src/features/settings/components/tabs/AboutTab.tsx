@@ -177,7 +177,7 @@ type AboutTabProps = {
   appInfo: AppInfo | null;
   appInfoFailed: boolean;
   cliInstallStatus: CliInstallStatus | null;
-  activeLicense: boolean;
+  licenseGateActive: boolean;
   onCliError: (message: string) => void;
   onOpenDataDir: () => void;
 };
@@ -187,7 +187,7 @@ const AboutTab = ({
   appInfo,
   appInfoFailed,
   cliInstallStatus,
-  activeLicense,
+  licenseGateActive,
   onCliError,
   onOpenDataDir,
 }: AboutTabProps) => {
@@ -336,7 +336,7 @@ const AboutTab = ({
   const cliUnavailable = cliInstallStatus?.sourceAvailable === false;
   const cliInstalled = cliInstallStatus?.installed ?? false;
   const cliManagedByApp = cliInstallStatus?.managedByApp ?? false;
-  const cliInstallLocked = !activeLicense && !cliInstalled;
+  const cliInstallLocked = !licenseGateActive && !cliInstalled;
   const cliInstallPath =
     cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
   const cliInfo = cliUnavailable
@@ -344,31 +344,25 @@ const AboutTab = ({
         id: "settings.about.cli.unavailable_info",
         message: "This build does not include the command line helper.",
       })
-    : cliInstallLocked
+    : cliInstalled && !cliManagedByApp
       ? t({
-          id: "settings.about.cli.locked_info.v4",
-          message:
-            "The command line comes with a purchased Glimpse license. It isn't part of the trial.",
+          id: "settings.about.cli.externally_managed_info",
+          message: `The glimpse command is installed at ${cliInstallPath} and managed outside Glimpse. Use its package manager to update or remove it.`,
         })
-      : cliInstalled && !cliManagedByApp
+      : cliInstalled
         ? t({
-            id: "settings.about.cli.externally_managed_info",
-            message: `The glimpse command is installed at ${cliInstallPath} and managed outside Glimpse. Use its package manager to update or remove it.`,
+            id: "settings.about.cli.installed_info",
+            message: `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`,
           })
-        : cliInstalled
+        : cliInstallStatus && !cliInstallStatus.pathInShell
           ? t({
-              id: "settings.about.cli.installed_info",
-              message: `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`,
+              id: "settings.about.cli.path_missing_info",
+              message: `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`,
             })
-          : cliInstallStatus && !cliInstallStatus.pathInShell
-            ? t({
-                id: "settings.about.cli.path_missing_info",
-                message: `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`,
-              })
-            : t({
-                id: "settings.about.cli.default_info",
-                message: `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`,
-              });
+          : t({
+              id: "settings.about.cli.default_info",
+              message: `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`,
+            });
   const cliSubtitle = cliUnavailable
     ? t({
         id: "settings.about.cli.unavailable_subtitle",
@@ -980,7 +974,7 @@ const AboutTab = ({
                   disabled={
                     cliInstallBusy ||
                     (cliInstalled && !cliManagedByApp) ||
-                    (!cliInstalled && (cliUnavailable || !activeLicense))
+                    (!cliInstalled && (cliUnavailable || !licenseGateActive))
                   }
                   className={MANAGEMENT_ACTION_CLASS}
                 >

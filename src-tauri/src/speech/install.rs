@@ -595,7 +595,11 @@ fn download_failed(
         ("download", "storage" | "cross_device") => "install",
         _ => stage,
     };
-    crate::analytics::track_model_download_failed(app, model, stage, detail);
+    let free_bytes = (detail.reason == "storage")
+        .then(|| model_cache_dir(app).ok())
+        .flatten()
+        .and_then(|dir| crate::platform::available_space(&dir).ok());
+    crate::analytics::track_model_download_failed(app, model, stage, detail, free_bytes);
     let message = format!("{err:#}");
     let _ = app.emit(
         "download:error",

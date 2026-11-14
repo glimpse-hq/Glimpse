@@ -201,6 +201,16 @@ impl LocalApiController {
                     }
                 }
                 ApiEventKind::Request { route } => {
+                    // Requests skip the license check, so one after it lapses stops the server.
+                    if !crate::license::license_gate_active(
+                        &sink_app.state::<crate::AppState>().settings_store,
+                    ) {
+                        let controller = Arc::clone(&controller);
+                        let app = sink_app.clone();
+                        tauri::async_runtime::spawn(async move {
+                            let _ = controller.stop(&app).await;
+                        });
+                    }
                     if let Some(endpoint) = api_endpoint(*route) {
                         crate::analytics::track_integration_used(&sink_app, "api", endpoint);
                     }
@@ -425,7 +435,7 @@ pub async fn start_local_api(
     state: tauri::State<'_, crate::AppState>,
     args: StartLocalApiArgs,
 ) -> Result<LocalApiStatus, String> {
-    crate::license::require_active_license(&state.settings_store, "the API server")?;
+    crate::license::require_license_gate(&state.settings_store, "the API server")?;
     let controller: Arc<LocalApiController> = Arc::clone(&state.local_api);
     controller.start(app, args).await
 }
@@ -451,12 +461,11 @@ pub fn start_from_settings(app: &AppHandle<AppRuntime>, settings: &crate::settin
     }
 
     let state = app.state::<crate::AppState>();
-    if !crate::license::active_license_gate(&state.settings_store) {
+    if !crate::license::license_gate_active(&state.settings_store) {
         state.local_api.push_log(
             app,
             "warn",
-            "API server start-on-launch skipped; a purchased Glimpse license is required."
-                .to_string(),
+            "API server start-on-launch skipped; a Glimpse license is required.".to_string(),
         );
         return;
     }

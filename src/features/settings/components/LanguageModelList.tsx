@@ -107,6 +107,7 @@ const LanguageModelList = ({
     ready,
     appleAvailability,
     cleanupModelInstalled,
+    cleanupModelGpuUnsupported,
     showCleanupModel,
   } = useLanguageModelStatus({
     llmProvider,
@@ -165,19 +166,26 @@ const LanguageModelList = ({
   const locked = licenseGateActive
     ? null
     : t({ id: "settings.models.status.locked", message: "Locked" });
+  const unsupported = t({
+    id: "settings.models.status.unsupported",
+    message: "Not supported",
+  });
   const cleanupModelBlocker =
     locked ??
-    (cleanupModelInstalled === false
-      ? cleanupDownload?.status === "downloading"
-        ? `${Math.round(cleanupDownload.percent)}%`
-        : t({
-            id: "settings.models.status.not_installed",
-            message: "Not installed",
-          })
-      : null);
+    (cleanupModelGpuUnsupported
+      ? unsupported
+      : cleanupModelInstalled === false
+        ? cleanupDownload?.status === "downloading"
+          ? `${Math.round(cleanupDownload.percent)}%`
+          : t({
+              id: "settings.models.status.not_installed",
+              message: "Not installed",
+            })
+        : null);
   const cleanupModelDownloadKey =
     licenseGateActive &&
     cleanupModelInstalled === false &&
+    !cleanupModelGpuUnsupported &&
     cleanupModel &&
     cleanupDownload?.status !== "downloading"
       ? cleanupModel.key
@@ -192,10 +200,7 @@ const LanguageModelList = ({
             message: "Downloading",
           })
         : appleAvailability === "unsupported"
-          ? t({
-              id: "settings.models.status.unsupported",
-              message: "Not supported",
-            })
+          ? unsupported
           : null);
   // Like the backend: the dictation language, or on Auto the user's
   // languages, one of which the cleanup model has to know.

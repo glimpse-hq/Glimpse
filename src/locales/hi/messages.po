@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "Glimpse को आपके माइक्रोफ़ोन से कोई आवाज़ नहीं मिली। सेटिंग्स में चुना हुआ माइक्रोफ़ोन जाँचें।"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "हर मॉडल के साथ डिक्टेशन मुफ़्त है: स्थानीय ट्रांसक्रिप्शन, शब्दकोश, प्रतिस्थापन और इतिहास, बिना शब्द सीमा या सदस्यता के। लाइब्रेरी, रिकॉर्डिंग मोड, क्लीनअप और वैयक्तिकरण के लिए Glimpse लाइसेंस चाहिए। इसका एकमुश्त भुगतान $25 में एक Mac या PC के लिए, या $39 में अधिकतम तीन डिवाइसों के लिए है। आप इन्हें 14 दिनों तक मुफ़्त आज़मा सकते हैं। स्थानीय API सर्वर और कमांड लाइन के लिए ख़रीदा हुआ लाइसेंस चाहिए; ये ट्रायल में शामिल नहीं हैं। सेटिंग्स → खाता में अपनी लाइसेंस कुंजी दर्ज करें।"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "स्थानीय ट्रांसक्रिप्शन API और कमांड लाइन टूल चलाने की सुविधा। ये ट्रायल में शामिल नहीं हैं।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "कमांड लाइन के लिए ख़रीदा हुआ Glimpse लाइसेंस चाहिए। यह ट्रायल में शामिल नहीं है।"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -3265,8 +3280,13 @@ msgstr "इस शॉर्टकट से किया गया डिक्�
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "हर मॉडल के साथ डिक्टेशन मुफ़्त है: स्थानीय ट्रांसक्रिप्शन, शब्दकोश, प्रतिस्थापन और इतिहास, बिना शब्द सीमा या सदस्यता के। लाइब्रेरी, रिकॉर्डिंग मोड, क्लीनअप और वैयक्तिकरण के लिए Glimpse लाइसेंस चाहिए। इसका एकमुश्त भुगतान $25 में एक Mac या PC के लिए, या $39 में अधिकतम तीन डिवाइसों के लिए है। आप इन्हें 14 दिनों तक मुफ़्त आज़मा सकते हैं। स्थानीय API सर्वर और कमांड लाइन के लिए ख़रीदा हुआ लाइसेंस चाहिए; ये ट्रायल में शामिल नहीं हैं। सेटिंग्स → खाता में अपनी लाइसेंस कुंजी दर्ज करें।"
+msgid "faq.free.answer.v8"
+msgstr "हर मॉडल के साथ डिक्टेशन मुफ़्त है: स्थानीय ट्रांसक्रिप्शन, शब्दकोश, प्रतिस्थापन और इतिहास, बिना शब्द सीमा या सदस्यता के। लाइब्रेरी, रिकॉर्डिंग मोड, क्लीनअप, वैयक्तिकरण, स्थानीय API सर्वर और कमांड लाइन के लिए Glimpse लाइसेंस चाहिए। इसका एकमुश्त भुगतान $25 में एक Mac या PC के लिए, या $39 में अधिकतम तीन डिवाइसों के लिए है। आप इन्हें 14 दिनों तक मुफ़्त आज़मा सकते हैं। सेटिंग्स → खाता में अपनी लाइसेंस कुंजी दर्ज करें।"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "ग्राफ़िक्स ड्राइवर की समस्या के कारण डिक्टेशन धीमा है। ड्राइवर अपडेट करने से यह ठीक हो सकता है।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "इस कंप्यूटर के ग्राफ़िक्स पर Glimpse C1 नहीं चल सकता।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5994,8 +6019,8 @@ msgstr "अभी तुरंत"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "स्थानीय ट्रांसक्रिप्शन API और कमांड लाइन टूल चलाने की सुविधा। ये ट्रायल में शामिल नहीं हैं।"
+msgid "locked.api.line.v3"
+msgstr "स्थानीय ट्रांसक्रिप्शन API और कमांड लाइन टूल चलाने की सुविधा।"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6885,11 +6910,6 @@ msgstr "API सर्वर बंद नहीं हुआ, इसलिए �
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "क्लीनअप मॉडल अभी इस भाषा को सपोर्ट नहीं करता।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "कमांड लाइन के लिए ख़रीदा हुआ Glimpse लाइसेंस चाहिए। यह ट्रायल में शामिल नहीं है।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

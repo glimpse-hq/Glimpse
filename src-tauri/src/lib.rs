@@ -286,25 +286,25 @@ pub fn run_cli() -> Result<()> {
 }
 
 /// The gate every licensed CLI command passes before it runs: refresh the
-/// saved grant when due, then require an active license (no trial).
+/// saved grant when due, then require a license or trial.
 pub(crate) fn require_cli_license(identifier: &str) -> Result<()> {
     let settings_store = SettingsStore::for_cli(identifier)?;
-    let cache_active_before_refresh = license::active_license_gate(&settings_store);
+    let cache_active_before_refresh = license::license_gate_active(&settings_store);
     if license::secure_grant_refresh_needed(&settings_store).map_err(anyhow::Error::msg)? {
         let runtime = tokio::runtime::Runtime::new()?;
         if let Err(err) = runtime.block_on(license::refresh_license(Client::new(), &settings_store))
             && !cache_active_before_refresh
         {
             anyhow::bail!(
-                "A purchased Glimpse license is required to use the CLI.\n\
+                "A Glimpse license is required to use the CLI.\n\
                      The saved license could not be refreshed: {err}\n\
                      Open Glimpse > Settings > Account to check or activate your license."
             );
         }
     }
-    if !license::active_license_gate(&settings_store) {
+    if !license::license_gate_active(&settings_store) {
         anyhow::bail!(
-            "A purchased Glimpse license is required to use the CLI.\n\
+            "A Glimpse license is required to use the CLI.\n\
              Open Glimpse > Settings > Account to check or activate your license."
         );
     }
@@ -381,6 +381,7 @@ fn is_top_level_help(args: &[String]) -> bool {
 }
 
 pub fn run() {
+    let launched_at = Instant::now();
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     let _guard = rt.enter();
     tauri::async_runtime::set(rt.handle().clone());
@@ -425,7 +426,7 @@ pub fn run() {
         );
 
     builder
-        .setup(|app| {
+        .setup(move |app| {
             analytics::set_crash_phase("setup_start");
             #[cfg(target_os = "macos")]
             if !integrations::dev_sandbox() {
@@ -452,8 +453,9 @@ pub fn run() {
                 #[cfg(target_os = "windows")]
                 {
                     if let Ok(log_dir) = handle.path().app_log_dir() {
-                        platform::windows::crash::install(log_dir, path);
+                        platform::windows::crash::install(log_dir, path.clone());
                     }
+                    speech::engine::choose_compute(&path);
                     platform::windows::crash::watch_session_end();
                 }
             }
@@ -568,6 +570,7 @@ pub fn run() {
             if let Err(err) = pill::register_shortcuts(handle) {
                 tracing::error!("Failed to register shortcuts: {err}");
             }
+            let ready_ms = launched_at.elapsed().as_millis() as u64;
             #[cfg(target_os = "macos")]
             pill::report_missing_accessibility_at_launch(handle);
 
@@ -617,7 +620,7 @@ pub fn run() {
                     if h.state::<AppState>().analytics_first_run() {
                         analytics::track_app_installed(&h);
                     }
-                    analytics::track_app_started(&h);
+                    analytics::track_app_started(&h, ready_ms);
                     analytics::set_crash_phase("running");
                 });
             }
@@ -1126,9 +1129,6 @@ impl AppState {
         if !license::license_gate_active(&self.settings_store) {
             disable_license_gated_settings(&mut settings);
         }
-        if !license::active_license_gate(&self.settings_store) {
-            settings.local_api_start_on_launch = false;
-        }
         settings
     }
 
@@ -1395,6 +1395,7 @@ impl AppState {
 fn disable_license_gated_settings(settings: &mut UserSettings) {
     settings.llm_enabled = false;
     settings.cleanup_enabled = false;
+    settings.local_api_start_on_launch = false;
     for binding in settings
         .shortcut_bindings
         .smart
@@ -1583,6 +1584,12 @@ pub(crate) fn note_license_state(
             if let Err(err) = pill::register_shortcuts(&app) {
                 tracing::warn!("Shortcut registration after a license change failed: {err}");
             }
+        });
+    }
+    if !license_state.license_gate_active {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let _ = app.state::<AppState>().local_api.stop(&app).await;
         });
     }
     // Preserve the expiry marker while analytics is disabled.

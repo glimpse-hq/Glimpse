@@ -365,6 +365,7 @@ pub(crate) struct LibraryTranscriptionResult {
     pub words: Option<Vec<TranscriptSegment>>,
     pub speech_model: Option<String>,
     pub speakers: Option<Vec<Speaker>>,
+    pub compute: Option<&'static str>,
 }
 
 #[derive(Debug, Clone, Serialize)]

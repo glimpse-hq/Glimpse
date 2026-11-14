@@ -114,6 +114,10 @@ export const NATIVE_MENU_STRINGS = [
   }),
   msg({ id: "native.toast.open_settings_action", message: "Open Settings" }),
   msg({
+    id: "native.toast.cleanup_model_unsupported",
+    message: "Glimpse C1 can't run on this computer's graphics.",
+  }),
+  msg({
     id: "native.toast.dictionary_suggest",
     message: 'Add "{word}" to the dictionary?',
   }),
@@ -180,6 +184,10 @@ export const NATIVE_MENU_STRINGS = [
   msg({
     id: "native.error.no_model_selected",
     message: "No transcription model selected",
+  }),
+  msg({
+    id: "native.error.cpu_unsupported",
+    message: "Local speech models can't run on this computer's processor.",
   }),
   msg({
     id: "native.error.edit_needs_writing_model",
@@ -298,6 +306,11 @@ export const NATIVE_MENU_STRINGS = [
   msg({
     id: "native.update.recording",
     message: "Finish the recording before installing the update.",
+  }),
+  msg({
+    id: "native.toast.cpu_fallback",
+    message:
+      "Dictation is slower because of a graphics driver problem. Updating the driver can fix this.",
   }),
   msg({
     id: "native.toast.recording_low_disk",

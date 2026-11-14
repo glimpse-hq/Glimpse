@@ -386,7 +386,16 @@ impl PillController {
             return true;
         }
 
-        if state.download_percent(&model).is_some() {
+        let downloading = state.download_percent(&model).is_some();
+        crate::analytics::track_first_dictation_attempted(
+            app,
+            if downloading {
+                "model_downloading"
+            } else {
+                "model_not_ready"
+            },
+        );
+        if downloading {
             *ANNOUNCE_MODEL_READY.lock() = Some(model.clone());
         }
         if self.model_notice_is_due() {
@@ -746,7 +755,6 @@ impl PillController {
         }
 
         if !self.model_is_ready(app) {
-            crate::analytics::track_first_dictation_attempted(app, "model_not_ready");
             return false;
         }
 
@@ -1040,11 +1048,9 @@ impl PillController {
             RecordingMode::Toggle => "toggle",
             RecordingMode::Hold => "hold",
         };
-        *self.stopped_audio_seconds.lock() = self
-            .recording_started_at
-            .lock()
-            .take()
-            .map(|started| stopped_at.duration_since(started).as_secs_f32());
+        let started_at = self.recording_started_at.lock().take();
+        *self.stopped_audio_seconds.lock() =
+            started_at.map(|started| stopped_at.duration_since(started).as_secs_f32());
         let (settings, preflight_generation) =
             self.recording_settings.lock().take().unwrap_or_else(|| {
                 let generation = crate::llm_cleanup::preflight_generation();
@@ -1054,6 +1060,7 @@ impl PillController {
         let origin = crate::transcribe::DictationOrigin {
             trigger,
             cleanup_shortcut: recording_options.cleanup_enabled,
+            started_at,
             stopped_at,
             preflight_generation,
         };

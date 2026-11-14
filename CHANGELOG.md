@@ -1,8 +1,22 @@
+1.5.0
+
+### Changes
+
+- Short dictations with Parakeet on Windows take about half the time on NVIDIA graphics and 40% less on Intel graphics.
+- The 14-day trial now includes the command line, the MCP server and the API server.
+- Library now sits with Record in the sidebar.
+
+### Fixes
+
+- On Windows PCs where the graphics driver made Glimpse quit, speech recognition now runs on the processor instead of quitting again.
+- On Windows PCs where Glimpse C1 got stuck, your words now paste without a long wait, and loading it on Intel graphics no longer makes Glimpse quit.
+- If your computer's graphics can't run Glimpse C1, Glimpse tells you once and Automatic stops choosing it.
+
 1.4.6
 
 ### Changes
 
-- Cleanup removes filler words your sentence doesn't need, like "you know" or "I mean".
+- Glimpse C1.1, a new version of the cleanup model, is a little better at cleaning up what you say.
 - Model downloads now start when they would leave at least 3 GB free on your disk, instead of 5 GB.
 
 ### Fixes

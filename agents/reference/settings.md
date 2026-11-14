@@ -23,7 +23,7 @@ The `current_settings` / `current_settings_unmasked` distinction is license mask
 
 ## License gates
 
-`license.rs::require_license_gate` permits an active trial or purchased license. `require_active_license` requires a purchased license; CLI mutations, MCP, and the local API use this stricter path. Both honor the existing developer bypass. Reuse the guard appropriate to the feature at call time, including background or integration entry points. Do not replace either guard with a frontend boolean or a check made only during setup.
+`license.rs::require_license_gate` permits an active trial or purchased license, and honors the existing developer bypass. Reuse it at call time, including background or integration entry points. Do not replace it with a frontend boolean or a check made only during setup. The local API server's requests skip the gate, so it stops on the first request after the gate closes, or sooner when `note_license_state` sees it closed.
 
 ## Draft hydration race
 

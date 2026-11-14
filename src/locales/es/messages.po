@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "Glimpse no recibió sonido de tu micrófono. Comprueba cuál está seleccionado en Ajustes."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "El dictado es gratis con cualquier modelo: transcripción local, diccionario, sustituciones e historial, sin límite de palabras ni suscripción. Biblioteca, Grabación, Limpieza con IA y Personalización vienen con una licencia de Glimpse, con un pago único de $25 para un Mac o PC o $39 para hasta tres dispositivos. Puedes probarlas gratis durante 14 días. El servidor de API local y la línea de comandos requieren una licencia comprada y no forman parte de la prueba. Introduce tu clave de licencia en Ajustes → Cuenta."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "Usa una API local de transcripción y la herramienta de línea de comandos. No están incluidas en la prueba."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "La línea de comandos requiere una licencia de Glimpse comprada. No está incluida en la prueba."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -3265,8 +3280,13 @@ msgstr "El dictado de este atajo se pega, pero el audio y la transcripción no s
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "El dictado es gratis con cualquier modelo: transcripción local, diccionario, sustituciones e historial, sin límite de palabras ni suscripción. Biblioteca, Grabación, Limpieza con IA y Personalización vienen con una licencia de Glimpse, con un pago único de $25 para un Mac o PC o $39 para hasta tres dispositivos. Puedes probarlas gratis durante 14 días. El servidor de API local y la línea de comandos requieren una licencia comprada y no forman parte de la prueba. Introduce tu clave de licencia en Ajustes → Cuenta."
+msgid "faq.free.answer.v8"
+msgstr "El dictado es gratis con cualquier modelo: transcripción local, diccionario, sustituciones e historial, sin límite de palabras ni suscripción. Biblioteca, Grabación, Limpieza con IA, Personalización, el servidor de API local y la línea de comandos vienen con una licencia de Glimpse, con un pago único de $25 para un Mac o PC o $39 para hasta tres dispositivos. Puedes probarlos gratis durante 14 días. Introduce tu clave de licencia en Ajustes → Cuenta."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "El dictado es más lento por un problema con el controlador de gráficos. Actualizarlo puede solucionarlo."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "Glimpse C1 no puede ejecutarse con los gráficos de este equipo."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5994,8 +6019,8 @@ msgstr "ahora mismo"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "Usa una API local de transcripción y la herramienta de línea de comandos. No están incluidas en la prueba."
+msgid "locked.api.line.v3"
+msgstr "Usa una API local de transcripción y la herramienta de línea de comandos."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6885,11 +6910,6 @@ msgstr "El servidor de API no se detuvo, por lo que no se pudo reiniciar."
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "El modelo de Limpieza con IA aún no es compatible con este idioma."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "La línea de comandos requiere una licencia de Glimpse comprada. No está incluida en la prueba."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
