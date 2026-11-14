@@ -1,0 +1,4 @@
+[registry]
+# To take a newer version, such as a security fix, run cargo update with
+# CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow.
+global-min-publish-age = "7 days"

@@ -877,8 +877,7 @@ impl Worker {
         let manifest = SessionManifest {
             id: dir
                 .file_name()
-                .map(|name| name.to_string_lossy().to_string())
-                .unwrap_or_default(),
+                .map_or_default(|name| name.to_string_lossy().to_string()),
             started_at,
             sources: summary.clone(),
             bookmarks: Vec::new(),

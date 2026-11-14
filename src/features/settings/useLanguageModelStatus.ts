@@ -14,6 +14,7 @@ export type AppleLlmAvailability =
 type CleanupModelStatus = {
   supported: boolean;
   installed: boolean;
+  gpuUnsupported: boolean;
 };
 
 type LanguageSetup = {
@@ -88,7 +89,11 @@ export function useLanguageModelStatus({
       })
       .catch(() => {
         if (!cancelled)
-          setCleanupModelStatus({ supported: false, installed: false });
+          setCleanupModelStatus({
+            supported: false,
+            installed: false,
+            gpuUnsupported: false,
+          });
       });
     return () => {
       cancelled = true;
@@ -105,13 +110,17 @@ export function useLanguageModelStatus({
       model: llmModel,
     });
   const cleanupModelInstalled = cleanupModelStatus?.installed ?? null;
+  const cleanupModelUsable =
+    cleanupModelStatus !== null &&
+    cleanupModelStatus.installed &&
+    !cleanupModelStatus.gpuUnsupported;
   const probing =
     cleanupModelStatus === null || (isMac && appleAvailability === null);
   const activeProvider: LlmProvider | "none" | null = !llmAuto
     ? llmProvider
     : probing
       ? null
-      : cleanupModelInstalled
+      : cleanupModelUsable
         ? "bonsai"
         : appleAvailability === "available"
           ? "apple"
@@ -127,7 +136,7 @@ export function useLanguageModelStatus({
       : activeProvider === "bonsai"
         ? cleanupModelStatus === null
           ? null
-          : cleanupModelStatus.installed
+          : cleanupModelUsable
         : activeProvider === "apple"
           ? appleAvailability === null
             ? null
@@ -143,6 +152,7 @@ export function useLanguageModelStatus({
     serviceReady,
     appleAvailability,
     cleanupModelInstalled,
+    cleanupModelGpuUnsupported: Boolean(cleanupModelStatus?.gpuUnsupported),
     showCleanupModel: Boolean(cleanupModelStatus?.supported),
     ready,
   };

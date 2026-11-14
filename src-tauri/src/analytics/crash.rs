@@ -134,7 +134,7 @@ pub(super) fn crash_context(
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-fn cpu_features() -> Vec<&'static str> {
+pub(crate) fn cpu_features() -> Vec<&'static str> {
     let mut features = Vec::new();
     if std::arch::is_x86_feature_detected!("sse4.2") {
         features.push("sse4.2");
@@ -147,6 +147,12 @@ fn cpu_features() -> Vec<&'static str> {
     }
     if std::arch::is_x86_feature_detected!("fma") {
         features.push("fma");
+    }
+    if std::arch::is_x86_feature_detected!("f16c") {
+        features.push("f16c");
+    }
+    if std::arch::is_x86_feature_detected!("bmi2") {
+        features.push("bmi2");
     }
     if std::arch::is_x86_feature_detected!("avx512f") {
         features.push("avx512f");
@@ -684,6 +690,14 @@ fn crash_frame(location: &str, crash_type: &str) -> serde_json::Value {
         frame["lineno"] = json!(line_no);
     }
     frame
+}
+
+/// Whether the crash marker says this version crashed inside a module Windows
+/// loaded from its driver store.
+#[cfg(target_os = "windows")]
+pub(crate) fn crashed_in_driver(marker: &str) -> bool {
+    let payload = parse_crash_marker(marker);
+    payload["crashed_version"] == APP_VERSION && payload["driver_store"] == "true"
 }
 
 // First three lines are version/location/type; native handlers append

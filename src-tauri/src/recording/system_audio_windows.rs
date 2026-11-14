@@ -631,8 +631,7 @@ fn exe_key(path: &Path) -> Option<String> {
 
 fn exe_stem(path: &Path) -> String {
     path.file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .unwrap_or_default()
+        .map_or_default(|stem| stem.to_string_lossy().into_owned())
 }
 
 fn parse_format(ptr: *const WAVEFORMATEX) -> Result<MixFormat> {

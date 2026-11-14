@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "Glimpse hat kein Audiosignal von deinem Mikrofon erhalten. Prüfe unter Einstellungen, welches Mikrofon ausgewählt ist."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "Diktieren ist mit jedem Modell kostenlos: lokale Transkription, Wörterbuch, Ersetzungen und Verlauf, ohne Wortlimit oder Abo. Für Mediathek, Aufnahme, Bereinigung und Personalisierung brauchst du eine Glimpse-Lizenz. Sie kostet einmalig 25 $ für einen Mac oder PC oder 39 $ für bis zu drei Geräte. Du kannst diese Funktionen 14 Tage kostenlos testen. Für den lokalen API-Server und das Kommandozeilen-Tool brauchst du eine gekaufte Lizenz; sie sind nicht Teil der Testphase. Gib deinen Lizenzschlüssel unter Einstellungen → Account ein."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "Nutze eine lokale Transkriptions-API und das Kommandozeilen-Tool. Sie sind nicht Teil der Testphase."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "Das Kommandozeilen-Tool gibt es mit einer gekauften Glimpse-Lizenz. Es ist nicht Teil der Testphase."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -3265,8 +3280,13 @@ msgstr "Das Diktat über diesen Kurzbefehl wird eingefügt, aber Audio und Trans
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "Diktieren ist mit jedem Modell kostenlos: lokale Transkription, Wörterbuch, Ersetzungen und Verlauf, ohne Wortlimit oder Abo. Für Mediathek, Aufnahme, Bereinigung und Personalisierung brauchst du eine Glimpse-Lizenz. Sie kostet einmalig 25 $ für einen Mac oder PC oder 39 $ für bis zu drei Geräte. Du kannst diese Funktionen 14 Tage kostenlos testen. Für den lokalen API-Server und das Kommandozeilen-Tool brauchst du eine gekaufte Lizenz; sie sind nicht Teil der Testphase. Gib deinen Lizenzschlüssel unter Einstellungen → Account ein."
+msgid "faq.free.answer.v8"
+msgstr "Diktieren ist mit jedem Modell kostenlos: lokale Transkription, Wörterbuch, Ersetzungen und Verlauf, ohne Wortlimit oder Abo. Für Mediathek, Aufnahme, Bereinigung, Personalisierung, den lokalen API-Server und das Kommandozeilen-Tool brauchst du eine Glimpse-Lizenz. Sie kostet einmalig 25 $ für einen Mac oder PC oder 39 $ für bis zu drei Geräte. Du kannst diese Funktionen 14 Tage kostenlos testen. Gib deinen Lizenzschlüssel unter Einstellungen → Account ein."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "Das Diktat ist wegen eines Grafiktreiberproblems langsamer. Ein Treiber-Update kann das beheben."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "Glimpse C1 kann auf der Grafikhardware dieses Computers nicht ausgeführt werden."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5994,8 +6019,8 @@ msgstr "gerade eben"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "Nutze eine lokale Transkriptions-API und das Kommandozeilen-Tool. Sie sind nicht Teil der Testphase."
+msgid "locked.api.line.v3"
+msgstr "Nutze eine lokale Transkriptions-API und das Kommandozeilen-Tool."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6885,11 +6910,6 @@ msgstr "Der API-Server wurde nicht beendet und konnte daher nicht neu gestartet 
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "Das Bereinigungsmodell unterstützt diese Sprache noch nicht."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "Das Kommandozeilen-Tool gibt es mit einer gekauften Glimpse-Lizenz. Es ist nicht Teil der Testphase."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

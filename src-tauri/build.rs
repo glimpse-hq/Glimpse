@@ -59,12 +59,12 @@ fn parse_native_entries(contents: &str) -> Vec<(String, String)> {
 
         if let Some(rest) = line.strip_prefix("msgid ") {
             flush!();
-            key = quoted_body(rest).map(unescape).unwrap_or_default();
+            key = quoted_body(rest).map_or_default(unescape);
             value.clear();
             in_msgstr = false;
         } else if let Some(rest) = line.strip_prefix("msgstr ") {
             in_msgstr = true;
-            value = quoted_body(rest).map(unescape).unwrap_or_default();
+            value = quoted_body(rest).map_or_default(unescape);
         } else if line.starts_with("msgctxt ")
             || line.starts_with("msgid_plural ")
             || line.starts_with("msgstr[")
@@ -77,7 +77,7 @@ fn parse_native_entries(contents: &str) -> Vec<(String, String)> {
             in_msgstr = false;
         } else if line.starts_with('"') {
             // Continuation of whichever field is open.
-            let part = quoted_body(line).map(unescape).unwrap_or_default();
+            let part = quoted_body(line).map_or_default(unescape);
             if in_msgstr {
                 value.push_str(&part);
             } else {

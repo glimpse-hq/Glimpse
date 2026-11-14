@@ -133,9 +133,7 @@ pub(crate) fn start_after_paste(
 /// none, small (at most a tenth of the pasted words changed), or large.
 fn edit_bucket(pre_value: &str, inserted_text: &str, current_value: &str) -> &'static str {
     let inserted = tokenize(inserted_text);
-    let current = changed_current_span(pre_value, current_value)
-        .map(tokenize)
-        .unwrap_or_default();
+    let current = changed_current_span(pre_value, current_value).map_or_default(tokenize);
     let prefix = inserted
         .iter()
         .zip(&current)

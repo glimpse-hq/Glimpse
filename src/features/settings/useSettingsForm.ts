@@ -337,7 +337,6 @@ export function useSettingsForm({
   const settingsQuery = useSettings();
   const licenseStateQuery = useLicenseState();
   const licenseGateActive = useLicenseGate();
-  const activeLicense = licenseStateQuery.data?.status === "active";
   const appInfoQuery = useAppInfo();
   const inputDevicesQuery = useInputDevices();
   // Settings stays mounted, and only macOS reports device changes, so a mic
@@ -734,7 +733,7 @@ export function useSettingsForm({
         localApiPort,
         localApiModel: overrides.localApiModel ?? localApiModel,
         localApiHost,
-        localApiStartOnLaunch: activeLicense ? localApiStartOnLaunch : false,
+        localApiStartOnLaunch: licenseGateActive && localApiStartOnLaunch,
         localApiCors,
       };
     },
@@ -758,7 +757,6 @@ export function useSettingsForm({
       themeMode,
       aiFeaturesReady,
       licenseGateActive,
-      activeLicense,
       llmProvider,
       llmEndpoint,
       llmApiKey,
@@ -1830,7 +1828,6 @@ export function useSettingsForm({
     setLlmAuto,
     llmConfigReady,
     licenseGateActive,
-    activeLicense,
     autoDictionaryEnabled,
     autoDictionarySupported,
     setAutoDictionaryEnabled,

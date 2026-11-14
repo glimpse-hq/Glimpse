@@ -451,7 +451,6 @@ const removeSandbox = async () => {
 };
 
 const writeBundle = () => {
-  mkdirSync(dirname(appBinary), { recursive: true });
   mkdirSync(join(bundle, "Contents/Resources"), { recursive: true });
   copyFileSync(
     join(ROOT, "src-tauri/icons/icon.icns"),
@@ -498,6 +497,7 @@ const prepareSandbox = async ({ onboarded }) => {
     cpSync(iconCache, join(sandboxData, "local/cache"), { recursive: true });
 
   if (!IS_WINDOWS) writeBundle();
+  mkdirSync(dirname(appBinary), { recursive: true });
   // A hard link costs no space.
   try {
     linkSync(SANDBOX_BUILD, appBinary);

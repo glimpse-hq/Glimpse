@@ -198,15 +198,8 @@ fn newest_report(since: u64) -> Option<OsReport> {
         });
     let bytes = std::fs::read(newest_modified(candidates, since)?).ok()?;
     let text = match bytes.strip_prefix(&[0xFF, 0xFE]) {
-        Some(utf16) => String::from_utf16_lossy(
-            &utf16
-                .as_chunks::<2>()
-                .0
-                .iter()
-                .map(|pair| u16::from_le_bytes(*pair))
-                .collect::<Vec<_>>(),
-        ),
-        None => String::from_utf8_lossy(&bytes).into_owned(),
+        Some(utf16) => String::from_utf16le_lossy(utf16.as_chunks::<2>().0.as_flattened()),
+        None => String::from_utf8_lossy_owned(bytes),
     };
     parse_wer(&text)
 }

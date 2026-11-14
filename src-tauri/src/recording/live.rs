@@ -1256,8 +1256,7 @@ impl Runner {
                 // Keeps the window's last shown preview up, under the same id.
                 piece.shown = previous
                     .filter(|previous| previous.start_ms == piece.start_ms)
-                    .map(Piece::into_shown)
-                    .unwrap_or_default();
+                    .map_or_default(Piece::into_shown);
             }
             piece
         });
