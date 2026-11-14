@@ -626,6 +626,11 @@ const Home = ({ onReady }: HomeProps) => {
                   lockedHint={lockedHint}
                   onClick={() => openGatedView("brain")}
                 />
+                <div className="flex h-5 items-center pr-3 pl-[var(--sidebar-icon-pl,17px)]">
+                  <div className="flex w-[20px] shrink-0 justify-center">
+                    <div className="h-px w-3.5 bg-[var(--border-strong)]" />
+                  </div>
+                </div>
                 <SidebarItem
                   icon={Library}
                   label={t({
@@ -638,11 +643,6 @@ const Home = ({ onReady }: HomeProps) => {
                   lockedHint={lockedHint}
                   onClick={() => openGatedView("library")}
                 />
-                <div className="flex h-5 items-center pr-3 pl-[var(--sidebar-icon-pl,17px)]">
-                  <div className="flex w-[20px] shrink-0 justify-center">
-                    <div className="h-px w-3.5 bg-[var(--border-strong)]" />
-                  </div>
-                </div>
                 <SidebarItem
                   icon={RecordIcon}
                   label={t({
