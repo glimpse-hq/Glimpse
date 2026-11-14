@@ -470,7 +470,7 @@ fn load(
     let adapter = adapter
         .file_name()
         .and_then(|name| name.to_str())
-        .and_then(|name| name.strip_prefix("adapter-")?.strip_suffix(".safetensors"))
+        .and_then(|name| name.strip_circumfix("adapter-", ".safetensors"))
         .unwrap_or("unhashed")
         .to_string();
     *loaded = Some(Loaded {
@@ -607,7 +607,7 @@ mod tests {
         let pid = std::process::id().to_string();
         let run = |cmd: &str, args: &[&str]| {
             let out = std::process::Command::new(cmd).args(args).output().unwrap();
-            String::from_utf8_lossy(&out.stdout).into_owned()
+            String::from_utf8_lossy_owned(out.stdout)
         };
         let rss_kb: f64 = run("ps", &["-o", "rss=", "-p", &pid])
             .trim()

@@ -783,8 +783,7 @@ impl RecorderCore {
         *self.last_device.lock() = Some(device.clone());
         let device_name = device
             .description()
-            .map(|desc| desc.name().to_string())
-            .unwrap_or_default();
+            .map_or_default(|desc| desc.name().to_string());
         let config = device
             .default_input_config()
             .map_err(|err| cpal_error("No supported input configuration found", &err))?;

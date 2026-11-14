@@ -98,9 +98,9 @@ pub(crate) fn file_description(path: &Path) -> Option<String> {
         if !found.as_bool() || value.is_null() || value_len == 0 {
             return None;
         }
-        let text: Vec<u16> = (0..value_len as usize)
-            .map(|index| (value as *const u16).add(index).read_unaligned())
-            .collect();
+        let text: Vec<u16> = Vec::from_fn(value_len as usize, |index| {
+            (value as *const u16).add(index).read_unaligned()
+        });
         let end = text.iter().position(|ch| *ch == 0).unwrap_or(text.len());
         let name = String::from_utf16_lossy(&text[..end]).trim().to_string();
         (!name.is_empty()).then_some(name)

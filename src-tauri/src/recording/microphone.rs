@@ -61,8 +61,7 @@ pub(crate) fn start(
     let config = config.context("No supported input configuration")?;
     let name = device
         .description()
-        .map(|desc| desc.name().to_string())
-        .unwrap_or_default();
+        .map_or_default(|desc| desc.name().to_string());
     let format = config.sample_format();
     let stream_config: cpal::StreamConfig = config.into();
     let sink = make_sink(stream_config.sample_rate);

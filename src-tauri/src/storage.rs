@@ -875,13 +875,11 @@ impl StorageManager {
             };
 
             let listing = dir_listings.entry(parent.to_path_buf()).or_insert_with(|| {
-                std::fs::read_dir(parent)
-                    .map(|entries| {
-                        entries
-                            .filter_map(|entry| entry.ok().map(|e| e.file_name()))
-                            .collect()
-                    })
-                    .unwrap_or_default()
+                std::fs::read_dir(parent).map_or_default(|entries| {
+                    entries
+                        .filter_map(|entry| entry.ok().map(|e| e.file_name()))
+                        .collect()
+                })
             });
 
             record.audio_available = listing.contains(file_name);

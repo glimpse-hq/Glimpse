@@ -384,17 +384,11 @@ pub async fn download_model_now(
     ensure_disk_space(&manager.model_dir(&model), &spec)
         .map_err(|err| download_failed(&app, &model, "install", err))?;
     let cancel_token = state.create_download_token(&model)?;
-    struct DownloadGuard<'a>(&'a AppHandle<AppRuntime>, String);
-    impl Drop for DownloadGuard<'_> {
-        fn drop(&mut self) {
-            refresh_model_readiness(self.0, &self.1);
-            crate::pill::take_model_ready_announcement(&self.1);
-            self.0
-                .state::<crate::AppState>()
-                .clear_download_token(&self.1);
-        }
-    }
-    let _download_guard = DownloadGuard(&app, model.clone());
+    let _download_guard = std::mem::DropGuard::new(model.clone(), |model| {
+        refresh_model_readiness(&app, &model);
+        crate::pill::take_model_ready_announcement(&model);
+        app.state::<crate::AppState>().clear_download_token(&model);
+    });
     let progress_app = app.clone();
     let files: Vec<(String, Option<u64>)> = spec
         .files

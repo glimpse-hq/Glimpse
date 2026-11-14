@@ -345,8 +345,7 @@ impl LocalApiController {
             id: self.next_log_id.fetch_add(1, Ordering::Relaxed) + 1,
             timestamp_ms: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .map(|duration| duration.as_millis())
-                .unwrap_or_default(),
+                .map_or_default(|duration| duration.as_millis()),
             level: level.to_string(),
             message,
         };

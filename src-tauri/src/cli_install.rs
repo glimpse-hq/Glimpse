@@ -132,9 +132,8 @@ fn find_cli_command(source: &Path) -> Option<PathBuf> {
 
 fn cli_search_dirs() -> Vec<PathBuf> {
     #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
-    let mut dirs: Vec<PathBuf> = env::var_os("PATH")
-        .map(|path| env::split_paths(&path).collect())
-        .unwrap_or_default();
+    let mut dirs: Vec<PathBuf> =
+        env::var_os("PATH").map_or_default(|path| env::split_paths(&path).collect());
 
     #[cfg(target_os = "macos")]
     for dir in ["/opt/homebrew/bin", "/usr/local/bin"] {
@@ -336,20 +335,11 @@ fn paths_equivalent(left: &Path, right: &Path) -> bool {
 }
 
 fn equivalent_canonical_paths(left: &Path, right: &Path) -> bool {
-    if left == right {
-        return true;
-    }
-
-    #[cfg(windows)]
-    {
-        left.to_string_lossy()
-            .eq_ignore_ascii_case(&right.to_string_lossy())
-    }
-
-    #[cfg(not(windows))]
-    {
-        false
-    }
+    left == right
+        || (cfg!(windows)
+            && left
+                .to_string_lossy()
+                .eq_ignore_ascii_case(&right.to_string_lossy()))
 }
 
 fn path_contains_dir(dir: &Path) -> bool {

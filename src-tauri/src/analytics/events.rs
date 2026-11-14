@@ -555,7 +555,7 @@ pub fn track_settings_changes(
         crate::speech::selected_model(next),
     ]);
     bound_remote_labels(&mut models);
-    if let [from, to] = models.as_array().map(Vec::as_slice).unwrap_or_default()
+    if let [from, to] = models.as_array().map_or_default(Vec::as_slice)
         && from != to
     {
         track_model_changed(

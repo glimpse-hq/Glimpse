@@ -1256,29 +1256,16 @@ pub(crate) fn retry_transcription_async(
     async_runtime::spawn(async move {
         let transcription_started_at = Instant::now();
         let audio_duration_seconds = compute_audio_duration_seconds(&saved_for_task);
-        struct RetryTokenGuard {
-            app: AppHandle<AppRuntime>,
-            id: String,
-            token: CancellationToken,
-        }
-
-        impl Drop for RetryTokenGuard {
-            fn drop(&mut self) {
+        let _guard = std::mem::DropGuard::new(
+            (app_handle.clone(), retry_id.clone(), cancel_token.clone()),
+            |(app, id, token)| {
                 // Cancelling already removed this token, and the id may now
                 // belong to a newer retry.
-                if !self.token.is_cancelled() {
-                    self.app
-                        .state::<AppState>()
-                        .clear_retry_transcription(&self.id);
+                if !token.is_cancelled() {
+                    app.state::<AppState>().clear_retry_transcription(&id);
                 }
-            }
-        }
-
-        let _guard = RetryTokenGuard {
-            app: app_handle.clone(),
-            id: retry_id.clone(),
-            token: cancel_token.clone(),
-        };
+            },
+        );
 
         if cancel_token.is_cancelled() {
             return;

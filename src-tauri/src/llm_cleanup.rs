@@ -1288,8 +1288,7 @@ fn extract_plain_text(response: &str, source: &str) -> Option<String> {
 }
 
 fn parse_output_tags(text: &str) -> Option<String> {
-    text.strip_prefix("<output>")?
-        .strip_suffix("</output>")
+    text.strip_circumfix("<output>", "</output>")
         .map(|inner| inner.trim().to_string())
 }
 

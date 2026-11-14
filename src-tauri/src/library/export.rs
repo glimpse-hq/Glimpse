@@ -12,9 +12,7 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
             item.transcribed_at
                 .clone()
                 .unwrap_or_else(|| item.created_at.clone()),
-            bookmark_list(item, false)
-                .map(|list| format!("Bookmarks\n{list}\n\n"))
-                .unwrap_or_default(),
+            bookmark_list(item, false).map_or_default(|list| format!("Bookmarks\n{list}\n\n")),
             build_speaker_transcript(item, false).unwrap_or(transcript)
         )),
         ExportFormat::Md => Ok(format!(
@@ -29,9 +27,7 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
             } else {
                 item.tags.join(", ")
             },
-            bookmark_list(item, true)
-                .map(|list| format!("## Bookmarks\n\n{list}\n\n"))
-                .unwrap_or_default(),
+            bookmark_list(item, true).map_or_default(|list| format!("## Bookmarks\n\n{list}\n\n")),
             build_speaker_transcript(item, true).unwrap_or(transcript)
         )),
         ExportFormat::Srt => build_srt(item),

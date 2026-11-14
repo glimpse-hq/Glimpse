@@ -4,6 +4,7 @@ version = "1.5.0"
 description = "Open-source voice-to-text productivity app built with Tauri"
 authors = ["Glimpse HQ"]
 edition = "2024"
+rust-version = "1.100"
 repository = "https://github.com/glimpse-hq/Glimpse"
 license = "AGPL-3.0"
 
@@ -69,7 +70,6 @@ ring = "0.17"
 base64 = { version = "0.23", default-features = false, features = ["std"] }
 rusqlite = { version = "0.41", features = ["bundled"] }
 regex = "1"
-fs2 = "0.4"
 tauri-plugin-deep-link = "2.5.0"
 rubato = "5.0.0"
 interprocess = "2"
@@ -89,6 +89,7 @@ windows = { version = "0.62.2", features = ["ApplicationModel", "ApplicationMode
 windows-core = "0.62.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
+fs2 = "0.4"
 tauri-nspanel = "2.1"
 tauri-plugin-macos-permissions = "2.3.0"
 core-graphics = "0.25"

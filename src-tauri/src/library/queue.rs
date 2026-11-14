@@ -1256,8 +1256,7 @@ impl ChunkedTrack {
             let segments = result
                 .segments
                 .as_deref()
-                .map(convert_segments_to_ms)
-                .unwrap_or_default()
+                .map_or_default(convert_segments_to_ms)
                 .into_iter()
                 .filter(|seg| in_speech(seg.start_ms, seg.end_ms))
                 .collect::<Vec<_>>();

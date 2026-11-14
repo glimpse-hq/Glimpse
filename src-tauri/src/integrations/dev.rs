@@ -99,8 +99,7 @@ pub(crate) fn handle(
     let words: Vec<&str> = args
         .get("args")
         .and_then(Value::as_array)
-        .map(|words| words.iter().filter_map(Value::as_str).collect())
-        .unwrap_or_default();
+        .map_or_default(|words| words.iter().filter_map(Value::as_str).collect());
     match command {
         "dev.license" => license(app, &words),
         "dev.onboarding" => onboarding(app, &words),

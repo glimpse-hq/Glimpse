@@ -145,9 +145,9 @@ fn start_spectrum_emitter(
         let mut planner = FftPlanner::<f32>::new();
         let fft = planner.plan_fft_forward(SPECTRUM_SIZE);
         let denom = (SPECTRUM_SIZE - 1) as f32;
-        let window: Vec<f32> = (0..SPECTRUM_SIZE)
-            .map(|i| 0.5 - 0.5 * (2.0 * std::f32::consts::PI * i as f32 / denom).cos())
-            .collect();
+        let window: Vec<f32> = Vec::from_fn(SPECTRUM_SIZE, |i| {
+            0.5 - 0.5 * (2.0 * std::f32::consts::PI * i as f32 / denom).cos()
+        });
         let mut buffer = vec![Complex { re: 0.0, im: 0.0 }; SPECTRUM_SIZE];
         let mut smoothed = vec![0.0f32; SPECTRUM_BINS];
         let mut floor = vec![1.0f32; SPECTRUM_BINS];
