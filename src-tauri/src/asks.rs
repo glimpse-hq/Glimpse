@@ -38,14 +38,14 @@ impl Ask {
 
     fn min_dictations(self) -> u64 {
         match self {
-            Ask::Review => 100,
+            Ask::Review => 25,
             Ask::Star => 50,
         }
     }
 
     fn min_days_installed(self) -> i64 {
         match self {
-            Ask::Review => 21,
+            Ask::Review => 7,
             Ask::Star => 14,
         }
     }

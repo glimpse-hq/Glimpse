@@ -22,6 +22,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Matches global-min-publish-age in .cargo/config.toml.
+    cooldown:
+      default-days: 7
     groups:
       rust:
         patterns: ["*"]

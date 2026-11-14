@@ -1338,6 +1338,21 @@ msgstr ""
 #~ msgstr "لم يلتقط Glimpse أي صوت من الميكروفون. تحقق من الميكروفون المحدد في الإعدادات."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v7"
+#~ msgstr "الإملاء مجاني مع كل نموذج: يشمل التفريغ المحلي والقاموس والاستبدالات والسجل، بلا حدود للكلمات أو اشتراك. تأتي المكتبة والتسجيل والتنقيح والتخصيص مع ترخيص Glimpse، بدفعة واحدة قدرها $25 لجهاز Mac أو PC واحد، أو $39 لما يصل إلى ثلاثة أجهزة. يمكنك تجربتها مجانًا لمدة 14 يومًا. يتطلب خادم API المحلي وسطر الأوامر ترخيصًا مدفوعًا، وهما غير مشمولين في الفترة التجريبية. أدخل مفتاح الترخيص في الإعدادات → الحساب."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+#~ msgid "locked.api.line.v2"
+#~ msgstr "شغّل واجهة API للتفريغ الصوتي محليًا واستخدم أداة سطر الأوامر. وهما غير مشمولين في الفترة التجريبية."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info.v4"
+#~ msgstr "تأتي أداة سطر الأوامر مع ترخيص Glimpse مشتَرى. وهي غير مشمولة في الفترة التجريبية."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -3265,8 +3280,13 @@ msgstr "يُلصق الإملاء الذي تمليه عبر هذا الاختص
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v7"
-msgstr "الإملاء مجاني مع كل نموذج: يشمل التفريغ المحلي والقاموس والاستبدالات والسجل، بلا حدود للكلمات أو اشتراك. تأتي المكتبة والتسجيل والتنقيح والتخصيص مع ترخيص Glimpse، بدفعة واحدة قدرها $25 لجهاز Mac أو PC واحد، أو $39 لما يصل إلى ثلاثة أجهزة. يمكنك تجربتها مجانًا لمدة 14 يومًا. يتطلب خادم API المحلي وسطر الأوامر ترخيصًا مدفوعًا، وهما غير مشمولين في الفترة التجريبية. أدخل مفتاح الترخيص في الإعدادات → الحساب."
+msgid "faq.free.answer.v8"
+msgstr "الإملاء مجاني مع كل نموذج: يشمل التفريغ المحلي والقاموس والاستبدالات والسجل، بلا حدود للكلمات أو اشتراك. تأتي المكتبة والتسجيل والتنقيح والتخصيص وخادم API المحلي وسطر الأوامر مع ترخيص Glimpse، بدفعة واحدة قدرها $25 لجهاز Mac أو PC واحد، أو $39 لما يصل إلى ثلاثة أجهزة. يمكنك تجربتها مجانًا لمدة 14 يومًا. أدخل مفتاح الترخيص في الإعدادات → الحساب."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cpu_fallback"
+msgstr "الإملاء أبطأ بسبب مشكلة في برنامج تشغيل الرسومات. قد يحل تحديث برنامج التشغيل هذه المشكلة."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3842,6 +3862,11 @@ msgstr "Glimpse"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.cleanup_model_unsupported"
+msgstr "لا يمكن تشغيل Glimpse C1 على رسومات هذا الكمبيوتر."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
@@ -5994,8 +6019,8 @@ msgstr "الآن"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
-msgid "locked.api.line.v2"
-msgstr "شغّل واجهة API للتفريغ الصوتي محليًا واستخدم أداة سطر الأوامر. وهما غير مشمولين في الفترة التجريبية."
+msgid "locked.api.line.v3"
+msgstr "شغّل واجهة API للتفريغ الصوتي محليًا واستخدم أداة سطر الأوامر."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6885,11 +6910,6 @@ msgstr "لم يتوقف خادم API، لذا تعذّرت إعادة تشغيل
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.cleanup_language_unsupported"
 msgstr "لا يدعم نموذج التنقيح هذه اللغة بعد."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info.v4"
-msgstr "تأتي أداة سطر الأوامر مع ترخيص Glimpse مشتَرى. وهي غير مشمولة في الفترة التجريبية."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

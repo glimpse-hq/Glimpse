@@ -86,7 +86,7 @@ Star the repo, tell a friend, mention Glimpse in a post or on social. Visibility
 
 ### macOS
 
-**Prerequisites:** macOS 14+, [Rust](https://rustup.rs/) 1.74+, [Bun](https://bun.sh/) 1.3+, Xcode Command Line Tools
+**Prerequisites:** macOS 14+, [Rust](https://rustup.rs/) 1.100+, [Bun](https://bun.sh/) 1.3+, Xcode Command Line Tools
 
 ```bash
 xcode-select --install

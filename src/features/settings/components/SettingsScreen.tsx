@@ -44,7 +44,7 @@ const SettingsScreen = ({
   const licenseLoading = useLicenseState().isLoading;
   // A server that is still running keeps its Stop button.
   const localApiLocked =
-    !form.activeLicense &&
+    !form.licenseGateActive &&
     !form.localApiStatus?.running &&
     !form.localApiStatus?.starting;
 
@@ -212,7 +212,7 @@ const SettingsScreen = ({
                 appInfo={form.appInfo}
                 appInfoFailed={form.appInfoFailed}
                 cliInstallStatus={form.cliInstallStatus}
-                activeLicense={form.activeLicense}
+                licenseGateActive={form.licenseGateActive}
                 onCliError={(message) =>
                   form.showSettingsError(message, "about")
                 }

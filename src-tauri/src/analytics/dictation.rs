@@ -308,14 +308,16 @@ pub fn track_auto_paste_failed(
 }
 
 /// Records one on-device cleanup model run: task, model, adapter hash,
-/// whether it finished, token counts, timings, and the output/input word
-/// ratio as a bucket. Never any text.
+/// whether it finished and why it stopped, token counts, timings, the
+/// output/input word ratio as a bucket, and whether the output equals the
+/// input. Never any text.
 pub fn track_cleanup_model_run(
     task: &str,
     model: &str,
     run: &crate::cleanup_model::Run,
-    input_words: usize,
+    input: &str,
 ) {
+    use glimpse_language::bonsai::StopReason;
     let Some(app) = app() else {
         return;
     };
@@ -326,7 +328,7 @@ pub fn track_cleanup_model_run(
         .split_whitespace()
         .filter(|word| !word.starts_with('<'))
         .count();
-    let ratio = output_words as f32 / input_words.max(1) as f32;
+    let ratio = output_words as f32 / input.split_whitespace().count().max(1) as f32;
     let ratio_bucket = match ratio {
         r if r < 0.5 => "under_0.5",
         r if r < 0.8 => "0.5_0.8",
@@ -342,7 +344,14 @@ pub fn track_cleanup_model_run(
             "model": model,
             "adapter": run.adapter,
             "state": run.state,
-            "finished": generation.stop == glimpse_language::bonsai::StopReason::Eos,
+            "finished": generation.stop == StopReason::Eos,
+            "stop": match generation.stop {
+                StopReason::Eos => "eos",
+                StopReason::MaxTokens => "cap",
+                StopReason::ContextFull => "context",
+                StopReason::Stopped => "early_cancel",
+            },
+            "unchanged": generation.text == input.trim(),
             "prompt_tokens": stats.prompt_tokens,
             "cached_tokens": stats.cached_tokens,
             "generated_tokens": stats.generated_tokens,
@@ -350,6 +359,22 @@ pub fn track_cleanup_model_run(
             "first_token_ms": stats.first_token.as_millis() as u64,
             "write_ms": stats.decode.as_millis() as u64,
             "ratio_bucket": ratio_bucket,
+        }),
+    );
+}
+
+/// Records the cleanup model's device check: "ok", "wrong_output", "no_end" or
+/// "too_slow", and its decode speed.
+pub fn track_cleanup_device_check(result: &str, tokens_per_second: f64) {
+    let Some(app) = app() else {
+        return;
+    };
+    capture_event(
+        app,
+        "cleanup_device_check",
+        json!({
+            "result": result,
+            "tokens_per_second": tokens_per_second.round(),
         }),
     );
 }

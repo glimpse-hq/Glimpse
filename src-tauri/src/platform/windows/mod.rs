@@ -17,6 +17,41 @@ use windows::core::PCWSTR;
 /// Process creation flag that keeps a console window from opening.
 pub(crate) const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
+/// Vendor, device and driver version of each hardware graphics adapter.
+pub(crate) fn graphics_drivers() -> String {
+    use windows::Win32::Graphics::Dxgi::{
+        CreateDXGIFactory1, DXGI_ADAPTER_FLAG_SOFTWARE, IDXGIDevice, IDXGIFactory1,
+    };
+    use windows::core::Interface;
+
+    let Ok(factory) = (unsafe { CreateDXGIFactory1::<IDXGIFactory1>() }) else {
+        return String::new();
+    };
+    let mut drivers: Vec<String> = (0..)
+        .map_while(|index| unsafe { factory.EnumAdapters1(index) }.ok())
+        .filter_map(|adapter| {
+            let desc = unsafe { adapter.GetDesc1() }.ok()?;
+            if desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0 as u32 != 0 {
+                return None;
+            }
+            let version = unsafe { adapter.CheckInterfaceSupport(&IDXGIDevice::IID) }.ok()? as u64;
+            Some(format!(
+                "{:04x}:{:04x}:{}.{}.{}.{}",
+                desc.VendorId,
+                desc.DeviceId,
+                version >> 48,
+                (version >> 32) & 0xffff,
+                (version >> 16) & 0xffff,
+                version & 0xffff
+            ))
+        })
+        .collect();
+    // DXGI lists the adapter driving the main display first, which can change.
+    drivers.sort();
+    drivers.dedup();
+    drivers.join(",")
+}
+
 /// The name an exe gives itself, like "Google Chrome" for chrome.exe.
 pub(crate) fn file_description(path: &Path) -> Option<String> {
     let wide: Vec<u16> = path
@@ -63,9 +98,9 @@ pub(crate) fn file_description(path: &Path) -> Option<String> {
         if !found.as_bool() || value.is_null() || value_len == 0 {
             return None;
         }
-        let text: Vec<u16> = (0..value_len as usize)
-            .map(|index| (value as *const u16).add(index).read_unaligned())
-            .collect();
+        let text: Vec<u16> = Vec::from_fn(value_len as usize, |index| {
+            (value as *const u16).add(index).read_unaligned()
+        });
         let end = text.iter().position(|ch| *ch == 0).unwrap_or(text.len());
         let name = String::from_utf16_lossy(&text[..end]).trim().to_string();
         (!name.is_empty()).then_some(name)

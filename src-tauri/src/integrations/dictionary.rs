@@ -51,13 +51,12 @@ fn mutate(command: &str, args: &[String], json: bool) -> Result<()> {
     let saved = data
         .get("words")
         .and_then(|value| value.as_array())
-        .map(|words| {
+        .map_or_default(|words| {
             words
                 .iter()
                 .filter_map(|w| w.as_str().map(str::to_string))
                 .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
+        });
     if json {
         output::print_json(&json!({ "ok": true, "words": saved }));
     } else {

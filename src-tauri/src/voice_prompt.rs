@@ -190,13 +190,10 @@ pub(crate) struct AnsweredQuestion {
 pub(crate) fn answer(app: &AppHandle<AppRuntime>, text: &str) -> Option<AnsweredQuestion> {
     let answered = {
         let mut prompts = PROMPTS.lock();
-        let Some(prompt) = prompts
+        let prompt = prompts
             .items
             .iter_mut()
-            .find(|p| matches!(p.stage, Stage::Answering))
-        else {
-            return None;
-        };
+            .find(|p| matches!(p.stage, Stage::Answering))?;
         prompt.stage = Stage::Answered(text.to_string());
         let answered = AnsweredQuestion {
             question: prompt.question.clone(),

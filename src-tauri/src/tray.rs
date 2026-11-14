@@ -235,7 +235,7 @@ fn recording_pill_icon(clock: &str, rgb: [u8; 3]) -> Option<tauri::image::Image<
     let pixels = unsafe { std::slice::from_raw_parts(data, stride * height) };
     let mut rgba = Vec::with_capacity(width * height * 4);
     for row in pixels.chunks_exact(stride) {
-        for pixel in row[..width * 4].chunks_exact(4) {
+        for pixel in row[..width * 4].as_chunks::<4>().0 {
             // The bitmap is premultiplied.
             let alpha = u16::from(pixel[3]);
             let straight = |channel: u8| match alpha {
@@ -644,7 +644,7 @@ pub(crate) fn handle_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
             if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
                 copy_transcription_to_clipboard(app, transcription_id);
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
-                let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
+                let device_id = device_id_raw.trim_prefix("dev:");
                 set_microphone_from_menu(app, Some(device_id));
             } else {
                 #[cfg(target_os = "macos")]

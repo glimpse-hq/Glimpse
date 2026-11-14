@@ -309,7 +309,7 @@ pub(crate) fn update_settings(
         crate::license::require_license_gate(&state.settings_store, "AI writing")?;
     }
     if args.local_api_start_on_launch {
-        crate::license::require_active_license(&state.settings_store, "the API server")?;
+        crate::license::require_license_gate(&state.settings_store, "the API server")?;
     }
     let previous = state.current_settings_unmasked();
     let bonsai = crate::llm_cleanup::BONSAI_PROVIDER;
@@ -320,7 +320,6 @@ pub(crate) fn update_settings(
         crate::license::require_license_gate(&state.settings_store, "on-device cleanup")?;
     }
     let license_active = crate::license::license_gate_active(&state.settings_store);
-    let active_license = crate::license::active_license_gate(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
     let models_dir = crate::speech::install::model_cache_dir(app).ok();
@@ -388,7 +387,7 @@ pub(crate) fn update_settings(
                 }
             }
         }
-        next.local_api_start_on_launch = active_license && args.local_api_start_on_launch;
+        next.local_api_start_on_launch = license_active && args.local_api_start_on_launch;
         next.llm_provider = args.llm_provider;
         next.llm_endpoint = args.llm_endpoint;
         next.llm_api_key = args.llm_api_key;

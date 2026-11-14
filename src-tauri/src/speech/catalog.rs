@@ -697,8 +697,7 @@ fn whisper_bin_file(model: &str) -> Option<&'static CatalogFile> {
 pub(super) fn whisper_cpp_encoder_dir(manifest: &LocalModelManifest) -> Option<String> {
     let stem = whisper_bin_file(manifest.id)?
         .path
-        .strip_prefix("ggml-")?
-        .strip_suffix(".bin")?;
+        .strip_circumfix("ggml-", ".bin")?;
     let family = strip_quant_suffix(stem);
     Some(format!("ggml-{family}-encoder.mlmodelc"))
 }

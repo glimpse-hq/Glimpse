@@ -488,24 +488,6 @@ pub fn require_license_gate(store: &SettingsStore, feature: &str) -> Result<(), 
     }
 }
 
-pub(crate) fn active_license_gate(store: &SettingsStore) -> bool {
-    if developer_license_bypass_active() {
-        return true;
-    }
-
-    stored_license_active(store, Utc::now()).unwrap_or(false)
-}
-
-pub(crate) fn require_active_license(store: &SettingsStore, feature: &str) -> Result<(), String> {
-    if active_license_gate(store) {
-        Ok(())
-    } else {
-        Err(format!(
-            "A purchased Glimpse license is required for {feature}."
-        ))
-    }
-}
-
 pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> {
     #[cfg(debug_assertions)]
     if let Some((license, _)) = dev_license() {

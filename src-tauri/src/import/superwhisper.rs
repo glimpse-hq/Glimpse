@@ -231,18 +231,15 @@ fn mode_to_personality(mode: &serde_json::Value) -> Option<Personality> {
         enabled: true,
         apps,
         websites,
-        instructions: prompt.map(|p| vec![p.to_string()]).unwrap_or_default(),
+        instructions: prompt.map_or_default(|p| vec![p.to_string()]),
     })
 }
 
 fn string_array(value: Option<&serde_json::Value>) -> Vec<String> {
-    value
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| v.as_str().map(str::to_string))
-                .filter(|s| !s.is_empty())
-                .collect()
-        })
-        .unwrap_or_default()
+    value.and_then(|v| v.as_array()).map_or_default(|arr| {
+        arr.iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .filter(|s| !s.is_empty())
+            .collect()
+    })
 }

@@ -246,10 +246,6 @@ mod other {
         String::from_utf16_lossy(&buffer[..len]).trim_end_matches('\0') == "Deny"
     }
 
-    pub fn request_microphone_permission() -> Result<(), String> {
-        Ok(())
-    }
-
     pub async fn ask_microphone_permission() -> Result<(), String> {
         if check_microphone_permission() {
             return Ok(());

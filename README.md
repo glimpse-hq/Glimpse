@@ -67,9 +67,6 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 - **AI Cleanup.** Polish dictated text with Glimpse's on-device cleanup model, or your own LLM in **Settings → Providers**.
 - **Edit Mode.** Highlight text, say what you want, and watch it rewrite in place.
 - **Personalization.** Different tones per app or site, with [snippets](https://github.com/glimpse-hq/Glimpse/wiki/snippets) for dynamic context.
-
-**License only** (not included in the trial)
-
 - **Local API.** An OpenAI-compatible speech endpoint, running on your machine.
 - **CLI.** An optional `glimpse` command for the terminal.
 
