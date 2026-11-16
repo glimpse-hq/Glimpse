@@ -2748,9 +2748,9 @@ dependencies = [
 
 [[package]]
 name = "interprocess"
-version = "2.4.7"
+version = "2.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a4fff6c51dece332bdbf3af5fe376c49cfc8dced782725e95be0bb489e35d7"
+checksum = "0f0ed453af5ae3bdbf68e41dde07eae0bffcc986419f63521ba9c89d82988c70"
 dependencies = [
  "doctest-file",
  "libc",
@@ -4053,9 +4053,9 @@ dependencies = [
 
 [[package]]
 name = "posthog-rs"
-version = "0.31.1"
+version = "0.31.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb795bd128aab9c54a2a849b771ba47348e41daecbf42892b65325ff427449cb"
+checksum = "d1df9645bfd8f65a9b2609c0a1c4d66c413907625ee1d6a1f66ddf30b203f5c5"
 dependencies = [
  "chrono",
  "derive_builder",
@@ -6037,7 +6037,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
@@ -6606,9 +6606,9 @@ checksum = "3a3b425286980a367278453f3b6d28cdcb134b574e5a35824a6ff5eebad50bb6"
 
 [[package]]
 name = "uuid"
-version = "1.29.0"
+version = "1.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a0e2d11620c50695fe12bbbfde96b3477fe606e7284c22d505c12ce51214514"
+checksum = "bed99139f7dac9b5cfe5f17be4d66dc7079a34dee1d74bcc77217119240e267c"
 dependencies = [
  "getrandom 0.4.3",
  "js-sys",
