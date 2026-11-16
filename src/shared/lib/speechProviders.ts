@@ -53,14 +53,6 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     supportsModelDiscovery: true,
   },
   {
-    id: "fireworks",
-    label: "Fireworks AI",
-    endpoint: "https://audio-turbo.api.fireworks.ai/v1",
-    defaultModel: "whisper-v3-turbo",
-    apiKeyRequired: true,
-    supportsModelDiscovery: true,
-  },
-  {
     id: "openrouter",
     label: "OpenRouter",
     endpoint: "https://openrouter.ai/api/v1",

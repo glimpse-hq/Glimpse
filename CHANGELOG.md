@@ -5,6 +5,9 @@
 - Short dictations with Parakeet on Windows take about half the time on NVIDIA graphics and 40% less on Intel graphics.
 - The 14-day trial now includes the command line, the MCP server and the API server.
 - Library now sits with Record in the sidebar.
+- Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
+- New xAI setups for cleanup start on Grok 4.20 non-reasoning, which is faster and costs less than Grok 4.7.
+- Fireworks AI is no longer offered for speech. It shut down its transcription service.
 
 ### Fixes
 

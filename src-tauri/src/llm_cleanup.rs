@@ -653,8 +653,9 @@ fn least_reasoning(
         };
         return (Some(effort), None);
     }
-    // Claude 5 thinks by default; the compatible endpoint ignores reasoning_effort.
-    if id.starts_with("claude-") {
+    // Claude 5 and DeepSeek think by default. Claude's compatible endpoint
+    // ignores reasoning_effort.
+    if id.starts_with("claude-") || id.starts_with("deepseek-") {
         return (None, Some(serde_json::json!({ "type": "disabled" })));
     }
     // Gemini 3 can't turn thinking off; minimal is its lowest level.
