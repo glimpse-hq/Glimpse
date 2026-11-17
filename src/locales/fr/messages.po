@@ -1353,6 +1353,21 @@ msgstr ""
 #~ msgstr "La ligne de commande est incluse avec une licence Glimpse achetée. Elle n’est pas incluse dans l’essai."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.once_note"
+#~ msgstr "Un seul paiement. La dictée reste gratuite dans tous les cas."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.picker_aria"
+#~ msgstr "Formule"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.v4"
+#~ msgstr "Déverrouiller"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -5233,8 +5248,8 @@ msgstr "Sur cet ordinateur"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
-msgid "plans.once_note"
-msgstr "Un seul paiement. La dictée reste gratuite dans tous les cas."
+msgid "plans.one_time"
+msgstr "paiement unique"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5456,11 +5471,6 @@ msgstr "La Personnalisation est incluse avec une licence Glimpse"
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
 msgstr "Rose"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.picker_aria"
-msgstr "Formule"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -7315,11 +7325,6 @@ msgstr "Déverrouiller"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v4"
-msgstr "Déverrouiller"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.v4"
 msgstr "Déverrouiller"
 
 #. js-lingui-explicit-id

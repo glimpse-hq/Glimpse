@@ -5,6 +5,7 @@
 - Short dictations with Parakeet on Windows take about half the time on NVIDIA graphics and 40% less on Intel graphics.
 - The 14-day trial now includes the command line, the MCP server and the API server.
 - Library now sits with Record in the sidebar.
+- Each plan on the Account screen now has its own buy button, and prices show they're a one-time payment.
 
 ### Fixes
 
