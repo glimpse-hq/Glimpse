@@ -456,24 +456,18 @@ const AboutTab = ({
 
   return (
     <div className="space-y-5">
-      <header>
-        <h2 className="ui-text-title-lg font-medium ui-color-primary">
-          {t({
-            id: "settings.about.version_label",
-            message: "Glimpse",
-          })}
-        </h2>
-        <p className="mt-1 ui-text-body-sm ui-color-muted">
-          {t({
-            id: "settings.about.version",
-            message: `Version ${{ version: appInfo?.version ?? "-" }}`,
-          })}
-        </p>
-      </header>
-
       <section className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <SectionLabel>
+          <SectionLabel
+            trailing={
+              <span className="ui-text-meta ui-color-muted tabular-nums">
+                {t({
+                  id: "settings.about.version",
+                  message: `Version ${{ version: appInfo?.version ?? "-" }}`,
+                })}
+              </span>
+            }
+          >
             {t({
               id: "settings.about.updates",
               message: "Updates",

@@ -54,8 +54,7 @@ const SettingsScreen = ({
 
   return (
     <div className="settings-typescale flex flex-1 flex-col min-h-0">
-      {/* Sits in the titlebar strip, so it has to stay draggable. */}
-      <header data-tauri-drag-region className="-mt-3 shrink-0 px-8 pb-1">
+      <header data-tauri-drag-region className="shrink-0 px-8 pb-1">
         <h1
           data-tauri-drag-region
           className="ui-text-screen-title ui-color-primary tracking-tight"

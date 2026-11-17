@@ -585,71 +585,62 @@ const AppTab = ({
   return (
     <>
       <div className="space-y-6">
-        <div className="space-y-2">
-          <SectionLabel>
-            {t({
-              id: "settings.app.appearance",
-              message: "Appearance",
-            })}
-          </SectionLabel>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <span className="ui-text-label-strong ui-color-primary">
-                {t({
-                  id: "settings.app.text_size.label.v2",
-                  message: "Text size",
-                })}
-              </span>
-              <Dropdown
-                value={textSizeMode}
-                ariaLabel={t({
-                  id: "settings.app.text_size.label.v2",
-                  message: "Text size",
-                })}
-                onChange={onTextSizeModeChange}
-                options={textSizeOptions}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <span className="ui-text-label-strong ui-color-primary">
-                {t({
-                  id: "settings.app.theme.label",
-                  message: "Theme",
-                })}
-              </span>
-              <Dropdown
-                value={themeMode}
-                ariaLabel={t({
-                  id: "settings.app.theme.label",
-                  message: "Theme",
-                })}
-                onChange={onThemeModeChange}
-                options={themeOptions}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <span className="ui-text-label-strong ui-color-primary">
-                {t({
-                  id: "settings.app.language.label",
-                  message: "Language",
-                })}
-              </span>
-              <Dropdown
-                value={appLocale}
-                ariaLabel={t({
-                  id: "settings.app.language.label",
-                  message: "Language",
-                })}
-                onChange={(value) => onAppLocaleChange(value)}
-                options={appLanguageOptions}
-                searchable
-                searchPlaceholder={t({
-                  id: "settings.app.language.search",
-                  message: "Search language...",
-                })}
-              />
-            </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <span className="ui-text-label-strong ui-color-primary">
+              {t({
+                id: "settings.app.text_size.label.v2",
+                message: "Text size",
+              })}
+            </span>
+            <Dropdown
+              value={textSizeMode}
+              ariaLabel={t({
+                id: "settings.app.text_size.label.v2",
+                message: "Text size",
+              })}
+              onChange={onTextSizeModeChange}
+              options={textSizeOptions}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <span className="ui-text-label-strong ui-color-primary">
+              {t({
+                id: "settings.app.theme.label",
+                message: "Theme",
+              })}
+            </span>
+            <Dropdown
+              value={themeMode}
+              ariaLabel={t({
+                id: "settings.app.theme.label",
+                message: "Theme",
+              })}
+              onChange={onThemeModeChange}
+              options={themeOptions}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <span className="ui-text-label-strong ui-color-primary">
+              {t({
+                id: "settings.app.language.label",
+                message: "Language",
+              })}
+            </span>
+            <Dropdown
+              value={appLocale}
+              ariaLabel={t({
+                id: "settings.app.language.label",
+                message: "Language",
+              })}
+              onChange={(value) => onAppLocaleChange(value)}
+              options={appLanguageOptions}
+              searchable
+              searchPlaceholder={t({
+                id: "settings.app.language.search",
+                message: "Search language...",
+              })}
+            />
           </div>
         </div>
 
