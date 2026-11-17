@@ -1353,6 +1353,21 @@ msgstr ""
 #~ msgstr "تأتي أداة سطر الأوامر مع ترخيص Glimpse مشتَرى. وهي غير مشمولة في الفترة التجريبية."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.once_note"
+#~ msgstr "دفعة واحدة. يظل الإملاء مجانيًا في كل الأحوال."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.picker_aria"
+#~ msgstr "الخطة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.v4"
+#~ msgstr "احصل على ترخيص"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -5233,8 +5248,8 @@ msgstr "على هذا الكمبيوتر"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
-msgid "plans.once_note"
-msgstr "دفعة واحدة. يظل الإملاء مجانيًا في كل الأحوال."
+msgid "plans.one_time"
+msgstr "دفعة واحدة"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5456,11 +5471,6 @@ msgstr "يتوفر التخصيص مع ترخيص Glimpse"
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
 msgstr "وردي"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.picker_aria"
-msgstr "الخطة"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -7315,11 +7325,6 @@ msgstr "احصل على ترخيص"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v4"
-msgstr "احصل على ترخيص"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.v4"
 msgstr "احصل على ترخيص"
 
 #. js-lingui-explicit-id

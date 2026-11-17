@@ -1353,6 +1353,21 @@ msgstr ""
 #~ msgstr "कमांड लाइन के लिए ख़रीदा हुआ Glimpse लाइसेंस चाहिए। यह ट्रायल में शामिल नहीं है।"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.once_note"
+#~ msgstr "एकमुश्त भुगतान। डिक्टेशन हर हाल में मुफ़्त रहेगा।"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.picker_aria"
+#~ msgstr "प्लान"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.v4"
+#~ msgstr "लाइसेंस पाएँ"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -5233,8 +5248,8 @@ msgstr "इस कंप्यूटर पर"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
-msgid "plans.once_note"
-msgstr "एकमुश्त भुगतान। डिक्टेशन हर हाल में मुफ़्त रहेगा।"
+msgid "plans.one_time"
+msgstr "एक बार"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5456,11 +5471,6 @@ msgstr "वैयक्तिकरण के लिए Glimpse लाइसे�
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
 msgstr "गुलाबी"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.picker_aria"
-msgstr "प्लान"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -7315,11 +7325,6 @@ msgstr "लाइसेंस पाएँ"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v4"
-msgstr "लाइसेंस पाएँ"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.v4"
 msgstr "लाइसेंस पाएँ"
 
 #. js-lingui-explicit-id

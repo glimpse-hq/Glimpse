@@ -1353,6 +1353,21 @@ msgstr ""
 #~ msgstr "De opdrachtregeltool is inbegrepen bij een gekochte Glimpse-licentie. Deze maakt geen deel uit van de proefperiode."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.once_note"
+#~ msgstr "Eenmalige betaling. Dicteren blijft hoe dan ook gratis."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.picker_aria"
+#~ msgstr "Licentie"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.v4"
+#~ msgstr "Ontgrendelen"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -5233,8 +5248,8 @@ msgstr "Op deze computer"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
-msgid "plans.once_note"
-msgstr "Eenmalige betaling. Dicteren blijft hoe dan ook gratis."
+msgid "plans.one_time"
+msgstr "eenmalig"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5456,11 +5471,6 @@ msgstr "Personalisatie is inbegrepen bij een Glimpse-licentie"
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
 msgstr "Roze"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.picker_aria"
-msgstr "Licentie"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -7315,11 +7325,6 @@ msgstr "Ontgrendelen"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v4"
-msgstr "Ontgrendelen"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.v4"
 msgstr "Ontgrendelen"
 
 #. js-lingui-explicit-id

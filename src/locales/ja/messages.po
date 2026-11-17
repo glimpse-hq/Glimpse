@@ -216,6 +216,21 @@ msgstr ""
 #~ msgstr "コマンドラインは購入済みのGlimpseライセンスに含まれます。試用期間には含まれません。"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.once_note"
+#~ msgstr "買い切りです。どちらを選んでも音声入力は無料です。"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.picker_aria"
+#~ msgstr "プラン"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.v4"
+#~ msgstr "購入する"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "「Glimpseは声をテキストに変えてくれます。」"
@@ -4096,8 +4111,8 @@ msgstr "このコンピューター上"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
-msgid "plans.once_note"
-msgstr "買い切りです。どちらを選んでも音声入力は無料です。"
+msgid "plans.one_time"
+msgstr "買い切り"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -4319,11 +4334,6 @@ msgstr "パーソナライズはGlimpseライセンスに含まれます"
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
 msgstr "ピンク"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.picker_aria"
-msgstr "プラン"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -6178,11 +6188,6 @@ msgstr "購入する"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v4"
-msgstr "購入する"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.v4"
 msgstr "購入する"
 
 #. js-lingui-explicit-id
