@@ -76,33 +76,13 @@ const inlineAutoDeleteDropdownProps = {
   hideChevron: true as const,
 };
 
-// Stays in the layout when hidden so rows keep their height.
-const OpenSettingsButton = ({
-  visible,
-  onClick,
+const PermissionStatus = ({
+  granted,
+  onRequest,
 }: {
-  visible: boolean;
-  onClick: () => void;
+  granted: boolean | null;
+  onRequest: () => void;
 }) => {
-  const { t } = useLingui();
-  return (
-    <button
-      onClick={onClick}
-      disabled={!visible}
-      aria-hidden={!visible}
-      className={`block ui-color-muted hover:text-content-secondary transition-colors ${
-        visible ? "" : "invisible"
-      }`}
-    >
-      {t({
-        id: "settings.app.open_settings",
-        message: "Open Settings",
-      })}
-    </button>
-  );
-};
-
-const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
   const { t } = useLingui();
 
   if (granted === null) {
@@ -131,12 +111,16 @@ const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
     );
   }
   return (
-    <span className="ui-text-meta ui-color-warning">
+    <button
+      type="button"
+      onClick={onRequest}
+      className="ui-text-meta ui-color-muted transition-colors hover:text-content-secondary"
+    >
       {t({
-        id: "settings.app.permission.off",
-        message: "off",
+        id: "settings.app.open_settings",
+        message: "Open Settings",
       })}
-    </span>
+    </button>
   );
 };
 
@@ -661,17 +645,14 @@ const AppTab = ({
                       id: "settings.app.microphone",
                       message: "Microphone",
                     })}
-                    inlineDescription={t({
+                    description={t({
                       id: "settings.app.microphone.description",
                       message: "required for transcription",
                     })}
-                    control={<PermissionStatus granted={micPermission} />}
-                    description={
-                      <OpenSettingsButton
-                        visible={micPermission === false}
-                        onClick={() => {
-                          void onRequestMicrophonePermission();
-                        }}
+                    control={
+                      <PermissionStatus
+                        granted={micPermission}
+                        onRequest={() => void onRequestMicrophonePermission()}
                       />
                     }
                   />
@@ -683,19 +664,16 @@ const AppTab = ({
                       id: "settings.app.accessibility",
                       message: "Accessibility",
                     })}
-                    inlineDescription={t({
+                    description={t({
                       id: "settings.app.accessibility.description",
                       message: "required for auto-paste",
                     })}
                     control={
-                      <PermissionStatus granted={accessibilityPermission} />
-                    }
-                    description={
-                      <OpenSettingsButton
-                        visible={accessibilityPermission === false}
-                        onClick={() => {
-                          void onRequestAccessibilityPermission();
-                        }}
+                      <PermissionStatus
+                        granted={accessibilityPermission}
+                        onRequest={() =>
+                          void onRequestAccessibilityPermission()
+                        }
                       />
                     }
                   />
@@ -707,19 +685,16 @@ const AppTab = ({
                       id: "settings.app.input_monitoring",
                       message: "Input Monitoring",
                     })}
-                    inlineDescription={t({
+                    description={t({
                       id: "settings.app.input_monitoring.description",
                       message: "required for global shortcuts",
                     })}
                     control={
-                      <PermissionStatus granted={inputMonitoringPermission} />
-                    }
-                    description={
-                      <OpenSettingsButton
-                        visible={inputMonitoringPermission === false}
-                        onClick={() => {
-                          void onRequestInputMonitoringPermission();
-                        }}
+                      <PermissionStatus
+                        granted={inputMonitoringPermission}
+                        onRequest={() =>
+                          void onRequestInputMonitoringPermission()
+                        }
                       />
                     }
                   />
@@ -727,11 +702,16 @@ const AppTab = ({
               </SettingCard>
             )}
 
-            <SettingCard
-              className={
-                permissionRowCount > 1 ? "flex-1 grid content-center" : ""
-              }
-            >
+            {permissionRowCount > 0 && (
+              <p className="ui-text-micro ui-color-muted px-0.5">
+                {t({
+                  id: "settings.app.permissions_restart_notice",
+                  message: "Permission changes may require a restart.",
+                })}
+              </p>
+            )}
+
+            <SettingCard>
               <ToggleRow
                 title={t({
                   id: "settings.app.analytics.v2",
@@ -763,15 +743,6 @@ const AppTab = ({
                 }
               />
             </SettingCard>
-
-            {permissionRowCount > 0 && (
-              <p className="ui-text-micro ui-color-muted px-0.5">
-                {t({
-                  id: "settings.app.permissions_restart_notice",
-                  message: "Permission changes may require a restart.",
-                })}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2 flex flex-col">
