@@ -1543,6 +1543,7 @@ fn emit_transcription_complete_with_cleanup(
     );
     app.state::<AppState>().record_transcription_completed();
 
+    let mut milestone_shown = false;
     let (record, persisted) = if temporary {
         (None, true)
     } else {
@@ -1574,7 +1575,7 @@ fn emit_transcription_complete_with_cleanup(
                 discard_pending_recording(pending_path.as_deref());
                 if let Ok(stats) = app.state::<AppState>().storage().lifetime_stats() {
                     let added = u64::from(count_words(&final_transcript));
-                    crate::toast::show_word_milestone(
+                    milestone_shown = crate::toast::show_word_milestone(
                         app,
                         stats.words.saturating_sub(added),
                         stats.words,
@@ -1617,9 +1618,11 @@ fn emit_transcription_complete_with_cleanup(
     crate::auto_delete::schedule_prune(app.clone(), settings);
 
     let update_state = app.state::<AppState>().update_state().clone();
-    let toast_shown = (local && crate::speech::engine::show_cpu_fallback_notice(app))
+    let toast_shown = milestone_shown
+        || (local && crate::speech::engine::show_cpu_fallback_notice(app))
         || update_checker::maybe_show_update_toast(app, &update_state);
-    crate::notifications::evaluate_after_use(app, !toast_shown);
+    let toast_shown = crate::notifications::evaluate_after_use(app, !toast_shown) || toast_shown;
+    crate::announcements::toast_after_use(app, !toast_shown);
     crate::asks::evaluate_after_use(app);
 
     persisted

@@ -227,13 +227,13 @@ pub fn debug_show_toast(
 pub const WORD_MILESTONES: [u64; 4] = [1_000, 10_000, 100_000, 1_000_000];
 
 /// Celebrates the highest milestone crossed between `before` and `after` lifetime words.
-pub fn show_word_milestone(app: &AppHandle<AppRuntime>, before: u64, after: u64) {
+pub fn show_word_milestone(app: &AppHandle<AppRuntime>, before: u64, after: u64) -> bool {
     let Some(milestone) = WORD_MILESTONES
         .iter()
         .rev()
         .find(|m| before < **m && **m <= after)
     else {
-        return;
+        return false;
     };
     let settings = app.state::<AppState>().current_settings();
     let strings = crate::native_i18n::MenuStrings::resolve(&settings);
@@ -250,6 +250,7 @@ pub fn show_word_milestone(app: &AppHandle<AppRuntime>, before: u64, after: u64)
             ..Default::default()
         },
     );
+    true
 }
 
 fn format_thousands(value: u64) -> String {

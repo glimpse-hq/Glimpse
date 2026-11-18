@@ -647,6 +647,8 @@ pub fn run() {
             announcements::list_announcements,
             announcements::dismiss_release_notes,
             announcements::dismiss_announcement,
+            announcements::open_toasted_announcement,
+            announcements::run_toasted_announcement,
             get_dictation_stats,
             auto_delete::preview_recording_prune,
             auto_delete::preview_transcription_prune,
