@@ -82,10 +82,10 @@ pub fn last_notice_shown_at(store: &SettingsStore) -> Option<DateTime<Utc>> {
     NoticeState::load(store).last_shown_any()
 }
 
-// Refresh license analytics even when another toast suppresses the notice.
-pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) {
+// Refresh license analytics even when another toast suppresses the notice. True when it shows one.
+pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) -> bool {
     if license::developer_license_bypass_active() {
-        return;
+        return false;
     }
 
     let state = app.state::<AppState>();
@@ -95,12 +95,12 @@ pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) {
         Ok(state) => state,
         Err(err) => {
             tracing::warn!("Skipping trial notices, license state unavailable: {err}");
-            return;
+            return false;
         }
     };
     crate::note_license_state(app, &state, &license_state);
     if !show_notice {
-        return;
+        return false;
     }
 
     let now = Utc::now();
@@ -110,15 +110,15 @@ pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) {
         if state.clear(NOTICE_LICENSE_INACTIVE) {
             state.save(&store);
         }
-        return;
+        return false;
     }
 
     let Some(notice) = due_notice(&license_state, &state, now) else {
-        return;
+        return false;
     };
 
     if !budget_allows(&state, &license_state, now) {
-        return;
+        return false;
     }
 
     let (message, action_label) = notice_copy(app, notice, license_state.trial_days_remaining);
@@ -137,6 +137,7 @@ pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) {
 
     state.mark_shown(notice, now);
     state.save(&store);
+    true
 }
 
 fn due_notice(

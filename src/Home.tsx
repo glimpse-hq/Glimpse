@@ -55,7 +55,7 @@ import LocalApiSidebarStatus from "./features/settings/components/LocalApiSideba
 import NewsMenu from "./features/news/components/NewsMenu";
 import AskPrompt from "./features/asks/components/AskPrompt";
 import AnnouncementScreen from "./features/news/components/AnnouncementScreen";
-import { useAnnouncement } from "./features/news/queries";
+import { newsKeys, useAnnouncement } from "./features/news/queries";
 import AccountPill from "./features/license/components/AccountPill";
 import { getLocalApiStatus } from "./features/settings/models-api";
 import type { LocalApiStatus } from "./types";
@@ -67,7 +67,7 @@ import {
 } from "./features/license/queries";
 import LockedFeature from "./features/license/components/LockedFeature";
 import TrialEndedScreen from "./features/license/components/TrialEndedScreen";
-import { useIsFetching } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings } from "./features/settings/queries";
@@ -105,6 +105,7 @@ type HomeProps = {
 
 const Home = ({ onReady }: HomeProps) => {
   const { t } = useLingui();
+  const queryClient = useQueryClient();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // The nav animates when it swaps, not when the window first opens.
   const [navSwapped, setNavSwapped] = useState(false);
@@ -344,6 +345,13 @@ const Home = ({ onReady }: HomeProps) => {
       ["navigate:library", () => openView("library")],
       ["navigate:record", () => openView("record")],
       [
+        "navigate:announcement",
+        () =>
+          void queryClient.invalidateQueries({
+            queryKey: newsKeys.announcement(),
+          }),
+      ],
+      [
         "license:checkout-returned",
         () => {
           // QuerySyncBridge refetches the license state.
@@ -375,7 +383,7 @@ const Home = ({ onReady }: HomeProps) => {
       cancelled = true;
       unlisteners.forEach((fn) => fn());
     };
-  }, [openGatedView]);
+  }, [openGatedView, queryClient]);
 
   const showDropTarget = (payload: { paths?: string[] } | undefined) => {
     if (!licenseGateActiveRef.current) return;
