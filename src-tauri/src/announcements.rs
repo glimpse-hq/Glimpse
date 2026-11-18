@@ -161,11 +161,8 @@ pub async fn get_announcement(
     let store = &state.settings_store;
     let client = state.http();
     let requested = OPEN_REQUESTED.lock().clone();
-    if let Some(requested) = requested
-        && let Some(item) = targeted_items(store, &client)
-            .await?
-            .into_iter()
-            .find(|item| item.id == requested)
+    if let Some(item) = requested
+        && is_targeted(&item, &audience(store)?)
     {
         return Ok(Some(item.into_message()));
     }
@@ -203,7 +200,7 @@ static LAST_TOAST_CHECK: Mutex<Option<Instant>> = Mutex::new(None);
 static TOAST_DUE: Mutex<Option<FeedItem>> = Mutex::new(None);
 static TOASTED: Mutex<Option<FeedItem>> = Mutex::new(None);
 /// Shown in place of the usual pick until it's dismissed.
-static OPEN_REQUESTED: Mutex<Option<String>> = Mutex::new(None);
+static OPEN_REQUESTED: Mutex<Option<FeedItem>> = Mutex::new(None);
 
 /// Shows the first unseen announcement marked `toast` once, after a dictation.
 pub fn toast_after_use(app: &AppHandle<AppRuntime>, show: bool) {
@@ -212,10 +209,10 @@ pub fn toast_after_use(app: &AppHandle<AppRuntime>, show: bool) {
     }
     let store = &app.state::<AppState>().settings_store;
     if show
-        && let Some(item) = TOAST_DUE
-            .lock()
-            .take()
-            .filter(|item| !seen_ids(store).contains(&item.id))
+        && let Some(item) = TOAST_DUE.lock().take().filter(|item| {
+            !seen_ids(store).contains(&item.id)
+                && audience(store).is_ok_and(|audience| is_targeted(item, &audience))
+        })
     {
         let mut toasted = toasted_ids(store);
         toasted.push(item.id.clone());
@@ -268,7 +265,7 @@ pub fn open_toasted_announcement(app: AppHandle<AppRuntime>) -> Result<(), Strin
     let Some(item) = TOASTED.lock().clone() else {
         return Ok(());
     };
-    *OPEN_REQUESTED.lock() = Some(item.id);
+    *OPEN_REQUESTED.lock() = Some(item);
     crate::tray::open_settings_page(&app, crate::tray::SettingsPage::Announcement)
         .map_err(|err| err.to_string())
 }
@@ -298,6 +295,18 @@ async fn targeted_items(store: &SettingsStore, client: &Client) -> Result<Vec<Fe
         return Ok(Vec::new());
     };
     let audience = audience(store)?;
+    Ok(items
+        .into_iter()
+        .filter(|item| is_targeted(item, &audience))
+        .map(|item| FeedItem {
+            url: item.url.filter(|url| url.starts_with("https://")),
+            ..item
+        })
+        .collect())
+}
+
+/// Running now and meant for this install.
+fn is_targeted(item: &FeedItem, audience: &[&str]) -> bool {
     let now = Utc::now();
     let platform = if cfg!(target_os = "macos") {
         "mac"
@@ -309,22 +318,13 @@ async fn targeted_items(store: &SettingsStore, client: &Client) -> Result<Vec<Fe
     } else {
         "direct"
     };
-    Ok(items
-        .into_iter()
-        .filter(|item| {
-            item.starts.is_none_or(|starts| starts <= now)
-                && item.ends.is_none_or(|ends| now < ends)
-                && (item.platforms.is_empty() || item.platforms.iter().any(|p| p == platform))
-                && (item.audience.is_empty()
-                    || item.audience.iter().any(|a| audience.contains(&a.as_str())))
-                && (item.install.is_empty() || item.install.iter().any(|i| i == install))
-                && (item.versions.is_empty() || item.versions.iter().any(|v| v == VERSION))
-        })
-        .map(|item| FeedItem {
-            url: item.url.filter(|url| url.starts_with("https://")),
-            ..item
-        })
-        .collect())
+    item.starts.is_none_or(|starts| starts <= now)
+        && item.ends.is_none_or(|ends| now < ends)
+        && (item.platforms.is_empty() || item.platforms.iter().any(|p| p == platform))
+        && (item.audience.is_empty()
+            || item.audience.iter().any(|a| audience.contains(&a.as_str())))
+        && (item.install.is_empty() || item.install.iter().any(|i| i == install))
+        && (item.versions.is_empty() || item.versions.iter().any(|v| v == VERSION))
 }
 
 #[tauri::command]
@@ -339,7 +339,9 @@ pub fn dismiss_release_notes(state: tauri::State<'_, AppState>) -> Result<(), St
 
 #[tauri::command]
 pub fn dismiss_announcement(state: tauri::State<'_, AppState>, id: String) -> Result<(), String> {
-    OPEN_REQUESTED.lock().take_if(|requested| *requested == id);
+    OPEN_REQUESTED
+        .lock()
+        .take_if(|requested| requested.id == id);
     let store = &state.settings_store;
     let mut seen = seen_ids(store);
     if !seen.contains(&id) {

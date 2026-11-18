@@ -731,6 +731,7 @@ pub fn run() {
             audio::list_input_devices,
             toast::toast_dismissed,
             toast::resize_toast_window,
+            toast::close_toast,
             voice_prompt::voice_prompt_skip,
             open_accessibility_settings,
             check_accessibility_permission,

@@ -201,6 +201,10 @@ pub fn toast_dismissed(app: AppHandle<AppRuntime>) -> bool {
     crate::voice_prompt::toast_closed(&app)
 }
 
+/// For a toast button that only closes the toast.
+#[tauri::command]
+pub fn close_toast() {}
+
 #[tauri::command]
 pub fn debug_show_toast(
     toast_type: String,
