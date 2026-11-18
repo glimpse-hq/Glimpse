@@ -280,7 +280,9 @@ pub fn settings_for_language<'a>(
     }
     if settings.llm_auto
         && apple_llm_ready()
-        && languages.iter().any(|language| apple_supports(language))
+        && languages
+            .iter()
+            .any(|language| glimpse_language::apple::apple_supports_language(language))
     {
         let mut apple = settings.clone();
         apple.llm_auto = false;
@@ -309,21 +311,6 @@ fn dictation_languages(settings: &UserSettings, detected: Option<&str>) -> Vec<S
         Some(code) => vec![base(code).unwrap_or(code).to_ascii_lowercase()],
         None => crate::speech::catalog::user_languages(settings),
     }
-}
-
-fn apple_supports(language: &str) -> bool {
-    static LANGUAGES: OnceLock<Vec<String>> = OnceLock::new();
-    let languages = match LANGUAGES.get() {
-        Some(languages) => languages,
-        None => {
-            let fetched = glimpse_language::apple::apple_supported_languages();
-            if fetched.is_empty() {
-                return false;
-            }
-            LANGUAGES.get_or_init(|| fetched)
-        }
-    };
-    languages.iter().any(|code| code == language)
 }
 
 /// Built-in models with no endpoint, API key, or model name to configure.
