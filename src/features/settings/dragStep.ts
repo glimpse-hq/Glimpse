@@ -1,6 +1,12 @@
 import type React from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 const PIXELS_PER_STEP = 15;
+
+// A trackpad tick when a drag snaps or stops. Mac only; Windows does nothing.
+export const hapticTick = () => {
+  void invoke("perform_haptic").catch(() => {});
+};
 
 // Steps through `count` options while the pointer drags sideways.
 export function startDragStep(
@@ -18,6 +24,7 @@ export function startDragStep(
     const nextIndex = Math.min(count - 1, Math.max(0, startIndex + steps));
     if (nextIndex !== lastIndex) {
       lastIndex = nextIndex;
+      hapticTick();
       onStep(nextIndex);
     }
   };

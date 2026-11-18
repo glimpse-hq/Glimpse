@@ -4,7 +4,8 @@ use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension, Row, ToSql, params};
 
 use crate::library::{
-    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, PreviousTranscript,
+    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryItemsPage,
+    PreviousTranscript,
 };
 
 const ACTIVE_STATUSES: &str = "('pending', 'importing', 'transcribing')";
@@ -12,6 +13,13 @@ const ACTIVE_STATUSES: &str = "('pending', 'importing', 'transcribing')";
 const LIBRARY_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
     error_message, transcript, segments, words, duration_seconds, file_size_bytes, original_format, \
     created_at, transcribed_at, tags, llm_cleanup_enabled, speech_model, show_timestamps, \
+    detect_speakers, kind, speakers, secondary_audio_path, sources, bookmarks, transcript_edited";
+
+/// LIBRARY_COLUMNS without the transcript, segments and word timings, which
+/// the app's list never shows and which run to megabytes for long recordings.
+const LIBRARY_LIST_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
+    error_message, NULL AS transcript, NULL AS segments, NULL AS words, duration_seconds, file_size_bytes, \
+    original_format, created_at, transcribed_at, tags, llm_cleanup_enabled, speech_model, show_timestamps, \
     detect_speakers, kind, speakers, secondary_audio_path, sources, bookmarks, transcript_edited";
 
 pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Result<LibraryItem> {
@@ -94,9 +102,105 @@ pub(crate) fn get_library_items_page(
     limit: usize,
     offset: usize,
 ) -> Result<(Vec<LibraryItem>, bool)> {
-    let (where_clause, mut params) = build_library_filter(&filter);
+    query_library_page(conn, root, LIBRARY_COLUMNS, filter, limit, offset)
+}
+
+pub(crate) fn get_library_list_page(
+    conn: &Connection,
+    root: &Path,
+    filter: LibraryFilter,
+    limit: usize,
+    offset: usize,
+) -> Result<LibraryItemsPage> {
+    let search = filter.search.clone().unwrap_or_default();
+    let (items, has_more) =
+        query_library_page(conn, root, LIBRARY_LIST_COLUMNS, filter, limit, offset)?;
+    let snippets = get_library_snippets(conn, &items, &search)?;
+    Ok(LibraryItemsPage {
+        items,
+        has_more,
+        snippets,
+    })
+}
+
+/// A short passage of each transcript: around the search's first word, or its
+/// opening without one.
+fn get_library_snippets(
+    conn: &Connection,
+    items: &[LibraryItem],
+    search: &str,
+) -> Result<std::collections::HashMap<String, String>> {
+    const SPAN: i64 = 200;
+    if items.is_empty() {
+        return Ok(Default::default());
+    }
+    // An empty term matches at the start of every transcript.
+    let term = extract_search_terms(search.trim())
+        .0
+        .into_iter()
+        .next()
+        .unwrap_or_default();
+    let ids = vec!["?"; items.len()].join(", ");
     let sql = format!(
-        "SELECT {LIBRARY_COLUMNS}
+        "SELECT id, max(instr(lower(transcript), lower(?1)) - 60, 1) AS start,
+                substr(transcript, max(instr(lower(transcript), lower(?1)) - 60, 1), {SPAN}),
+                length(transcript)
+         FROM library_items
+         WHERE transcript <> '' AND instr(lower(transcript), lower(?1)) > 0 AND id IN ({ids})"
+    );
+    let mut params: Vec<&dyn ToSql> = vec![&term];
+    params.extend(items.iter().map(|item| &item.id as &dyn ToSql));
+    let mut stmt = conn.prepare(&sql)?;
+    let snippets = stmt
+        .query_map(rusqlite::params_from_iter(params), |row| {
+            let start: i64 = row.get(1)?;
+            let text: String = row.get(2)?;
+            let total: i64 = row.get(3)?;
+            Ok((
+                row.get::<_, String>(0)?,
+                trim_snippet(&text, start > 1, start + SPAN <= total),
+            ))
+        })?
+        .collect::<rusqlite::Result<_>>()?;
+    Ok(snippets)
+}
+
+// Cut passages lose their partial first and last words and get ellipses.
+// Text with no nearby space (Japanese, Chinese) is cut where it is.
+fn trim_snippet(text: &str, cut_start: bool, cut_end: bool) -> String {
+    const NEAR: usize = 24;
+    let mut text = text.trim();
+    if cut_start
+        && let Some((head, rest)) = text.split_once(char::is_whitespace)
+        && head.chars().count() <= NEAR
+    {
+        text = rest;
+    }
+    if cut_end
+        && let Some((rest, tail)) = text.rsplit_once(char::is_whitespace)
+        && tail.chars().count() <= NEAR
+    {
+        text = rest;
+    }
+    format!(
+        "{}{}{}",
+        if cut_start { "…" } else { "" },
+        text.trim(),
+        if cut_end { "…" } else { "" }
+    )
+}
+
+fn query_library_page(
+    conn: &Connection,
+    root: &Path,
+    columns: &str,
+    filter: LibraryFilter,
+    limit: usize,
+    offset: usize,
+) -> Result<(Vec<LibraryItem>, bool)> {
+    let (where_clause, mut params) = build_library_filter(&filter, root);
+    let sql = format!(
+        "SELECT {columns}
          FROM library_items
          {}
          ORDER BY created_at DESC
@@ -390,14 +494,21 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
 
 // Re-root a stored audio path onto the current library location when the
 // original no longer exists (e.g. the app data directory moved).
-fn resolve_audio_path(root: &Path, stored: String) -> String {
+pub(crate) fn resolve_audio_path(root: &Path, stored: String) -> String {
     let path = Path::new(&stored);
     if path.exists() {
         return stored;
     }
-    if let (Some(folder), Some(file)) = (path.parent().and_then(Path::file_name), path.file_name())
-    {
-        let rebased = root.join(folder).join(file);
+    // The last parts are `<folder>/<item>/<file>` or `<item>/<file>`.
+    let parts: Vec<_> = path.components().rev().take(3).collect();
+    for count in [3, 2] {
+        if parts.len() < count {
+            continue;
+        }
+        let rebased = parts[..count]
+            .iter()
+            .rev()
+            .fold(root.to_path_buf(), |dir, part| dir.join(part));
         if rebased.exists() {
             return rebased.display().to_string();
         }
@@ -425,10 +536,12 @@ fn library_item_from_row(root: &Path, row: &Row<'_>) -> rusqlite::Result<Library
         .filter(|raw| !raw.trim().is_empty())
         .and_then(|raw| serde_json::from_str(&raw).ok());
 
+    let audio_path = resolve_audio_path(root, row.get("audio_path")?);
     Ok(LibraryItem {
         id: row.get("id")?,
         name: row.get("name")?,
-        audio_path: resolve_audio_path(root, row.get("audio_path")?),
+        folder: crate::library::folders::folder_of(root, &audio_path),
+        audio_path,
         source_path: row.get("source_path")?,
         store_original: row.get::<_, i64>("store_original")? == 1,
         status: LibraryItemStatus::from_fields(&status_value, progress, error_message),
@@ -526,7 +639,7 @@ fn tag_like_pattern(tag: &str) -> String {
     format!("%{}%", escape_like(&quoted))
 }
 
-fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>) {
+fn build_library_filter(filter: &LibraryFilter, root: &Path) -> (String, Vec<Box<dyn ToSql>>) {
     let mut clauses: Vec<String> = vec!["deleted = 0".to_string()];
     let mut params: Vec<Box<dyn ToSql>> = Vec::new();
 
@@ -559,6 +672,18 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
                 params.push(Box::new(trimmed.to_string()));
             }
         }
+    }
+
+    if let Some(folder) = filter.folder.as_ref()
+        && !folder.trim().is_empty()
+    {
+        let prefix = format!(
+            "{}{}",
+            root.join(folder.trim()).display(),
+            std::path::MAIN_SEPARATOR
+        );
+        clauses.push("audio_path LIKE ? ESCAPE '\\'".to_string());
+        params.push(Box::new(format!("{}%", escape_like(&prefix))));
     }
 
     if let Some(tag) = filter.tag.as_ref()

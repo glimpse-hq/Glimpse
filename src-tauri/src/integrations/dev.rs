@@ -197,6 +197,7 @@ fn show(
             license_changed(app)?;
         }
         "toast" => show_toast(app, words.get(1).copied().unwrap_or_default())?,
+        "pill" => show_pill(app, words.get(1).copied().unwrap_or_default())?,
         "discarded" => {
             let notice = words.get(1).copied().unwrap_or_default();
             let notice = serde_json::from_value(json!(notice))
@@ -206,6 +207,48 @@ fn show(
         other => return Err(format!("Unknown screen `{other}`.")),
     }
     Ok(json!({ "shown": words.join(" ") }))
+}
+
+/// Puts the pill in a state without recording; listening plays a synthetic voice for six seconds.
+fn show_pill(app: &AppHandle<AppRuntime>, state: &str) -> Result<(), String> {
+    use crate::pill::PillStatus;
+    let status = match state {
+        "idle" => PillStatus::Idle,
+        "listening" => PillStatus::Listening,
+        "processing" | "cleanup" => PillStatus::Processing,
+        "error" => PillStatus::Error,
+        other => return Err(format!("Unknown pill state `{other}`.")),
+    };
+    app.state::<AppState>().pill().transition_to(app, status);
+    if state == "cleanup" {
+        crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
+    }
+    if status == PillStatus::Listening {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            for frame in 0..150u16 {
+                if app.state::<AppState>().pill().status() != PillStatus::Listening {
+                    break;
+                }
+                let t = f32::from(frame) * 0.04;
+                let level = (0.55 + 0.45 * (t * 7.0).sin()) * (0.6 + 0.4 * (t * 2.3).sin());
+                let bins: Vec<u8> = (0..256u16)
+                    .map(|i| {
+                        let f = f32::from(i);
+                        let ripple = 0.7 + 0.3 * (f * 0.3 + t * 5.0).sin();
+                        (level * 255.0 * (-f / 40.0).exp() * ripple).clamp(0.0, 255.0) as u8
+                    })
+                    .collect();
+                crate::native_ui::pill::set_spectrum(&bins);
+                let _ = app.emit(
+                    crate::EVENT_AUDIO_SPECTRUM,
+                    crate::AudioSpectrumPayload { bins },
+                );
+                std::thread::sleep(Duration::from_millis(40));
+            }
+        });
+    }
+    Ok(())
 }
 
 fn show_toast(app: &AppHandle<AppRuntime>, id: &str) -> Result<(), String> {
@@ -249,9 +292,28 @@ fn window(app: &AppHandle<AppRuntime>, words: &[&str]) -> Result<Value, String> 
     let [label, action, rest @ ..] = words else {
         return Err("Usage: glimpse dev window <label> <action>".to_string());
     };
-    let window = app
-        .get_webview_window(label)
-        .ok_or_else(|| format!("No `{label}` window is open."))?;
+    let Some(window) = app.get_webview_window(label) else {
+        // The native pill has no webview, so it only reports its info.
+        return match (*label, *action, crate::native_ui::pill::info()) {
+            ("pill", "info", Some(info)) => native_window_info(label, info),
+            ("pill", other, Some(_)) => Err(format!("`pill` has no webview for `{other}`.")),
+            _ => Err(format!("No `{label}` window is open.")),
+        };
+    };
+    // The native toast draws in its own window; the toast webview stays hidden.
+    if *label == crate::toast::WINDOW_LABEL
+        && let Some(info) = crate::native_ui::toast::info()
+    {
+        return match *action {
+            "info" => native_window_info(label, info).map(|mut info| {
+                info["buttons"] = crate::native_ui::toast::buttons();
+                info
+            }),
+            other => Err(format!(
+                "The native `{label}` has no webview for `{other}`."
+            )),
+        };
+    }
     let numbers = || -> Result<(f64, f64), String> {
         match rest {
             [a, b] => a
@@ -277,6 +339,25 @@ fn window(app: &AppHandle<AppRuntime>, words: &[&str]) -> Result<Value, String> 
     };
     result.map_err(|err| err.to_string())?;
     window_info(&window)
+}
+
+// A native window's info, in the shape `window_info` gives webview windows.
+fn native_window_info(
+    label: &str,
+    (id, visible, frame, scale): (i64, bool, tauri::PhysicalRect<i32, u32>, f64),
+) -> Result<Value, String> {
+    let position = frame.position.to_logical::<f64>(scale);
+    let size = frame.size.to_logical::<f64>(scale);
+    Ok(json!({
+        "label": label,
+        "id": id,
+        "visible": visible,
+        "x": position.x,
+        "y": position.y,
+        "width": size.width,
+        "height": size.height,
+        "scale": scale,
+    }))
 }
 
 /// The README shots want active window chrome, which needs the app active.

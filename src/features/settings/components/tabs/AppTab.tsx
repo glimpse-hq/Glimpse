@@ -11,6 +11,7 @@ import {
   ArrowElbowDownRight as CornerDownRight,
   CircleNotch as Loader2,
 } from "@phosphor-icons/react";
+import FieldLabel from "../../../../shared/ui/FieldLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import SettingCard from "../../../../shared/ui/SettingCard";
@@ -535,12 +536,12 @@ const AppTab = ({
       <div className="space-y-6">
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1.5">
-            <span className="ui-text-label-strong ui-color-primary">
+            <FieldLabel>
               {t({
                 id: "settings.app.text_size.label.v2",
                 message: "Text size",
               })}
-            </span>
+            </FieldLabel>
             <Dropdown
               value={textSizeMode}
               ariaLabel={t({
@@ -552,12 +553,12 @@ const AppTab = ({
             />
           </div>
           <div className="space-y-1.5">
-            <span className="ui-text-label-strong ui-color-primary">
+            <FieldLabel>
               {t({
                 id: "settings.app.theme.label",
                 message: "Theme",
               })}
-            </span>
+            </FieldLabel>
             <Dropdown
               value={themeMode}
               ariaLabel={t({
@@ -569,12 +570,12 @@ const AppTab = ({
             />
           </div>
           <div className="space-y-1.5">
-            <span className="ui-text-label-strong ui-color-primary">
+            <FieldLabel>
               {t({
                 id: "settings.app.language.label",
                 message: "Language",
               })}
-            </span>
+            </FieldLabel>
             <Dropdown
               value={appLocale}
               ariaLabel={t({
@@ -602,7 +603,7 @@ const AppTab = ({
             </SectionLabel>
 
             {permissionRowCount > 0 && (
-              <SettingCard equalizeRows className="gap-3">
+              <SettingCard equalizeRows className="flex-1 gap-3">
                 {platformCapabilities.showsMicrophonePermission && (
                   <SettingRow
                     title={t({
@@ -675,7 +676,8 @@ const AppTab = ({
               </p>
             )}
 
-            <SettingCard>
+            {/* One card in each column grows, so both columns end level. */}
+            <SettingCard className={permissionRowCount > 0 ? "" : "flex-1"}>
               <ToggleRow
                 title={t({
                   id: "settings.app.analytics.v2",

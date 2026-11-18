@@ -6,6 +6,8 @@ Rust paths below are relative to `src-tauri/src/` unless prefixed with `src-taur
 
 `src-tauri/tauri.conf.json` declares only `main` and `toast`. `tray.rs` creates `settings`; `recording/live_window.rs` creates `live`. All four route through `src/app/App.tsx`. When changing window behavior, inspect its native creation site as well as its React view.
 
+`native_ui/` creates two more windows without Tauri: the pill and the toast, drawn with wgpu (Metal, DX12 through DirectComposition) in a non-activating NSPanel on macOS and a no-activate tool window on Windows (`platform/*/native_window.rs`). They draw only while on screen; a frame drawn into a hidden window holds a Metal drawable and stalls the next show. Screen readers reach them through AccessKit, and macOS announcements are posted from the app because VoiceOver never queries a panel that never takes focus. If the GPU can't be used or is lost, the `main` and `toast` webviews take over. Tauri's own window builder needs its `unstable` feature, which turns every webview into a child webview, so don't use it.
+
 `src-tauri/capabilities/` scopes plugin permissions by window and platform. Match the window that actually makes the call; do not broaden every window's permissions to fix one failing call.
 
 ## macOS (14+)

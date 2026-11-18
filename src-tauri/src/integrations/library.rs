@@ -183,6 +183,7 @@ fn status(identifier: &str, args: &[String], json: bool) -> Result<()> {
 fn list(identifier: &str, args: &[String], json: bool) -> Result<()> {
     let limit = usize_flag(args, "--limit", 20)?;
     let filter = LibraryFilter {
+        folder: None,
         status: str_flag(args, "--status")?.map(str::to_string),
         ..Default::default()
     };

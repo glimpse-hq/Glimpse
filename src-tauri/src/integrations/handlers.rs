@@ -28,9 +28,9 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "record.status" => Ok(record_state_json(
             &app.state::<AppState>().recording().state(),
         )),
-        "record.start" => record_start(app),
+        "record.start" => record_start(app, &request.args),
         "record.pause" => record_pause(app),
-        "record.resume" => record_resume(app),
+        "record.resume" => record_resume(app, &request.args),
         "record.bookmark" => record_bookmark(app, &request.args),
         "record.finish" => record_finish(app, &request.args),
         "record.live" => record_live(app, &request.args),
@@ -535,7 +535,8 @@ fn require_recording(app: &AppHandle<AppRuntime>) -> Result<(), String> {
     }
 }
 
-fn record_start(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+/// `client` is the MCP agent's name, absent from the CLI.
+fn record_start(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
     let state = app.state::<AppState>();
     require_license(&state)?;
     if state.recording().is_active() {
@@ -547,6 +548,9 @@ fn record_start(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
         return Err("Choose what to record in Glimpse first. The Record screen is open.".into());
     };
     crate::recording::start_session(app, sources).map_err(|err| record_error(err.to_string()))?;
+    if let Some(agent) = args.get("client").and_then(Value::as_str) {
+        crate::recording::show_agent_notice(app, agent, false);
+    }
     Ok(record_state_json(&state.recording().state()))
 }
 
@@ -557,10 +561,17 @@ fn record_pause(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
     Ok(record_state_json(&state))
 }
 
-fn record_resume(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+fn record_resume(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
     require_license(&app.state::<AppState>())?;
     require_recording(app)?;
+    let was_paused = app.state::<AppState>().recording().state().status == "paused";
     let state = crate::recording::resume_session(app);
+    if was_paused
+        && state.status == "recording"
+        && let Some(agent) = args.get("client").and_then(Value::as_str)
+    {
+        crate::recording::show_agent_notice(app, agent, true);
+    }
     Ok(record_state_json(&state))
 }
 

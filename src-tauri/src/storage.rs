@@ -1167,6 +1167,22 @@ impl StorageManager {
         )
     }
 
+    pub fn get_library_list_page(
+        &self,
+        filter: LibraryFilter,
+        limit: usize,
+        offset: usize,
+    ) -> Result<crate::library::LibraryItemsPage> {
+        let conn = self.connection.lock();
+        crate::library::repo::get_library_list_page(
+            &conn,
+            &self.library_root,
+            filter,
+            limit,
+            offset,
+        )
+    }
+
     pub fn get_recoverable_library_items(&self) -> Result<Vec<LibraryItem>> {
         let conn = self.connection.lock();
         crate::library::repo::get_recoverable_library_items(&conn, &self.library_root)
@@ -1233,6 +1249,29 @@ impl StorageManager {
     pub fn get_library_tags(&self) -> Result<Vec<String>> {
         let conn = self.connection.lock();
         crate::library::repo::get_library_tags(&conn)
+    }
+
+    pub fn get_library_folders(&self) -> Result<Vec<String>> {
+        crate::library::folders::list_folders(&self.library_root)
+    }
+
+    pub fn create_library_folder(&self, name: &str) -> Result<String> {
+        crate::library::folders::create_folder(&self.library_root, name)
+    }
+
+    pub fn move_library_item(&self, id: &str, folder: Option<&str>) -> Result<()> {
+        let mut conn = self.connection.lock();
+        crate::library::folders::move_item(&mut conn, &self.library_root, id, folder)
+    }
+
+    pub fn rename_library_folder(&self, from: &str, to: &str) -> Result<String> {
+        let mut conn = self.connection.lock();
+        crate::library::folders::rename_folder(&mut conn, &self.library_root, from, to)
+    }
+
+    pub fn delete_library_folder(&self, name: &str) -> Result<()> {
+        let mut conn = self.connection.lock();
+        crate::library::folders::delete_folder(&mut conn, &self.library_root, name)
     }
 }
 

@@ -56,6 +56,7 @@ pub(crate) enum SettingsPage {
     General,
     App,
     Api,
+    Announcement,
     CheckoutReturned,
 }
 
@@ -73,6 +74,7 @@ impl SettingsPage {
             Self::General => "navigate:general",
             Self::App => "navigate:app",
             Self::Api => "navigate:api",
+            Self::Announcement => "navigate:announcement",
             Self::CheckoutReturned => crate::EVENT_LICENSE_CHECKOUT_RETURNED,
         }
     }

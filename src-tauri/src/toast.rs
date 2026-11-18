@@ -40,6 +40,9 @@ pub fn emit_toast(app: &AppHandle<AppRuntime>, payload: Payload) {
     if payload.toast_type != "ask" {
         crate::voice_prompt::toast_covered();
     }
+    if crate::native_ui::toast::show(&payload) {
+        return;
+    }
     if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
         let _ = toast_window.set_size(tauri::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
         position_toast_window(app, &toast_window, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -107,6 +110,10 @@ pub fn show_with_action(
 }
 
 pub fn hide(app: &AppHandle<AppRuntime>) {
+    // The webview toast's own hide would report a second close.
+    if crate::native_ui::toast::hide() {
+        return;
+    }
     let _ = app.emit(EVENT_HIDE, ());
 
     // Best-effort: also hide the toast surface at the platform level.
@@ -161,8 +168,14 @@ fn target_toast_monitor(
     pill_is_visible: bool,
 ) -> Option<Monitor> {
     if pill_is_visible {
-        app.get_webview_window(crate::MAIN_WINDOW_LABEL)
-            .and_then(|pill_window| pill_window.current_monitor().ok().flatten())
+        crate::native_ui::pill::frame()
+            .and_then(|(pill, scale)| {
+                monitor_containing(toast_window, pill.position.cast(), Some(scale))
+            })
+            .or_else(|| {
+                app.get_webview_window(crate::MAIN_WINDOW_LABEL)
+                    .and_then(|pill_window| pill_window.current_monitor().ok().flatten())
+            })
             .or_else(|| monitor_containing_cursor(toast_window))
             .or_else(|| toast_window.current_monitor().ok().flatten())
     } else {
@@ -172,7 +185,16 @@ fn target_toast_monitor(
 }
 
 pub(crate) fn monitor_containing_cursor(window: &WebviewWindow<AppRuntime>) -> Option<Monitor> {
-    let cursor_pos = window.cursor_position().ok()?;
+    monitor_containing(window, window.cursor_position().ok()?, None)
+}
+
+// On macOS, physical monitor frames are points times each monitor's own scale and can
+// overlap, so a point measured at a known scale only matches monitors with that scale.
+fn monitor_containing(
+    window: &WebviewWindow<AppRuntime>,
+    point: tauri::PhysicalPosition<f64>,
+    scale: Option<f64>,
+) -> Option<Monitor> {
     window
         .available_monitors()
         .ok()?
@@ -180,10 +202,11 @@ pub(crate) fn monitor_containing_cursor(window: &WebviewWindow<AppRuntime>) -> O
         .find(|monitor| {
             let pos = monitor.position();
             let size = monitor.size();
-            cursor_pos.x >= pos.x as f64
-                && cursor_pos.x < (pos.x + size.width as i32) as f64
-                && cursor_pos.y >= pos.y as f64
-                && cursor_pos.y < (pos.y + size.height as i32) as f64
+            scale.is_none_or(|scale| (monitor.scale_factor() - scale).abs() < 1e-3)
+                && point.x >= pos.x as f64
+                && point.x < (pos.x + size.width as i32) as f64
+                && point.y >= pos.y as f64
+                && point.y < (pos.y + size.height as i32) as f64
         })
 }
 
@@ -200,6 +223,10 @@ pub fn toast_dismissed(app: AppHandle<AppRuntime>) -> bool {
     }
     crate::voice_prompt::toast_closed(&app)
 }
+
+/// For a toast button that only closes the toast.
+#[tauri::command]
+pub fn close_toast() {}
 
 #[tauri::command]
 pub fn debug_show_toast(
@@ -227,13 +254,13 @@ pub fn debug_show_toast(
 pub const WORD_MILESTONES: [u64; 4] = [1_000, 10_000, 100_000, 1_000_000];
 
 /// Celebrates the highest milestone crossed between `before` and `after` lifetime words.
-pub fn show_word_milestone(app: &AppHandle<AppRuntime>, before: u64, after: u64) {
+pub fn show_word_milestone(app: &AppHandle<AppRuntime>, before: u64, after: u64) -> bool {
     let Some(milestone) = WORD_MILESTONES
         .iter()
         .rev()
         .find(|m| before < **m && **m <= after)
     else {
-        return;
+        return false;
     };
     let settings = app.state::<AppState>().current_settings();
     let strings = crate::native_i18n::MenuStrings::resolve(&settings);
@@ -250,6 +277,7 @@ pub fn show_word_milestone(app: &AppHandle<AppRuntime>, before: u64, after: u64)
             ..Default::default()
         },
     );
+    true
 }
 
 fn format_thousands(value: u64) -> String {

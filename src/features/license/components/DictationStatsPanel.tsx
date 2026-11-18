@@ -249,6 +249,7 @@ const DictationStatsPanel = () => {
   return (
     <div className="mx-auto w-full max-w-[686px] space-y-3">
       <SectionLabel
+        divider={false}
         trailing={
           <button
             onClick={() => setSharing(true)}

@@ -313,6 +313,24 @@ export const NATIVE_MENU_STRINGS = [
       "Dictation is slower because of a graphics driver problem. Updating the driver can fix this.",
   }),
   msg({
+    id: "native.toast.agent_started_recording",
+    message: "{agent} started a recording.",
+  }),
+  msg({
+    id: "native.toast.agent_started_recording_unnamed",
+    message: "An agent started a recording.",
+  }),
+  msg({
+    id: "native.toast.agent_resumed_recording",
+    message: "{agent} resumed your recording.",
+  }),
+  msg({
+    id: "native.toast.agent_resumed_recording_unnamed",
+    message: "An agent resumed your recording.",
+  }),
+  msg({ id: "native.toast.ok", message: "OK" }),
+  msg({ id: "native.toast.dont_show_again", message: "Don't Show Again" }),
+  msg({
     id: "native.toast.recording_low_disk",
     message:
       "Your disk is almost full. Glimpse will stop recording if it runs out of space.",
@@ -437,6 +455,10 @@ export const NATIVE_MENU_STRINGS = [
     message:
       "Automatic picked a newer model for you. Change it anytime in Settings.",
   }),
+  msg({
+    id: "native.toast.model_replaced",
+    message: "It replaces {model}. Change it anytime in Settings.",
+  }),
   msg({ id: "native.toast.open_settings", message: "Settings" }),
   msg({
     id: "native.toast.speaker_model_upgraded",
@@ -462,4 +484,16 @@ export const NATIVE_MENU_STRINGS = [
     message: "Recordings saved to Home.",
   }),
   msg({ id: "native.toast.view_home", message: "Open Home" }),
+  // the native toast's button labels for screen readers, and its failed action
+  msg({ id: "native.toast.close", message: "Close notification" }),
+  msg({ id: "native.toast.copy_message", message: "Copy message" }),
+  msg({ id: "native.toast.copy_done", message: "Copied" }),
+  msg({
+    id: "native.toast.action_failed",
+    message: "That didn't work. Try again.",
+  }),
+  // the native pill's status, announced to screen readers
+  msg({ id: "native.pill.listening", message: "Listening..." }),
+  msg({ id: "native.pill.processing", message: "Processing..." }),
+  msg({ id: "native.pill.error", message: "Error occurred" }),
 ];

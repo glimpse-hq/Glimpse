@@ -23,6 +23,7 @@ mod mode_context;
 mod model_language_table;
 mod music;
 mod native_i18n;
+mod native_ui;
 mod notifications;
 mod permissions;
 mod personalization;
@@ -553,11 +554,13 @@ pub fn run() {
                 let _ = window.hide();
                 platform::overlay::init(handle, &window);
             }
+            native_ui::pill::init(handle);
 
             if let Some(toast_window) = handle.get_webview_window(toast::WINDOW_LABEL) {
                 let _ = toast_window.hide();
                 platform::toast::init(handle, &toast_window);
             }
+            native_ui::toast::init(handle);
 
             analytics::set_crash_phase("tray_shortcuts");
             // The sandbox stays out of the menu bar the real app is in.
@@ -647,6 +650,8 @@ pub fn run() {
             announcements::list_announcements,
             announcements::dismiss_release_notes,
             announcements::dismiss_announcement,
+            announcements::open_toasted_announcement,
+            announcements::run_toasted_announcement,
             get_dictation_stats,
             auto_delete::preview_recording_prune,
             auto_delete::preview_transcription_prune,
@@ -689,6 +694,12 @@ pub fn run() {
             library::commands::rediarize_library_item,
             library::commands::export_library_item_to_path,
             library::commands::get_library_tags,
+            platform::perform_haptic,
+            library::commands::get_library_folders,
+            library::commands::create_library_folder,
+            library::commands::move_library_item,
+            library::commands::rename_library_folder,
+            library::commands::delete_library_folder,
             library::commands::probe_library_import_files,
             recording::get_recording_capabilities,
             recording::list_audio_apps,
@@ -704,6 +715,7 @@ pub fn run() {
             recording::remove_recording_bookmark,
             recording::discard_recording_session,
             recording::open_system_audio_settings,
+            recording::turn_off_agent_notice,
             recording::live_window::open_live_view,
             recording::live_window::hide_live_view,
             recording::live_window::finish_from_live_view,
@@ -729,6 +741,7 @@ pub fn run() {
             audio::list_input_devices,
             toast::toast_dismissed,
             toast::resize_toast_window,
+            toast::close_toast,
             voice_prompt::voice_prompt_skip,
             open_accessibility_settings,
             check_accessibility_permission,

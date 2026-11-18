@@ -91,21 +91,23 @@ export default function HomeTodayHeader({
 
   return (
     <header className="mb-3 shrink-0">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.h1
-          key={greetingKey}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={fadeTransition}
-          className="font-satoshi ui-text-display font-normal ui-color-primary tracking-tight"
-        >
-          {greetingText}
-        </motion.h1>
-      </AnimatePresence>
+      <div className="flex h-8 items-center">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.h1
+            key={greetingKey}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={fadeTransition}
+            className="min-w-0 truncate font-satoshi ui-text-display font-normal ui-color-primary tracking-tight"
+          >
+            {greetingText}
+          </motion.h1>
+        </AnimatePresence>
+      </div>
 
       {accessibilityGranted === false ? (
-        <p className="mt-2 ui-text-body-sm ui-color-muted">
+        <p className="mt-1 ui-text-body-sm ui-color-muted">
           {t({
             id: "home.today.accessibility_missing",
             message: "Your shortcut needs Accessibility access to work.",
@@ -125,7 +127,7 @@ export default function HomeTodayHeader({
         </p>
       ) : transcriptionsFetched && (reminderText || statText) ? (
         <p
-          className={`mt-2 ui-text-body-sm ${reminderText ? "ui-color-muted" : "ui-color-disabled"}`}
+          className={`mt-1 ui-text-body-sm ${reminderText ? "ui-color-muted" : "ui-color-disabled"}`}
         >
           {reminderText || statText}
         </p>

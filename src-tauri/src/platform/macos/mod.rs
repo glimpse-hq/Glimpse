@@ -2,6 +2,7 @@ pub mod audio_devices;
 pub mod icons;
 pub mod live;
 pub mod menu;
+pub mod native_window;
 pub mod overlay;
 pub mod quit_prompt;
 pub mod toast;

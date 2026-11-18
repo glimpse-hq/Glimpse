@@ -16,30 +16,21 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import {
   Warning as AlertTriangle,
-  AppWindow,
   Eye,
   EyeSlash,
-  ArrowLeft,
   BookmarkSimple,
   Check,
-  CaretDown as ChevronDown,
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
-  DotsThreeVertical,
-  Export,
+  DotsThree,
   GearSix,
   Microphone,
   MicrophoneSlash,
   Pause,
   PencilSimple as Pencil,
   Play,
-  Plus,
-  ArrowClockwise as RotateCw,
-  MagnifyingGlass as Search,
-  Monitor,
   SpeakerHigh,
   SpeakerSlash,
-  Trash as Trash2,
   UserPlus,
   Users,
   X,
@@ -59,18 +50,19 @@ import {
   PLAYBACK_RATES,
   sanitizeFileName,
   shouldShowImportProgress,
-  formatLibraryName,
   isLibraryItemBusy,
+  describeAudioSources,
+  libraryItemTitle,
 } from "./library-utils";
 import {
   resolveSpeechModelLabel,
   useDiarizerInstalled,
 } from "../../settings/models-queries";
-import { useInstalledApps } from "../../personalization/queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
-import CopyButton from "../../../shared/ui/CopyButton";
-import HoverTip from "../../../shared/ui/HoverTip";
+import { ScreenHeaderRule } from "../../../shared/ui/ScreenHeader";
+import SearchField from "../../../shared/ui/SearchField";
+import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import type {
   Bookmark,
@@ -83,14 +75,12 @@ import type {
 } from "../../../types";
 import { SPEAKER_COLORS, withSpeakerColors } from "../speakerColors";
 import { showErrorToast } from "../../../shared/lib/errorToast";
-import { startDragStep } from "../../settings/dragStep";
+import { hapticTick, startDragStep } from "../../settings/dragStep";
 
 const MAX_SPEAKERS = 16;
 const FOLLOW_PLAYBACK_KEY = "glimpse.library.follow_playback";
-// Scrollers span the window so the scrollbar sits at its edge; content stays in this column.
-const CONTENT_COLUMN = "mx-auto w-full max-w-3xl px-5";
-const COPY_BUTTON =
-  "flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40";
+// Starts on the header's left edge, at reading width.
+const CONTENT_COLUMN = "mx-auto w-full max-w-column-wide [&>*]:max-w-column";
 const EXPORT_FORMATS: Array<{ value: ExportFormat; needsSegments?: boolean }> =
   [
     { value: "txt" },
@@ -170,18 +160,37 @@ const SegmentWordsRow = ({
     x: number;
     y: number;
     width: number;
+    // Slides only from one word to the next, never into place.
+    slide: boolean;
   } | null>(null);
 
   useLayoutEffect(() => {
-    const active = containerRef.current?.querySelector<HTMLElement>(
-      '[data-word-active="true"]',
-    );
-    if (!active) return;
-    setUnderline({
-      x: active.offsetLeft,
-      y: active.offsetTop + active.offsetHeight - 2,
-      width: active.offsetWidth,
+    const container = containerRef.current;
+    if (!container) return;
+    // Hidden text (another screen is showing) measures at 0, so wait for it.
+    const place = (slide: boolean) => {
+      const active = container.querySelector<HTMLElement>(
+        '[data-word-active="true"]',
+      );
+      if (!active || active.offsetParent === null) return;
+      setUnderline((previous) => ({
+        x: active.offsetLeft,
+        y: active.offsetTop + active.offsetHeight - 2,
+        width: active.offsetWidth,
+        slide: slide && previous !== null,
+      }));
+    };
+    place(true);
+    // It also fires once on start; only a real size change (shown again,
+    // rewrapped) should move the underline.
+    let width = container.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      if (container.offsetWidth === width) return;
+      width = container.offsetWidth;
+      place(false);
     });
+    observer.observe(container);
+    return () => observer.disconnect();
   }, [activePosition, tokens]);
 
   return (
@@ -207,6 +216,7 @@ const SegmentWordsRow = ({
             transform: `translate(${underline.x}px, ${underline.y}px)`,
             width: underline.width,
             opacity: activePosition >= 0 ? 1 : 0,
+            ...(underline.slide ? {} : { transition: "none" }),
           }}
         />
       ) : null}
@@ -240,7 +250,7 @@ const BookmarkRow = ({
 
   return (
     <div
-      className="group/bookmark grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-md px-2 py-1"
+      className="group/bookmark -mx-2 grid grid-cols-[auto_1fr] items-center gap-3 rounded-md px-2 py-1"
       title={`${formatTimestamp(bookmark.at_ms)}${bookmark.label ? ` · ${bookmark.label}` : ""}`}
     >
       <button
@@ -313,10 +323,22 @@ const BookmarkRow = ({
   );
 };
 
+const menuRowBase =
+  "mx-1 flex w-[calc(100%-0.5rem)] items-center justify-between gap-3 rounded-md px-2 py-1 text-left ui-text-body-sm transition-colors hover:bg-[var(--surface-interactive)] disabled:pointer-events-none disabled:opacity-40";
+const menuRowClass = `${menuRowBase} ui-color-secondary hover:text-content-primary`;
+
+const MenuSection = ({ title }: { title: string }) => (
+  <>
+    <div className="mx-3 my-1 border-t border-border-secondary" />
+    <div className="px-3 pb-1 pt-1 ui-text-uppercase-micro ui-color-muted">
+      {title}
+    </div>
+  </>
+);
+
 const LibraryDetail = ({
   item,
   models,
-  shiftHeld,
   onClose,
   onDelete,
   onRetry,
@@ -326,11 +348,13 @@ const LibraryDetail = ({
   onCancel,
   onUpdate,
   onExport,
-  availableTags,
+  folders,
+  onMove,
+  onNewFolder,
+  onOpenFolder,
 }: {
   item: LibraryItem;
   models: SpeechModel[];
-  shiftHeld: boolean;
   onClose: () => void;
   onDelete: () => Promise<void>;
   onRetry: () => Promise<void>;
@@ -340,15 +364,16 @@ const LibraryDetail = ({
   onCancel: () => void;
   onUpdate: (patch: LibraryItemPatch) => Promise<LibraryItem>;
   onExport: (format: ExportFormat, outputPath: string) => Promise<void>;
-  availableTags: string[];
+  folders: string[];
+  onMove: (folder: string | null) => void;
+  onNewFolder: () => void;
+  onOpenFolder: (folder: string) => void;
 }) => {
   const { t } = useLingui();
   const [nameDraft, setNameDraft] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const nameEditCancelled = useRef(false);
   const [transcriptDraft, setTranscriptDraft] = useState(item.transcript ?? "");
-  const [tagInput, setTagInput] = useState("");
-  const [tagMenuOpen, setTagMenuOpen] = useState(false);
   const [showTimestamps, setShowTimestamps] = useState(
     item.show_timestamps && Boolean(item.segments?.length),
   );
@@ -406,13 +431,8 @@ const LibraryDetail = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const trackMutedRef = useRef(trackMuted);
   trackMutedRef.current = trackMuted;
-  const tagMenuRef = useRef<HTMLDivElement>(null);
   const overflowMenuRef = useRef<HTMLDivElement>(null);
   const overflowMenuPanelRef = useRef<HTMLDivElement>(null);
-  const exportMenuRef = useRef<HTMLDivElement>(null);
-  const exportMenuPanelRef = useRef<HTMLDivElement>(null);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const speakerMenuRef = useRef<HTMLDivElement>(null);
   const speakersMenuRef = useRef<HTMLDivElement>(null);
   const speakersMenuPanelRef = useRef<HTMLDivElement>(null);
@@ -436,8 +456,6 @@ const LibraryDetail = ({
 
   const modelLabel =
     resolveSpeechModelLabel(models, item.speech_model) ?? item.speech_model;
-  const sourceAppNames = item.sources?.system_audio ?? [];
-  const installedApps = useInstalledApps(sourceAppNames.length > 0).data;
   const microphoneLabel = t({
     id: "library.sources.microphone",
     message: "Microphone",
@@ -446,13 +464,6 @@ const LibraryDetail = ({
     id: "library.sources.system_audio",
     message: "System Audio",
   });
-  const entireSystemLabel = t({
-    id: "record.setup.system_mode.all",
-    message: "Entire system",
-  });
-  const appIconPath = (name: string) =>
-    installedApps?.find((app) => app.name.toLowerCase() === name.toLowerCase())
-      ?.icon_path ?? null;
   const bookmarks = useMemo(
     () => [...(item.bookmarks ?? [])].sort((a, b) => a.at_ms - b.at_ms),
     [item.bookmarks],
@@ -505,6 +516,18 @@ const LibraryDetail = ({
       year: "numeric",
     });
   }, [item.created_at]);
+
+  // What isn't on screen: when it was made, the model, and what it recorded.
+  const infoLine = [
+    createdAtLabel,
+    modelLabel,
+    describeAudioSources(item.sources, {
+      microphone: microphoneLabel,
+      systemAudio: systemAudioLabel,
+    }),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const hasTracks = Boolean(item.secondary_audio_path);
   // Recorded tracks are mixed into one stream so they share a clock.
@@ -816,9 +839,7 @@ const LibraryDetail = ({
   }, [transcriptDraft, transcriptEditable, item.transcript, writeTranscript]);
 
   useEffect(() => writeTranscript, [writeTranscript]);
-  useClickOutside(tagMenuRef, () => setTagMenuOpen(false), tagMenuOpen);
   useClickOutside(overflowMenuRef, () => setOverflowOpen(false), overflowOpen);
-  useClickOutside(exportMenuRef, () => setExportOpen(false), exportOpen);
   useClickOutside(
     playbackMenuRef,
     () => setPlaybackMenuOpen(false),
@@ -838,14 +859,9 @@ const LibraryDetail = ({
     },
     speakersMenuOpen && !speakerContext,
   );
-  useMenuKeyboard(tagMenuRef, tagMenuOpen, () => {
-    setTagMenuOpen(false);
-    setTagInput("");
-  });
   useMenuKeyboard(overflowMenuPanelRef, overflowOpen, () =>
     setOverflowOpen(false),
   );
-  useMenuKeyboard(exportMenuPanelRef, exportOpen, () => setExportOpen(false));
   useMenuKeyboard(playbackMenuPanelRef, playbackMenuOpen, () =>
     setPlaybackMenuOpen(false),
   );
@@ -876,10 +892,6 @@ const LibraryDetail = ({
   const retryFailedMessage = t({
     id: "library.detail.retry_failed",
     message: "Couldn't start the transcription again.",
-  });
-  const tagsFailedMessage = t({
-    id: "library.detail.tags_failed",
-    message: "Couldn't save the tags.",
   });
   const speakersFailedMessage = t({
     id: "library.detail.speakers_failed",
@@ -916,34 +928,8 @@ const LibraryDetail = ({
     setIsEditingName(false);
   };
 
-  const handleAddTag = async (overrideTag?: string) => {
-    const value = (overrideTag ?? tagInput).trim();
-    if (!value) return;
-    if (item.tags.some((tag) => tag.toLowerCase() === value.toLowerCase())) {
-      setTagInput("");
-      return;
-    }
-    if (await saveOrToast({ tags: [...item.tags, value] }, tagsFailedMessage)) {
-      setTagInput("");
-    }
-  };
-
-  const normalizedTagInput = tagInput.trim().toLowerCase();
-  const filteredTagOptions = availableTags.filter((tag) => {
-    const tagLower = tag.toLowerCase();
-    if (item.tags.some((existing) => existing.toLowerCase() === tagLower)) {
-      return false;
-    }
-    if (!normalizedTagInput) return true;
-    return tagLower.includes(normalizedTagInput);
-  });
-
-  const handleRemoveTag = async (tag: string) => {
-    await saveOrToast(
-      { tags: item.tags.filter((entry) => entry !== tag) },
-      tagsFailedMessage,
-    );
-  };
+  const currentFolder = item.folder ?? null;
+  const moveToFolder = onMove;
 
   const handleAddSpeaker = async () => {
     if (!canAddSpeaker) return null;
@@ -1174,7 +1160,6 @@ const LibraryDetail = ({
       showErrorToast(toastMessage);
     } finally {
       setIsExporting(false);
-      setExportOpen(false);
     }
   };
 
@@ -1193,6 +1178,7 @@ const LibraryDetail = ({
     });
   };
 
+  const { copy: copyTranscript } = useCopyToClipboard();
   const copyText = () =>
     showSpeakerText
       ? visibleTurns
@@ -1216,6 +1202,7 @@ const LibraryDetail = ({
   }, [audioError, audioReady, playAudio]);
 
   // Dragging near a bookmark lands on it.
+  const snappedAtRef = useRef<number | null | undefined>(undefined);
   const snapToBookmark = (time: number) => {
     const window = Math.max(0.35, audioDuration * 0.012);
     let best: number | null = null;
@@ -1240,6 +1227,16 @@ const LibraryDetail = ({
     const nextTime = scrubbing ? snapToBookmark(raw) : raw;
     scrubValueRef.current = nextTime;
     if (scrubbing) {
+      // A tap when the thumb catches a bookmark, not on the press that starts the drag.
+      const caught = nextTime !== raw ? nextTime : null;
+      if (
+        snappedAtRef.current !== undefined &&
+        caught !== null &&
+        caught !== snappedAtRef.current
+      ) {
+        hapticTick();
+      }
+      snappedAtRef.current = caught;
       setAudioCurrentTime(nextTime);
       audio.currentTime = nextTime;
       return;
@@ -1251,6 +1248,7 @@ const LibraryDetail = ({
   const handleScrubStart = () => {
     const audio = audioRef.current;
     if (!audio || audioError || !audioReady) return;
+    snappedAtRef.current = undefined;
     scrubWasPlayingRef.current = !audio.paused;
     updateIsScrubbing(true);
     audio.pause();
@@ -1623,7 +1621,6 @@ const LibraryDetail = ({
 
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
         event.preventDefault();
-        setSearchOpen(true);
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
         return;
@@ -1921,1352 +1918,1132 @@ const LibraryDetail = ({
 
   return (
     <div className="flex h-full w-full min-h-0 flex-col">
-      <header className="-mt-5 shrink-0 px-5 pt-1.5 pb-3">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5">
-              <button
-                onClick={onClose}
-                className="flex items-center justify-center rounded-md p-1.5 -ml-1.5 text-content-muted hover:text-content-primary hover:bg-surface-surface transition-colors"
-                aria-label={t({
-                  id: "library.detail.back",
-                  message: "Back to library",
-                })}
-              >
-                <ArrowLeft size={15} />
-              </button>
-
-              {isEditingName ? (
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  <input
-                    value={nameDraft}
-                    onChange={(event) => setNameDraft(event.target.value)}
-                    onBlur={handleNameCommit}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        handleNameCommit();
-                      }
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        cancelNameEdit();
-                      }
-                    }}
-                    aria-label={t({
-                      id: "library.detail.rename",
-                      message: "Rename",
-                    })}
-                    className="min-w-0 flex-1 max-w-md bg-transparent border-b border-[var(--color-border-primary)] px-1 py-0.5 ui-text-body-lg font-semibold text-content-primary focus:border-[var(--color-border-hover)] outline-hidden"
-                    autoFocus
-                  />
+      <header className="mx-auto mb-3 w-full max-w-column-wide shrink-0">
+        <div className="flex min-w-0 items-start gap-3.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex h-8 items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                <nav className="flex shrink-0 items-center gap-2 ui-text-screen-title tracking-tight text-content-muted">
                   <button
                     type="button"
-                    onClick={handleNameCommit}
-                    aria-label={t({
-                      id: "library.detail.rename_save",
-                      message: "Save name",
-                    })}
-                    className="text-content-muted hover:text-content-primary"
+                    onClick={onClose}
+                    className="transition-colors hover:text-content-primary"
                   >
-                    <Check size={12} aria-hidden="true" />
+                    {t({ id: "library.view.title", message: "Library" })}
                   </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 min-w-0 flex-1 group">
-                  <h2 className="ui-text-body-lg font-semibold text-content-primary truncate">
-                    {formatLibraryName(item.name)}
-                  </h2>
-                  <button
-                    onClick={() => {
-                      nameEditCancelled.current = false;
-                      setNameDraft(item.name);
-                      setIsEditingName(true);
-                    }}
-                    aria-label={t({
-                      id: "library.detail.rename",
-                      message: "Rename",
-                    })}
-                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-content-muted hover:text-content-primary transition-opacity shrink-0"
-                  >
-                    <Pencil size={11} aria-hidden="true" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-0.5">
-              {searchOpen && (
-                <div className="relative mr-1.5 flex w-52 items-center gap-2 px-1 py-0.5 border-b border-[var(--color-border-secondary)] focus-within:border-[var(--color-border-hover)] transition-colors">
-                  <Search
-                    size={12}
-                    className="text-content-disabled shrink-0"
-                    aria-hidden="true"
-                  />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    {...{ writingsuggestions: "false" }}
-                    value={searchQuery}
-                    autoFocus
-                    onChange={(event) => handleSearchChange(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        handleSearchNavigate(event.shiftKey ? -1 : 1);
-                      }
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        handleSearchChange("");
-                        setSearchOpen(false);
-                      }
-                    }}
-                    placeholder={t({
-                      id: "library.modal.search.placeholder",
-                      message: "Search transcript...",
-                    })}
-                    aria-label={t({
-                      id: "library.modal.search.aria",
-                      message: "Search transcript",
-                    })}
-                    className="bg-transparent ui-text-label text-content-secondary placeholder-content-disabled outline-hidden w-full"
-                  />
-                  {searchMatchLabel !== null && (
-                    <span className="ui-text-micro tabular-nums text-content-disabled shrink-0 whitespace-nowrap">
-                      {searchMatchLabel}
-                    </span>
+                  <ChevronRight size={14} aria-hidden="true" />
+                  {currentFolder && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onOpenFolder(currentFolder)}
+                        className="max-w-48 truncate transition-colors hover:text-content-primary"
+                      >
+                        {currentFolder}
+                      </button>
+                      <ChevronRight size={14} aria-hidden="true" />
+                    </>
                   )}
-                  {searchQuery && (
-                    <button
-                      onClick={() => handleSearchChange("")}
+                </nav>
+
+                {isEditingName ? (
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <input
+                      value={nameDraft}
+                      onChange={(event) => setNameDraft(event.target.value)}
+                      onBlur={handleNameCommit}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleNameCommit();
+                        }
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          cancelNameEdit();
+                        }
+                      }}
                       aria-label={t({
-                        id: "library.modal.search.clear",
-                        message: "Clear search",
+                        id: "library.detail.rename",
+                        message: "Rename",
                       })}
-                      className="text-content-disabled hover:text-content-muted transition-colors shrink-0"
+                      className="min-w-0 flex-1 max-w-md bg-transparent border-b border-[var(--color-border-primary)] p-0 ui-text-screen-title tracking-tight text-content-primary focus:border-[var(--color-border-hover)] outline-hidden"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={handleNameCommit}
+                      aria-label={t({
+                        id: "library.detail.rename_save",
+                        message: "Save name",
+                      })}
+                      className="text-content-muted hover:text-content-primary"
                     >
-                      <X size={12} aria-hidden="true" />
+                      <Check size={12} aria-hidden="true" />
                     </button>
-                  )}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (searchOpen) handleSearchChange("");
-                  setSearchOpen((prev) => !prev);
-                }}
-                aria-pressed={searchOpen}
-                aria-label={t({
-                  id: "library.modal.search.aria",
-                  message: "Search transcript",
-                })}
-                title={t({
-                  id: "library.modal.search.aria",
-                  message: "Search transcript",
-                })}
-                className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface ${
-                  searchOpen
-                    ? "text-content-primary"
-                    : "text-content-muted hover:text-content-primary"
-                }`}
-              >
-                <Search size={14} aria-hidden="true" />
-              </button>
-
-              <CopyButton
-                getText={copyText}
-                iconSize={14}
-                resetMs={1400}
-                disabled={!showSpeakerText && !transcriptDraft.trim()}
-                aria-label={t({ id: "library.modal.copy", message: "Copy" })}
-                title={t({ id: "library.modal.copy", message: "Copy" })}
-                className={`${COPY_BUTTON} text-content-muted hover:text-content-primary`}
-                copiedClassName={`${COPY_BUTTON} ui-color-success`}
-              />
-
-              <div className="relative" ref={exportMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setExportOpen((prev) => !prev)}
-                  disabled={isExporting || !transcriptAvailable}
-                  aria-haspopup="menu"
-                  aria-expanded={exportOpen}
-                  aria-label={t({
-                    id: "library.modal.export",
-                    message: "Export",
-                  })}
-                  title={t({ id: "library.modal.export", message: "Export" })}
-                  className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40 ${
-                    exportOpen
-                      ? "text-content-primary"
-                      : "text-content-muted hover:text-content-primary"
-                  }`}
-                >
-                  <Export size={14} aria-hidden="true" />
-                </button>
-                <AnimatePresence>
-                  {exportOpen && (
-                    <motion.div
-                      ref={exportMenuPanelRef}
-                      role="menu"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                      transition={{ duration: 0.1 }}
-                      className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl overflow-hidden z-[120] py-1"
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1 group">
+                    <h2 className="ui-text-screen-title tracking-tight text-content-primary truncate">
+                      {libraryItemTitle(item, true)}
+                    </h2>
+                    <button
+                      onClick={() => {
+                        nameEditCancelled.current = false;
+                        setNameDraft(item.name);
+                        setIsEditingName(true);
+                      }}
+                      aria-label={t({
+                        id: "library.detail.rename",
+                        message: "Rename",
+                      })}
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-content-muted hover:text-content-primary transition-opacity shrink-0"
                     >
-                      {EXPORT_FORMATS.map((format) => (
-                        <button
-                          key={format.value}
-                          type="button"
-                          role="menuitem"
-                          onClick={() => handleExport(format.value)}
-                          disabled={
-                            format.needsSegments &&
-                            !(item.segments && item.segments.length)
-                          }
-                          className="w-full px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          {format.value.toUpperCase()}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <div className="relative" ref={overflowMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setOverflowOpen((prev) => !prev)}
-                  aria-haspopup="menu"
-                  aria-expanded={overflowOpen}
-                  className="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface text-content-muted hover:text-content-primary"
-                  aria-label={t({
-                    id: "library.detail.more_actions",
-                    message: "More actions",
-                  })}
-                >
-                  <DotsThreeVertical
-                    size={14}
-                    weight="bold"
-                    aria-hidden="true"
-                  />
-                </button>
-                <AnimatePresence>
-                  {overflowOpen && (
-                    <motion.div
-                      ref={overflowMenuPanelRef}
-                      role="menu"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                      transition={{ duration: 0.1 }}
-                      className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl overflow-hidden z-[120] py-1"
-                    >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setOverflowOpen(false);
-                          setShowRetranscribe(true);
-                        }}
-                        disabled={isBusy}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <RotateCw size={11} />
-                        {t({
-                          id: "library.modal.retranscribe",
-                          message: "Retranscribe",
-                        })}
-                      </button>
-                      {diarizerInstalled && item.status.type === "complete" && (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setOverflowOpen(false);
-                            void onRediarize();
-                          }}
-                          disabled={rediarizing}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Users size={11} />
-                          {t({
-                            id: "library.modal.detect_speakers_again",
-                            message: "Detect speakers again",
-                          })}
-                        </button>
-                      )}
-                      {isBusy && (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setOverflowOpen(false);
-                            onCancel();
-                          }}
-                          className="w-full px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary transition-colors"
-                        >
-                          {t({
-                            id: "library.modal.cancel",
-                            message: "Cancel",
-                          })}
-                        </button>
-                      )}
-                      {item.status.type === "error" && (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setOverflowOpen(false);
-                            Promise.resolve(onRetry()).catch((err) => {
-                              console.error("failed to retry:", err);
-                              showErrorToast(retryFailedMessage);
-                            });
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary transition-colors"
-                        >
-                          <RotateCw size={11} />
-                          {t({
-                            id: "library.modal.retry",
-                            message: "Retry",
-                          })}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setOverflowOpen(false);
-                          setShowDeleteConfirm(true);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta ui-color-error-soft hover:bg-[var(--color-error)]/10 transition-colors border-t border-border-primary"
-                      >
-                        <Trash2 size={11} />
-                        {t({
-                          id: "library.modal.delete",
-                          message: "Delete",
-                        })}
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 min-w-0 pl-[30px] ui-text-meta text-content-disabled whitespace-nowrap">
-              {createdAtLabel && <span>{createdAtLabel}</span>}
-              {audioDuration > 0 && (
-                <>
-                  <span className="opacity-40" aria-hidden="true">
-                    ·
-                  </span>
-                  <span className="tabular-nums">
-                    {formatDuration(audioDuration)}
-                  </span>
-                </>
-              )}
-              <span className="opacity-40" aria-hidden="true">
-                ·
-              </span>
-              <span>{modelLabel}</span>
-              {item.sources &&
-                (item.sources.system_audio || item.sources.microphone) && (
-                  <>
-                    <span className="opacity-40" aria-hidden="true">
-                      ·
-                    </span>
-                    <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-                      {item.sources.system_audio &&
-                        (sourceAppNames.length > 0 ? (
-                          sourceAppNames.map((name) => {
-                            const iconPath = appIconPath(name);
-                            return (
-                              <HoverTip
-                                key={name}
-                                label={name}
-                                detail={systemAudioLabel}
-                                className="flex h-4 w-4 items-center justify-center text-content-muted"
-                              >
-                                {iconPath ? (
-                                  <img
-                                    src={convertFileSrc(iconPath)}
-                                    alt={name}
-                                    className="h-4 w-4 object-contain"
-                                  />
-                                ) : (
-                                  <AppWindow size={14} aria-label={name} />
-                                )}
-                              </HoverTip>
-                            );
-                          })
-                        ) : (
-                          <HoverTip
-                            label={entireSystemLabel}
-                            detail={systemAudioLabel}
-                            className="flex h-4 w-4 items-center justify-center text-content-muted"
-                          >
-                            <Monitor size={14} aria-label={entireSystemLabel} />
-                          </HoverTip>
-                        ))}
-                      {item.sources.microphone && (
-                        <HoverTip
-                          label={item.sources.microphone}
-                          detail={microphoneLabel}
-                          className="flex h-4 w-4 items-center justify-center text-content-muted"
-                        >
-                          <Microphone size={14} aria-label={microphoneLabel} />
-                        </HoverTip>
-                      )}
-                    </span>
-                  </>
+                      <Pencil size={11} aria-hidden="true" />
+                    </button>
+                  </div>
                 )}
-            </div>
+              </div>
 
-            <div className="flex shrink-0 items-center justify-end gap-2">
-              {item.tags.slice(0, 3).map((tag, idx) => (
-                <span
-                  key={`${tag}-${idx}`}
-                  onClick={() => {
-                    if (shiftHeld) {
-                      handleRemoveTag(tag);
+              <div className="flex shrink-0 items-center gap-2">
+                <SearchField
+                  inputRef={searchInputRef}
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleSearchNavigate(event.shiftKey ? -1 : 1);
                     }
                   }}
-                  title={
-                    shiftHeld
-                      ? t({
-                          id: "library.modal.tags.remove",
-                          message: `Remove ${tag}`,
-                        })
-                      : undefined
+                  placeholder={t({
+                    id: "library.modal.search.placeholder",
+                    message: "Search transcript...",
+                  })}
+                  trailing={
+                    searchMatchLabel !== null && (
+                      <span className="shrink-0 whitespace-nowrap ui-text-micro tabular-nums text-content-disabled">
+                        {searchMatchLabel}
+                      </span>
+                    )
                   }
-                  className={`inline-flex items-center cursor-pointer ui-text-meta transition-colors duration-100 ease-out whitespace-nowrap text-content-secondary hover:text-content-primary ${
-                    shiftHeld ? "hover:!text-red-500 hover:line-through" : ""
-                  }`}
-                >
-                  <span className="opacity-40 mr-[1px]">#</span>
-                  <span>
-                    {tag.length > 12 ? `${tag.slice(0, 12)}...` : tag}
-                  </span>
-                </span>
-              ))}
-              {item.tags.length > 3 && (
-                <button
-                  type="button"
-                  onClick={() => setTagMenuOpen(true)}
-                  className="ui-text-meta text-content-muted hover:text-content-primary transition-colors shrink-0"
-                >
-                  +{item.tags.length - 3}
-                </button>
-              )}
-              <div ref={tagMenuRef} className="relative flex items-center">
-                <button
-                  type="button"
-                  onClick={() => setTagMenuOpen((prev) => !prev)}
-                  className="flex items-center gap-1 rounded-md px-1.5 py-0.5 ui-text-meta text-content-muted hover:text-content-primary hover:bg-surface-surface transition-colors"
-                  aria-label={t({
-                    id: "library.detail.tags.add",
-                    message: "Add tag",
-                  })}
-                >
-                  <Plus size={11} />
-                  {t({
-                    id: "library.detail.tags.label",
-                    message: "Tag",
-                  })}
-                </button>
-                <AnimatePresence>
-                  {tagMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.98, y: -4 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.98, y: -4 }}
-                      transition={{ duration: 0.12 }}
-                      className="absolute right-0 top-full mt-1 z-[120] w-40 rounded-md border border-border-secondary/80 bg-surface-overlay shadow-lg shadow-black/40 overflow-hidden"
-                    >
-                      <div className="px-2 py-1.5 border-b border-border-primary">
-                        <input
-                          value={tagInput}
-                          onChange={(event) => setTagInput(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.preventDefault();
-                              handleAddTag();
-                            }
-                            if (event.key === "Escape") {
-                              event.preventDefault();
-                              setTagMenuOpen(false);
-                              setTagInput("");
-                            }
-                          }}
-                          placeholder={t({
-                            id: "library.modal.tags.new_tag",
-                            message: "New tag...",
-                          })}
-                          aria-label={t({
-                            id: "library.modal.tags.new_tag",
-                            message: "New tag...",
-                          })}
-                          className="w-full bg-transparent ui-text-meta text-content-secondary outline-hidden placeholder:text-content-disabled"
-                          autoFocus
-                        />
-                      </div>
-                      {item.tags.length > 0 && (
-                        <div className="max-h-28 overflow-y-auto border-b border-border-primary">
-                          {item.tags.map((tag) => (
-                            <div
-                              key={tag}
-                              className="flex items-center justify-between gap-2 px-2.5 py-1 group/tagrow"
-                            >
-                              <span className="ui-text-meta text-content-secondary truncate">
-                                <span className="opacity-40">#</span>
-                                {tag}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveTag(tag)}
-                                aria-label={t({
-                                  id: "library.modal.tags.remove",
-                                  message: `Remove ${tag}`,
-                                })}
-                                className="opacity-0 group-hover/tagrow:opacity-100 focus-visible:opacity-100 text-content-disabled hover:text-red-500 transition-opacity shrink-0"
-                              >
-                                <X size={10} aria-hidden="true" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="max-h-36 overflow-y-auto">
-                        {filteredTagOptions.length > 0 ? (
-                          filteredTagOptions.map((tag, index) => (
-                            <button
-                              key={`tag-option-${index}-${tag || "empty"}`}
-                              type="button"
-                              onMouseDown={(event) => event.preventDefault()}
-                              onClick={() => handleAddTag(tag)}
-                              className="w-full text-left px-2.5 py-1.5 ui-text-meta font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
-                            >
-                              {tag}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-2.5 py-2 ui-text-micro text-content-muted">
-                            {availableTags.length === 0
-                              ? t({
-                                  id: "library.modal.tags.no_tags_yet",
-                                  message: "No tags yet",
-                                })
-                              : t({
-                                  id: "library.modal.tags.no_other_tags",
-                                  message: "No other tags",
-                                })}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                />
 
-              <div
-                className="h-3.5 w-px bg-[var(--color-border-primary)] mx-1"
-                aria-hidden="true"
-              />
-              <div className="relative" ref={speakersMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setSpeakersMenuOpen((prev) => !prev)}
-                  aria-haspopup="menu"
-                  aria-expanded={speakersMenuOpen}
-                  className={`flex items-center gap-1.5 rounded-md px-1.5 py-0.5 ui-text-meta hover:bg-surface-surface transition-colors ${
-                    hiddenSpeakers.size > 0
-                      ? "text-[var(--color-cloud-dark)]"
-                      : "text-content-secondary hover:text-content-primary"
-                  }`}
-                >
-                  {hiddenSpeakers.size > 0 ? (
-                    <EyeSlash size={11} />
-                  ) : (
-                    <Users size={11} />
-                  )}
-                  {t({
-                    id: "library.detail.speakers",
-                    message: "Speakers",
-                  })}
-                  <span
-                    className={`tabular-nums ${
-                      hiddenSpeakers.size > 0 ? "" : "text-content-disabled"
-                    }`}
+                <div className="relative" ref={overflowMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setOverflowOpen((prev) => !prev)}
+                    aria-haspopup="menu"
+                    aria-expanded={overflowOpen}
+                    className={`ui-button-ghost h-8 w-8 ${overflowOpen ? "text-content-primary" : ""}`}
+                    aria-label={t({
+                      id: "library.detail.more_actions",
+                      message: "More actions",
+                    })}
                   >
-                    {hiddenSpeakers.size > 0
-                      ? `${speakers.length - hiddenSpeakers.size}/${speakers.length}`
-                      : speakers.length}
-                  </span>
-                  <ChevronDown
-                    size={10}
-                    className={`transition-transform duration-150 ${speakersMenuOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-                <AnimatePresence>
-                  {speakersMenuOpen && (
-                    <motion.div
-                      ref={speakersMenuPanelRef}
-                      role="menu"
-                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                      transition={{ duration: 0.12 }}
-                      className="ui-surface-menu absolute right-0 top-full mt-1 z-[120] w-56 origin-top-right py-1"
-                    >
-                      {speakers.length > 1 && (
-                        <>
-                          <SpeakerMenuItem
-                            icon={
-                              <Eye
-                                size={12}
-                                className="shrink-0 ui-color-muted"
-                              />
-                            }
-                            label={t({
-                              id: "library.detail.speaker_menu.show_all",
-                              message: "Show all speakers",
-                            })}
-                            disabled={hiddenSpeakers.size === 0}
-                            onClick={() => setHiddenSpeakerIds([])}
-                          />
-                          <div className="my-1 h-px bg-[var(--border-subtle)]" />
-                        </>
-                      )}
-                      {speakers.length === 0 && (
-                        <div className="px-3 py-2 ui-text-menu-item ui-color-muted">
-                          {t({
-                            id: "library.detail.filter.no_speakers",
-                            message: "No speakers yet",
-                          })}
+                    <DotsThree size={16} weight="bold" aria-hidden="true" />
+                  </button>
+                  <AnimatePresence>
+                    {overflowOpen && (
+                      <motion.div
+                        ref={overflowMenuPanelRef}
+                        role="menu"
+                        initial={{ opacity: 0, scale: 0.98, y: -2 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: -2 }}
+                        transition={{ duration: 0.12 }}
+                        className="ui-surface-menu absolute right-0 top-full z-[120] mt-1.5 max-h-[min(480px,70vh)] w-56 overflow-y-auto py-1 custom-scrollbar"
+                      >
+                        <div className="px-3 pb-1.5 pt-1 ui-text-label ui-color-muted">
+                          {infoLine}
                         </div>
-                      )}
-                      <div className="max-h-72 overflow-y-auto custom-scrollbar">
-                        {speakers.map((speaker) => {
-                          const hidden = hiddenSpeakers.has(speaker.id);
-                          return (
-                            <div
-                              key={speaker.id}
-                              onContextMenu={(event) =>
-                                openSpeakerContext(speaker.id, event)
-                              }
-                              className="group/speaker flex items-center gap-1.5 pr-3 hover:bg-surface-elevated transition-colors"
-                            >
-                              {renamingSpeakerId === speaker.id ? (
-                                <div className="flex min-w-0 flex-1 items-center gap-2.5 py-2 pl-3">
-                                  <span
-                                    className="inline-block h-2 w-2 shrink-0 rounded-full"
-                                    style={{
-                                      backgroundColor:
-                                        speaker.color ?? undefined,
-                                    }}
-                                    aria-hidden="true"
-                                  />
-                                  <input
-                                    value={speakerNameDraft}
-                                    onChange={(event) =>
-                                      setSpeakerNameDraft(event.target.value)
-                                    }
-                                    onFocus={(event) => event.target.select()}
-                                    aria-label={t({
-                                      id: "library.detail.speaker_menu.rename",
-                                      message: "Rename",
-                                    })}
-                                    onBlur={() =>
-                                      handleRenameSpeaker(speaker.id)
-                                    }
-                                    onKeyDown={(event) => {
-                                      if (event.key === "Enter") {
-                                        event.preventDefault();
-                                        handleRenameSpeaker(speaker.id);
-                                      }
-                                      if (event.key === "Escape") {
-                                        event.preventDefault();
-                                        setRenamingSpeakerId(null);
-                                        setSpeakerNameDraft("");
-                                      }
-                                    }}
-                                    className="min-w-0 flex-1 border-0 bg-transparent p-0 ui-text-menu-item ui-color-primary shadow-[inset_0_-1px_0_0_var(--color-border-hover)] outline-hidden"
-                                    autoFocus
-                                  />
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRenamingSpeakerId(speaker.id);
-                                    setSpeakerNameDraft(speaker.name);
-                                  }}
-                                  title={t({
-                                    id: "library.detail.speaker_menu.rename",
-                                    message: "Rename",
-                                  })}
-                                  className={`flex min-w-0 flex-1 items-center gap-2.5 py-2 pl-3 text-left ui-text-menu-item ui-color-secondary transition-opacity ${
-                                    hidden ? "opacity-45" : ""
-                                  }`}
-                                >
-                                  <span
-                                    className="inline-block h-2 w-2 shrink-0 rounded-full"
-                                    style={{
-                                      backgroundColor:
-                                        speaker.color ?? undefined,
-                                    }}
-                                    aria-hidden="true"
-                                  />
-                                  <span className="truncate">
-                                    {speaker.name}
-                                  </span>
-                                  <Pencil
-                                    size={11}
-                                    className="shrink-0 ui-color-muted opacity-0 transition-opacity group-hover/speaker:opacity-100"
-                                    aria-hidden="true"
-                                  />
-                                </button>
+                        <div className="mx-3 my-1 border-t border-border-secondary" />
+                        <button
+                          type="button"
+                          role="menuitem"
+                          disabled={!showSpeakerText && !transcriptDraft.trim()}
+                          onClick={() => {
+                            setOverflowOpen(false);
+                            void copyTranscript(copyText());
+                          }}
+                          className={menuRowClass}
+                        >
+                          {t({
+                            id: "library.detail.copy_transcript",
+                            message: "Copy Transcript",
+                          })}
+                        </button>
+
+                        <MenuSection
+                          title={t({
+                            id: "library.modal.export",
+                            message: "Export",
+                          })}
+                        />
+                        {EXPORT_FORMATS.map((format) => (
+                          <button
+                            key={format.value}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOverflowOpen(false);
+                              void handleExport(format.value);
+                            }}
+                            disabled={
+                              isExporting ||
+                              !transcriptAvailable ||
+                              (format.needsSegments &&
+                                !(item.segments && item.segments.length))
+                            }
+                            className={menuRowClass}
+                          >
+                            {format.value.toUpperCase()}
+                          </button>
+                        ))}
+
+                        <MenuSection
+                          title={t({
+                            id: "library.folder.label",
+                            message: "Folder",
+                          })}
+                        />
+                        {folders.map((folder) => (
+                          <button
+                            key={folder}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={folder === currentFolder}
+                            disabled={isBusy}
+                            onClick={() => {
+                              setOverflowOpen(false);
+                              if (folder !== currentFolder)
+                                moveToFolder(folder);
+                            }}
+                            className={
+                              folder === currentFolder
+                                ? `${menuRowBase} ui-color-cloud`
+                                : menuRowClass
+                            }
+                          >
+                            <span className="min-w-0 truncate">{folder}</span>
+                            <span className="flex w-3 shrink-0 items-center justify-center">
+                              {folder === currentFolder && (
+                                <Check size={12} aria-hidden="true" />
                               )}
-                              <button
-                                type="button"
-                                onClick={() => toggleSpeakerHidden(speaker.id)}
-                                aria-pressed={hidden}
-                                aria-label={
-                                  hidden
-                                    ? t({
-                                        id: "library.detail.speaker_menu.show",
-                                        message: "Show speaker",
-                                      })
-                                    : t({
-                                        id: "library.detail.speaker_menu.hide",
-                                        message: "Hide speaker",
-                                      })
-                                }
-                                title={
-                                  hidden
-                                    ? t({
-                                        id: "library.detail.speaker_menu.show",
-                                        message: "Show speaker",
-                                      })
-                                    : t({
-                                        id: "library.detail.speaker_menu.hide",
-                                        message: "Hide speaker",
-                                      })
-                                }
-                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ui-color-muted transition-opacity hover:text-content-primary focus-visible:opacity-100 ${
-                                  hidden
-                                    ? ""
-                                    : "opacity-0 group-hover/speaker:opacity-100"
-                                }`}
-                              >
-                                {hidden ? (
-                                  <EyeSlash size={13} />
-                                ) : (
-                                  <Eye size={13} />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveSpeaker(speaker.id)}
-                                aria-label={t({
-                                  id: "library.detail.speaker.remove",
-                                  message: `Remove ${speaker.name}`,
-                                })}
-                                title={t({
-                                  id: "library.detail.speaker.remove",
-                                  message: `Remove ${speaker.name}`,
-                                })}
-                                className="shrink-0 p-0.5 ui-color-muted opacity-0 transition-opacity hover:text-red-500 group-hover/speaker:opacity-100 focus-visible:opacity-100"
-                              >
-                                <X size={11} />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {speakers.length > 0 && (
-                        <div className="my-1 h-px bg-[var(--border-subtle)]" />
-                      )}
-                      <SpeakerMenuItem
-                        icon={
-                          <UserPlus
-                            size={12}
-                            className="shrink-0 ui-color-muted"
-                          />
-                        }
-                        label={t({
-                          id: "library.detail.add_speaker",
-                          message: "Add speaker",
-                        })}
-                        disabled={!canAddSpeaker}
-                        onClick={() => void handleAddSpeaker()}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                            </span>
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOverflowOpen(false);
+                            onNewFolder();
+                          }}
+                          className={menuRowClass}
+                        >
+                          {t({
+                            id: "library.folder.new",
+                            message: "New Folder...",
+                          })}
+                        </button>
+                        {currentFolder && (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOverflowOpen(false);
+                              moveToFolder(null);
+                            }}
+                            className={menuRowClass}
+                          >
+                            {t({
+                              id: "library.folder.remove_item",
+                              message: "Remove from Folder",
+                            })}
+                          </button>
+                        )}
+
+                        <div className="mx-3 my-1 border-t border-border-secondary" />
+                        {item.status.type === "error" ? (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOverflowOpen(false);
+                              Promise.resolve(onRetry()).catch((err) => {
+                                console.error("failed to retry:", err);
+                                showErrorToast(retryFailedMessage);
+                              });
+                            }}
+                            className={menuRowClass}
+                          >
+                            {t({ id: "library.modal.retry", message: "Retry" })}
+                          </button>
+                        ) : isBusy ? (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOverflowOpen(false);
+                              onCancel();
+                            }}
+                            className={menuRowClass}
+                          >
+                            {t({
+                              id: "library.modal.cancel",
+                              message: "Cancel",
+                            })}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOverflowOpen(false);
+                              setShowRetranscribe(true);
+                            }}
+                            className={menuRowClass}
+                          >
+                            {t({
+                              id: "library.modal.retranscribe",
+                              message: "Retranscribe",
+                            })}
+                          </button>
+                        )}
+                        {diarizerInstalled &&
+                          item.status.type === "complete" && (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setOverflowOpen(false);
+                                void onRediarize();
+                              }}
+                              disabled={rediarizing}
+                              className={menuRowClass}
+                            >
+                              {t({
+                                id: "library.modal.detect_speakers_again",
+                                message: "Detect speakers again",
+                              })}
+                            </button>
+                          )}
+                        <div className="mx-3 my-1 border-t border-border-secondary" />
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOverflowOpen(false);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className={`${menuRowBase} ui-color-error-strong`}
+                        >
+                          {t({ id: "library.modal.delete", message: "Delete" })}
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        <ScreenHeaderRule />
       </header>
 
-      <main className="flex-1 min-h-0 overflow-hidden">
-        {item.status.type === "error" ? (
-          <div className="flex h-full items-center justify-center">
-            {(() => {
-              const details = getLibraryErrorDetails(item.status.message);
-              return (
-                <div className="max-w-[280px] rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center">
-                  <div className="flex items-center justify-center gap-2 ui-color-error-tint">
-                    <AlertTriangle size={14} />
-                    <span className="ui-text-label font-medium">
-                      {item.kind === "import"
-                        ? t({
-                            id: "library.modal.import_failed",
-                            message: "Import failed",
-                          })
-                        : t({
-                            id: "library.modal.transcription_failed",
-                            message: "Transcription failed",
-                          })}
-                    </span>
+      {/* The header stays put while the content fades in under it. */}
+      <motion.div
+        className="flex min-h-0 flex-1 flex-col"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+      >
+        <main className="flex-1 min-h-0 overflow-hidden">
+          {item.status.type === "error" ? (
+            <div className="flex h-full items-center justify-center">
+              {(() => {
+                const details = getLibraryErrorDetails(item.status.message);
+                return (
+                  <div className="max-w-[280px] rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2 ui-color-error-tint">
+                      <AlertTriangle size={14} />
+                      <span className="ui-text-label font-medium">
+                        {item.kind === "import"
+                          ? t({
+                              id: "library.modal.import_failed",
+                              message: "Import failed",
+                            })
+                          : t({
+                              id: "library.modal.transcription_failed",
+                              message: "Transcription failed",
+                            })}
+                      </span>
+                    </div>
+                    <p className="mt-2 ui-text-meta leading-[14px] ui-color-error-tint select-text cursor-text">
+                      {details.message}
+                    </p>
+                    {details.showFfmpegHelp && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          invoke("open_ffmpeg_install").catch(() => {})
+                        }
+                        className="mt-2 ui-text-meta ui-color-error-faint underline decoration-red-400/60 ui-hover-error-50"
+                      >
+                        {t({
+                          id: "library.modal.ffmpeg_help",
+                          message: "FFmpeg Help",
+                        })}
+                      </button>
+                    )}
                   </div>
-                  <p className="mt-2 ui-text-meta leading-[14px] ui-color-error-tint select-text cursor-text">
-                    {details.message}
-                  </p>
-                  {details.showFfmpegHelp && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        invoke("open_ffmpeg_install").catch(() => {})
-                      }
-                      className="mt-2 ui-text-meta ui-color-error-faint underline decoration-red-400/60 ui-hover-error-50"
-                    >
-                      {t({
-                        id: "library.modal.ffmpeg_help",
-                        message: "FFmpeg Help",
-                      })}
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        ) : (
-          <div className="relative flex h-full w-full flex-col">
-            <div
-              className="pointer-events-none absolute left-0 right-3 bottom-0 h-10 z-10"
-              style={{
-                background:
-                  "linear-gradient(to top, var(--color-bg-tertiary), transparent)",
-              }}
-              aria-hidden="true"
-            />
-            <div
-              aria-live="polite"
-              className={`pointer-events-none absolute inset-x-0 bottom-1 z-10 h-4 truncate text-center ui-text-meta tabular-nums ${
-                detectingSpeakers ? "text-local" : "text-content-disabled"
-              }`}
-            >
-              {transcriptStatus}
+                );
+              })()}
             </div>
-            {!showSegmentView && bookmarks.length > 0 && (
+          ) : (
+            <div className="relative flex h-full w-full flex-col">
               <div
-                className={`${CONTENT_COLUMN} max-h-[152px] shrink-0 overflow-y-auto pt-2 pb-1 custom-scrollbar`}
-              >
-                {bookmarks.map(renderBookmarkRow)}
-              </div>
-            )}
-            <div className="relative flex-1 min-h-0">
-              <div
-                className="pointer-events-none absolute left-0 right-3 top-0 h-4 z-10"
+                className="pointer-events-none absolute left-0 right-3 bottom-0 h-10 z-10"
                 style={{
                   background:
-                    "linear-gradient(to bottom, var(--color-bg-tertiary), transparent)",
+                    "linear-gradient(to top, var(--color-bg-tertiary), transparent)",
                 }}
                 aria-hidden="true"
               />
-              {showSegmentView ? (
-                <Virtuoso
-                  ref={segmentsVirtuosoRef}
-                  scrollerRef={(ref) => {
-                    segmentsScrollerRef.current = (ref as HTMLElement) ?? null;
+              <div
+                aria-live="polite"
+                className={`pointer-events-none absolute inset-x-0 bottom-1 z-10 h-4 truncate text-center ui-text-meta tabular-nums ${
+                  detectingSpeakers ? "text-local" : "text-content-disabled"
+                }`}
+              >
+                {transcriptStatus}
+              </div>
+              {!showSegmentView && bookmarks.length > 0 && (
+                <div
+                  className={`${CONTENT_COLUMN} max-h-[152px] shrink-0 overflow-y-auto pt-2 pb-1 custom-scrollbar`}
+                >
+                  {bookmarks.map(renderBookmarkRow)}
+                </div>
+              )}
+              <div className="relative flex-1 min-h-0">
+                <div
+                  className="pointer-events-none absolute left-0 right-3 top-0 h-4 z-10"
+                  style={{
+                    background:
+                      "linear-gradient(to bottom, var(--color-bg-tertiary), transparent)",
                   }}
-                  onWheel={() => {
-                    if (isPlaying) setFollowPaused(true);
-                  }}
-                  style={{ height: "100%" }}
-                  data={visibleSegments}
-                  overscan={200}
-                  className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
-                  computeItemKey={(
-                    _index: number,
-                    entry: { segment: TranscriptSegment; index: number },
-                  ) => `${entry.segment.start_ms}-${entry.index}`}
-                  components={{
-                    Header: () => <div className="h-4" />,
-                    Footer: () => <div className="h-10" />,
-                  }}
-                  itemContent={(idx, entry) => {
-                    const segment = entry.segment;
-                    const isActive = entry.index === activeSegmentIndex;
-                    const wordSpans =
-                      isActive && !normalizedSearchQuery
-                        ? renderSegmentWords(segment, entry.index)
-                        : null;
-                    return (
-                      <div className={`${CONTENT_COLUMN} pb-1.5`}>
-                        {entry.index === 0 &&
-                          bookmarksBySegment.get(-1)?.map(renderBookmarkRow)}
-                        <div
-                          className={`group/seg grid w-full grid-cols-[auto_1fr] gap-3 rounded-md px-2 py-1 select-none transcript-segment${
-                            isActive ? " transcript-segment-active" : ""
-                          }`}
-                        >
-                          <div className="relative flex items-center gap-1.5 self-start">
-                            <span
-                              className={`transcript-segment-time ${timestampWidth} shrink-0 text-right text-content-disabled font-mono ui-text-label tabular-nums pt-0.5 select-none cursor-pointer hover:text-content-primary transition-colors`}
-                              role="button"
-                              tabIndex={0}
-                              onClick={() =>
-                                handleTimestampClick(segment.start_ms)
-                              }
-                              onKeyDown={(event) => {
-                                if (
-                                  event.key === "Enter" ||
-                                  event.key === " "
-                                ) {
-                                  event.preventDefault();
-                                  handleTimestampClick(segment.start_ms);
-                                }
-                              }}
-                            >
-                              {formatTimestamp(segment.start_ms)}
-                            </span>
-                            {renderSpeakerChip(segment, entry.index)}
-                          </div>
-                          <div className="min-w-0 select-none w-fit">
-                            <span className="select-text">
-                              {wordSpans ??
-                                renderHighlightedText(
-                                  segment.text,
-                                  activeOccurrence(activeSegmentMatch, idx),
-                                )}
-                            </span>
-                          </div>
-                        </div>
-                        {bookmarksBySegment
-                          .get(entry.index)
-                          ?.map(renderBookmarkRow)}
-                      </div>
-                    );
-                  }}
+                  aria-hidden="true"
                 />
-              ) : showStreaming ? (
-                transcribingPlaceholder ? (
-                  <div className="flex flex-col h-full w-full items-center justify-center gap-5">
-                    <IntelligencePixel active size="md" />
-                    <div className="ui-text-label font-medium tabular-nums text-content-disabled">
-                      {transcribingLabel}
-                    </div>
-                  </div>
-                ) : (
+                {showSegmentView ? (
                   <Virtuoso
-                    ref={streamVirtuosoRef}
+                    ref={segmentsVirtuosoRef}
+                    scrollerRef={(ref) => {
+                      segmentsScrollerRef.current =
+                        (ref as HTMLElement) ?? null;
+                    }}
+                    onWheel={() => {
+                      if (isPlaying) setFollowPaused(true);
+                    }}
                     style={{ height: "100%" }}
-                    data={streamChunks}
+                    data={visibleSegments}
                     overscan={200}
                     className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
-                    computeItemKey={(index: number) =>
-                      `${item.id}-chunk-${index}`
+                    computeItemKey={(
+                      _index: number,
+                      entry: { segment: TranscriptSegment; index: number },
+                    ) => `${entry.segment.start_ms}-${entry.index}`}
+                    components={{
+                      Header: () => <div className="h-4" />,
+                      Footer: () => <div className="h-10" />,
+                    }}
+                    itemContent={(idx, entry) => {
+                      const segment = entry.segment;
+                      const isActive = entry.index === activeSegmentIndex;
+                      const wordSpans =
+                        isActive && !normalizedSearchQuery
+                          ? renderSegmentWords(segment, entry.index)
+                          : null;
+                      return (
+                        <div className={`${CONTENT_COLUMN} pb-1.5`}>
+                          {entry.index === 0 &&
+                            bookmarksBySegment.get(-1)?.map(renderBookmarkRow)}
+                          <div
+                            className={`group/seg -mx-2 grid grid-cols-[auto_1fr] gap-3 rounded-md px-2 py-1 select-none transcript-segment${
+                              isActive ? " transcript-segment-active" : ""
+                            }`}
+                          >
+                            <div className="relative flex items-center gap-1.5 self-start">
+                              <span
+                                className={`transcript-segment-time ${timestampWidth} shrink-0 text-right text-content-disabled font-mono ui-text-label tabular-nums pt-0.5 select-none cursor-pointer hover:text-content-primary transition-colors`}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() =>
+                                  handleTimestampClick(segment.start_ms)
+                                }
+                                onKeyDown={(event) => {
+                                  if (
+                                    event.key === "Enter" ||
+                                    event.key === " "
+                                  ) {
+                                    event.preventDefault();
+                                    handleTimestampClick(segment.start_ms);
+                                  }
+                                }}
+                              >
+                                {formatTimestamp(segment.start_ms)}
+                              </span>
+                              {renderSpeakerChip(segment, entry.index)}
+                            </div>
+                            <div className="min-w-0 select-none w-fit">
+                              <span className="select-text">
+                                {wordSpans ??
+                                  renderHighlightedText(
+                                    segment.text,
+                                    activeOccurrence(activeSegmentMatch, idx),
+                                  )}
+                              </span>
+                            </div>
+                          </div>
+                          {bookmarksBySegment
+                            .get(entry.index)
+                            ?.map(renderBookmarkRow)}
+                        </div>
+                      );
+                    }}
+                  />
+                ) : showStreaming ? (
+                  transcribingPlaceholder ? (
+                    <div className="flex flex-col h-full w-full items-center justify-center gap-5">
+                      <IntelligencePixel active size="md" />
+                      <div className="ui-text-label font-medium tabular-nums text-content-disabled">
+                        {transcribingLabel}
+                      </div>
+                    </div>
+                  ) : (
+                    <Virtuoso
+                      ref={streamVirtuosoRef}
+                      style={{ height: "100%" }}
+                      data={streamChunks}
+                      overscan={200}
+                      className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
+                      computeItemKey={(index: number) =>
+                        `${item.id}-chunk-${index}`
+                      }
+                      components={{
+                        Header: () => <div className="h-4" />,
+                        Footer: () => <div className="h-10" />,
+                      }}
+                      itemContent={(idx, chunk) => (
+                        <div className={`${CONTENT_COLUMN} pb-2`}>
+                          <motion.p
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="select-text"
+                          >
+                            {renderHighlightedText(
+                              chunk,
+                              activeOccurrence(activeStreamMatch, idx),
+                            )}
+                          </motion.p>
+                        </div>
+                      )}
+                    />
+                  )
+                ) : item.status.type === "importing" ||
+                  item.status.type === "pending" ? (
+                  <div className="flex flex-col h-full w-full items-center justify-center gap-5">
+                    <IntelligencePixel active size="md" />
+                    <div className="ui-text-label font-medium text-content-disabled">
+                      {importStatusText}
+                    </div>
+                  </div>
+                ) : showSpeakerText ? (
+                  <Virtuoso
+                    ref={turnsVirtuosoRef}
+                    style={{ height: "100%" }}
+                    data={visibleTurns}
+                    overscan={200}
+                    className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
+                    computeItemKey={(_index: number, turn: SpeakerTurn) =>
+                      turn.key
                     }
                     components={{
                       Header: () => <div className="h-4" />,
                       Footer: () => <div className="h-10" />,
                     }}
-                    itemContent={(idx, chunk) => (
-                      <div className={`${CONTENT_COLUMN} pb-2`}>
-                        <motion.p
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2, ease: "easeOut" }}
-                          className="select-text"
-                        >
-                          {renderHighlightedText(
-                            chunk,
-                            activeOccurrence(activeStreamMatch, idx),
+                    itemContent={(idx, turn) => (
+                      <div
+                        className={`${CONTENT_COLUMN} ${
+                          visibleTurns[idx + 1]?.continues ? "pb-2.5" : "pb-4"
+                        }`}
+                      >
+                        <div className="-mx-2 px-2">
+                          {turn.speaker && !turn.continues && (
+                            <div
+                              onContextMenu={(event) =>
+                                turn.speaker &&
+                                openSpeakerContext(turn.speaker.id, event)
+                              }
+                              className="flex w-fit max-w-full items-center gap-2 ui-text-label font-medium text-content-primary"
+                            >
+                              <span
+                                className="inline-block h-2 w-2 rounded-full shrink-0"
+                                style={{
+                                  backgroundColor:
+                                    turn.speaker.color ?? undefined,
+                                }}
+                                aria-hidden="true"
+                              />
+                              <span className="truncate">
+                                {turn.speaker.name}
+                              </span>
+                            </div>
                           )}
-                        </motion.p>
+                          <p
+                            className="select-text cursor-pointer transition-colors hover:text-content-primary"
+                            onClick={() => {
+                              // Selecting text shouldn't jump playback.
+                              if (
+                                window.getSelection()?.isCollapsed !== false
+                              ) {
+                                handleTimestampClick(turn.start_ms);
+                              }
+                            }}
+                          >
+                            {renderHighlightedText(
+                              turn.text,
+                              activeOccurrence(activeTurnMatch, idx),
+                            )}
+                          </p>
+                        </div>
                       </div>
                     )}
                   />
-                )
-              ) : item.status.type === "importing" ||
-                item.status.type === "pending" ? (
-                <div className="flex flex-col h-full w-full items-center justify-center gap-5">
-                  <IntelligencePixel active size="md" />
-                  <div className="ui-text-label font-medium text-content-disabled">
-                    {importStatusText}
-                  </div>
-                </div>
-              ) : showSpeakerText ? (
-                <Virtuoso
-                  ref={turnsVirtuosoRef}
-                  style={{ height: "100%" }}
-                  data={visibleTurns}
-                  overscan={200}
-                  className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
-                  computeItemKey={(_index: number, turn: SpeakerTurn) =>
-                    turn.key
-                  }
-                  components={{
-                    Header: () => <div className="h-4" />,
-                    Footer: () => <div className="h-10" />,
-                  }}
-                  itemContent={(idx, turn) => (
-                    <div
-                      className={`${CONTENT_COLUMN} ${
-                        visibleTurns[idx + 1]?.continues ? "pb-2.5" : "pb-4"
-                      }`}
-                    >
-                      <div className="px-2">
-                        {turn.speaker && !turn.continues && (
-                          <div
-                            onContextMenu={(event) =>
-                              turn.speaker &&
-                              openSpeakerContext(turn.speaker.id, event)
-                            }
-                            className="flex w-fit max-w-full items-center gap-2 ui-text-label font-medium text-content-primary"
-                          >
-                            <span
-                              className="inline-block h-2 w-2 rounded-full shrink-0"
-                              style={{
-                                backgroundColor:
-                                  turn.speaker.color ?? undefined,
-                              }}
-                              aria-hidden="true"
-                            />
-                            <span className="truncate">
-                              {turn.speaker.name}
-                            </span>
-                          </div>
-                        )}
-                        <p
-                          className="select-text cursor-pointer transition-colors hover:text-content-primary"
-                          onClick={() => {
-                            // Selecting text shouldn't jump playback.
-                            if (window.getSelection()?.isCollapsed !== false) {
-                              handleTimestampClick(turn.start_ms);
-                            }
-                          }}
-                        >
-                          {renderHighlightedText(
-                            turn.text,
-                            activeOccurrence(activeTurnMatch, idx),
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                />
-              ) : (
-                // The textarea grows with the text so it scrolls together with the highlight layer.
-                <div
-                  ref={transcriptScrollRef}
-                  className="h-full w-full overflow-y-scroll custom-scrollbar"
-                >
-                  <div className="relative grid min-h-full">
-                    <div
-                      key={normalizedSearchQuery}
-                      ref={transcriptHighlightsRef}
-                      aria-hidden="true"
-                      className="pointer-events-none col-start-1 row-start-1 whitespace-pre-wrap [overflow-wrap:break-word] px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body leading-relaxed text-transparent pt-4 pb-10"
-                    >
-                      {textMatchIndexes.map((start, idx) => {
-                        const prevEnd =
-                          idx === 0
-                            ? 0
-                            : textMatchIndexes[idx - 1] +
-                              normalizedSearchQuery.length;
-                        const end = start + normalizedSearchQuery.length;
-                        const isActive =
-                          idx ===
-                          Math.min(
-                            activeSearchIndex,
-                            textMatchIndexes.length - 1,
+                ) : (
+                  // The textarea grows with the text so it scrolls together with the highlight layer.
+                  <div
+                    ref={transcriptScrollRef}
+                    className="h-full w-full overflow-y-scroll custom-scrollbar"
+                  >
+                    <div className="relative grid min-h-full">
+                      <div
+                        key={normalizedSearchQuery}
+                        ref={transcriptHighlightsRef}
+                        aria-hidden="true"
+                        className="pointer-events-none col-start-1 row-start-1 whitespace-pre-wrap [overflow-wrap:break-word] pl-[max(0px,calc((100%-64rem)/2))] pr-[max(0px,calc(100%-max(0px,calc((100%-64rem)/2))-45rem))] ui-text-body leading-relaxed text-transparent pt-4 pb-10"
+                      >
+                        {textMatchIndexes.map((start, idx) => {
+                          const prevEnd =
+                            idx === 0
+                              ? 0
+                              : textMatchIndexes[idx - 1] +
+                                normalizedSearchQuery.length;
+                          const end = start + normalizedSearchQuery.length;
+                          const isActive =
+                            idx ===
+                            Math.min(
+                              activeSearchIndex,
+                              textMatchIndexes.length - 1,
+                            );
+                          return (
+                            <Fragment key={start}>
+                              {transcriptDraft.slice(prevEnd, start)}
+                              <mark
+                                data-active={isActive || undefined}
+                                className={`transcript-search-hit${isActive ? " transcript-search-hit-active" : ""}`}
+                              >
+                                {transcriptDraft.slice(start, end)}
+                              </mark>
+                            </Fragment>
                           );
-                        return (
-                          <Fragment key={start}>
-                            {transcriptDraft.slice(prevEnd, start)}
-                            <mark
-                              data-active={isActive || undefined}
-                              className={`transcript-search-hit${isActive ? " transcript-search-hit-active" : ""}`}
-                            >
-                              {transcriptDraft.slice(start, end)}
-                            </mark>
-                          </Fragment>
-                        );
-                      })}
-                      {transcriptDraft.slice(
-                        textMatchIndexes.length > 0
-                          ? textMatchIndexes[textMatchIndexes.length - 1] +
-                              normalizedSearchQuery.length
-                          : 0,
-                      )}{" "}
+                        })}
+                        {transcriptDraft.slice(
+                          textMatchIndexes.length > 0
+                            ? textMatchIndexes[textMatchIndexes.length - 1] +
+                                normalizedSearchQuery.length
+                            : 0,
+                        )}{" "}
+                      </div>
+                      <textarea
+                        ref={transcriptAreaRef}
+                        value={transcriptDraft}
+                        onChange={(event) =>
+                          setTranscriptDraft(event.target.value)
+                        }
+                        disabled={!transcriptEditable}
+                        placeholder={t({
+                          id: "library.modal.transcript_placeholder",
+                          message: "Transcript will appear here.",
+                        })}
+                        className="col-start-1 row-start-1 w-full resize-none overflow-hidden bg-transparent pl-[max(0px,calc((100%-64rem)/2))] pr-[max(0px,calc(100%-max(0px,calc((100%-64rem)/2))-45rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 select-text pt-4 pb-10"
+                      />
                     </div>
-                    <textarea
-                      ref={transcriptAreaRef}
-                      value={transcriptDraft}
-                      onChange={(event) =>
-                        setTranscriptDraft(event.target.value)
-                      }
-                      disabled={!transcriptEditable}
-                      placeholder={t({
-                        id: "library.modal.transcript_placeholder",
-                        message: "Transcript will appear here.",
-                      })}
-                      className="col-start-1 row-start-1 w-full resize-none overflow-hidden bg-transparent px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 select-text pt-4 pb-10"
-                    />
                   </div>
-                </div>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+
+        <footer className="mt-1 flex h-12 shrink-0 items-center px-5">
+          <div className="flex w-full items-center gap-3">
+            <button
+              onClick={handleTogglePlayback}
+              disabled={!audioReady || !!audioError}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg-secondary)] transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label={
+                isPlaying
+                  ? t({
+                      id: "library.modal.pause_audio",
+                      message: "Pause audio",
+                    })
+                  : t({
+                      id: "library.modal.play_audio",
+                      message: "Play audio",
+                    })
+              }
+            >
+              {isPlaying ? (
+                <Pause size={13} weight="fill" />
+              ) : (
+                <Play size={13} weight="fill" />
+              )}
+            </button>
+
+            <span className="w-11 shrink-0 text-right ui-text-meta font-medium tabular-nums text-content-secondary">
+              {formatDuration(audioCurrentTime)}
+            </span>
+
+            <div className="relative flex h-8 min-w-0 flex-1 items-center">
+              {audioError ? (
+                <span className="ui-text-meta text-content-disabled">
+                  {audioError}
+                </span>
+              ) : (
+                <AudioScrubber
+                  duration={audioDuration}
+                  currentTime={audioCurrentTime}
+                  bookmarks={bookmarks}
+                  disabled={!audioReady}
+                  ariaLabel={t({
+                    id: "library.modal.audio_scrubber",
+                    message: "Audio scrubber",
+                  })}
+                  onScrubStart={handleScrubStart}
+                  onScrub={(time) => handleScrubChange(String(time))}
+                  onScrubEnd={handleScrubEnd}
+                  onSeek={handleTimestampClick}
+                />
               )}
             </div>
-          </div>
-        )}
-      </main>
 
-      <footer className="-mb-6 shrink-0 px-5 pt-3 pb-5">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleTogglePlayback}
-            disabled={!audioReady || !!audioError}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg-secondary)] transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label={
-              isPlaying
-                ? t({
-                    id: "library.modal.pause_audio",
-                    message: "Pause audio",
-                  })
-                : t({
-                    id: "library.modal.play_audio",
-                    message: "Play audio",
-                  })
-            }
-          >
-            {isPlaying ? (
-              <Pause size={13} weight="fill" />
-            ) : (
-              <Play size={13} weight="fill" />
-            )}
-          </button>
+            <span className="w-11 shrink-0 ui-text-meta tabular-nums text-content-disabled">
+              {formatDuration(audioDuration)}
+            </span>
 
-          <span className="w-11 shrink-0 text-right ui-text-meta font-medium tabular-nums text-content-secondary">
-            {formatDuration(audioCurrentTime)}
-          </span>
-
-          <div className="relative flex h-8 min-w-0 flex-1 items-center">
-            {audioError ? (
-              <span className="ui-text-meta text-content-disabled">
-                {audioError}
-              </span>
-            ) : (
-              <AudioScrubber
-                duration={audioDuration}
-                currentTime={audioCurrentTime}
-                bookmarks={bookmarks}
-                disabled={!audioReady}
-                ariaLabel={t({
-                  id: "library.modal.audio_scrubber",
-                  message: "Audio scrubber",
-                })}
-                onScrubStart={handleScrubStart}
-                onScrub={(time) => handleScrubChange(String(time))}
-                onScrubEnd={handleScrubEnd}
-                onSeek={handleTimestampClick}
-              />
-            )}
-          </div>
-
-          <span className="w-11 shrink-0 ui-text-meta tabular-nums text-content-disabled">
-            {formatDuration(audioDuration)}
-          </span>
-
-          <div className="flex h-7 shrink-0 items-center gap-0.5 ui-text-meta leading-none">
-            <button
-              type="button"
-              onClick={() => handlePlaybackRateStep(-1)}
-              disabled={!audioReady || !!audioError || !canDecreasePlaybackRate}
-              aria-label={t({
-                id: "library.modal.playback.decrease",
-                message: "Decrease playback speed",
-              })}
-              className="p-0.5 text-content-muted transition-colors hover:text-content-primary disabled:text-content-disabled"
-            >
-              <ChevronLeft size={10} />
-            </button>
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span
-                key={playbackRate}
-                initial={{ opacity: 0, y: -2, scale: 0.92 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 2, scale: 0.92 }}
-                transition={{ duration: 0.16, ease: "easeOut" }}
-                onMouseDown={handleRateScrubStart}
-                onTouchStart={handleRateScrubStart}
-                className="w-[30px] min-w-[30px] text-center font-medium text-content-secondary tabular-nums cursor-ew-resize select-none"
-              >
-                {formatPlaybackRate(playbackRate)}x
-              </motion.span>
-            </AnimatePresence>
-            <button
-              type="button"
-              onClick={() => handlePlaybackRateStep(1)}
-              disabled={!audioReady || !!audioError || !canIncreasePlaybackRate}
-              aria-label={t({
-                id: "library.modal.playback.increase",
-                message: "Increase playback speed",
-              })}
-              className="p-0.5 text-content-muted transition-colors hover:text-content-primary disabled:text-content-disabled"
-            >
-              <ChevronRight size={10} />
-            </button>
-          </div>
-
-          {hasTracks && (
-            <>
+            <div className="flex h-7 shrink-0 items-center gap-0.5 ui-text-meta leading-none">
               <button
                 type="button"
-                onClick={() => handleToggleTrackMute("primary")}
-                aria-pressed={!trackMuted.primary}
-                title={t({
-                  id: "library.tracks.microphone",
-                  message: "Microphone track",
+                onClick={() => handlePlaybackRateStep(-1)}
+                disabled={
+                  !audioReady || !!audioError || !canDecreasePlaybackRate
+                }
+                aria-label={t({
+                  id: "library.modal.playback.decrease",
+                  message: "Decrease playback speed",
                 })}
-                className={`rounded-md p-1.5 transition-colors hover:bg-surface-surface ${
-                  trackMuted.primary
-                    ? "text-content-disabled"
-                    : "text-content-secondary hover:text-content-primary"
-                }`}
+                className="p-0.5 text-content-muted transition-colors hover:text-content-primary disabled:text-content-disabled"
               >
-                {trackMuted.primary ? (
-                  <MicrophoneSlash size={14} />
-                ) : (
-                  <Microphone size={14} />
-                )}
+                <ChevronLeft size={10} />
               </button>
-              <button
-                type="button"
-                onClick={() => handleToggleTrackMute("secondary")}
-                aria-pressed={!trackMuted.secondary}
-                title={t({
-                  id: "library.tracks.system_audio",
-                  message: "System audio track",
-                })}
-                className={`rounded-md p-1.5 transition-colors hover:bg-surface-surface ${
-                  trackMuted.secondary
-                    ? "text-content-disabled"
-                    : "text-content-secondary hover:text-content-primary"
-                }`}
-              >
-                {trackMuted.secondary ? (
-                  <SpeakerSlash size={14} />
-                ) : (
-                  <SpeakerHigh size={14} />
-                )}
-              </button>
-            </>
-          )}
-
-          <div className="relative shrink-0" ref={playbackMenuRef}>
-            <button
-              type="button"
-              onClick={() => setPlaybackMenuOpen((prev) => !prev)}
-              aria-haspopup="menu"
-              aria-expanded={playbackMenuOpen}
-              aria-label={t({
-                id: "library.detail.playback_settings",
-                message: "Playback settings",
-              })}
-              title={t({
-                id: "library.detail.playback_settings",
-                message: "Playback settings",
-              })}
-              className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface ${
-                playbackMenuOpen
-                  ? "text-content-primary"
-                  : "text-content-muted hover:text-content-primary"
-              }`}
-            >
-              <GearSix size={15} aria-hidden="true" />
-            </button>
-            <AnimatePresence>
-              {playbackMenuOpen && (
-                <motion.div
-                  ref={playbackMenuPanelRef}
-                  role="menu"
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  transition={{ duration: 0.1 }}
-                  className="absolute right-0 bottom-full mb-2 w-52 rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl overflow-hidden z-[120] py-1"
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                  key={playbackRate}
+                  initial={{ opacity: 0, y: -2, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 2, scale: 0.92 }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
+                  onMouseDown={handleRateScrubStart}
+                  onTouchStart={handleRateScrubStart}
+                  className="w-[30px] min-w-[30px] text-center font-medium text-content-secondary tabular-nums cursor-ew-resize select-none"
                 >
-                  {[
-                    {
-                      key: "timestamps",
-                      label: t({
-                        id: "library.detail.show_timestamps",
-                        message: "Show timestamps",
-                      }),
-                      checked: showSegmentView,
-                      disabled: !canShowTimestamps,
-                      onSelect: handleToggleTimestamps,
-                    },
-                    {
-                      key: "follow",
-                      label: t({
-                        id: "library.detail.follow_playback",
-                        message: "Scroll with playback",
-                      }),
-                      checked: followPlayback && showSegmentView,
-                      disabled: !showSegmentView,
-                      onSelect: () => {
-                        const next = !followPlayback;
-                        setFollowPlayback(next);
-                        localStorage.setItem(
-                          FOLLOW_PLAYBACK_KEY,
-                          next ? "on" : "off",
+                  {formatPlaybackRate(playbackRate)}x
+                </motion.span>
+              </AnimatePresence>
+              <button
+                type="button"
+                onClick={() => handlePlaybackRateStep(1)}
+                disabled={
+                  !audioReady || !!audioError || !canIncreasePlaybackRate
+                }
+                aria-label={t({
+                  id: "library.modal.playback.increase",
+                  message: "Increase playback speed",
+                })}
+                className="p-0.5 text-content-muted transition-colors hover:text-content-primary disabled:text-content-disabled"
+              >
+                <ChevronRight size={10} />
+              </button>
+            </div>
+
+            {hasTracks && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleToggleTrackMute("primary")}
+                  aria-pressed={!trackMuted.primary}
+                  title={t({
+                    id: "library.tracks.microphone",
+                    message: "Microphone track",
+                  })}
+                  className={`rounded-md p-1.5 transition-colors hover:bg-surface-surface ${
+                    trackMuted.primary
+                      ? "text-content-disabled"
+                      : "text-content-secondary hover:text-content-primary"
+                  }`}
+                >
+                  {trackMuted.primary ? (
+                    <MicrophoneSlash size={14} />
+                  ) : (
+                    <Microphone size={14} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleTrackMute("secondary")}
+                  aria-pressed={!trackMuted.secondary}
+                  title={t({
+                    id: "library.tracks.system_audio",
+                    message: "System audio track",
+                  })}
+                  className={`rounded-md p-1.5 transition-colors hover:bg-surface-surface ${
+                    trackMuted.secondary
+                      ? "text-content-disabled"
+                      : "text-content-secondary hover:text-content-primary"
+                  }`}
+                >
+                  {trackMuted.secondary ? (
+                    <SpeakerSlash size={14} />
+                  ) : (
+                    <SpeakerHigh size={14} />
+                  )}
+                </button>
+              </>
+            )}
+
+            <div className="relative shrink-0" ref={speakersMenuRef}>
+              <button
+                type="button"
+                onClick={() => setSpeakersMenuOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={speakersMenuOpen}
+                aria-label={t({
+                  id: "library.detail.speakers",
+                  message: "Speakers",
+                })}
+                title={t({
+                  id: "library.detail.speakers",
+                  message: "Speakers",
+                })}
+                className={`flex h-7 items-center gap-1.5 rounded-md px-1.5 ui-text-meta hover:bg-surface-surface transition-colors ${
+                  hiddenSpeakers.size > 0
+                    ? "text-[var(--color-cloud-dark)]"
+                    : "text-content-secondary hover:text-content-primary"
+                }`}
+              >
+                {hiddenSpeakers.size > 0 ? (
+                  <EyeSlash size={11} />
+                ) : (
+                  <Users size={11} />
+                )}
+                <span
+                  className={`tabular-nums ${
+                    hiddenSpeakers.size > 0 ? "" : "text-content-disabled"
+                  }`}
+                >
+                  {hiddenSpeakers.size > 0
+                    ? `${speakers.length - hiddenSpeakers.size}/${speakers.length}`
+                    : speakers.length}
+                </span>
+              </button>
+              <AnimatePresence>
+                {speakersMenuOpen && (
+                  <motion.div
+                    ref={speakersMenuPanelRef}
+                    role="menu"
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                    transition={{ duration: 0.12 }}
+                    className="ui-surface-menu absolute right-0 bottom-full mb-1.5 z-[120] w-56 origin-bottom-right py-1"
+                  >
+                    {speakers.length > 1 && (
+                      <>
+                        <SpeakerMenuItem
+                          icon={
+                            <Eye
+                              size={12}
+                              className="shrink-0 ui-color-muted"
+                            />
+                          }
+                          label={t({
+                            id: "library.detail.speaker_menu.show_all",
+                            message: "Show all speakers",
+                          })}
+                          disabled={hiddenSpeakers.size === 0}
+                          onClick={() => setHiddenSpeakerIds([])}
+                        />
+                        <div className="my-1 h-px bg-[var(--border-subtle)]" />
+                      </>
+                    )}
+                    {speakers.length === 0 && (
+                      <div className="px-3 py-2 ui-text-menu-item ui-color-muted">
+                        {t({
+                          id: "library.detail.filter.no_speakers",
+                          message: "No speakers yet",
+                        })}
+                      </div>
+                    )}
+                    <div className="max-h-72 overflow-y-auto custom-scrollbar">
+                      {speakers.map((speaker) => {
+                        const hidden = hiddenSpeakers.has(speaker.id);
+                        return (
+                          <div
+                            key={speaker.id}
+                            onContextMenu={(event) =>
+                              openSpeakerContext(speaker.id, event)
+                            }
+                            className="group/speaker flex items-center gap-1.5 pr-3 hover:bg-surface-elevated transition-colors"
+                          >
+                            {renamingSpeakerId === speaker.id ? (
+                              <div className="flex min-w-0 flex-1 items-center gap-2.5 py-2 pl-3">
+                                <span
+                                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: speaker.color ?? undefined,
+                                  }}
+                                  aria-hidden="true"
+                                />
+                                <input
+                                  value={speakerNameDraft}
+                                  onChange={(event) =>
+                                    setSpeakerNameDraft(event.target.value)
+                                  }
+                                  onFocus={(event) => event.target.select()}
+                                  aria-label={t({
+                                    id: "library.detail.speaker_menu.rename",
+                                    message: "Rename",
+                                  })}
+                                  onBlur={() => handleRenameSpeaker(speaker.id)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      event.preventDefault();
+                                      handleRenameSpeaker(speaker.id);
+                                    }
+                                    if (event.key === "Escape") {
+                                      event.preventDefault();
+                                      setRenamingSpeakerId(null);
+                                      setSpeakerNameDraft("");
+                                    }
+                                  }}
+                                  className="min-w-0 flex-1 border-0 bg-transparent p-0 ui-text-menu-item ui-color-primary shadow-[inset_0_-1px_0_0_var(--color-border-hover)] outline-hidden"
+                                  autoFocus
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRenamingSpeakerId(speaker.id);
+                                  setSpeakerNameDraft(speaker.name);
+                                }}
+                                title={t({
+                                  id: "library.detail.speaker_menu.rename",
+                                  message: "Rename",
+                                })}
+                                className={`flex min-w-0 flex-1 items-center gap-2.5 py-2 pl-3 text-left ui-text-menu-item ui-color-secondary transition-opacity ${
+                                  hidden ? "opacity-45" : ""
+                                }`}
+                              >
+                                <span
+                                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: speaker.color ?? undefined,
+                                  }}
+                                  aria-hidden="true"
+                                />
+                                <span className="truncate">{speaker.name}</span>
+                                <Pencil
+                                  size={11}
+                                  className="shrink-0 ui-color-muted opacity-0 transition-opacity group-hover/speaker:opacity-100"
+                                  aria-hidden="true"
+                                />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => toggleSpeakerHidden(speaker.id)}
+                              aria-pressed={hidden}
+                              aria-label={
+                                hidden
+                                  ? t({
+                                      id: "library.detail.speaker_menu.show",
+                                      message: "Show speaker",
+                                    })
+                                  : t({
+                                      id: "library.detail.speaker_menu.hide",
+                                      message: "Hide speaker",
+                                    })
+                              }
+                              title={
+                                hidden
+                                  ? t({
+                                      id: "library.detail.speaker_menu.show",
+                                      message: "Show speaker",
+                                    })
+                                  : t({
+                                      id: "library.detail.speaker_menu.hide",
+                                      message: "Hide speaker",
+                                    })
+                              }
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ui-color-muted transition-opacity hover:text-content-primary focus-visible:opacity-100 ${
+                                hidden
+                                  ? ""
+                                  : "opacity-0 group-hover/speaker:opacity-100"
+                              }`}
+                            >
+                              {hidden ? (
+                                <EyeSlash size={13} />
+                              ) : (
+                                <Eye size={13} />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSpeaker(speaker.id)}
+                              aria-label={t({
+                                id: "library.detail.speaker.remove",
+                                message: `Remove ${speaker.name}`,
+                              })}
+                              title={t({
+                                id: "library.detail.speaker.remove",
+                                message: `Remove ${speaker.name}`,
+                              })}
+                              className="shrink-0 p-0.5 ui-color-muted opacity-0 transition-opacity hover:text-red-500 group-hover/speaker:opacity-100 focus-visible:opacity-100"
+                            >
+                              <X size={11} />
+                            </button>
+                          </div>
                         );
+                      })}
+                    </div>
+                    {speakers.length > 0 && (
+                      <div className="my-1 h-px bg-[var(--border-subtle)]" />
+                    )}
+                    <SpeakerMenuItem
+                      icon={
+                        <UserPlus
+                          size={12}
+                          className="shrink-0 ui-color-muted"
+                        />
+                      }
+                      label={t({
+                        id: "library.detail.add_speaker",
+                        message: "Add speaker",
+                      })}
+                      disabled={!canAddSpeaker}
+                      onClick={() => void handleAddSpeaker()}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="relative shrink-0" ref={playbackMenuRef}>
+              <button
+                type="button"
+                onClick={() => setPlaybackMenuOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={playbackMenuOpen}
+                aria-label={t({
+                  id: "library.detail.playback_settings",
+                  message: "Playback settings",
+                })}
+                title={t({
+                  id: "library.detail.playback_settings",
+                  message: "Playback settings",
+                })}
+                className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface ${
+                  playbackMenuOpen
+                    ? "text-content-primary"
+                    : "text-content-muted hover:text-content-primary"
+                }`}
+              >
+                <GearSix size={15} aria-hidden="true" />
+              </button>
+              <AnimatePresence>
+                {playbackMenuOpen && (
+                  <motion.div
+                    ref={playbackMenuPanelRef}
+                    role="menu"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.1 }}
+                    className="absolute right-0 bottom-full mb-2 w-52 rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl overflow-hidden z-[120] py-1"
+                  >
+                    {[
+                      {
+                        key: "timestamps",
+                        label: t({
+                          id: "library.detail.show_timestamps",
+                          message: "Show timestamps",
+                        }),
+                        checked: showSegmentView,
+                        disabled: !canShowTimestamps,
+                        onSelect: handleToggleTimestamps,
                       },
-                    },
-                  ].map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      role="menuitemcheckbox"
-                      aria-checked={option.checked}
-                      disabled={option.disabled}
-                      onClick={option.onSelect}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <span className="flex w-3 shrink-0 justify-center">
-                        {option.checked && <Check size={11} />}
-                      </span>
-                      {option.label}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      {
+                        key: "follow",
+                        label: t({
+                          id: "library.detail.follow_playback",
+                          message: "Scroll with playback",
+                        }),
+                        checked: followPlayback && showSegmentView,
+                        disabled: !showSegmentView,
+                        onSelect: () => {
+                          const next = !followPlayback;
+                          setFollowPlayback(next);
+                          localStorage.setItem(
+                            FOLLOW_PLAYBACK_KEY,
+                            next ? "on" : "off",
+                          );
+                        },
+                      },
+                    ].map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        role="menuitemcheckbox"
+                        aria-checked={option.checked}
+                        disabled={option.disabled}
+                        onClick={option.onSelect}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <span className="flex w-3 shrink-0 justify-center">
+                          {option.checked && <Check size={11} />}
+                        </span>
+                        {option.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </motion.div>
 
       <LibraryDeleteDialog
         open={showDeleteConfirm}

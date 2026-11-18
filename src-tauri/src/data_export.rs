@@ -674,6 +674,7 @@ mod tests {
         fs::write(&library_audio, b"fake-wav-2").expect("write library audio");
         storage
             .insert_library_item(LibraryItem {
+                folder: None,
                 id: "item-1".to_string(),
                 name: "Test item".to_string(),
                 audio_path: library_audio.display().to_string(),

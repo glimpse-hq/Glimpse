@@ -57,7 +57,7 @@ const SettingsScreen = ({
       <header data-tauri-drag-region className="shrink-0 px-8 pb-1">
         <h1
           data-tauri-drag-region
-          className="ui-text-screen-title ui-color-primary tracking-tight"
+          className="mx-auto max-w-column-wide ui-text-screen-title ui-color-primary tracking-tight"
         >
           {i18n._(SETTINGS_PANE_LABELS[pane])}
         </h1>
@@ -74,10 +74,8 @@ const SettingsScreen = ({
         </div>
       </div>
 
-      <div
-        className="flex flex-1 min-h-0 flex-col px-8 pt-2 pb-6 settings-scroll overflow-y-scroll"
-        style={{ scrollbarGutter: "stable" }}
-      >
+      {/* Centers the panes in the 64rem column; the scrollbar's 6px comes off the right. */}
+      <div className="flex flex-1 min-h-0 flex-col overflow-y-scroll pt-2 pb-6 pl-[max(2rem,calc(50%-32rem))] pr-[calc(max(2rem,calc(50%-32rem))-6px)] settings-scroll">
         {form.loading ? null : (
           <>
             {pane === "account" && (
