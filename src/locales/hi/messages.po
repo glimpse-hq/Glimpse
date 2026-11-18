@@ -1353,6 +1353,136 @@ msgstr ""
 #~ msgstr "कमांड लाइन के लिए ख़रीदा हुआ Glimpse लाइसेंस चाहिए। यह ट्रायल में शामिल नहीं है।"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.day"
+#~ msgstr "1 दिन"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.month"
+#~ msgstr "1 माह"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.week"
+#~ msgstr "1 सप्ताह"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.year"
+#~ msgstr "1 वर्ष"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.after"
+#~ msgstr "के बाद"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.appearance"
+#~ msgstr "रूप"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.apply"
+#~ msgstr "फिर भी लागू करें"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.audio"
+#~ msgstr "ऑडियो"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.one"
+#~ msgstr "ऑडियो फ़ाइल"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.other"
+#~ msgstr "ऑडियो फ़ाइलें"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete"
+#~ msgstr "स्वतः हटाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
+#~ msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से तुरंत ही {noun} हट सकता है जो पहले से ही {threshold} से पुराना है।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
+#~ msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से आपका मौजूदा {noun} तुरंत हट सकता है।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.known_count"
+#~ msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से तुरंत ही {candidateCount} {noun} हट जाएगा जो पहले से ही {threshold} से पुराना है।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.known_count"
+#~ msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से तुरंत ही {candidateCount} मौजूदा {noun} हट जाएगा।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_too"
+#~ msgstr "ट्रांसक्रिप्ट हटाने पर उनसे जुड़े ऑडियो भी हट जाते हैं।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.body"
+#~ msgstr "लिप्यंतरण हटाने पर उनकी सहेजी गई ऑडियो भी हट जाएगी।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.version_label"
+#~ msgstr "Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.instantly"
+#~ msgstr "तुरंत"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.permission.off"
+#~ msgstr "बंद"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.threshold.immediately"
+#~ msgstr "अभी तुरंत"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_only"
+#~ msgstr "यह केवल सहेजी गई ऑडियो फ़ाइलें हटाता है, आपके ट्रांसक्रिप्ट नहीं।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.one"
+#~ msgstr "ट्रांसक्रिप्ट"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.other"
+#~ msgstr "ट्रांसक्रिप्ट"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.transcripts"
+#~ msgstr "ट्रांसक्रिप्ट"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.unknown_count"
+#~ msgstr "हम अभी इनकी गिनती नहीं कर सके, लेकिन जैसे ही आप यह बदलाव सहेजेंगे, स्वतः‑हटाना फिर भी चल जाएगा।"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -1497,6 +1627,16 @@ msgstr "{0} शब्द बोले गए, एक भी टाइप नह�
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {आज प्रति डिक्टेशन लगभग # शब्द} other {आज प्रति डिक्टेशन लगभग # शब्द}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_audio"
+msgstr "{candidateCount, plural, one {# ऑडियो फ़ाइल हटाएँ?} other {# ऑडियो फ़ाइलें हटाएँ?}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_dictations"
+msgstr "{candidateCount, plural, one {# डिक्टेशन हटाएँ?} other {# डिक्टेशन हटाएँ?}}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1657,12 +1797,7 @@ msgstr "42 मि॰"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.day"
-msgstr "दिन में एक बार"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.day"
-msgstr "1 दिन"
+msgstr "एक दिन"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1675,11 +1810,6 @@ msgid "settings.app.prune.threshold.month"
 msgstr "एक माह"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.month"
-msgstr "1 माह"
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.already_recording"
 msgstr "एक रिकॉर्डिंग पहले से चल रही है।"
@@ -1687,22 +1817,12 @@ msgstr "एक रिकॉर्डिंग पहले से चल रह�
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.week"
-msgstr "सप्ताह में एक बार"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.week"
-msgstr "1 सप्ताह"
+msgstr "एक सप्ताह"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.year"
-msgstr "साल में एक बार"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.year"
-msgstr "1 वर्ष"
+msgstr "एक साल"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1858,8 +1978,28 @@ msgstr "वे शब्द जोड़ें जिन्हें Glimpse क
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.after"
-msgstr "के बाद"
+msgid "settings.app.auto_delete.after_day"
+msgstr "एक दिन बाद"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_month"
+msgstr "एक माह बाद"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_week"
+msgstr "एक सप्ताह बाद"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_year"
+msgstr "एक वर्ष बाद"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_transcribing"
+msgstr "ट्रांसक्रिप्शन के बाद"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1932,6 +2072,11 @@ msgid "locked.enter_key"
 msgstr "पहले ही ख़रीद लिया? अपनी लाइसेंस कुंजी डालें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.include_transcripts"
+msgstr "ट्रांसक्रिप्ट भी हटाएँ"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.ask_title_unnamed"
 msgstr "एक एजेंट का सवाल"
@@ -1988,11 +2133,6 @@ msgid "settings.modal.tab.app"
 msgstr "ऐप"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.appearance"
-msgstr "रूप"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
 msgstr "Apple Neural Engine"
@@ -2001,11 +2141,6 @@ msgstr "Apple Neural Engine"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.applications"
 msgstr "ऐप्लिकेशन"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.apply"
-msgstr "फिर भी लागू करें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2019,25 +2154,10 @@ msgid "library.detail.assign_new_speaker"
 msgstr "नए वक्ता को असाइन करें"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.audio"
-msgstr "ऑडियो"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.file_filter"
 msgstr "ऑडियो और वीडियो"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.one"
-msgstr "ऑडियो फ़ाइल"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.other"
-msgstr "ऑडियो फ़ाइलें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2066,8 +2186,8 @@ msgstr "ऑटो शब्दकोश"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete"
-msgstr "स्वतः हटाएँ"
+msgid "settings.app.auto_delete_dictation_audio"
+msgstr "डिक्टेशन ऑडियो स्वतः हटाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2279,26 +2399,6 @@ msgstr "शॉर्टकट बदलें"
 #: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.change_line"
 msgstr "इस पंक्ति के लिए वक्ता बदलें"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
-msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से तुरंत ही {noun} हट सकता है जो पहले से ही {threshold} से पुराना है।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
-msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से आपका मौजूदा {noun} तुरंत हट सकता है।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.known_count"
-msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से तुरंत ही {candidateCount} {noun} हट जाएगा जो पहले से ही {threshold} से पुराना है।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.known_count"
-msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से तुरंत ही {candidateCount} मौजूदा {noun} हट जाएगा।"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -3209,16 +3309,6 @@ msgid "library.modal.delete_confirm.title"
 msgstr "क्या इस आइटम को हटाना है?"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_too"
-msgstr "ट्रांसक्रिप्ट हटाने पर उनसे जुड़े ऑडियो भी हट जाते हैं।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.body"
-msgstr "लिप्यंतरण हटाने पर उनकी सहेजी गई ऑडियो भी हट जाएगी।"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.deleting"
 msgstr "हटाया जा रहा है…"
@@ -3854,11 +3944,6 @@ msgid "locked.personalization.line"
 msgstr "हर ऐप या वेबसाइट को अपनी लेखन शैली दें। इसके लिए आपका राइटिंग मॉडल इस्तेमाल होता है।"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.version_label"
-msgstr "Glimpse"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
@@ -4051,6 +4136,7 @@ msgstr "थोड़ा और देर तक दबाए रखें, फ�
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.about.data.hold_to_delete"
 msgstr "दबाकर रखें और मिटाएँ"
 
@@ -4226,11 +4312,6 @@ msgstr "{0} को {cliInstallPath} पर इंस्टॉल करता �
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_info"
 msgstr "Terminal, स्क्रिप्ट और ऑटोमेशन टूल्स के लिए {0} कमांड इंस्टॉल करता है। जब आप ऐप UI खोले बिना प्रोग्राम के ज़रिये Glimpse चलाना चाहें, तो इसका उपयोग करें।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.instantly"
-msgstr "तुरंत"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -5192,11 +5273,6 @@ msgid "settings.stats.card.of_dictating"
 msgstr "इस वर्ष डिक्टेट करने के"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.permission.off"
-msgstr "बंद"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.off"
 msgstr "बंद"
@@ -6011,11 +6087,6 @@ msgstr "दायाँ"
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.right_modifier"
 msgstr "दायाँ {key}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.immediately"
-msgstr "अभी तुरंत"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
@@ -6987,6 +7058,26 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "इस बिल्ड में कमांड लाइन सहायक शामिल नहीं है।"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_older"
+msgstr "इससे {threshold} से पुराने डिक्टेशन का ऑडियो हट जाएगा। ट्रांसक्रिप्ट और लाइब्रेरी बनी रहेंगी।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_older"
+msgstr "इससे {threshold} से पुराने डिक्टेशन और उनका ऑडियो हट जाएगा। लाइब्रेरी बनी रहेगी।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_all"
+msgstr "इससे सभी सहेजे गए डिक्टेशन और उनका ऑडियो हट जाएगा। लाइब्रेरी बनी रहेगी।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_all"
+msgstr "इससे सभी सहेजे गए डिक्टेशन का ऑडियो हट जाएगा। ट्रांसक्रिप्ट और लाइब्रेरी बनी रहेंगी।"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
 msgstr "इस डिवाइस को लाइसेंस से हटा दिया गया।"
@@ -7025,11 +7116,6 @@ msgstr "यह लाइसेंस कुंजी बंद कर दी ग
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
 msgstr "यह लाइसेंस अपग्रेड किया गया। नीचे अपनी नई कुंजी डालें।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_only"
-msgstr "यह केवल सहेजी गई ऑडियो फ़ाइलें हटाता है, आपके ट्रांसक्रिप्ट नहीं।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -7164,11 +7250,6 @@ msgid "onboarding.first_dictation.transcribing"
 msgstr "ट्रांसक्राइब कर रहा है..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.one"
-msgstr "ट्रांसक्रिप्ट"
-
-#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.history"
 msgstr "लिप्यंतरण इतिहास"
@@ -7222,16 +7303,6 @@ msgstr "ट्रांसक्रिप्शन अब उपलब्ध न
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.transcription_timeout"
 msgstr "ट्रांसक्रिप्शन में बहुत समय लगा। आप होम से दोबारा कोशिश कर सकते हैं।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.other"
-msgstr "ट्रांसक्रिप्ट"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.transcripts"
-msgstr "ट्रांसक्रिप्ट"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -7492,11 +7563,6 @@ msgstr "आवाज़ मेरे पास मौजूद सबसे त�
 #: src/features/import/components/ImportStep.tsx
 msgid "import.title"
 msgstr "क्या आप अपनी सेटिंग्स आयात करना चाहते हैं?"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.unknown_count"
-msgstr "हम अभी इनकी गिनती नहीं कर सके, लेकिन जैसे ही आप यह बदलाव सहेजेंगे, स्वतः‑हटाना फिर भी चल जाएगा।"
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx

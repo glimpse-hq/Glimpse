@@ -1353,6 +1353,136 @@ msgstr ""
 #~ msgstr "تأتي أداة سطر الأوامر مع ترخيص Glimpse مشتَرى. وهي غير مشمولة في الفترة التجريبية."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.day"
+#~ msgstr "يوم واحد"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.month"
+#~ msgstr "شهر واحد"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.week"
+#~ msgstr "أسبوع واحد"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.year"
+#~ msgstr "سنة واحدة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.after"
+#~ msgstr "بعد"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.appearance"
+#~ msgstr "المظهر"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.apply"
+#~ msgstr "تطبيق على أي حال"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.audio"
+#~ msgstr "الصوت"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.one"
+#~ msgstr "ملف صوتي"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.other"
+#~ msgstr "ملفات صوتية"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete"
+#~ msgstr "الحذف التلقائي"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
+#~ msgstr "قد يؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {noun} الأقدم من {threshold} فوراً."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
+#~ msgstr "قد يؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {noun} الحالية فوراً."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.known_count"
+#~ msgstr "سيؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {candidateCount} {noun} الأقدم من {threshold} فوراً."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.known_count"
+#~ msgstr "سيؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {candidateCount} من {noun} الحالية فوراً."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_too"
+#~ msgstr "يؤدي حذف النصوص المكتوبة إلى إزالة الملفات الصوتية المرتبطة بها أيضًا."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.body"
+#~ msgstr "يؤدي حذف النصوص المكتوبة إلى إزالة الصوت المحفوظ المرتبط بها."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.version_label"
+#~ msgstr "Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.instantly"
+#~ msgstr "فوراً"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.permission.off"
+#~ msgstr "إيقاف"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.threshold.immediately"
+#~ msgstr "الآن"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_only"
+#~ msgstr "يؤدي هذا إلى إزالة ملفات الصوت المحفوظة فقط، وليس النصوص المُحوَّلة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.one"
+#~ msgstr "النص المُفرَّغ"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.other"
+#~ msgstr "النصوص المكتوبة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.transcripts"
+#~ msgstr "النصوص المكتوبة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.unknown_count"
+#~ msgstr "تعذّر إحصاؤها الآن، لكن سيظل الحذف التلقائي يعمل فور حفظ هذا التغيير."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -1497,6 +1627,16 @@ msgstr "{0} كلمة مُملاة، لم أكتب منها حرفًا. @try_glim
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {حوالي # كلمة لكل إملاء اليوم} other {حوالي # كلمات لكل إملاء اليوم}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_audio"
+msgstr "{candidateCount, plural, zero {حذف # ملف صوتي؟} one {حذف ملف صوتي واحد؟} two {حذف ملفين صوتيين؟} few {حذف # ملفات صوتية؟} many {حذف # ملفًا صوتيًا؟} other {حذف # ملف صوتي؟}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_dictations"
+msgstr "{candidateCount, plural, zero {حذف # إملاء؟} one {حذف إملاء واحد؟} two {حذف إملاءين؟} few {حذف # إملاءات؟} many {حذف # إملاءً؟} other {حذف # إملاء؟}}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1657,12 +1797,7 @@ msgstr "42 د"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.day"
-msgstr "يومياً"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.day"
-msgstr "يوم واحد"
+msgstr "يوم"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1672,12 +1807,7 @@ msgstr "وضع مخصص لكل تطبيق"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.month"
-msgstr "شهريًا"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.month"
-msgstr "شهر واحد"
+msgstr "شهر"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -1687,22 +1817,12 @@ msgstr "التسجيل قيد التشغيل بالفعل."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.week"
-msgstr "أسبوعياً"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.week"
-msgstr "أسبوع واحد"
+msgstr "أسبوع"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.year"
-msgstr "سنوياً"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.year"
-msgstr "سنة واحدة"
+msgstr "سنة"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1858,8 +1978,28 @@ msgstr "أضف كلمات يجب أن يتعرف عليها Glimpse وعبارا
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.after"
-msgstr "بعد"
+msgid "settings.app.auto_delete.after_day"
+msgstr "بعد يوم"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_month"
+msgstr "بعد شهر"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_week"
+msgstr "بعد أسبوع"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_year"
+msgstr "بعد سنة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_transcribing"
+msgstr "بعد التحويل إلى نص"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1932,6 +2072,11 @@ msgid "locked.enter_key"
 msgstr "هل اشتريت الترخيص من قبل؟ أدخل مفتاح الترخيص"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.include_transcripts"
+msgstr "حذف النصوص المكتوبة أيضًا"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.ask_title_unnamed"
 msgstr "سؤال من أحد الوكلاء"
@@ -1988,11 +2133,6 @@ msgid "settings.modal.tab.app"
 msgstr "التطبيق"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.appearance"
-msgstr "المظهر"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
 msgstr "Apple Neural Engine"
@@ -2001,11 +2141,6 @@ msgstr "Apple Neural Engine"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.applications"
 msgstr "التطبيقات"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.apply"
-msgstr "تطبيق على أي حال"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2019,25 +2154,10 @@ msgid "library.detail.assign_new_speaker"
 msgstr "تعيين متحدث جديد"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.audio"
-msgstr "الصوت"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.file_filter"
 msgstr "الصوت والفيديو"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.one"
-msgstr "ملف صوتي"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.other"
-msgstr "ملفات صوتية"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2066,8 +2186,8 @@ msgstr "القاموس التلقائي"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete"
-msgstr "الحذف التلقائي"
+msgid "settings.app.auto_delete_dictation_audio"
+msgstr "حذف صوت الإملاء تلقائيًا"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2279,26 +2399,6 @@ msgstr "تغيير الاختصار"
 #: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.change_line"
 msgstr "تغيير المتحدث لهذا السطر"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
-msgstr "قد يؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {noun} الأقدم من {threshold} فوراً."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
-msgstr "قد يؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {noun} الحالية فوراً."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.known_count"
-msgstr "سيؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {candidateCount} {noun} الأقدم من {threshold} فوراً."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.known_count"
-msgstr "سيؤدي تغيير الحذف التلقائي إلى {policyLabel} إلى حذف {candidateCount} من {noun} الحالية فوراً."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -3209,16 +3309,6 @@ msgid "library.modal.delete_confirm.title"
 msgstr "حذف هذا العنصر؟"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_too"
-msgstr "يؤدي حذف النصوص المكتوبة إلى إزالة الملفات الصوتية المرتبطة بها أيضًا."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.body"
-msgstr "يؤدي حذف النصوص المكتوبة إلى إزالة الصوت المحفوظ المرتبط بها."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.deleting"
 msgstr "جارٍ الحذف…"
@@ -3854,11 +3944,6 @@ msgid "locked.personalization.line"
 msgstr "امنح كل تطبيق أو موقع ويب أسلوب كتابة خاصًا به باستخدام نموذج الكتابة."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.version_label"
-msgstr "Glimpse"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
 msgstr "Glimpse C1 2B"
@@ -4051,6 +4136,7 @@ msgstr "استمر في الضغط قليلاً، ثم حاول مجدداً."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.about.data.hold_to_delete"
 msgstr "اضغط مطوّلاً للحذف"
 
@@ -4226,11 +4312,6 @@ msgstr "يُثبِّت {0} في {cliInstallPath}. هذا المجلد غير م�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_info"
 msgstr "يثبِّت أمر {0} لاستخدامه في Terminal والنصوص البرمجية وأدوات الأتمتة. استخدمه عندما تريد استدعاء Glimpse برمجيًا دون فتح واجهة التطبيق."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.instantly"
-msgstr "فوراً"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -5192,11 +5273,6 @@ msgid "settings.stats.card.of_dictating"
 msgstr "من الإملاء هذا العام"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.permission.off"
-msgstr "إيقاف"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.off"
 msgstr "متوقف"
@@ -6011,11 +6087,6 @@ msgstr "يمين"
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.right_modifier"
 msgstr "يمين {key}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.immediately"
-msgstr "الآن"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
@@ -6987,6 +7058,26 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "لا يتضمن هذا الإصدار أداة سطر الأوامر."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_older"
+msgstr "يحذف هذا الملفات الصوتية لعمليات الإملاء الأقدم من {threshold}. تبقى النصوص المكتوبة والمكتبة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_older"
+msgstr "يحذف هذا عمليات الإملاء الأقدم من {threshold} وملفاتها الصوتية. تبقى المكتبة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_all"
+msgstr "يحذف هذا كل عمليات الإملاء المحفوظة وملفاتها الصوتية. تبقى المكتبة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_all"
+msgstr "يحذف هذا الملفات الصوتية لكل عمليات الإملاء المحفوظة. تبقى النصوص المكتوبة والمكتبة."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
 msgstr "تمت إزالة هذا الجهاز من الترخيص."
@@ -7025,11 +7116,6 @@ msgstr "تم إيقاف مفتاح الترخيص هذا."
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
 msgstr "تمت ترقية هذا الترخيص. أدخل مفتاحك الجديد أدناه."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_only"
-msgstr "يؤدي هذا إلى إزالة ملفات الصوت المحفوظة فقط، وليس النصوص المُحوَّلة."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -7164,11 +7250,6 @@ msgid "onboarding.first_dictation.transcribing"
 msgstr "جارٍ النسخ..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.one"
-msgstr "النص المُفرَّغ"
-
-#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.history"
 msgstr "سجل النصوص المحوَّلة"
@@ -7222,16 +7303,6 @@ msgstr "النص غير متاح بعد الآن"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.transcription_timeout"
 msgstr "استغرق التفريغ الصوتي وقتًا طويلًا. يمكنك إعادة المحاولة من الصفحة الرئيسية."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.other"
-msgstr "النصوص المكتوبة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.transcripts"
-msgstr "النصوص المكتوبة"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -7492,11 +7563,6 @@ msgstr "الصوت هو أسرع لوحة مفاتيح أمتلكها. {wpm} ك�
 #: src/features/import/components/ImportStep.tsx
 msgid "import.title"
 msgstr "هل تريد نقل إعداداتك؟"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.unknown_count"
-msgstr "تعذّر إحصاؤها الآن، لكن سيظل الحذف التلقائي يعمل فور حفظ هذا التغيير."
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
