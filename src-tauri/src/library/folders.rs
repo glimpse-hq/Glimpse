@@ -32,7 +32,7 @@ fn is_hidden(name: &std::ffi::OsStr) -> bool {
     name.to_string_lossy().starts_with('.')
 }
 
-/// Directories in the root that hold no files of their own.
+/// Directories in the root that hold no item files of their own.
 pub(crate) fn list_folders(root: &Path) -> Result<Vec<String>> {
     let Ok(entries) = fs::read_dir(root) else {
         return Ok(Vec::new());
@@ -47,10 +47,15 @@ pub(crate) fn list_folders(root: &Path) -> Result<Vec<String>> {
         if looks_like_item_dir(&name) {
             continue;
         }
-        let holds_files = fs::read_dir(entry.path())?.flatten().any(|child| {
-            !is_hidden(&child.file_name()) && child.file_type().is_ok_and(|kind| kind.is_file())
+        // Item files are named by the item's id; other files (desktop.ini,
+        // a custom icon) don't make a folder an item.
+        let holds_item_files = fs::read_dir(entry.path())?.flatten().any(|child| {
+            let name = child.file_name().to_string_lossy().into_owned();
+            name.get(..36)
+                .is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
+                && child.file_type().is_ok_and(|kind| kind.is_file())
         });
-        if !holds_files {
+        if !holds_item_files {
             names.push(name);
         }
     }

@@ -941,6 +941,11 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
             />
           );
         })}
+        {selectedApps.length > 4 && (
+          <span className="ui-text-label ui-color-muted tabular-nums">
+            +{selectedApps.length - 4}
+          </span>
+        )}
       </span>
     ) : undefined;
 
