@@ -185,7 +185,10 @@ function drawWaveDot(
   const brightness = 0.5 + waveEdgeDist * 0.5;
   ctx.beginPath();
   ctx.fillStyle = `rgba(${highlight}, ${brightness * maskAlpha})`;
-  ctx.arc(cx, cy, DOT_RADIUS.wave + 0.2 * waveEdgeDist, 0, Math.PI * 2);
+  ctx.shadowBlur = brightness > 0.8 ? 4 : 0;
+  ctx.shadowColor =
+    brightness > 0.8 ? `rgba(${highlight}, 0.4)` : "transparent";
+  ctx.arc(cx, cy, DOT_RADIUS.wave, 0, Math.PI * 2);
   ctx.fill();
 }
 
@@ -340,6 +343,13 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
             const brightness = Math.min(1, pop * 2.5) * PROCESSING_POP_PEAK;
             ctx.beginPath();
             ctx.fillStyle = `rgba(${color}, ${brightness * maskAlpha})`;
+            if (pop > 0.3) {
+              ctx.shadowBlur = 3;
+              ctx.shadowColor = `rgba(${color}, ${brightness * 0.4})`;
+            } else {
+              ctx.shadowBlur = 0;
+              ctx.shadowColor = "transparent";
+            }
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
           };

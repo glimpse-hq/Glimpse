@@ -589,13 +589,9 @@ const watchFocus = () => {
 };
 
 let shotCount = 0;
-const shot = async (name, window = "settings", { settle = true } = {}) => {
-  // The native toast animates in on its own; ask toasts reveal for 0.9 s.
-  if (window === "toast") await sleep(1000);
-  if (settle) {
-    const idle = await dev("wait-idle", "--window", window);
-    if (!idle.settled) log(`${name}: still busy after 10 s (${idle.reason})`);
-  }
+const shot = async (name, window = "settings") => {
+  const idle = await dev("wait-idle", "--window", window);
+  if (!idle.settled) log(`${name}: still busy after 10 s (${idle.reason})`);
   const info = await dev("window", window, "info");
   const { id } = info;
   shotCount += 1;
@@ -756,18 +752,6 @@ const releaseNotes = () => {
     .trim();
 };
 
-const toastShots = async () => {
-  for (const notice of DISCARD_NOTICES) {
-    await dev("show", "discarded", notice);
-    await shot(`toast-${notice}`, "toast");
-  }
-  for (const toast of TOASTS) {
-    await dev("show", "toast", toast);
-    await shot(`toast-${toast}`, "toast");
-  }
-  await dev("show", "nothing");
-};
-
 const extraShots = async () => {
   await dev("license", "trial");
   await open("home");
@@ -779,25 +763,6 @@ const extraShots = async () => {
     await shot(`toast-${toast}`, "toast");
   }
   await dev("show", "nothing");
-};
-
-// The pill animates, so it's captured at set times rather than when settled.
-const pillShots = async () => {
-  const window = "pill";
-  const times = {
-    listening: [300, 700, 700, 700],
-    processing: [500, 600],
-    cleanup: [1200],
-    error: [200, 1400],
-  };
-  for (const [state, waits] of Object.entries(times)) {
-    await dev("show", "pill", state);
-    for (const [i, wait] of waits.entries()) {
-      await sleep(wait);
-      await shot(`pill-${state}-${i}`, window, { settle: false });
-    }
-  }
-  await dev("show", "pill", "idle");
 };
 
 const SCENARIOS = {
@@ -854,8 +819,6 @@ const SCENARIOS = {
   onboarding: { license: "trial", onboarded: false, run: onboardingShots },
   settings: { license: "trial", run: settingsShots },
   paywall: { license: "trial", run: paywallShots },
-  pill: { license: "trial", run: pillShots },
-  toasts: { license: "trial", run: toastShots },
   walkthrough: {
     license: "trial",
     onboarded: false,

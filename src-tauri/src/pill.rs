@@ -179,7 +179,6 @@ fn start_spectrum_emitter(
                     bins[idx] = (smoothed[idx] * 255.0).round().clamp(0.0, 255.0) as u8;
                 }
 
-                crate::native_ui::pill::set_spectrum(&bins);
                 emit_event(
                     &app,
                     EVENT_AUDIO_SPECTRUM,
@@ -205,20 +204,15 @@ fn start_hover_emitter(app: AppHandle<AppRuntime>) -> BackgroundEmitter {
                 && last_emitted != Some(hovering)
             {
                 last_emitted = Some(hovering);
-                crate::native_ui::pill::set_hover(hovering);
                 emit_event(&app, EVENT_PILL_HOVER, PillHoverPayload { hovering });
             }
             std::thread::sleep(interval);
         }
-        crate::native_ui::pill::set_hover(false);
         emit_event(&app, EVENT_PILL_HOVER, PillHoverPayload { hovering: false });
     })
 }
 
 fn cursor_over_pill_window(app: &AppHandle<AppRuntime>) -> Option<bool> {
-    if let Some(inside) = crate::native_ui::pill::contains_cursor() {
-        return Some(inside);
-    }
     let window = app.get_webview_window(MAIN_WINDOW_LABEL)?;
     let cursor = window.cursor_position().ok()?;
     let pos = window.outer_position().ok()?;
@@ -503,8 +497,6 @@ impl PillController {
         previous: PillStatus,
         new_status: PillStatus,
     ) {
-        // The status can move on between the change and this call; send where it is now.
-        crate::native_ui::pill::set_status(self.status());
         self.update_overlay_visibility(app, previous, new_status);
         self.emit_state(app);
         if new_status == PillStatus::Idle {
@@ -818,7 +810,6 @@ impl PillController {
                 }
                 self.spawn_recording_cap(app, generation);
 
-                crate::native_ui::toast::recording_started();
                 emit_event(
                     app,
                     crate::EVENT_RECORDING_START,
@@ -1291,24 +1282,6 @@ pub(crate) fn emit_pill_mode_with_tone(
     tone: &str,
 ) {
     app.state::<AppState>().pill().set_expanded(expanded);
-    crate::native_ui::pill::set_cleanup(tone == PILL_TONE_CLEANUP);
-    // The live transcript is drawn by the webview pill, so the two windows trade
-    // places. They're the same size, so the incoming one takes the outgoing one's spot.
-    let native = crate::native_ui::pill::position();
-    if crate::native_ui::pill::set_expanded(expanded)
-        && app.state::<AppState>().pill().status() != PillStatus::Idle
-        && let Some(webview) = app.get_webview_window(MAIN_WINDOW_LABEL)
-    {
-        if let Some(position) = native {
-            let _ = webview.set_position(position);
-            crate::native_ui::pill::hide();
-            platform::overlay::show(app, &webview);
-        } else if let (Ok(position), Ok(scale)) = (webview.outer_position(), webview.scale_factor())
-        {
-            platform::overlay::hide(app, &webview);
-            crate::native_ui::pill::show_at(position, scale);
-        }
-    }
 
     if let Err(err) = app.emit(
         EVENT_PILL_MODE,
@@ -1633,25 +1606,16 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
 }
 
 pub fn show_overlay(app: &AppHandle<AppRuntime>) {
-    let webview = app.get_webview_window(MAIN_WINDOW_LABEL);
-    if crate::native_ui::pill::show() {
-        // The webview pill can still be expanded from a recording that ended moments ago.
-        if let Some(webview) = &webview {
-            platform::overlay::hide(app, webview);
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        position_overlay_on_cursor_screen(&window);
+        platform::overlay::show(app, &window);
+        if !app.state::<AppState>().pill().is_expanded() {
+            collapse_expanded_pill(app);
         }
-    } else if let Some(window) = &webview {
-        position_overlay_on_cursor_screen(window);
-        platform::overlay::show(app, window);
-    } else {
-        return;
-    }
-    if !app.state::<AppState>().pill().is_expanded() {
-        collapse_expanded_pill(app);
     }
 }
 
 pub fn hide_overlay(app: &AppHandle<AppRuntime>) {
-    crate::native_ui::pill::hide();
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
         platform::overlay::hide(app, &window);
     }

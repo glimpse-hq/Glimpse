@@ -1636,11 +1636,6 @@ msgid "personalization.modal.close"
 msgstr "Fechar janela"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.close"
-msgstr "Fechar notificação"
-
-#. js-lingui-explicit-id
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.close"
 msgstr "Fechar notificação"
@@ -1776,11 +1771,6 @@ msgid "model_picker.error.copied"
 msgstr "Copiado"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.copy_done"
-msgstr "Copiado"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copied"
 msgstr "Copiado"
@@ -1849,11 +1839,6 @@ msgstr "Copiar última transcrição"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.copy_aria"
 msgstr "Copiar logs"
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.copy_message"
-msgstr "Copiar mensagem"
 
 #. js-lingui-explicit-id
 #: src/features/toast/ToastOverlay.tsx
@@ -2689,11 +2674,6 @@ msgstr "Inserir chave de licença"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "Sistema inteiro"
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.pill.error"
-msgstr "Ocorreu um erro"
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -3590,11 +3570,6 @@ msgstr "Escutar na rede local"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.listen_on_lan_aria"
 msgstr "Escutar na rede local"
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.pill.listening"
-msgstr "Ouvindo..."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -4668,11 +4643,6 @@ msgstr "Privacidade e permissões"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.link"
 msgstr "Política de privacidade"
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.pill.processing"
-msgstr "Processando..."
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -5943,11 +5913,6 @@ msgstr "Agradecemos por apoiar o Glimpse!"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.admin_app_paste"
 msgstr "Esse aplicativo está sendo executado como administrador, então o Windows não permite que o Glimpse digite nele. Seu texto está na área de transferência. Pressione Ctrl+V para colá-lo."
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.action_failed"
-msgstr "Não deu certo. Tente novamente."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx

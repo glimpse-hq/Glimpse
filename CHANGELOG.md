@@ -9,7 +9,6 @@
 - The Record screen reminds you to ask before recording others.
 - System Audio on the Record screen shows the apps it records as their icons, and dims one that isn't playing anything.
 - AI agents can pause a recording, resume it and check on it. When an agent starts or resumes a recording, Glimpse shows which one did.
-- The dictation pill and notifications use about half the CPU while you dictate.
 - Every screen now lines up on the same margins, and Start Recording sits between Pause and Bookmark.
 - The Library opens faster.
 - The Library has folders, kept as real folders on disk. Pick one from the menu next to the Library title, and move items from their menu.

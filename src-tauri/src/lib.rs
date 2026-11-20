@@ -23,7 +23,6 @@ mod mode_context;
 mod model_language_table;
 mod music;
 mod native_i18n;
-mod native_ui;
 mod notifications;
 mod permissions;
 mod personalization;
@@ -554,13 +553,11 @@ pub fn run() {
                 let _ = window.hide();
                 platform::overlay::init(handle, &window);
             }
-            native_ui::pill::init(handle);
 
             if let Some(toast_window) = handle.get_webview_window(toast::WINDOW_LABEL) {
                 let _ = toast_window.hide();
                 platform::toast::init(handle, &toast_window);
             }
-            native_ui::toast::init(handle);
 
             analytics::set_crash_phase("tray_shortcuts");
             // The sandbox stays out of the menu bar the real app is in.
