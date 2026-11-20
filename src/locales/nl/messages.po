@@ -1353,6 +1353,320 @@ msgstr ""
 #~ msgstr "De opdrachtregeltool is inbegrepen bij een gekochte Glimpse-licentie. Deze maakt geen deel uit van de proefperiode."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.once_note"
+#~ msgstr "Eenmalige betaling. Dicteren blijft hoe dan ook gratis."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.picker_aria"
+#~ msgstr "Licentie"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.v4"
+#~ msgstr "Ontgrendelen"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.appearance"
+#~ msgstr "Weergave"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.version_label"
+#~ msgstr "Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.after"
+#~ msgstr "na"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.audio"
+#~ msgstr "Audio"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete"
+#~ msgstr "Automatisch verwijderen"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.body"
+#~ msgstr "Als je transcripties verwijdert, wordt hun opgeslagen audio ook verwijderd."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.permission.off"
+#~ msgstr "uit"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.transcripts"
+#~ msgstr "Transcripties"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.day"
+#~ msgstr "1 dag"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.month"
+#~ msgstr "1 maand"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.week"
+#~ msgstr "1 week"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.year"
+#~ msgstr "1 jaar"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.apply"
+#~ msgstr "Toch toepassen"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.one"
+#~ msgstr "audiodossier"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.other"
+#~ msgstr "audiobestanden"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
+#~ msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, kunnen {noun} die al ouder zijn dan {threshold} direct worden verwijderd."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
+#~ msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, kunnen je bestaande {noun} direct worden verwijderd."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.known_count"
+#~ msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, worden {candidateCount} {noun} die al ouder zijn dan {threshold} direct verwijderd."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.known_count"
+#~ msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, worden {candidateCount} bestaande {noun} direct verwijderd."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_too"
+#~ msgstr "Als je transcripties verwijdert, wordt ook de bijbehorende audio verwijderd."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.instantly"
+#~ msgstr "Direct"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.threshold.immediately"
+#~ msgstr "op dit moment"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_only"
+#~ msgstr "Hiermee verwijder je alleen opgeslagen audiobestanden, niet je transcripties."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.one"
+#~ msgstr "transcriptie"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.other"
+#~ msgstr "transcripties"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.unknown_count"
+#~ msgstr "We kunnen ze nu niet tellen, maar automatisch verwijderen wordt alsnog uitgevoerd zodra je deze wijziging bewaart."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.delete"
+#~ msgstr "Verwijderen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.add_tag"
+#~ msgstr "Tag toevoegen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.tags.add"
+#~ msgstr "Tag toevoegen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.detail.tags_failed"
+#~ msgstr "De tags konden niet worden bewaard."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.imported"
+#~ msgstr "Geïmporteerd"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.new_tag"
+#~ msgstr "Nieuwe tag..."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.new_tag"
+#~ msgstr "Nieuwe tag..."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.no_other_tags"
+#~ msgstr "Geen andere labels"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.no_other_tags"
+#~ msgstr "Geen andere labels"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.no_tags_yet"
+#~ msgstr "Nog geen tags"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.no_tags_yet"
+#~ msgstr "Nog geen tags"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.status.ready"
+#~ msgstr "Gereed"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.remove_tag"
+#~ msgstr "Verwijder {tag}"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.remove"
+#~ msgstr "{tag} verwijderen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.select_existing_tag"
+#~ msgstr "Bestaand label selecteren"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.tags.label"
+#~ msgstr "Tag"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.back"
+#~ msgstr "Terug naar bibliotheek"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.search.clear"
+#~ msgstr "Zoekopdracht wissen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.view.search_clear"
+#~ msgstr "Wis zoekopdracht"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.copy"
+#~ msgstr "Kopiëren"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.search.aria"
+#~ msgstr "Transcript doorzoeken"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.active"
+#~ msgstr "Actief"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.header.description"
+#~ msgstr "Voeg woorden toe die Glimpse moet herkennen en zinnen die na transcriptie moeten worden vervangen."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.all"
+#~ msgstr "Alles"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.description.v2"
+#~ msgstr "Kies hoe je schrijfmodel in elke app en op elke website schrijft."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.done"
+#~ msgstr "Gereed"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.failed"
+#~ msgstr "Mislukt"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.aria_label"
+#~ msgstr "Bibliotheek filteren op status"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.view.description"
+#~ msgstr "Audio- en videobestanden importeren voor transcriptie."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.status"
+#~ msgstr "Status"
+
+#. placeholder {0}: selectedApps.length
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.setup.apps.count"
+#~ msgstr "{0, plural, one {# app} other {# apps}}"
+
+#. placeholder {0}: closedApps.length
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.setup.apps.closed_many"
+#~ msgstr "{0, plural, one {# geselecteerde app speelt geen audio af en wordt daarom niet opgenomen.} other {# geselecteerde apps spelen geen audio af en worden daarom niet opgenomen.}}"
+
+#. placeholder {0}: closedApps[0].name
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.setup.apps.closed_one"
+#~ msgstr "{0} speelt geen audio af en wordt daarom niet opgenomen."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -1361,12 +1675,6 @@ msgstr "\"Glimpse zet mijn stem om in tekst.\""
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit_command"
 msgstr "“Maak dit formeler”"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: selectedApps.length
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.apps.count"
-msgstr "{0, plural, one {# app} other {# apps}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: state.bookmarks.length
@@ -1404,12 +1712,6 @@ msgstr "{0, plural, one {# regel} other {# regels}}"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.personalities.detail"
 msgstr "{0, plural, one {# opgeslagen} other {# opgeslagen}}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: closedApps.length
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.apps.closed_many"
-msgstr "{0, plural, one {# geselecteerde app speelt geen audio af en wordt daarom niet opgenomen.} other {# geselecteerde apps spelen geen audio af en worden daarom niet opgenomen.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.transcriptCount
@@ -1469,12 +1771,6 @@ msgid "settings.stats.post.8.v2"
 msgstr "{0} die ik nooit al typend heb besteed. @try_glimpse_app"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: closedApps[0].name
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.apps.closed_one"
-msgstr "{0} speelt geen audio af en wordt daarom niet opgenomen."
-
-#. js-lingui-explicit-id
 #. placeholder {0}: filteredEntries.length
 #. placeholder {1}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -1494,9 +1790,29 @@ msgid "settings.stats.post.6"
 msgstr "{0} woorden gedicteerd, geen één getypt. @try_glimpse_app"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_resumed_recording"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_started_recording"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {Ongeveer # woord per dictaat vandaag} other {Ongeveer # woorden per dictaat vandaag}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_audio"
+msgstr "{candidateCount, plural, one {# audiobestand verwijderen?} other {# audiobestanden verwijderen?}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_dictations"
+msgstr "{candidateCount, plural, one {# dictaat verwijderen?} other {# dictaten verwijderen?}}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1657,12 +1973,7 @@ msgstr "42 min"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.day"
-msgstr "per dag"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.day"
-msgstr "1 dag"
+msgstr "een dag"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1672,12 +1983,7 @@ msgstr "Een modus voor elke app"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.month"
-msgstr "per maand"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.month"
-msgstr "1 maand"
+msgstr "een maand"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -1687,22 +1993,12 @@ msgstr "Er loopt al een opname."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.week"
-msgstr "per week"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.week"
-msgstr "1 week"
+msgstr "een week"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.year"
-msgstr "per jaar"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.year"
-msgstr "1 jaar"
+msgstr "een jaar"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1772,11 +2068,6 @@ msgid "settings.models.card.active"
 msgstr "Actief"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.active"
-msgstr "Actief"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.dictionary_add"
 msgstr "Toevoegen"
@@ -1837,29 +2128,34 @@ msgid "library.detail.add_speaker"
 msgstr "Spreker toevoegen"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.add_tag"
-msgstr "Tag toevoegen"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.tags.add"
-msgstr "Tag toevoegen"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites.aria"
 msgstr "Websitedomein toevoegen"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.header.description"
-msgstr "Voeg woorden toe die Glimpse moet herkennen en zinnen die na transcriptie moeten worden vervangen."
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_day"
+msgstr "Na een dag"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.after"
-msgstr "na"
+msgid "settings.app.auto_delete.after_month"
+msgstr "Na een maand"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_week"
+msgstr "Na een week"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_year"
+msgstr "Na een jaar"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_transcribing"
+msgstr "Na transcriptie"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1877,14 +2173,14 @@ msgid "onboarding.license_step.tile_cleanup"
 msgstr "AI-opruiming"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.all"
-msgstr "Alles"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.global.targets"
 msgstr "Alle apps en websites"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.all"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -1932,9 +2228,24 @@ msgid "locked.enter_key"
 msgstr "Al gekocht? Voer je licentiesleutel in"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.include_transcripts"
+msgstr "Ook transcripties verwijderen"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.ask_title_unnamed"
 msgstr "Vraag van een agent"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_resumed_recording_unnamed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_started_recording_unnamed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -1988,11 +2299,6 @@ msgid "settings.modal.tab.app"
 msgstr "App"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.appearance"
-msgstr "Weergave"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
 msgstr "Apple Neural Engine"
@@ -2003,9 +2309,9 @@ msgid "personalization.modal.applications"
 msgstr "Applicaties"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.apply"
-msgstr "Toch toepassen"
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.consent.line"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2019,25 +2325,10 @@ msgid "library.detail.assign_new_speaker"
 msgstr "Nieuwe spreker toewijzen"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.audio"
-msgstr "Audio"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.file_filter"
 msgstr "Audio en video"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.one"
-msgstr "audiodossier"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.other"
-msgstr "audiobestanden"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2066,8 +2357,8 @@ msgstr "Automatisch woordenboek"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete"
-msgstr "Automatisch verwijderen"
+msgid "settings.app.auto_delete_dictation_audio"
+msgstr "Dicteeraudio automatisch verwijderen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2114,11 +2405,6 @@ msgstr "Terug"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.back"
 msgstr "Terug"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.back"
-msgstr "Terug naar bibliotheek"
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -2229,6 +2515,11 @@ msgid "library.modal.cancel"
 msgstr "Annuleren"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.cancel"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.cancel"
 msgstr "Annuleren"
@@ -2279,26 +2570,6 @@ msgstr "Sneltoets wijzigen"
 #: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.change_line"
 msgstr "Spreker voor deze regel wijzigen"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
-msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, kunnen {noun} die al ouder zijn dan {threshold} direct worden verwijderd."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
-msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, kunnen je bestaande {noun} direct worden verwijderd."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.known_count"
-msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, worden {candidateCount} {noun} die al ouder zijn dan {threshold} direct verwijderd."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.known_count"
-msgstr "Als je automatisch verwijderen wijzigt naar {policyLabel}, worden {candidateCount} bestaande {noun} direct verwijderd."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -2371,11 +2642,6 @@ msgid "settings.stats.mode.aria"
 msgstr "Kies hoe activiteit wordt weergegeven"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.description.v2"
-msgstr "Kies hoe je schrijfmodel in elke app en op elke website schrijft."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.export_dialog_title"
 msgstr "Kies waar je de dataset wilt bewaren"
@@ -2442,19 +2708,14 @@ msgid "settings.local_api.logs.clear"
 msgstr "Wis"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/SearchField.tsx
+msgid "search_field.clear"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
 msgstr "Zoekopdracht wissen"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.search.clear"
-msgstr "Zoekopdracht wissen"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.search_clear"
-msgstr "Wis zoekopdracht"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2692,11 +2953,6 @@ msgid "settings.stats.share.copy"
 msgstr "Kopieer"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.copy"
-msgstr "Kopiëren"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.copy_url"
 msgstr "Basis-URL kopiëren"
@@ -2747,6 +3003,11 @@ msgid "live.copy"
 msgstr "Transcript kopiëren"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.copy_transcript"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_transcription"
 msgstr "Transcriptie kopiëren"
@@ -2775,6 +3036,11 @@ msgstr "Er kon geen lokale modelselectie worden geladen. Probeer de introductie 
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.import_dialog_error"
 msgstr "Het importvenster kan niet worden geopend."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.folder.change_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -2945,12 +3211,6 @@ msgstr "De sprekers konden niet worden bewaard."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-#: src/features/library/components/LibraryView.tsx
-msgid "library.detail.tags_failed"
-msgstr "De tags konden niet worden bewaard."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.transcript.save_failed"
 msgstr "Dit transcript kon niet worden opgeslagen. Je wijzigingen zijn nog aanwezig."
 
@@ -3009,6 +3269,11 @@ msgstr "Opnamen tellen…"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
 msgstr "Dekt je apparaten"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.create"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3178,6 +3443,11 @@ msgid "settings.models.delete_failed"
 msgstr "Verwijderen mislukt"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.delete"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.delete_mode"
 msgstr "Verwijdermodus"
@@ -3207,16 +3477,6 @@ msgstr "Vervanging voor {0} verwijderen"
 #: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.modal.delete_confirm.title"
 msgstr "Dit onderdeel verwijderen?"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_too"
-msgstr "Als je transcripties verwijdert, wordt ook de bijbehorende audio verwijderd."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.body"
-msgstr "Als je transcripties verwijdert, wordt hun opgeslagen audio ook verwijderd."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3345,6 +3605,11 @@ msgid "settings.general.shortcuts.not_saved.v2"
 msgstr "Niet bewaren in Bibliotheek"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.dont_show_again"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.provider.done"
 msgstr "Gereed"
@@ -3357,11 +3622,6 @@ msgstr "Gereed"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.done"
-msgstr "Gereed"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.done"
 msgstr "Gereed"
 
 #. js-lingui-explicit-id
@@ -3548,7 +3808,6 @@ msgid "trial_ended.enter_key"
 msgstr "Licentiesleutel invoeren"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "Volledig systeem"
@@ -3639,11 +3898,6 @@ msgid "library.card.status.failed"
 msgstr "Mislukt"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.failed"
-msgstr "Mislukt"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.delete_error.default"
 msgstr "Kan het bibliotheekonderdeel niet verwijderen."
@@ -3709,11 +3963,6 @@ msgid "library.import_error.file_not_found"
 msgstr "Bestand niet gevonden. Het is mogelijk verplaatst of verwijderd."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.aria_label"
-msgstr "Bibliotheek filteren op status"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.aria_v2"
 msgstr "Modellen filteren"
@@ -3747,6 +3996,16 @@ msgstr "Beëindig de opname voordat je de update installeert."
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "Bezig met afronden..."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.folder.label"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.menu"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3852,11 +4111,6 @@ msgstr "GitHub is mogelijk tijdelijk niet beschikbaar. Controleer je verbinding 
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.personalization.line"
 msgstr "Geef elke app of website een eigen schrijfstijl. Hiervoor wordt je schrijmodel gebruikt."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.version_label"
-msgstr "Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4051,6 +4305,7 @@ msgstr "Houd iets langer vast en probeer het opnieuw."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.about.data.hold_to_delete"
 msgstr "Ingedrukt houden om te verwijderen"
 
@@ -4126,11 +4381,6 @@ msgid "import.cta"
 msgstr "Importeren"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.description"
-msgstr "Audio- en videobestanden importeren voor transcriptie."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.import_failed"
 msgstr "Importeren mislukt"
@@ -4159,11 +4409,6 @@ msgstr "Importeren is mislukt. Probeer het opnieuw of sla deze stap over."
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.title"
 msgstr "Importeren in bibliotheek"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.imported"
-msgstr "Geïmporteerd"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4228,11 +4473,6 @@ msgid "settings.about.cli.default_info"
 msgstr "Installeert de opdracht {0} voor Terminal, scripts en automatiseringstools. Gebruik deze wanneer je Glimpse programmatisch wilt aanroepen zonder de appinterface te openen."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.instantly"
-msgstr "Direct"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.instructions"
 msgstr "Instructies"
@@ -4241,6 +4481,11 @@ msgstr "Instructies"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_stamp_issuing"
 msgstr "Uitgifte"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_replaced"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4413,6 +4658,7 @@ msgid "trial_ended.library.name"
 msgstr "Bibliotheek"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.title"
 msgstr "Bibliotheek"
@@ -4798,6 +5044,11 @@ msgid "shortcuts.key.mouse_forward"
 msgstr "Muis vooruit"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.folder.move_to"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.subtitle"
 msgstr "MP3, WAV, M4A, MP4, MOV en meer"
@@ -4859,6 +5110,18 @@ msgid "settings.app.prune.never"
 msgstr "Nooit"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.new_title"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.new"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.new_mode.default_name.v2"
@@ -4868,16 +5131,6 @@ msgstr "Nieuwe modus"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.new_mode"
 msgstr "Nieuwe modus"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.new_tag"
-msgstr "Nieuwe tag..."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.new_tag"
-msgstr "Nieuwe tag..."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -4990,16 +5243,6 @@ msgid "dropdown.no_options"
 msgstr "Geen opties gevonden"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.no_other_tags"
-msgstr "Geen andere labels"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.no_other_tags"
-msgstr "Geen andere labels"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results"
 msgstr "Geen resultaten voor \"{resultSearchText}\""
@@ -5034,16 +5277,6 @@ msgstr "Geen spraak gedetecteerd. Opname verwijderd."
 #: src/features/recording/useSilenceWarning.ts
 msgid "live.silent.system"
 msgstr "Nog geen systeemaudio."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.no_tags_yet"
-msgstr "Nog geen tags"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.no_tags_yet"
-msgstr "Nog geen tags"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -5192,11 +5425,6 @@ msgid "settings.stats.card.of_dictating"
 msgstr "aan dicteren dit jaar"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.permission.off"
-msgstr "uit"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.off"
 msgstr "Uit"
@@ -5217,6 +5445,11 @@ msgid "import.cat.auto_launch.off"
 msgstr "Uit"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ok"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.oldest"
 msgstr "Oudste eerst"
@@ -5233,8 +5466,8 @@ msgstr "Op deze computer"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
-msgid "plans.once_note"
-msgstr "Eenmalige betaling. Dicteren blijft hoe dan ook gratis."
+msgid "plans.one_time"
+msgstr "eenmalig"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5458,11 +5691,6 @@ msgid "speaker_color.pink"
 msgstr "Roze"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.picker_aria"
-msgstr "Licentie"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.play_audio"
 msgstr "Audio afspelen"
@@ -5609,11 +5837,6 @@ msgid "onboarding.license_step.tile_raycast"
 msgstr "Raycast"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.status.ready"
-msgstr "Gereed"
-
-#. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.ready_to_install"
 msgstr "Gereed voor installatie"
@@ -5669,11 +5892,13 @@ msgid "library.card.recording"
 msgstr "Opname"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.recording.default_name"
 msgstr "Opname - {date}"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.default_name"
 msgstr "Opname - {day}, {time}"
@@ -5766,16 +5991,6 @@ msgid "personalization.modal.remove_site"
 msgstr "{site} verwijderen"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.remove_tag"
-msgstr "Verwijder {tag}"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.remove"
-msgstr "{tag} verwijderen"
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark.remove"
 msgstr "Bladwijzer verwijderen"
@@ -5784,6 +5999,12 @@ msgstr "Bladwijzer verwijderen"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.remove"
 msgstr "Bladwijzer verwijderen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.folder.remove_item"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -5820,6 +6041,21 @@ msgstr "Hernoem"
 #: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.rename"
 msgstr "Naam wijzigen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.rename_save"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.rename_title"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.rename"
+msgstr ""
 
 #: src/features/settings/components/AccountView.tsx
 msgid "Renews {renewsAt}"
@@ -6013,11 +6249,6 @@ msgid "shortcuts.key.right_modifier"
 msgstr "Rechts {key}"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.immediately"
-msgstr "op dit moment"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.api.line.v3"
 msgstr "Gebruik een lokale transcriptie-API en de opdrachtregeltool."
@@ -6170,11 +6401,6 @@ msgstr "Zoek of voeg een woord toe…"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.search.aria"
-msgstr "Transcript doorzoeken"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.placeholder"
 msgstr "Transcript doorzoeken…"
 
@@ -6227,11 +6453,6 @@ msgstr "Selecteer alles"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.app_picker.aria"
 msgstr "Selecteer de app waarvan je wilt importeren"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.select_existing_tag"
-msgstr "Bestaand label selecteren"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6629,11 +6850,6 @@ msgid "settings.stats.title"
 msgstr "Statistieken"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.status"
-msgstr "Status"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/shared.tsx
 msgid "onboarding.step_progress"
 msgstr "Stap {step} van {total}"
@@ -6779,11 +6995,6 @@ msgstr "Systeemstandaard"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.microphone.default_named"
 msgstr "Systeemstandaard ({fallback})"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.tags.label"
-msgstr "Tag"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -6987,6 +7198,26 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "Deze build bevat de opdrachtregelhelper niet."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_older"
+msgstr "Hiermee verwijder je de audio van dictaten die ouder zijn dan {threshold}. Transcripties en Bibliotheek blijven behouden."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_older"
+msgstr "Hiermee verwijder je dictaten die ouder zijn dan {threshold}, samen met hun audio. Bibliotheek blijft behouden."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_all"
+msgstr "Hiermee verwijder je alle bewaarde dictaten en hun audio. Bibliotheek blijft behouden."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_all"
+msgstr "Hiermee verwijder je de audio van alle bewaarde dictaten. Transcripties en Bibliotheek blijven behouden."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
 msgstr "Dit apparaat is van de licentie verwijderd."
@@ -7025,11 +7256,6 @@ msgstr "Deze licentiesleutel is gedeactiveerd."
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
 msgstr "Deze licentie is geüpgraded. Voer hieronder je nieuwe sleutel in."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_only"
-msgstr "Hiermee verwijder je alleen opgeslagen audiobestanden, niet je transcripties."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -7072,7 +7298,7 @@ msgid "settings.about.data.include_timestamps"
 msgstr "Tijdstempels"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
+#: src/shared/lib/dayLabel.ts
 msgid "transcriptions.group.today"
 msgstr "Vandaag"
 
@@ -7164,11 +7390,6 @@ msgid "onboarding.first_dictation.transcribing"
 msgstr "Bezig met transcriberen..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.one"
-msgstr "transcriptie"
-
-#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.history"
 msgstr "Transcriptgeschiedenis"
@@ -7222,16 +7443,6 @@ msgstr "Transcriptie is niet langer beschikbaar"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.transcription_timeout"
 msgstr "De transcriptie duurde te lang. Je kunt deze opnieuw proberen via Home."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.other"
-msgstr "transcripties"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.transcripts"
-msgstr "Transcripties"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -7315,11 +7526,6 @@ msgstr "Ontgrendelen"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v4"
-msgstr "Ontgrendelen"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.v4"
 msgstr "Ontgrendelen"
 
 #. js-lingui-explicit-id
@@ -7494,11 +7700,6 @@ msgid "import.title"
 msgstr "Wil je je instellingen meenemen?"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.unknown_count"
-msgstr "We kunnen ze nu niet tellen, maar automatisch verwijderen wordt alsnog uitgevoerd zodra je deze wijziging bewaart."
-
-#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.error"
 msgstr "We konden de gegevens van deze app niet lezen. Je kunt dit overslaan en alles handmatig instellen."
@@ -7617,7 +7818,7 @@ msgid "speaker_color.yellow"
 msgstr "Geel"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
+#: src/shared/lib/dayLabel.ts
 msgid "transcriptions.group.yesterday"
 msgstr "Gisteren"
 

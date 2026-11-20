@@ -30,6 +30,7 @@ export const libraryKeys = {
   list: (filter: LibraryFilter) =>
     [...libraryKeys.all, "list", filter] as const,
   tags: () => [...libraryKeys.all, "tags"] as const,
+  folders: () => [...libraryKeys.all, "folders"] as const,
   item: (id: string) => [...libraryKeys.all, "item", id] as const,
 };
 
@@ -56,12 +57,9 @@ function patchItemInCache(
       };
     },
   );
-  // An open item that left the filtered list reads its own query, which may
-  // already hold the saved transcript, so refetch it instead of appending.
-  void queryClient.invalidateQueries({
-    queryKey: libraryKeys.item(id),
-    exact: true,
-  });
+  queryClient.setQueryData<LibraryItem | null>(libraryKeys.item(id), (old) =>
+    old ? updater(old) : old,
+  );
 }
 
 export function useLibraryItems(
@@ -160,19 +158,19 @@ export function useLibraryItems(
           };
         });
         refetchIfMissing(id);
-        // A list read that started before this update was saved would drop it.
+        // A read that started before this update was saved would drop it.
         if (
-          (chunk_text ||
-            chunk_segments ||
-            (current_chunk === 0 && total_chunks === 0)) &&
-          queryClient.isFetching({ queryKey: libraryKeys.lists() }) > 0
+          chunk_text ||
+          chunk_segments ||
+          (current_chunk === 0 && total_chunks === 0)
         ) {
-          // Invalidate alone joins a first load that has no data yet.
-          void queryClient
-            .cancelQueries({ queryKey: libraryKeys.lists() })
-            .then(() =>
-              queryClient.invalidateQueries({ queryKey: libraryKeys.lists() }),
-            );
+          for (const queryKey of [libraryKeys.lists(), libraryKeys.item(id)]) {
+            if (queryClient.isFetching({ queryKey }) === 0) continue;
+            // Invalidate alone joins a first load that has no data yet.
+            void queryClient
+              .cancelQueries({ queryKey })
+              .then(() => queryClient.invalidateQueries({ queryKey }));
+          }
         }
       },
     ).then((fn) => {
@@ -266,7 +264,7 @@ export function useLibraryItems(
   });
 }
 
-// One item by id, for an open item that has left the filtered list.
+// The open item in full; the list leaves out its transcript.
 export function useLibraryItem(id: string | null, enabled: boolean) {
   return useQuery({
     queryKey: libraryKeys.item(id ?? ""),
@@ -299,6 +297,7 @@ export function useUpdateLibraryItem() {
     mutationFn: ({ id, patch }: { id: string; patch: LibraryItemPatch }) =>
       libraryApi.updateLibraryItem(id, patch),
     onSuccess: (updated) => {
+      queryClient.setQueryData(libraryKeys.item(updated.id), updated);
       queryClient.setQueriesData<LibraryInfiniteData>(
         { queryKey: [...libraryKeys.all, "list"] },
         (old) =>
@@ -383,6 +382,15 @@ export function useExportLibraryItem() {
       format: ExportFormat;
       outputPath: string;
     }) => libraryApi.exportLibraryItemToPath(id, format, outputPath),
+  });
+}
+
+export function useLibraryFolders(enabled: boolean = true) {
+  return useQuery({
+    queryKey: libraryKeys.folders(),
+    queryFn: libraryApi.getLibraryFolders,
+    enabled,
+    gcTime: 60_000,
   });
 }
 

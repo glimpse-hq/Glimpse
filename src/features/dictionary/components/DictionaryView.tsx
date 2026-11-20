@@ -335,26 +335,11 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   );
 
   return (
-    <div className="w-full min-w-0 max-w-7xl mx-auto px-0 text-left">
+    <div className="w-full min-w-0 text-left">
       <ScreenHeader
-        icon={
-          <DotMatrix
-            rows={2}
-            cols={3}
-            activeDots={[0, 1, 2, 3]}
-            dotSize={3}
-            gap={3}
-            color="var(--color-section-marker)"
-          />
-        }
         title={t({
           id: "dictionary.combined.title",
           message: "Dictionary & Replacements",
-        })}
-        description={t({
-          id: "dictionary.header.description",
-          message:
-            "Add words Glimpse should recognize and phrases to replace after transcription.",
         })}
       />
 

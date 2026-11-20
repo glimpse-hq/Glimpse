@@ -31,19 +31,12 @@ import {
   type TranscriptionSort,
   type TimePreset,
 } from "../searchQuery";
+import { areSameDay, formatDayLabel } from "../../../shared/lib/dayLabel";
 
 interface TranscriptionListProps {
   showLlmButtons?: boolean;
   isActive?: boolean;
 }
-
-const startOfDay = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-const areSameDay = (left: Date, right: Date) =>
-  left.getFullYear() === right.getFullYear() &&
-  left.getMonth() === right.getMonth() &&
-  left.getDate() === right.getDate();
 
 const VirtualListHeader = () => <div className="h-3" />;
 const VirtualListFooter = () => <div className="h-3" />;
@@ -156,36 +149,8 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   const isTimeSorted = parsed.sort === "recent" || parsed.sort === "oldest";
 
   const formatGroupLabel = useCallback(
-    (date: Date) => {
-      const now = new Date();
-      const today = startOfDay(now);
-      const target = startOfDay(date);
-      const diffDays = Math.round(
-        (today.getTime() - target.getTime()) / 86400000,
-      );
-      if (diffDays === 0)
-        return t({ id: "transcriptions.group.today", message: "Today" });
-      if (diffDays === 1)
-        return t({
-          id: "transcriptions.group.yesterday",
-          message: "Yesterday",
-        });
-      if (diffDays > 1 && diffDays < 7) {
-        return target.toLocaleDateString(i18n.locale, { weekday: "long" });
-      }
-      if (target.getFullYear() === now.getFullYear()) {
-        return target.toLocaleDateString(i18n.locale, {
-          month: "long",
-          day: "numeric",
-        });
-      }
-      return target.toLocaleDateString(i18n.locale, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    },
-    [i18n.locale, t],
+    (date: Date) => formatDayLabel(date, i18n),
+    [i18n, i18n.locale],
   );
 
   const sortOptions: { value: TranscriptionSort; label: string }[] = [
@@ -259,7 +224,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
         >
           {startsGroup && (
             <div
-              className={`flex items-center gap-3 pb-2 px-1 ${index === 0 ? "pt-1" : "pt-6"}`}
+              className={`flex items-center gap-3 pb-2 px-3 ${index === 0 ? "pt-1" : "pt-6"}`}
             >
               <span
                 role="heading"
@@ -439,9 +404,9 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="relative flex-1 min-h-0 overflow-hidden">
+      <div className="relative -mx-3 flex-1 min-h-0">
         <div
-          className="pointer-events-none absolute left-0 right-3 top-0 h-6 z-10"
+          className="pointer-events-none absolute inset-x-0 top-0 h-6 z-10"
           style={{
             background:
               "linear-gradient(to bottom, var(--color-bg-tertiary), transparent)",
@@ -449,7 +414,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute left-0 right-3 bottom-0 h-8 z-10"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-8 z-10"
           style={{
             background:
               "linear-gradient(to top, var(--color-bg-tertiary), transparent)",
@@ -513,8 +478,9 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                 />
               </div>
             )}
+            {/* .column-scroll's side padding would overflow Virtuoso's rows. */}
             <Virtuoso
-              style={{ height: "100%" }}
+              style={{ height: "100%", overflowY: "scroll" }}
               totalCount={showInitialLoading ? 0 : totalCount}
               defaultItemHeight={124}
               overscan={400}
@@ -525,7 +491,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
               components={virtuosoComponents}
               itemContent={renderEntry}
               rangeChanged={requestRange}
-              className="custom-scrollbar scrollbar-gutter"
+              className="custom-scrollbar -mr-[6px]"
             />
           </>
         )}

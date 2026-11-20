@@ -52,6 +52,7 @@ const SYSTEM_FILE: &str = "system.wav";
 const STATE_TICK: Duration = Duration::from_millis(100);
 // An agent works on each chunk between reads, so it keeps counting as following this long.
 const FOLLOWER_TIMEOUT: Duration = Duration::from_secs(120);
+const KEY_AGENT_NOTICE_OFF: &str = "agent_recording_notice_off";
 // About three hours of microphone and system audio.
 const LOW_DISK_BYTES: u64 = 1024 * 1024 * 1024;
 // How often a recording without a working microphone looks for one.
@@ -1510,6 +1511,54 @@ pub async fn start_recording_session(
     Ok(app.state::<AppState>().recording().state())
 }
 
+/// Names the MCP agent that started or resumed capture, until the person turns this off.
+pub(crate) fn show_agent_notice(app: &AppHandle<AppRuntime>, agent: &str, resumed: bool) {
+    let off = app
+        .state::<AppState>()
+        .settings_store
+        .read_app_value(KEY_AGENT_NOTICE_OFF, false)
+        .unwrap_or_default();
+    if off {
+        return;
+    }
+    let message = match (resumed, agent.is_empty()) {
+        (false, false) => crate::toast::native_format(
+            app,
+            "native.toast.agent_started_recording",
+            &[("agent", agent)],
+        ),
+        (false, true) => crate::toast::native(app, "native.toast.agent_started_recording_unnamed"),
+        (true, false) => crate::toast::native_format(
+            app,
+            "native.toast.agent_resumed_recording",
+            &[("agent", agent)],
+        ),
+        (true, true) => crate::toast::native(app, "native.toast.agent_resumed_recording_unnamed"),
+    };
+    crate::toast::emit_toast(
+        app,
+        crate::toast::Payload {
+            toast_type: "info".to_string(),
+            message,
+            auto_dismiss: Some(false),
+            keep_while_recording: Some(true),
+            action: Some("close_toast".to_string()),
+            action_label: Some(crate::toast::native(app, "native.toast.ok")),
+            secondary_action: Some("turn_off_agent_notice".to_string()),
+            secondary_action_label: Some(crate::toast::native(app, "native.toast.dont_show_again")),
+            ..Default::default()
+        },
+    );
+}
+
+#[tauri::command]
+pub fn turn_off_agent_notice(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    app.state::<AppState>()
+        .settings_store
+        .write_app_value(KEY_AGENT_NOTICE_OFF, &true)
+        .map_err(|err| err.to_string())
+}
+
 pub(crate) fn load_last_sources(app: &AppHandle<AppRuntime>) -> Option<RecordingSources> {
     let bytes = fs::read(sessions_root(app).ok()?.join(LAST_SOURCES_FILE)).ok()?;
     serde_json::from_slice(&bytes).ok()
@@ -1531,13 +1580,18 @@ pub(crate) fn start_from_tray(app: &AppHandle<AppRuntime>) {
             Some(sources) => start_session(&app, sources),
             None => Err(anyhow!("no_sources")),
         };
-        if let Err(err) = started {
-            tracing::warn!("Tray start fell back to the Record screen: {err}");
-            if let Err(err) =
-                crate::tray::open_settings_page(&app, crate::tray::SettingsPage::Record)
-            {
-                tracing::error!("Failed to open the Record screen: {err}");
+        let open_record = match started {
+            Ok(()) => false,
+            Err(err) => {
+                tracing::warn!("Tray start fell back to the Record screen: {err}");
+                true
             }
+        };
+        if open_record
+            && let Err(err) =
+                crate::tray::open_settings_page(&app, crate::tray::SettingsPage::Record)
+        {
+            tracing::error!("Failed to open the Record screen: {err}");
         }
     });
 }

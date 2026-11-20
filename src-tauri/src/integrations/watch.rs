@@ -123,6 +123,7 @@ impl Seen {
         let (mut items, _) = storage.get_library_items_page(LibraryFilter::default(), WINDOW, 0)?;
         // Retried items stay at their old place in the list, past the newest page.
         let active = LibraryFilter {
+            folder: None,
             status: Some("active".to_string()),
             ..Default::default()
         };

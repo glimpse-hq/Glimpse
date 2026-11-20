@@ -125,11 +125,10 @@ pub async fn get_library_items_page(
     let offset = offset as usize;
     let storage = state.storage();
     tauri::async_runtime::spawn_blocking(move || {
-        storage.get_library_items_page(filter, limit, offset)
+        storage.get_library_list_page(filter, limit, offset)
     })
     .await
     .map_err(|err| err.to_string())?
-    .map(|(items, has_more)| LibraryItemsPage { items, has_more })
     .map_err(|err| format!("Failed to load library items page: {err}"))
 }
 
@@ -544,6 +543,63 @@ pub fn get_library_tags(state: tauri::State<'_, AppState>) -> Result<Vec<String>
         .storage()
         .get_library_tags()
         .map_err(|err| format!("Failed to load tags: {err}"))
+}
+
+#[tauri::command]
+pub fn get_library_folders(state: tauri::State<'_, AppState>) -> Result<Vec<String>, String> {
+    state
+        .storage()
+        .get_library_folders()
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub fn create_library_folder(
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    state
+        .storage()
+        .create_library_folder(&name)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn move_library_item(
+    id: String,
+    folder: Option<String>,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || storage.move_library_item(&id, folder.as_deref()))
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn rename_library_folder(
+    from: String,
+    to: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || storage.rename_library_folder(&from, &to))
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_library_folder(
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    let storage = state.storage();
+    tauri::async_runtime::spawn_blocking(move || storage.delete_library_folder(&name))
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|err| err.to_string())
 }
 
 pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
