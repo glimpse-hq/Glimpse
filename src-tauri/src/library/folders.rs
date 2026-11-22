@@ -5,11 +5,34 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
+use parking_lot::Mutex;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::repo::resolve_audio_path;
 
 const ACTIVE: &str = "('pending', 'importing', 'transcribing', 'cancelling')";
+
+// Speaker detection reads a finished item's files, so its status doesn't show it.
+static DETECTING: Mutex<Vec<String>> = Mutex::new(Vec::new());
+
+/// Blocks moves of an item until dropped. Take it before reading the item's paths.
+pub(super) struct KeepInPlace(String);
+
+impl KeepInPlace {
+    pub(super) fn new(id: &str) -> Self {
+        DETECTING.lock().push(id.to_string());
+        Self(id.to_string())
+    }
+}
+
+impl Drop for KeepInPlace {
+    fn drop(&mut self) {
+        let mut detecting = DETECTING.lock();
+        if let Some(index) = detecting.iter().position(|id| *id == self.0) {
+            detecting.swap_remove(index);
+        }
+    }
+}
 
 /// The folder an item's audio sits in: `root/<folder>/<item>/<file>`.
 pub(crate) fn folder_of(root: &Path, audio_path: &str) -> Option<String> {
@@ -90,8 +113,18 @@ fn existing_folder(root: &Path, name: &str) -> Result<PathBuf> {
 
 type ItemPaths = (String, String, Option<String>, String);
 
-// Stored paths can predate a move of the app's data, so compare where the
-// files are now.
+// Stored paths can predate a move of the app's data or differ in case from
+// the disk, so compare where the files are now, spelled as they are on disk.
+fn current_path(root: &Path, stored: String) -> String {
+    let path = resolve_audio_path(root, stored);
+    let on_disk = || {
+        let file = fs::canonicalize(&path).ok()?;
+        let inside = file.strip_prefix(fs::canonicalize(root).ok()?).ok()?;
+        Some(root.join(inside).display().to_string())
+    };
+    on_disk().unwrap_or(path)
+}
+
 fn item_paths(conn: &Connection, root: &Path, filter: &str) -> Result<Vec<ItemPaths>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT id, audio_path, secondary_audio_path, source_path FROM library_items {filter}"
@@ -100,9 +133,9 @@ fn item_paths(conn: &Connection, root: &Path, filter: &str) -> Result<Vec<ItemPa
         .query_map([], |row| {
             Ok((
                 row.get(0)?,
-                resolve_audio_path(root, row.get(1)?),
+                current_path(root, row.get(1)?),
                 row.get::<_, Option<String>>(2)?
-                    .map(|path| resolve_audio_path(root, path)),
+                    .map(|path| current_path(root, path)),
                 row.get(3)?,
             ))
         })?
@@ -118,12 +151,21 @@ fn ensure_idle(conn: &Connection, root: &Path, under: &Path) -> Result<()> {
     if busy {
         bail!("Wait for the transcription to finish first.");
     }
+    let detecting = DETECTING.lock().clone();
+    if detecting.is_empty() {
+        return Ok(());
+    }
+    let busy = item_paths(conn, root, "WHERE deleted = 0")?
+        .iter()
+        .any(|(id, audio, _, _)| detecting.contains(id) && Path::new(audio).starts_with(under));
+    if busy {
+        bail!("Wait for speaker detection to finish first.");
+    }
     Ok(())
 }
 
 // Points every path under `from` at the same place under `to`.
-fn rebase_paths(conn: &mut Connection, root: &Path, from: &Path, to: &Path) -> Result<()> {
-    let rows = item_paths(conn, root, "")?;
+fn rebase_paths(conn: &mut Connection, rows: Vec<ItemPaths>, from: &Path, to: &Path) -> Result<()> {
     let rebase = |path: &str| -> Option<String> {
         let rest = Path::new(path).strip_prefix(from).ok()?;
         Some(to.join(rest).display().to_string())
@@ -153,9 +195,11 @@ fn rebase_paths(conn: &mut Connection, root: &Path, from: &Path, to: &Path) -> R
 // Moves a directory and the stored paths with it, putting it back if the
 // paths can't be saved.
 fn move_dir(conn: &mut Connection, root: &Path, from: &Path, to: &Path) -> Result<()> {
+    // Paths resolve by what exists on disk, so read them before the rename.
+    let rows = item_paths(conn, root, "")?;
     fs::rename(from, to)
         .with_context(|| format!("Failed to move {} to {}", from.display(), to.display()))?;
-    if let Err(err) = rebase_paths(conn, root, from, to) {
+    if let Err(err) = rebase_paths(conn, rows, from, to) {
         if let Err(undo) = fs::rename(to, from) {
             tracing::error!(
                 "Couldn't move {} back after a failed path update: {undo}",
@@ -192,7 +236,7 @@ pub(crate) fn move_item(
             |row| row.get::<_, String>(0),
         )
         .optional()?
-        .map(|stored| resolve_audio_path(root, stored))
+        .map(|stored| current_path(root, stored))
         .context("Library item not found")?;
     let item_dir = Path::new(&audio_path)
         .parent()

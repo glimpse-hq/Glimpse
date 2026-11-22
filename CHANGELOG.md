@@ -6,6 +6,7 @@
 - The 14-day trial now includes the command line, the MCP server and the API server.
 - Library now sits with Record in the sidebar.
 - Parakeet TDT V3 and Whisper Small move to Legacy. If you use Parakeet TDT V3, Glimpse switches you to Parakeet Ultra, which is more accurate at the same size and speed.
+- Each plan on the Account screen now has its own buy button, and prices show they're a one-time payment.
 - The Record screen reminds you to ask before recording others.
 - System Audio on the Record screen shows the apps it records as their icons, and dims one that isn't playing anything.
 - AI agents can pause a recording, resume it and check on it. When an agent starts or resumes a recording, Glimpse shows which one did.

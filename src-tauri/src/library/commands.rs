@@ -410,6 +410,7 @@ pub async fn rediarize_library_item(
     let updated = tauri::async_runtime::spawn_blocking(move || {
         let model_path = crate::speech::installed_diarizer_path(&task_app)
             .ok_or_else(|| "The speaker detection model isn't downloaded".to_string())?;
+        let _in_place = super::folders::KeepInPlace::new(&task_id);
         let item = storage
             .get_library_item(&task_id)
             .map_err(|err| format!("Failed to load library item: {err}"))?

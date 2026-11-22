@@ -4,6 +4,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryKey,
 } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -119,59 +120,37 @@ export function useLibraryItems(
           total_chunks,
           detecting_speakers,
         } = event.payload;
-        patchItemInCache(queryClient, id, (item) => {
-          if (!isProgressable(item.status)) return item;
-          let nextTranscript = item.transcript;
-          let updateTranscript = false;
-          const isReset = current_chunk === 0 && total_chunks === 0;
-          if (isReset) {
-            nextTranscript = "";
-            updateTranscript = true;
-          }
-          if (chunk_text && chunk_text.trim().length > 0) {
-            const base = isReset ? "" : (item.transcript ?? "");
-            const separator = base.trim().length > 0 ? " " : "";
-            nextTranscript = `${base}${separator}${chunk_text}`;
-            updateTranscript = true;
-          }
-          let nextSegments = item.segments;
-          let updateSegments = false;
-          if (isReset) {
-            nextSegments = [];
-            updateSegments = true;
-          }
-          if (chunk_segments && chunk_segments.length > 0) {
-            const base = isReset ? [] : (item.segments ?? []);
-            nextSegments = [...base, ...chunk_segments];
-            updateSegments = true;
-          }
-          return {
-            ...item,
-            status: {
-              type: "transcribing" as const,
-              progress,
-              detecting_speakers,
-            },
-            ...(isReset ? { transcript_edited: false } : {}),
-            ...(updateTranscript ? { transcript: nextTranscript } : {}),
-            ...(updateSegments ? { segments: nextSegments } : {}),
-          };
-        });
+        const patchStatus = () =>
+          patchItemInCache(queryClient, id, (item) =>
+            isProgressable(item.status)
+              ? {
+                  ...item,
+                  status: {
+                    type: "transcribing" as const,
+                    progress,
+                    detecting_speakers,
+                  },
+                }
+              : item,
+          );
+        patchStatus();
         refetchIfMissing(id);
+        const stageStarted = current_chunk === 0 && total_chunks === 0;
+        if (!chunk_text && !chunk_segments && !stageStarted) return;
         // A read that started before this update was saved would drop it.
-        if (
-          chunk_text ||
-          chunk_segments ||
-          (current_chunk === 0 && total_chunks === 0)
-        ) {
-          for (const queryKey of [libraryKeys.lists(), libraryKeys.item(id)]) {
-            if (queryClient.isFetching({ queryKey }) === 0) continue;
-            // Invalidate alone joins a first load that has no data yet.
-            void queryClient
-              .cancelQueries({ queryKey })
-              .then(() => queryClient.invalidateQueries({ queryKey }));
-          }
-        }
+        // Invalidate alone joins a first load that has no data yet.
+        const reload = (queryKey: QueryKey) =>
+          queryClient
+            .cancelQueries({ queryKey })
+            .then(() => queryClient.invalidateQueries({ queryKey }));
+        const listKey = libraryKeys.lists();
+        if (queryClient.isFetching({ queryKey: listKey }) > 0)
+          void reload(listKey);
+        // Text is read, not appended: the saved item can already hold this chunk.
+        void reload(libraryKeys.item(id)).then(() => {
+          // The saved status doesn't record speaker detection.
+          if (detecting_speakers) patchStatus();
+        });
       },
     ).then((fn) => {
       if (cancelled) fn();
