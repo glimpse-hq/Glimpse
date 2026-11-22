@@ -8,6 +8,66 @@ msgstr ""
 "Language: ja\n"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Parakeet TDT V3 on CPU or GPU, with optional Neural Engine acceleration on Apple Silicon."
+msgstr "多言語対応のParakeet TDT V3。CPUまたはGPUで動作し、Apple SiliconではNeural Engineによる高速化も選べます。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size."
+msgstr "Moondreamが追加学習させたParakeet TDT V3の多言語（25言語）版。同じ速度とサイズで、V3より高精度です。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Built into this Mac. Nothing to download."
+msgstr "このMacに内蔵されています。ダウンロードは不要です。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Great quality local Whisper model with multilingual support and dictionary support."
+msgstr "高品質なローカルのWhisperモデル。多言語と辞書に対応しています。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Qwen3-ASR with optional Neural Engine acceleration on Apple Silicon."
+msgstr "多言語対応のQwen3-ASR。Apple SiliconではNeural Engineによる高速化も選べます。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast multilingual transcription with streaming support."
+msgstr "多言語に対応した高速な文字起こし。ライブテキストに対応しています。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English local transcription with streaming support."
+msgstr "英語に対応した高速なローカル文字起こし。ライブテキストに対応しています。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual streaming transcription with punctuation and capitalization."
+msgstr "ライブテキストに対応した多言語の文字起こし。句読点と大文字にも対応しています。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Real-time streaming transcription. Text appears as you speak."
+msgstr "リアルタイムの文字起こし。話すそばからテキストが表示されます。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Small & fast with dictionary support."
+msgstr "小型で高速。辞書に対応しています。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English-only Distil-Whisper Q8 model. Dictionary support is limited."
+msgstr "高速な英語専用のDistil-Whisper Q8モデル。辞書への対応は限定的です。"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Local Whisper model with multilingual support and dictionary support."
+msgstr "ローカルのWhisperモデル。多言語と辞書に対応しています。"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 #~ msgid "native.toast.trial_days_left.v2"
 #~ msgstr "試用期間は残り{days}日です。音声入力は引き続き無料で使えます。終了後、ライブラリ、録音モード、パーソナライズにはGlimpse Plusが必要です。"
@@ -2976,11 +3036,6 @@ msgid "locked.personalization.line"
 msgstr "アプリやウェブサイトごとに文章のスタイルを設定できます。文章作成モデルを使用します。"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_c1"
-msgstr "Glimpse C1 2B"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.cleanup_model_unsupported"
 msgstr "このコンピュータのグラフィックスでは、Glimpse C1を実行できません。"
@@ -2989,6 +3044,11 @@ msgstr "このコンピュータのグラフィックスでは、Glimpse C1を�
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.language.cleanup_language_unsupported"
 msgstr "Glimpse C1はまだ{missingLanguage}に対応していません。"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_c1"
+msgstr "Glimpse C1.1 2B"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

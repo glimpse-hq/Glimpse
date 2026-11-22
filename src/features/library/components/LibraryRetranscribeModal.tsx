@@ -33,7 +33,7 @@ const LibraryRetranscribeModal = ({
   onCancel,
   onConfirm,
 }: LibraryRetranscribeModalProps) => {
-  const { t } = useLingui();
+  const { i18n, t } = useLingui();
   const [selectedModelKey, setSelectedModelKey] = useState<string>(
     item.speech_model,
   );
@@ -52,9 +52,9 @@ const LibraryRetranscribeModal = ({
               id: "library.retranscribe.remote_provider",
               message: "Remote provider",
             })
-          : model.description,
+          : i18n._(model.description),
       })),
-    [models, t],
+    [i18n, models, t],
   );
 
   useEffect(() => {
@@ -202,6 +202,7 @@ const LibraryRetranscribeModal = ({
                   id: "library.retranscribe.select_model",
                   message: "Select a model",
                 })}
+                wrapDescriptions
                 searchable
                 searchPlaceholder={t({
                   id: "library.retranscribe.search_models",
