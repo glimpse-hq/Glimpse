@@ -17,6 +17,9 @@
 - Search is always shown at the top of the Library and an open recording.
 - On a Mac trackpad you feel a light tap when the player catches a bookmark as you drag it, and on each step when you drag the speed or the auto-pause setting.
 - The Library groups items by day, shows recordings you haven't named by their time, and shows the matching words when you search. Cards show how each transcript begins.
+- Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
+- New xAI setups for cleanup start on Grok 4.20 non-reasoning, which is faster and costs less than Grok 4.7.
+- Fireworks AI is no longer offered for speech. It shut down its transcription service.
 
 ### Fixes
 

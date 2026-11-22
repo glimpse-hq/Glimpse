@@ -34,7 +34,6 @@ pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
         "groq" => Some("whisper-large-v3-turbo"),
         "xai" => Some("grok-voice-transcribe-2.0"),
         "mistral" => Some("voxtral-mini-latest"),
-        "fireworks" => Some("whisper-v3-turbo"),
         "openrouter" => Some("openai/gpt-transcribe"),
         "deepgram" => Some("nova-3"),
         "elevenlabs" => Some("scribe_v2"),
@@ -47,14 +46,7 @@ pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
 pub(crate) fn provider_requires_api_key(provider: &str) -> bool {
     matches!(
         provider.trim().to_ascii_lowercase().as_str(),
-        "openai"
-            | "groq"
-            | "xai"
-            | "mistral"
-            | "fireworks"
-            | "openrouter"
-            | "deepgram"
-            | "elevenlabs"
+        "openai" | "groq" | "xai" | "mistral" | "openrouter" | "deepgram" | "elevenlabs"
     )
 }
 

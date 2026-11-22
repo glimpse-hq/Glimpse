@@ -37,7 +37,6 @@ export type RemoteSpeechProvider =
   | "groq"
   | "xai"
   | "mistral"
-  | "fireworks"
   | "openrouter"
   | "deepgram"
   | "elevenlabs"
