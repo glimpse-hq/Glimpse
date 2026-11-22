@@ -47,6 +47,7 @@ interface DropdownProps<T extends string | number> {
   onOpenChange?: (open: boolean) => void;
   disabled?: boolean;
   truncate?: boolean;
+  wrapDescriptions?: boolean;
   fitButtonToWidestOption?: boolean;
   hideChevron?: boolean;
   editableInput?: {
@@ -80,6 +81,7 @@ export function Dropdown<T extends string | number>({
   onOpenChange,
   disabled = false,
   truncate = true,
+  wrapDescriptions = false,
   fitButtonToWidestOption = false,
   hideChevron = false,
   editableInput,
@@ -444,11 +446,14 @@ export function Dropdown<T extends string | number>({
                         </span>
                         {option.description && (
                           <span
-                            className={`ui-text-meta truncate ${
+                            dir="auto"
+                            className={classNames(
+                              "ui-text-meta",
+                              !wrapDescriptions && "truncate",
                               value === option.value
                                 ? "ui-color-secondary"
-                                : "ui-color-muted group-hover:text-content-secondary"
-                            }`}
+                                : "ui-color-muted group-hover:text-content-secondary",
+                            )}
                           >
                             {option.description}
                           </span>

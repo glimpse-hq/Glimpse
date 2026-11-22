@@ -32,6 +32,9 @@ import {
   type TimePreset,
 } from "../searchQuery";
 import { areSameDay, formatDayLabel } from "../../../shared/lib/dayLabel";
+import { detectAppPlatform } from "../../../platform/service";
+
+const isMac = detectAppPlatform() === "macos";
 
 interface TranscriptionListProps {
   showLlmButtons?: boolean;
@@ -73,6 +76,29 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     });
     return () => cancelAnimationFrame(id);
   }, [searchOpen]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const { key, code, metaKey, ctrlKey, altKey, shiftKey } = event;
+      // Ctrl+Cmd+F is full screen on a Mac, and Ctrl+F moves the cursor there.
+      const mod = isMac ? metaKey && !ctrlKey : ctrlKey && !metaKey;
+      // Non-Latin layouts on Windows can report their own letter as the key.
+      const isF =
+        key.toLowerCase() === "f" || (code === "KeyF" && !/^[a-z]$/i.test(key));
+      if (!mod || altKey || shiftKey || !isF) return;
+      event.preventDefault();
+      // Hidden views keep their dialogs mounted.
+      const modals = document.querySelectorAll('[aria-modal="true"]');
+      if ([...modals].some((modal) => modal.getClientRects().length)) return;
+      refocusSearchButton.current = false;
+      setSearchOpen(true);
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isActive]);
 
   const parsed = useMemo(
     () => parseTranscriptionSearch(searchQuery),
@@ -306,6 +332,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Escape") {
+                    e.preventDefault();
                     setSearchQuery("");
                     setSearchOpen(false);
                     refocusSearchButton.current = true;

@@ -49,7 +49,7 @@ const LibraryImportModal = ({
   onCancel,
   onConfirm,
 }: LibraryImportModalProps) => {
-  const { t } = useLingui();
+  const { i18n, t } = useLingui();
   const [importPaths, setImportPaths] = useState(paths);
   const [showFileList, setShowFileList] = useState(paths.length > 1);
   const [probes, setProbes] = useState<Record<string, ImportFileProbe>>({});
@@ -71,7 +71,7 @@ const LibraryImportModal = ({
           id: "library.import.remote_provider",
           message: "Remote provider",
         })
-      : model.description,
+      : i18n._(model.description),
   }));
 
   useEffect(() => {
@@ -326,6 +326,7 @@ const LibraryImportModal = ({
                   id: "library.import.select_model",
                   message: "Select a model",
                 })}
+                wrapDescriptions
                 searchable
                 searchPlaceholder={t({
                   id: "library.import.search_models",

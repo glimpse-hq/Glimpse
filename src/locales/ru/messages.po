@@ -14,6 +14,66 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Parakeet TDT V3 on CPU or GPU, with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Многоязычная модель Parakeet TDT V3 на CPU или GPU, с необязательным ускорением через Neural Engine на Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size."
+msgstr "Многоязычная (25 языков) версия Parakeet TDT V3, дообученная Moondream. Точнее V3 при той же скорости и том же размере."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Built into this Mac. Nothing to download."
+msgstr "Встроена в этот Mac. Ничего загружать не нужно."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Great quality local Whisper model with multilingual support and dictionary support."
+msgstr "Локальная модель Whisper высокого качества: многоязычная, с поддержкой словаря."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Qwen3-ASR with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Многоязычная модель Qwen3-ASR с необязательным ускорением через Neural Engine на Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast multilingual transcription with streaming support."
+msgstr "Быстрая многоязычная транскрибация с живым текстом."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English local transcription with streaming support."
+msgstr "Быстрая локальная транскрибация английской речи с живым текстом."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual streaming transcription with punctuation and capitalization."
+msgstr "Многоязычная транскрибация с живым текстом, пунктуацией и заглавными буквами."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Real-time streaming transcription. Text appears as you speak."
+msgstr "Транскрибация в реальном времени. Текст появляется по мере того, как вы говорите."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Small & fast with dictionary support."
+msgstr "Компактная и быстрая, с поддержкой словаря."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English-only Distil-Whisper Q8 model. Dictionary support is limited."
+msgstr "Быстрая модель Distil-Whisper Q8, только для английского. Поддержка словаря ограничена."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Local Whisper model with multilingual support and dictionary support."
+msgstr "Локальная модель Whisper: многоязычная, с поддержкой словаря."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #~ msgid "library.modal.copy.copied"
 #~ msgstr "Скопировано"
@@ -4113,11 +4173,6 @@ msgid "locked.personalization.line"
 msgstr "Настройте свой стиль письма для каждого приложения или сайта. Для этого используется ваша языковая модель."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_c1"
-msgstr "Glimpse C1 2B"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.cleanup_model_unsupported"
 msgstr "Glimpse C1 не может работать на графическом процессоре этого компьютера."
@@ -4126,6 +4181,11 @@ msgstr "Glimpse C1 не может работать на графическом 
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.language.cleanup_language_unsupported"
 msgstr "Glimpse C1 пока не поддерживает язык «{missingLanguage}»."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_c1"
+msgstr "Glimpse C1.1 2B"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
