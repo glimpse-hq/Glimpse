@@ -14,6 +14,66 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Parakeet TDT V3 on CPU or GPU, with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Mehrsprachiges Parakeet TDT V3 auf CPU oder GPU, optional mit Neural-Engine-Beschleunigung auf Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size."
+msgstr "Von Moondream weitertrainierte Version von Parakeet TDT V3, mehrsprachig (25 Sprachen). Genauer als V3 bei gleicher Geschwindigkeit und Größe."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Built into this Mac. Nothing to download."
+msgstr "In diesen Mac integriert. Nichts herunterzuladen."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Great quality local Whisper model with multilingual support and dictionary support."
+msgstr "Lokales Whisper-Modell mit hoher Qualität, mehrsprachig und mit Wörterbuchunterstützung."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Qwen3-ASR with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Mehrsprachiges Qwen3-ASR, optional mit Neural-Engine-Beschleunigung auf Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast multilingual transcription with streaming support."
+msgstr "Schnelle mehrsprachige Transkription mit Live-Text."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English local transcription with streaming support."
+msgstr "Schnelle lokale Transkription für Englisch mit Live-Text."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual streaming transcription with punctuation and capitalization."
+msgstr "Mehrsprachige Transkription mit Live-Text, Zeichensetzung und Groß- und Kleinschreibung."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Real-time streaming transcription. Text appears as you speak."
+msgstr "Transkription in Echtzeit. Der Text erscheint, während du sprichst."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Small & fast with dictionary support."
+msgstr "Klein und schnell, mit Wörterbuchunterstützung."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English-only Distil-Whisper Q8 model. Dictionary support is limited."
+msgstr "Schnelles Distil-Whisper-Q8-Modell, nur für Englisch. Eingeschränkte Wörterbuchunterstützung."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Local Whisper model with multilingual support and dictionary support."
+msgstr "Lokales Whisper-Modell, mehrsprachig und mit Wörterbuchunterstützung."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #~ msgid "library.modal.copy.copied"
 #~ msgstr "Kopiert"
@@ -4113,11 +4173,6 @@ msgid "locked.personalization.line"
 msgstr "Gib jeder App und Website einen eigenen Schreibstil. Dafür wird dein Schreibmodell verwendet."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_c1"
-msgstr "Glimpse C1 2B"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.cleanup_model_unsupported"
 msgstr "Glimpse C1 kann auf der Grafikhardware dieses Computers nicht ausgeführt werden."
@@ -4126,6 +4181,11 @@ msgstr "Glimpse C1 kann auf der Grafikhardware dieses Computers nicht ausgeführ
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.language.cleanup_language_unsupported"
 msgstr "Glimpse C1 unterstützt {missingLanguage} noch nicht."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_c1"
+msgstr "Glimpse C1.1 2B"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

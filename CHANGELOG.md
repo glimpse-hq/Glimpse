@@ -20,10 +20,14 @@
 - Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
 - New xAI setups for cleanup start on Grok 4.20 non-reasoning, which is faster and costs less than Grok 4.7.
 - Fireworks AI is no longer offered for speech. It shut down its transcription service.
+- The cleanup model's name in Settings and setup now includes its version, Glimpse C1.1 2B.
+- Cmd+F, or Ctrl+F on Windows, opens search on Home.
+- Model descriptions in the Library's import and retranscribe dialogs are translated and no longer cut off.
 
 ### Fixes
 
 - Going back to an open recording no longer slides the word underline in from the corner.
+- Pressing Escape in Home search no longer closes the recording you have open in the Library.
 - On Windows PCs where the graphics driver made Glimpse quit, speech recognition now runs on the processor instead of quitting again.
 - On Windows PCs where Glimpse C1 got stuck, your words now paste without a long wait, and loading it on Intel graphics no longer makes Glimpse quit.
 - If your computer's graphics can't run Glimpse C1, Glimpse tells you once and Automatic stops choosing it.

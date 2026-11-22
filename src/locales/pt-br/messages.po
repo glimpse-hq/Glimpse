@@ -8,6 +8,66 @@ msgstr ""
 "Language: pt-br\n"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Parakeet TDT V3 on CPU or GPU, with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Parakeet TDT V3 multilíngue em CPU ou GPU, com aceleração opcional do Neural Engine no Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size."
+msgstr "Versão do Parakeet TDT V3 treinada adicionalmente pela Moondream, multilíngue (25 idiomas). Mais precisa que o V3, com a mesma velocidade e tamanho."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Built into this Mac. Nothing to download."
+msgstr "Integrado a este Mac. Nada para baixar."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Great quality local Whisper model with multilingual support and dictionary support."
+msgstr "Modelo Whisper local de ótima qualidade, multilíngue e com suporte ao dicionário."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Qwen3-ASR with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Qwen3-ASR multilíngue com aceleração opcional do Neural Engine no Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast multilingual transcription with streaming support."
+msgstr "Transcrição multilíngue rápida com texto ao vivo."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English local transcription with streaming support."
+msgstr "Transcrição local rápida do inglês com texto ao vivo."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual streaming transcription with punctuation and capitalization."
+msgstr "Transcrição multilíngue com texto ao vivo, pontuação e maiúsculas."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Real-time streaming transcription. Text appears as you speak."
+msgstr "Transcrição em tempo real. O texto aparece enquanto você fala."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Small & fast with dictionary support."
+msgstr "Pequeno e rápido, com suporte ao dicionário."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English-only Distil-Whisper Q8 model. Dictionary support is limited."
+msgstr "Modelo Distil-Whisper Q8 rápido, somente para inglês. Suporte limitado ao dicionário."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Local Whisper model with multilingual support and dictionary support."
+msgstr "Modelo Whisper local, multilíngue e com suporte ao dicionário."
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 #~ msgid "native.toast.trial_days_left.v2"
 #~ msgstr "Restam {days} dias no teste. O ditado continua gratuito. Depois, Biblioteca, Modo de gravação e Personalização exigem o Glimpse Plus."
@@ -2976,11 +3036,6 @@ msgid "locked.personalization.line"
 msgstr "Defina um estilo de escrita para cada aplicativo ou site. O recurso usa seu modelo de escrita."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_c1"
-msgstr "Glimpse C1 2B"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.cleanup_model_unsupported"
 msgstr "O Glimpse C1 não pode ser executado no hardware gráfico deste computador."
@@ -2989,6 +3044,11 @@ msgstr "O Glimpse C1 não pode ser executado no hardware gráfico deste computad
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.language.cleanup_language_unsupported"
 msgstr "O Glimpse C1 ainda não é compatível com {missingLanguage}."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_c1"
+msgstr "Glimpse C1.1 2B"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

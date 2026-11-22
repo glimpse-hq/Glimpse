@@ -14,6 +14,66 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Parakeet TDT V3 on CPU or GPU, with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Parakeet TDT V3 multilingue su CPU o GPU, con accelerazione facoltativa tramite Neural Engine su Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size."
+msgstr "Versione di Parakeet TDT V3 addestrata ulteriormente da Moondream, multilingue (25 lingue). Più accurata di V3 a parità di velocità e dimensioni."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Built into this Mac. Nothing to download."
+msgstr "Integrato in questo Mac. Niente da scaricare."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Great quality local Whisper model with multilingual support and dictionary support."
+msgstr "Modello Whisper locale di ottima qualità, multilingue e con supporto dizionario."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual Qwen3-ASR with optional Neural Engine acceleration on Apple Silicon."
+msgstr "Qwen3-ASR multilingue con accelerazione facoltativa tramite Neural Engine su Apple Silicon."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast multilingual transcription with streaming support."
+msgstr "Trascrizione multilingue veloce con Live Text."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English local transcription with streaming support."
+msgstr "Trascrizione locale veloce dell'inglese con Live Text."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Multilingual streaming transcription with punctuation and capitalization."
+msgstr "Trascrizione multilingue con Live Text, punteggiatura e maiuscole."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Real-time streaming transcription. Text appears as you speak."
+msgstr "Trascrizione in tempo reale. Il testo appare mentre parli."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Small & fast with dictionary support."
+msgstr "Piccolo e veloce, con supporto dizionario."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Fast English-only Distil-Whisper Q8 model. Dictionary support is limited."
+msgstr "Modello Distil-Whisper Q8 veloce, solo inglese. Supporto dizionario limitato."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelDescriptionStrings.ts
+msgid "Local Whisper model with multilingual support and dictionary support."
+msgstr "Modello Whisper locale, multilingue e con supporto dizionario."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #~ msgid "library.modal.copy.copied"
 #~ msgstr "Copiato"
@@ -4113,11 +4173,6 @@ msgid "locked.personalization.line"
 msgstr "Scegli uno stile di scrittura diverso per ogni app o sito web. Usa il tuo modello di scrittura."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_c1"
-msgstr "Glimpse C1 2B"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.cleanup_model_unsupported"
 msgstr "Glimpse C1 non può essere eseguito sulla grafica di questo computer."
@@ -4126,6 +4181,11 @@ msgstr "Glimpse C1 non può essere eseguito sulla grafica di questo computer."
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.language.cleanup_language_unsupported"
 msgstr "Glimpse C1 non supporta ancora {missingLanguage}."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_c1"
+msgstr "Glimpse C1.1 2B"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
