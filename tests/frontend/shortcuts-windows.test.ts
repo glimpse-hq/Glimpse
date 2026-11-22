@@ -3,14 +3,13 @@ import { join } from "node:path";
 import { mockLingui } from "./support/lingui";
 
 mockLingui();
-// shortcuts.ts reads the platform once at import, so the mock comes first and
-// the query string loads a fresh copy if another test file already imported it.
+// shortcuts.ts reads the platform once at import, so the mock comes first.
 mock.module(join(import.meta.dir, "../../src/platform/service"), () => ({
   detectAppPlatform: () => "windows",
 }));
 
 const { formatShortcutForDisplay, shortcutDisplayParts } =
-  await import("../../src/shared/lib/shortcuts?windows");
+  await import("../../src/shared/lib/shortcuts");
 
 describe("shortcut display on Windows", () => {
   test("orders modifiers Fn, Win, Ctrl, Alt, Shift", () => {

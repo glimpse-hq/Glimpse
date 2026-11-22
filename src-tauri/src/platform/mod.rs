@@ -83,6 +83,23 @@ pub fn confirm_quit_while_recording(
     windows::quit_prompt::confirm(app, prompt, on_answer);
 }
 
+/// A light tick on a Force Touch trackpad, for a drag that snaps into place.
+/// Windows gives apps no way to drive touchpad haptics.
+#[tauri::command]
+pub fn perform_haptic() {
+    #[cfg(target_os = "macos")]
+    {
+        use objc2_app_kit::{
+            NSHapticFeedbackManager, NSHapticFeedbackPattern, NSHapticFeedbackPerformanceTime,
+            NSHapticFeedbackPerformer,
+        };
+        NSHapticFeedbackManager::defaultPerformer().performFeedbackPattern_performanceTime(
+            NSHapticFeedbackPattern::Alignment,
+            NSHapticFeedbackPerformanceTime::Now,
+        );
+    }
+}
+
 /// 0 on Windows or when `sw_vers` can't be read.
 pub fn macos_major_version() -> u32 {
     #[cfg(target_os = "macos")]

@@ -69,3 +69,28 @@ export async function exportLibraryItemToPath(
 export async function getLibraryTags(): Promise<string[]> {
   return invoke<string[]>("get_library_tags");
 }
+
+export async function getLibraryFolders(): Promise<string[]> {
+  return invoke<string[]>("get_library_folders");
+}
+
+export async function createLibraryFolder(name: string): Promise<string> {
+  return invoke<string>("create_library_folder", { name });
+}
+
+// Moves the item's files into the folder, or out of any folder with null.
+export async function moveLibraryItem(id: string, folder: string | null) {
+  await invoke("move_library_item", { id, folder });
+}
+
+export async function renameLibraryFolder(
+  from: string,
+  to: string,
+): Promise<string> {
+  return invoke<string>("rename_library_folder", { from, to });
+}
+
+// Moves the folder's items back into the Library, then removes it.
+export async function deleteLibraryFolder(name: string) {
+  await invoke("delete_library_folder", { name });
+}

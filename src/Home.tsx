@@ -972,7 +972,7 @@ const Home = ({ onReady }: HomeProps) => {
         <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
         {homeViewActive && (
-          <div className="absolute right-6 top-10 z-40 flex h-9 items-center overflow-visible rounded-full border border-border-primary bg-surface-surface shadow-[var(--shadow-sm)]">
+          <div className="absolute right-8 top-8 z-40 flex h-8 items-center overflow-visible rounded-full border border-border-primary bg-surface-surface shadow-[var(--shadow-sm)]">
             <NewsMenu />
             <div
               aria-hidden="true"
@@ -1013,7 +1013,7 @@ const Home = ({ onReady }: HomeProps) => {
           }`}
         >
           <div
-            className={`w-full max-w-[680px] mx-auto pt-5 flex-1 flex flex-col min-h-0 ${activeView === "home" ? "" : "hidden"}`}
+            className={`w-full max-w-column mx-auto flex-1 flex flex-col min-h-0 ${activeView === "home" ? "" : "hidden"}`}
           >
             <HomeTodayHeader
               transcriptionsFetched={todayStatsFetched}
@@ -1028,7 +1028,7 @@ const Home = ({ onReady }: HomeProps) => {
           </div>
 
           <div
-            className={`w-full max-w-6xl mx-auto min-w-0 pt-8 ${activeView === "dictionary" ? "" : "hidden"}`}
+            className={`w-full max-w-column-wide mx-auto min-w-0 ${activeView === "dictionary" ? "" : "hidden"}`}
           >
             <DictionaryView isActive={activeView === "dictionary"} />
           </div>
@@ -1046,7 +1046,7 @@ const Home = ({ onReady }: HomeProps) => {
           )}
 
           <div
-            className={`w-full max-w-5xl mx-auto pt-8 min-h-0 flex-1 ${activeView === "brain" && !lockedFeature ? "flex flex-col" : "hidden"}`}
+            className={`w-full max-w-column-wide mx-auto min-h-0 flex-1 ${activeView === "brain" && !lockedFeature ? "flex flex-col" : "hidden"}`}
           >
             <PersonalizationView
               isActive={activeView === "brain" && licenseGateActive}
@@ -1069,7 +1069,9 @@ const Home = ({ onReady }: HomeProps) => {
             className={`w-full max-w-[400px] mx-auto pt-8 min-h-0 flex-1 ${activeView === "record" && !lockedFeature ? "flex flex-col" : "hidden"}`}
           >
             <RecordingView
-              isActive={activeView === "record" && licenseGateActive}
+              isActive={
+                activeView === "record" && licenseGateActive && !isSettingsOpen
+              }
               onOpenLibraryItem={(id) => {
                 setOpenLibraryItemId(id);
                 setActiveView("library");

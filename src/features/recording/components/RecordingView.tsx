@@ -187,7 +187,7 @@ const SourceMenu = ({
         }`}
       >
         {valueIcons}
-        <span className="truncate">{valueLabel}</span>
+        {valueLabel && <span className="truncate">{valueLabel}</span>}
         <CaretUpDown
           size={11}
           className="shrink-0 text-content-muted"
@@ -793,7 +793,6 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   const idle = !active && !busy;
   const isClosed = (app: { id: string }) =>
     appsLoaded && !apps.some((running) => running.id === app.id);
-  const closedApps = choices.systemAudio ? selectedApps.filter(isClosed) : [];
   const secondaryButton =
     "flex h-9 w-[104px] items-center justify-center gap-1.5 rounded-full border border-border-secondary ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover hover:text-content-primary disabled:cursor-default disabled:border-transparent disabled:opacity-40 disabled:hover:text-content-secondary";
 
@@ -911,16 +910,11 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       })),
     });
   }
+  // Several apps show as their icons alone; one shows its name too.
   const systemValue = !choices.systemAudio
     ? offLabel
     : selectedApps.length > 1
-      ? t({
-          id: "record.setup.apps.count",
-          message: plural(selectedApps.length, {
-            one: "# app",
-            other: "# apps",
-          }),
-        })
+      ? ""
       : (selectedApps[0]?.name ?? entireSystemLabel);
   const systemValueIcons =
     choices.systemAudio && selectedApps.length > 0 ? (
@@ -928,21 +922,30 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         {selectedApps.slice(0, 4).map((selected) => {
           const icon =
             apps.find((app) => app.id === selected.id)?.icon ?? selected.icon;
+          // An app that isn't playing anything dims, since it won't be heard.
+          const quiet = isClosed(selected);
           return icon ? (
             <img
               key={selected.id}
               src={icon}
-              alt=""
-              className="h-4 w-4 rounded-[4px]"
+              alt={selected.name}
+              title={selected.name}
+              className={`h-4 w-4 rounded-[4px] transition-opacity ${quiet ? "opacity-35 grayscale" : ""}`}
             />
           ) : (
             <AppWindow
               key={selected.id}
               size={14}
-              className="text-content-muted"
+              aria-label={selected.name}
+              className={`text-content-muted ${quiet ? "opacity-35" : ""}`}
             />
           );
         })}
+        {selectedApps.length > 4 && (
+          <span className="ui-text-label ui-color-muted tabular-nums">
+            +{selectedApps.length - 4}
+          </span>
+        )}
       </span>
     ) : undefined;
 
@@ -992,25 +995,6 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
             {t({ id: "record.saved.open", message: "Open" })}
           </button>
         </>
-      );
-    }
-    if (idle && closedApps.length > 0) {
-      return (
-        <span className="truncate ui-color-warning">
-          {closedApps.length === 1
-            ? t({
-                id: "record.setup.apps.closed_one",
-                message: `${closedApps[0].name} isn't playing audio, so it won't be recorded.`,
-              })
-            : t({
-                id: "record.setup.apps.closed_many",
-                message: plural(closedApps.length, {
-                  one: "# selected app isn't playing audio, so it won't be recorded.",
-                  other:
-                    "# selected apps aren't playing audio, so they won't be recorded.",
-                }),
-              })}
-        </span>
       );
     }
     if (active && state.follower !== null) {
@@ -1232,9 +1216,23 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         </section>
       </div>
 
+      <p className="mt-4 text-center ui-text-label ui-color-muted">
+        {t({
+          id: "record.consent.line",
+          message: "Ask before recording others.",
+        })}
+      </p>
+
       <div className="mt-3 min-h-0 flex-1">{active && renderBookmarks()}</div>
 
-      <div className="flex items-center justify-center gap-3 pt-6">
+      <div
+        role="status"
+        className="mt-6 flex h-5 items-center justify-center gap-2 ui-text-label"
+      >
+        {renderStatusSlot()}
+      </div>
+
+      <div className="mt-2 flex h-12 items-center justify-center gap-3">
         <button
           type="button"
           onClick={handleTogglePause}
@@ -1249,15 +1247,6 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           {paused
             ? t({ id: "record.active.resume", message: "Resume" })
             : t({ id: "record.active.pause", message: "Pause" })}
-        </button>
-        <button
-          type="button"
-          onClick={handleBookmark}
-          disabled={!active || busy}
-          className={secondaryButton}
-        >
-          <BookmarkSimple size={13} aria-hidden="true" />
-          {t({ id: "record.active.bookmark", message: "Bookmark" })}
         </button>
         <button
           type="button"
@@ -1282,13 +1271,15 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
             </>
           )}
         </button>
-      </div>
-
-      <div
-        role="status"
-        className="mt-3 mb-8 flex h-5 items-center justify-center gap-2 ui-text-label"
-      >
-        {renderStatusSlot()}
+        <button
+          type="button"
+          onClick={handleBookmark}
+          disabled={!active || busy}
+          className={secondaryButton}
+        >
+          <BookmarkSimple size={13} aria-hidden="true" />
+          {t({ id: "record.active.bookmark", message: "Bookmark" })}
+        </button>
       </div>
 
       {createPortal(

@@ -38,6 +38,8 @@ export type LibraryItemStatus =
 export type LibraryItem = {
   id: string;
   name: string;
+  // The Library folder holding the item's files.
+  folder?: string | null;
   audio_path: string;
   source_path: string;
   store_original: boolean;
@@ -66,12 +68,16 @@ export type LibraryItem = {
 export type LibraryItemsPage = {
   items: LibraryItem[];
   has_more: boolean;
+  // A short passage of each transcript: around the search's first word, or
+  // the opening without a search.
+  snippets?: Record<string, string>;
 };
 
 export type LibraryFilter = {
   search?: string | null;
   status?: string | null;
   tag?: string | null;
+  folder?: string | null;
   since_days?: number | null;
 };
 

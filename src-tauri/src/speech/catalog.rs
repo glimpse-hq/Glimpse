@@ -758,7 +758,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Parakeet TDT V3",
         description: "Multilingual Parakeet TDT V3 on CPU or GPU, with optional Neural Engine acceleration on Apple Silicon.",
         tags: &["Multilingual", "Fast"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Transcribe,
         languages: Languages::ParakeetV3,
         variant: "Q8_0",
@@ -1077,7 +1077,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Small",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         languages: Languages::Whisper,
         variant: "Q8_0",
@@ -1273,15 +1273,14 @@ pub const CLEANUP_MODEL_MANIFEST: LocalModelManifest = LocalModelManifest {
 
 /// Automatic walks this in order and takes the first model that covers the
 /// user's languages. The first one usable here is also the stock default.
-pub const RECOMMENDED: &[&str] = &[
-    "parakeet_ultra_gguf",
-    "parakeet_tdt_v3_gguf",
-    "whisper_large_v3_turbo_q8",
-];
+pub const RECOMMENDED: &[&str] = &["parakeet_ultra_gguf", "whisper_large_v3_turbo_q8"];
 
 /// (old, new): `old` is being retired in favor of `new`. Any line is safe to
 /// delete, since a stale model falls back to [`recommended_model`].
-pub const SUCCESSORS: &[(&str, &str)] = &[("parakeet_unified_en_int8", "nemotron_unified")];
+pub const SUCCESSORS: &[(&str, &str)] = &[
+    ("parakeet_unified_en_int8", "nemotron_unified"),
+    ("parakeet_tdt_v3_gguf", "parakeet_ultra_gguf"),
+];
 
 fn usable_here(manifest: &LocalModelManifest) -> bool {
     match manifest.engine {

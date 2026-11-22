@@ -1,6 +1,10 @@
 import { msg } from "@lingui/core/macro";
 import { i18n } from "../../../i18n";
-import type { AudioSources, LibraryItemStatus } from "../../../types";
+import type {
+  AudioSources,
+  LibraryItem,
+  LibraryItemStatus,
+} from "../../../types";
 
 export const SUPPORTED_EXTENSIONS = [
   "wav",
@@ -51,6 +55,55 @@ export const getFileExtension = (path: string) => {
 
 export const uniquePaths = (paths: string[]) => Array.from(new Set(paths));
 export const formatLibraryName = (name: string) => name.replace(/[_.]/g, " ");
+
+const SLOT = "\u0001";
+// A filled-in date or time: digits and punctuation with at least one digit
+// and at most two short words (a month, AM/PM).
+const DATE_GAP = String.raw`[\p{N}\p{P}\p{Z}\s]*`;
+const DATE_WORD = String.raw`\p{L}[\p{L}\p{M}]{0,6}(?![\p{L}\p{M}])`;
+const DATE_SLOT = `(?=[^\\p{L}]*\\p{N}|(?:${DATE_GAP}${DATE_WORD}){1,2}[^\\p{L}]*\\p{N})${DATE_GAP}(?:${DATE_WORD}${DATE_GAP}){0,2}`;
+let defaultNames: { locale: string; pattern: RegExp } | null = null;
+
+// The names a recording gets when it's saved without one, in the app language.
+const isDefaultRecordingName = (name: string) => {
+  if (defaultNames?.locale !== i18n.locale) {
+    const templates = [
+      i18n._("record.default_name", { day: SLOT, time: SLOT }),
+      i18n._("native.recording.default_name", { date: SLOT }),
+    ].map((template) =>
+      template
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+        .split(SLOT)
+        .join(DATE_SLOT),
+    );
+    defaultNames = {
+      locale: i18n.locale,
+      pattern: new RegExp(`^(?:${templates.join("|")})$`, "u"),
+    };
+  }
+  return defaultNames.pattern.test(name);
+};
+
+export const isUntitledRecording = (
+  item: Pick<LibraryItem, "name" | "kind" | "created_at">,
+) =>
+  item.kind === "recording" &&
+  !Number.isNaN(new Date(item.created_at).getTime()) &&
+  isDefaultRecordingName(item.name);
+
+// A recording that was never named shows when it was made, so the date isn't
+// repeated in its name; `withDay` adds the day where nothing else shows it.
+export const libraryItemTitle = (
+  item: Pick<LibraryItem, "name" | "kind" | "created_at">,
+  withDay = false,
+) =>
+  isUntitledRecording(item)
+    ? i18n.date(new Date(item.created_at), {
+        ...(withDay ? { month: "short", day: "numeric" } : {}),
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : formatLibraryName(item.name);
 export const sanitizeFileName = (value: string) =>
   value
     .trim()

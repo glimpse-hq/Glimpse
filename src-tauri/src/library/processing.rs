@@ -76,6 +76,7 @@ pub(crate) fn create_item_from_path(
         && (remote_selection || crate::speech::installed_diarizer_path(app).is_some());
 
     let item = LibraryItem {
+        folder: None,
         id,
         name: file_name.to_string(),
         audio_path: audio_path.display().to_string(),
@@ -163,6 +164,7 @@ pub(crate) fn create_recording_item(
     };
 
     let item = LibraryItem {
+        folder: None,
         id,
         name: output.name,
         audio_path: audio_path.display().to_string(),
