@@ -264,7 +264,15 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
                     "native.toast.model_switched_title",
                     &[("model", &label)],
                 )),
-                message: crate::toast::native(&app, "native.toast.model_switched"),
+                message: if saved.local_model_auto {
+                    crate::toast::native(&app, "native.toast.model_switched")
+                } else {
+                    crate::toast::native_format(
+                        &app,
+                        "native.toast.model_replaced",
+                        &[("model", &catalog::model_label(&previous))],
+                    )
+                },
                 auto_dismiss: Some(true),
                 duration: Some(8000),
                 action: Some("open_models_page".to_string()),

@@ -194,6 +194,9 @@ impl LibraryItemStatus {
 pub struct LibraryItem {
     pub id: String,
     pub name: String,
+    /// The Library folder holding the item's files; read from its path.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub folder: Option<String>,
     pub audio_path: String,
     pub source_path: String,
     pub store_original: bool,
@@ -233,6 +236,8 @@ pub struct LibraryFilter {
     pub search: Option<String>,
     pub status: Option<String>,
     pub tag: Option<String>,
+    #[serde(default)]
+    pub folder: Option<String>,
     pub since_days: Option<u32>,
 }
 
@@ -240,6 +245,10 @@ pub struct LibraryFilter {
 pub struct LibraryItemsPage {
     pub items: Vec<LibraryItem>,
     pub has_more: bool,
+    /// A short passage of each transcript, by item id: around the search's
+    /// first word, or the opening without a search.
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub snippets: std::collections::HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

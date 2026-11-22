@@ -1,7 +1,7 @@
 //! `glimpse mcp` - a Model Context Protocol server on stdio, so AI agents can
 //! search and read the Library and dictations, follow a recording live, ask the
 //! user a question and transcribe files. Queuing files needs `--allow-import`;
-//! starting or finishing a recording needs `--allow-recording`.
+//! starting, resuming or finishing a recording needs `--allow-recording`.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
@@ -54,7 +54,7 @@ fn help() {
                     ),
                     (
                         "--allow-recording",
-                        "Let the agent start and finish recordings.",
+                        "Let the agent start, resume and finish recordings.",
                     ),
                     ("-h, --help", "Show help information."),
                 ],
@@ -329,6 +329,7 @@ impl LibraryServer {
         }
         if !allow_recording {
             tool_router.remove_route("start_recording");
+            tool_router.remove_route("resume_recording");
             tool_router.remove_route("finish_recording");
         }
         Self {
@@ -362,6 +363,7 @@ impl LibraryServer {
             return Err("query must not be empty".to_string());
         }
         let filter = LibraryFilter {
+            folder: None,
             search: Some(query.to_string()),
             ..Default::default()
         };
@@ -377,6 +379,7 @@ impl LibraryServer {
         self.require_license()?;
         let status = params.status.unwrap_or(Status::Complete);
         let filter = LibraryFilter {
+            folder: None,
             status: Some(status.as_filter().to_string()),
             since_days: params.since_days,
             ..Default::default()
@@ -650,9 +653,58 @@ impl LibraryServer {
             open_world_hint = false
         )
     )]
-    async fn start_recording(&self) -> Result<String, String> {
+    async fn start_recording(&self, context: RequestContext<RoleServer>) -> Result<String, String> {
         self.require_license()?;
-        Ok(app_request("record.start", json!({})).await?.to_string())
+        let args = json!({ "client": client_name(&context) });
+        Ok(app_request("record.start", args).await?.to_string())
+    }
+
+    #[tool(
+        description = "Pause the recording in progress in Glimpse.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn pause_recording(&self) -> Result<String, String> {
+        self.require_license()?;
+        running_app_request("record.pause", json!({}))
+            .await?
+            .map(|data| data.to_string())
+            .ok_or_else(|| "No recording is in progress.".to_string())
+    }
+
+    #[tool(
+        description = "Resume the paused recording in Glimpse.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn resume_recording(
+        &self,
+        context: RequestContext<RoleServer>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let args = json!({ "client": client_name(&context) });
+        running_app_request("record.resume", args)
+            .await?
+            .map(|data| data.to_string())
+            .ok_or_else(|| "No recording is in progress.".to_string())
+    }
+
+    #[tool(
+        description = "Check the recording in Glimpse: status (idle, recording, paused or saving), elapsed time, sources and number of bookmarks.",
+        annotations(read_only_hint = true, open_world_hint = false)
+    )]
+    async fn recording_status(&self) -> Result<String, String> {
+        self.require_license()?;
+        let status = running_app_request("record.status", json!({}))
+            .await?
+            .unwrap_or_else(|| json!({ "app_running": false, "status": "idle" }));
+        Ok(status.to_string())
     }
 
     #[tool(
@@ -935,6 +987,7 @@ mod tests {
 
     fn meeting() -> LibraryItem {
         LibraryItem {
+            folder: None,
             id: "meeting-1".to_string(),
             name: "Roadmap sync".to_string(),
             audio_path: String::new(),
@@ -1083,7 +1136,9 @@ mod tests {
                     "get_live_transcript",
                     "get_transcript",
                     "list_recent",
+                    "pause_recording",
                     "recent_dictations",
+                    "recording_status",
                     "search_library",
                     "transcribe_audio",
                     "wait_for_live_transcript"

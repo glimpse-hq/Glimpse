@@ -5,15 +5,29 @@
 - Short dictations with Parakeet on Windows take about half the time on NVIDIA graphics and 40% less on Intel graphics.
 - The 14-day trial now includes the command line, the MCP server and the API server.
 - Library now sits with Record in the sidebar.
+- Parakeet TDT V3 and Whisper Small move to Legacy. If you use Parakeet TDT V3, Glimpse switches you to Parakeet Ultra, which is more accurate at the same size and speed.
+- Each plan on the Account screen now has its own buy button, and prices show they're a one-time payment.
+- The Record screen reminds you to ask before recording others.
+- System Audio on the Record screen shows the apps it records as their icons, and dims one that isn't playing anything.
+- AI agents can pause a recording, resume it and check on it. When an agent starts or resumes a recording, Glimpse shows which one did.
+- Every screen now lines up on the same margins, and Start Recording sits between Pause and Bookmark.
+- The Library opens faster.
+- The Library has folders, kept as real folders on disk. Pick one from the menu next to the Library title, and move items from their menu.
+- An open recording has one row at the top: where it is, search, and a menu with its details, Copy, Export and Retranscribe. Speakers moved next to the player.
+- Search is always shown at the top of the Library and an open recording.
+- On a Mac trackpad you feel a light tap when the player catches a bookmark as you drag it, and on each step when you drag the speed or the auto-pause setting.
+- The Library groups items by day, shows recordings you haven't named by their time, and shows the matching words when you search. Cards show how each transcript begins.
 - Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
 - New xAI setups for cleanup start on Grok 4.20 non-reasoning, which is faster and costs less than Grok 4.7.
 - Fireworks AI is no longer offered for speech. It shut down its transcription service.
 
 ### Fixes
 
+- Going back to an open recording no longer slides the word underline in from the corner.
 - On Windows PCs where the graphics driver made Glimpse quit, speech recognition now runs on the processor instead of quitting again.
 - On Windows PCs where Glimpse C1 got stuck, your words now paste without a long wait, and loading it on Intel graphics no longer makes Glimpse quit.
 - If your computer's graphics can't run Glimpse C1, Glimpse tells you once and Automatic stops choosing it.
+- On a Mac, Norwegian dictation is now cleaned up by Apple Intelligence when it's on, instead of being pasted as spoken.
 
 1.4.6
 

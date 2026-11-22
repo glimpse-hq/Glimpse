@@ -59,8 +59,8 @@ rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 posthog-rs = { version = "0.31", default-features = false, features = ["async-client"] }
 arboard = "3"
-glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", rev = "0410ffb77c233713b92b640e6894119bccef6796", features = ["whisper", "transcribe", "api", "cli", "remote", "apple-speech"] }
-glimpse-language = { git = "https://github.com/glimpse-hq/Glimpse-Language.git", rev = "ac84da52ce6ec4927ff546a9f0df862a6eff77d2", features = ["apple", "bonsai"] }
+glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "3.0.5", features = ["whisper", "transcribe", "api", "cli", "remote", "apple-speech"] }
+glimpse-language = { git = "https://github.com/glimpse-hq/Glimpse-Language.git", tag = "0.3.0", features = ["apple", "bonsai"] }
 uuid = { version = "1.26.1", features = ["v4"] }
 aes-gcm = "0.11"
 pbkdf2 = "0.13"
@@ -68,7 +68,7 @@ sha2 = "0.11"
 # Already in the tree through rustls; verifies the license server's Ed25519 tokens.
 ring = "0.17"
 base64 = { version = "0.23", default-features = false, features = ["std"] }
-rusqlite = { version = "0.41", features = ["bundled"] }
+rusqlite = { version = "0.42", features = ["bundled"] }
 regex = "1"
 tauri-plugin-deep-link = "2.5.0"
 rubato = "5.0.0"
@@ -101,4 +101,4 @@ block2 = "0.6"
 objc2-foundation = "0.3.2"
 objc2-core-foundation = "0.3.2"
 objc2-core-audio-types = "0.3.2"
-objc2-app-kit = { version = "0.3.2", features = ["NSAlert", "NSEvent", "NSWorkspace", "NSRunningApplication", "NSImage", "NSImageRep", "NSBitmapImageRep", "NSApplication", "NSWindow", "NSView", "NSResponder", "NSControl", "NSButton", "NSFont", "NSPasteboard", "NSStatusItem", "NSStatusBar", "objc2-core-graphics"] }
+objc2-app-kit = { version = "0.3.2", features = ["NSAlert", "NSEvent", "NSWorkspace", "NSRunningApplication", "NSImage", "NSImageRep", "NSBitmapImageRep", "NSApplication", "NSWindow", "NSView", "NSResponder", "NSControl", "NSButton", "NSFont", "NSPasteboard", "NSStatusItem", "NSStatusBar", "NSHapticFeedback", "objc2-core-graphics"] }

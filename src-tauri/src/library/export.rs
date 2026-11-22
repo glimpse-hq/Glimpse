@@ -227,6 +227,7 @@ mod tests {
 
     fn item() -> LibraryItem {
         LibraryItem {
+            folder: None,
             id: "0123456789abcdef".to_string(),
             name: "Standup".to_string(),
             audio_path: String::new(),

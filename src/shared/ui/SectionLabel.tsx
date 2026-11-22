@@ -5,6 +5,7 @@ interface SectionLabelProps {
   children: ReactNode;
   trailing?: ReactNode;
   className?: string;
+  divider?: boolean;
 }
 
 export function SectionLabel({
@@ -12,6 +13,7 @@ export function SectionLabel({
   children,
   trailing,
   className = "",
+  divider = true,
 }: SectionLabelProps) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
@@ -26,7 +28,7 @@ export function SectionLabel({
       {trailing ? (
         <span className="flex shrink-0 items-center">{trailing}</span>
       ) : null}
-      <div className="ui-divider-trailing flex-1" />
+      {divider ? <div className="ui-divider-trailing flex-1" /> : null}
     </div>
   );
 }

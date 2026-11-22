@@ -354,7 +354,7 @@ const AccountView = ({
       )}
 
       {!isActive && (
-        <section className="mx-auto max-w-[400px] border-t border-border-primary pt-5">
+        <section className="mx-auto max-w-[400px]">
           <h2 className="ui-text-label-strong ui-color-primary">
             {t({
               id: "settings.account.section.activate",
@@ -363,7 +363,7 @@ const AccountView = ({
           </h2>
           <form
             onSubmit={submitActivation}
-            className="mt-3 flex items-center gap-2 border-b border-border-secondary transition-colors focus-within:border-content-primary"
+            className="mt-1.5 flex items-center gap-2 border-b border-border-secondary transition-colors focus-within:border-content-primary"
           >
             <input
               ref={licenseKeyInputRef}
@@ -395,7 +395,7 @@ const AccountView = ({
           </form>
           <p
             aria-live="polite"
-            className={`mt-2 min-h-10 ui-text-meta text-pretty ${activationErrorText ? "text-error" : "ui-color-muted"}`}
+            className={`mt-2 ui-text-meta text-pretty empty:mt-0 ${activationErrorText ? "text-error" : "ui-color-muted"}`}
           >
             {activationErrorText ?? activationHintText}
             {failedOnDiscountCode && (

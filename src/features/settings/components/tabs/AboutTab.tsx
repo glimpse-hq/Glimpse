@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useCopyToClipboard } from "../../../../shared/hooks/useCopyToClipboard";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -34,12 +34,15 @@ const SUPPORT_ACTION_ICON_CLASS =
   "shrink-0 text-[var(--color-text-muted)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)]";
 const SUPPORT_ACTION_LABEL_CLASS =
   "flex items-center gap-0.5 ui-text-micro leading-none text-[var(--color-text-secondary)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)]";
+const INLINE_HOLD_CLASS =
+  "-ms-2 inline-flex h-7 shrink-0 items-center justify-center rounded-md px-2 ui-text-button-sm outline-none transition-colors hover:bg-surface-elevated/60 focus-visible:ring-2 focus-visible:ring-border-hover disabled:pointer-events-none disabled:opacity-60";
 const MANAGEMENT_ACTION_CLASS =
   "relative -ms-2 inline-flex h-7 shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md px-2 ui-text-button-sm ui-color-secondary outline-none transition-colors hover:bg-surface-elevated/60 hover:text-content-primary focus-visible:ring-2 focus-visible:ring-border-hover disabled:pointer-events-none disabled:opacity-60";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import SettingCard from "../../../../shared/ui/SettingCard";
 import SettingRow from "../../../../shared/ui/SettingRow";
+import HoldButton from "../../../../shared/ui/HoldButton";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
 import WhatsNewModal from "../../../updates/components/WhatsNewModal";
 import FAQModal from "../../../../shared/ui/FAQModal";
@@ -48,129 +51,6 @@ import { detectAppPlatform } from "../../../../platform/service";
 import { formatBytes } from "../../../../shared/lib/format";
 import type { AppInfo, CliInstallStatus } from "../../../../types";
 import { GITHUB_URL, SUPPORT_EMAIL } from "../../../../shared/lib/links";
-
-const InlineHoldButton = ({
-  onConfirm,
-  disabled = false,
-  busy = false,
-  label,
-  busyLabel,
-  ariaLabel,
-  holdMs,
-  tone = "neutral",
-}: {
-  onConfirm: () => void;
-  disabled?: boolean;
-  busy?: boolean;
-  label: string;
-  busyLabel?: string;
-  ariaLabel: string;
-  holdMs: number;
-  tone?: "neutral" | "danger";
-}) => {
-  const [progress, setProgress] = useState(0);
-  const holdingRef = useRef(false);
-  const readyRef = useRef(false);
-  const startTimeRef = useRef<number | null>(null);
-  const frameRef = useRef<number | null>(null);
-
-  const cancelHold = useCallback(() => {
-    holdingRef.current = false;
-    readyRef.current = false;
-    startTimeRef.current = null;
-    if (frameRef.current !== null) {
-      cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
-    }
-    setProgress(0);
-  }, []);
-
-  const stepHold = useCallback(
-    (timestamp: number) => {
-      if (!holdingRef.current || startTimeRef.current === null) return;
-
-      const elapsed = timestamp - startTimeRef.current;
-      const nextProgress = Math.min(1, elapsed / holdMs);
-      setProgress(nextProgress);
-
-      if (nextProgress >= 1) {
-        readyRef.current = true;
-        frameRef.current = null;
-        return;
-      }
-
-      frameRef.current = requestAnimationFrame(stepHold);
-    },
-    [holdMs],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-    };
-  }, []);
-
-  const startHold = () => {
-    holdingRef.current = true;
-    readyRef.current = false;
-    startTimeRef.current = performance.now();
-    setProgress(0);
-    frameRef.current = requestAnimationFrame(stepHold);
-  };
-
-  const finishHold = () => {
-    if (!holdingRef.current) return;
-    if (readyRef.current) {
-      onConfirm();
-    }
-    cancelHold();
-  };
-
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onPointerDown={(event) => {
-        if (disabled || event.button !== 0) return;
-        event.preventDefault();
-        startHold();
-      }}
-      onPointerUp={finishHold}
-      onPointerLeave={cancelHold}
-      onPointerCancel={cancelHold}
-      onKeyDown={(event) => {
-        if (disabled || (event.key !== "Enter" && event.key !== " ")) return;
-        if (holdingRef.current) return;
-        event.preventDefault();
-        startHold();
-      }}
-      onKeyUp={(event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        finishHold();
-      }}
-      onBlur={cancelHold}
-      className={`relative -ms-2 inline-flex h-7 shrink-0 select-none touch-none items-center justify-center overflow-hidden rounded-md px-2 ui-text-button-sm outline-none transition-colors hover:bg-surface-elevated/60 focus-visible:ring-2 focus-visible:ring-border-hover disabled:pointer-events-none disabled:opacity-60 ${
-        tone === "danger" ? "ui-color-error" : "ui-color-secondary"
-      }`}
-    >
-      <span
-        aria-hidden="true"
-        className={`absolute inset-0 origin-left rtl:origin-right ${
-          tone === "danger" ? "bg-red-500/20" : "bg-[var(--color-accent-20)]"
-        }`}
-        style={{ transform: `scaleX(${progress})` }}
-      />
-      <span className="relative inline-flex items-center gap-1">
-        {busy && <Loader2 size={10} className="animate-spin" />}
-        <span>{busy && busyLabel ? busyLabel : label}</span>
-      </span>
-    </button>
-  );
-};
 
 type AboutTabProps = {
   active: boolean;
@@ -456,24 +336,18 @@ const AboutTab = ({
 
   return (
     <div className="space-y-5">
-      <header>
-        <h2 className="ui-text-title-lg font-medium ui-color-primary">
-          {t({
-            id: "settings.about.version_label",
-            message: "Glimpse",
-          })}
-        </h2>
-        <p className="mt-1 ui-text-body-sm ui-color-muted">
-          {t({
-            id: "settings.about.version",
-            message: `Version ${{ version: appInfo?.version ?? "-" }}`,
-          })}
-        </p>
-      </header>
-
       <section className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <SectionLabel>
+          <SectionLabel
+            trailing={
+              <span className="ui-text-meta ui-color-muted tabular-nums">
+                {t({
+                  id: "settings.about.version",
+                  message: `Version ${{ version: appInfo?.version ?? "-" }}`,
+                })}
+              </span>
+            }
+          >
             {t({
               id: "settings.about.updates",
               message: "Updates",
@@ -872,7 +746,7 @@ const AboutTab = ({
                   "Removes recordings, transcripts, models, and settings, then quits",
               })}
               footer={
-                <InlineHoldButton
+                <HoldButton
                   onConfirm={() => {
                     void handleDeleteAllData();
                   }}
@@ -892,7 +766,8 @@ const AboutTab = ({
                       "Delete all data. Hold for ten seconds to confirm.",
                   })}
                   holdMs={10000}
-                  tone="danger"
+                  className={`${INLINE_HOLD_CLASS} ui-color-error`}
+                  fillClassName="bg-red-500/20"
                 />
               }
             />
@@ -1014,7 +889,7 @@ const AboutTab = ({
                 message: "Runs setup again",
               })}
               footer={
-                <InlineHoldButton
+                <HoldButton
                   onConfirm={() => {
                     void handleResetOnboarding();
                   }}
@@ -1027,6 +902,8 @@ const AboutTab = ({
                     message: "Restart Onboarding. Hold to confirm.",
                   })}
                   holdMs={2000}
+                  className={`${INLINE_HOLD_CLASS} ui-color-secondary`}
+                  fillClassName="bg-[var(--color-accent-20)]"
                 />
               }
             />
