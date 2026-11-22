@@ -1,16 +1,17 @@
+import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Warning as AlertTriangle,
   Check,
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
   ArrowElbowDownRight as CornerDownRight,
   CircleNotch as Loader2,
 } from "@phosphor-icons/react";
+import FieldLabel from "../../../../shared/ui/FieldLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import SettingCard from "../../../../shared/ui/SettingCard";
@@ -18,6 +19,7 @@ import SettingRow, { ToggleRow } from "../../../../shared/ui/SettingRow";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { buildAppLocaleOptions } from "../../../../shared/lib/appLocales";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
+import HoldButton from "../../../../shared/ui/HoldButton";
 import { useFocusTrap } from "../../../../shared/hooks/useFocusTrap";
 import type { PlatformCapabilities } from "../../../../shared/lib/platform";
 import type {
@@ -66,43 +68,19 @@ const inlineAutoDeleteDropdownProps = {
   className: "w-fit",
   buttonClassName:
     "!h-[22px] !w-auto !rounded-md !border-transparent !bg-transparent !px-0.5 !py-0 ui-text-label-strong focus:!border-transparent",
-  valueClassName:
-    "text-start underline underline-offset-[3px] decoration-content-muted hover:decoration-content-primary transition-colors",
   optionClassName: "!px-2 !py-1.5",
   optionLabelClassName: "ui-text-meta font-medium whitespace-nowrap",
-  menuClassName: "w-max min-w-full !right-auto",
+  menuClassName: "w-max min-w-full !left-auto",
   truncate: false as const,
-  fitButtonToWidestOption: false as const,
-  hideChevron: true as const,
 };
 
-// Stays in the layout when hidden so rows keep their height.
-const OpenSettingsButton = ({
-  visible,
-  onClick,
+const PermissionStatus = ({
+  granted,
+  onRequest,
 }: {
-  visible: boolean;
-  onClick: () => void;
+  granted: boolean | null;
+  onRequest: () => void;
 }) => {
-  const { t } = useLingui();
-  return (
-    <button
-      onClick={onClick}
-      disabled={!visible}
-      aria-hidden={!visible}
-      className={`block ui-color-muted hover:text-content-secondary transition-colors ${
-        visible ? "" : "invisible"
-      }`}
-    >
-      {t({
-        id: "settings.app.open_settings",
-        message: "Open Settings",
-      })}
-    </button>
-  );
-};
-
-const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
   const { t } = useLingui();
 
   if (granted === null) {
@@ -131,12 +109,16 @@ const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
     );
   }
   return (
-    <span className="ui-text-meta ui-color-warning">
+    <button
+      type="button"
+      onClick={onRequest}
+      className="ui-text-meta ui-color-muted transition-colors hover:text-content-secondary"
+    >
       {t({
-        id: "settings.app.permission.off",
-        message: "off",
+        id: "settings.app.open_settings",
+        message: "Open Settings",
       })}
-    </span>
+    </button>
   );
 };
 
@@ -279,7 +261,7 @@ const AppTab = ({
     },
   ];
 
-  const recordingPruneOptions: Array<{
+  const deleteAfterOptions: Array<{
     value: RecordingPrunePolicy;
     label: string;
   }> = [
@@ -289,36 +271,37 @@ const AppTab = ({
     },
     {
       value: "immediately",
-      label: t({ id: "settings.app.prune.instantly", message: "Instantly" }),
+      label: t({
+        id: "settings.app.auto_delete.after_transcribing",
+        message: "After transcribing",
+      }),
     },
     {
       value: "day",
-      label: t({ id: "settings.app.prune.day", message: "A Day" }),
+      label: t({
+        id: "settings.app.auto_delete.after_day",
+        message: "After a day",
+      }),
     },
     {
       value: "week",
-      label: t({ id: "settings.app.prune.week", message: "A Week" }),
+      label: t({
+        id: "settings.app.auto_delete.after_week",
+        message: "After a week",
+      }),
     },
     {
       value: "month",
-      label: t({ id: "settings.app.prune.month", message: "A Month" }),
+      label: t({
+        id: "settings.app.auto_delete.after_month",
+        message: "After a month",
+      }),
     },
     {
       value: "year",
-      label: t({ id: "settings.app.prune.year", message: "A Year" }),
-    },
-  ];
-
-  const pruneTargetOptions: Array<{ value: PruneTarget; label: string }> = [
-    {
-      value: "audio",
-      label: t({ id: "settings.app.prune_target.audio", message: "Audio" }),
-    },
-    {
-      value: "transcripts",
       label: t({
-        id: "settings.app.prune_target.transcripts",
-        message: "Transcripts",
+        id: "settings.app.auto_delete.after_year",
+        message: "After a year",
       }),
     },
   ];
@@ -337,17 +320,8 @@ const AppTab = ({
     recordingPrunePolicySeverity[nextPolicy] >
     recordingPrunePolicySeverity[currentPolicy];
 
-  const getRecordingPrunePolicyLabel = (policy: RecordingPrunePolicy) =>
-    recordingPruneOptions.find((option) => option.value === policy)?.label ??
-    policy;
-
   const describeRecordingPruneThreshold = (policy: RecordingPrunePolicy) => {
     switch (policy) {
-      case "immediately":
-        return t({
-          id: "settings.app.prune.threshold.immediately",
-          message: "right now",
-        });
       case "day":
         return t({
           id: "settings.app.prune.threshold.day",
@@ -374,62 +348,56 @@ const AppTab = ({
     }
   };
 
-  const buildPruneConfirmationMessage = (
-    target: PruneTarget,
-    duration: RecordingPrunePolicy,
-    candidateCount: number | null,
-  ) => {
-    const policyLabel = getRecordingPrunePolicyLabel(duration);
-    const noun =
-      target === "audio"
-        ? candidateCount === 1
-          ? t({
-              id: "settings.app.prune.noun.audio.one",
-              message: "audio file",
-            })
-          : t({
-              id: "settings.app.prune.noun.audio.other",
-              message: "audio files",
-            })
-        : candidateCount === 1
-          ? t({
-              id: "settings.app.prune.noun.transcripts.one",
-              message: "transcript",
-            })
-          : t({
-              id: "settings.app.prune.noun.transcripts.other",
-              message: "transcripts",
-            });
-
-    if (duration === "immediately") {
-      if (candidateCount === null) {
-        return t({
-          id: "settings.app.auto_delete.confirm.immediately.unknown_count",
-          message: `Changing auto-delete to ${{ policyLabel }} may immediately delete your existing ${{ noun }}.`,
-        });
-      }
-      return t({
-        id: "settings.app.auto_delete.confirm.immediately.known_count",
-        message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${candidateCount} existing ${{ noun }}.`,
-      });
-    }
-
+  const buildPruneConfirmation = ({
+    target,
+    duration,
+    candidateCount,
+  }: PendingPruneConfirmation) => {
     const threshold = describeRecordingPruneThreshold(duration);
-    if (!threshold) {
-      return "";
-    }
-
-    if (candidateCount === null) {
-      return t({
-        id: "settings.app.auto_delete.confirm.threshold.unknown_count",
-        message: `Changing auto-delete to ${{ policyLabel }} may immediately delete ${{ noun }} already older than ${{ threshold }}.`,
-      });
-    }
-
-    return t({
-      id: "settings.app.auto_delete.confirm.threshold.known_count",
-      message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${candidateCount} ${{ noun }} already older than ${{ threshold }}.`,
-    });
+    const title =
+      candidateCount === null
+        ? t({
+            id: "settings.app.auto_delete.confirm.title",
+            message: "Delete older items now?",
+          })
+        : target === "audio"
+          ? t({
+              id: "settings.app.auto_delete.confirm.title_audio",
+              message: plural(candidateCount, {
+                one: "Delete # audio file?",
+                other: "Delete # audio files?",
+              }),
+            })
+          : t({
+              id: "settings.app.auto_delete.confirm.title_dictations",
+              message: plural(candidateCount, {
+                one: "Delete # dictation?",
+                other: "Delete # dictations?",
+              }),
+            });
+    const body =
+      target === "audio"
+        ? threshold
+          ? t({
+              id: "settings.app.auto_delete.confirm.body_audio_older",
+              message: `This deletes audio from dictations older than ${{ threshold }}. Transcripts and Library stay.`,
+            })
+          : t({
+              id: "settings.app.auto_delete.confirm.body_audio_all",
+              message:
+                "This deletes the audio of every saved dictation. Transcripts and Library stay.",
+            })
+        : threshold
+          ? t({
+              id: "settings.app.auto_delete.confirm.body_dictations_older",
+              message: `This deletes dictations older than ${{ threshold }} and their audio. Library stays.`,
+            })
+          : t({
+              id: "settings.app.auto_delete.confirm.body_dictations_all",
+              message:
+                "This deletes every saved dictation and its audio. Library stays.",
+            });
+    return { title, body };
   };
 
   const applyAutoDeleteChange = async (
@@ -549,32 +517,13 @@ const AppTab = ({
     setPendingPruneConfirmation(null);
   }, [active]);
 
-  const pruneConfirmationMessage = pendingPruneConfirmation
-    ? buildPruneConfirmationMessage(
-        pendingPruneConfirmation.target,
-        pendingPruneConfirmation.duration,
-        pendingPruneConfirmation.candidateCount,
-      )
-    : "";
-
-  const pruneConfirmationFootnote =
-    pendingPruneConfirmation?.candidateCount === null
-      ? t({
-          id: "settings.app.auto_delete.confirm.unknown_count",
-          message:
-            "We couldn't count them right now, but auto-delete will still run as soon as you save this change.",
-        })
-      : pendingPruneConfirmation?.target === "audio"
-        ? t({
-            id: "settings.app.auto_delete.confirm.audio_only",
-            message:
-              "This only removes saved audio files, not your transcripts.",
-          })
-        : t({
-            id: "settings.app.auto_delete.confirm.audio_too",
-            message:
-              "Deleting transcripts also removes the audio they reference.",
-          });
+  const holdToDeleteLabel = t({
+    id: "settings.about.data.hold_to_delete",
+    message: "Hold to delete",
+  });
+  const pruneConfirmation = pendingPruneConfirmation
+    ? buildPruneConfirmation(pendingPruneConfirmation)
+    : null;
 
   const permissionRowCount = [
     platformCapabilities.showsMicrophonePermission,
@@ -585,71 +534,62 @@ const AppTab = ({
   return (
     <>
       <div className="space-y-6">
-        <div className="space-y-2">
-          <SectionLabel>
-            {t({
-              id: "settings.app.appearance",
-              message: "Appearance",
-            })}
-          </SectionLabel>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <span className="ui-text-label-strong ui-color-primary">
-                {t({
-                  id: "settings.app.text_size.label.v2",
-                  message: "Text size",
-                })}
-              </span>
-              <Dropdown
-                value={textSizeMode}
-                ariaLabel={t({
-                  id: "settings.app.text_size.label.v2",
-                  message: "Text size",
-                })}
-                onChange={onTextSizeModeChange}
-                options={textSizeOptions}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <span className="ui-text-label-strong ui-color-primary">
-                {t({
-                  id: "settings.app.theme.label",
-                  message: "Theme",
-                })}
-              </span>
-              <Dropdown
-                value={themeMode}
-                ariaLabel={t({
-                  id: "settings.app.theme.label",
-                  message: "Theme",
-                })}
-                onChange={onThemeModeChange}
-                options={themeOptions}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <span className="ui-text-label-strong ui-color-primary">
-                {t({
-                  id: "settings.app.language.label",
-                  message: "Language",
-                })}
-              </span>
-              <Dropdown
-                value={appLocale}
-                ariaLabel={t({
-                  id: "settings.app.language.label",
-                  message: "Language",
-                })}
-                onChange={(value) => onAppLocaleChange(value)}
-                options={appLanguageOptions}
-                searchable
-                searchPlaceholder={t({
-                  id: "settings.app.language.search",
-                  message: "Search language...",
-                })}
-              />
-            </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <FieldLabel>
+              {t({
+                id: "settings.app.text_size.label.v2",
+                message: "Text size",
+              })}
+            </FieldLabel>
+            <Dropdown
+              value={textSizeMode}
+              ariaLabel={t({
+                id: "settings.app.text_size.label.v2",
+                message: "Text size",
+              })}
+              onChange={onTextSizeModeChange}
+              options={textSizeOptions}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <FieldLabel>
+              {t({
+                id: "settings.app.theme.label",
+                message: "Theme",
+              })}
+            </FieldLabel>
+            <Dropdown
+              value={themeMode}
+              ariaLabel={t({
+                id: "settings.app.theme.label",
+                message: "Theme",
+              })}
+              onChange={onThemeModeChange}
+              options={themeOptions}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <FieldLabel>
+              {t({
+                id: "settings.app.language.label",
+                message: "Language",
+              })}
+            </FieldLabel>
+            <Dropdown
+              value={appLocale}
+              ariaLabel={t({
+                id: "settings.app.language.label",
+                message: "Language",
+              })}
+              onChange={(value) => onAppLocaleChange(value)}
+              options={appLanguageOptions}
+              searchable
+              searchPlaceholder={t({
+                id: "settings.app.language.search",
+                message: "Search language...",
+              })}
+            />
           </div>
         </div>
 
@@ -663,24 +603,21 @@ const AppTab = ({
             </SectionLabel>
 
             {permissionRowCount > 0 && (
-              <SettingCard equalizeRows className="gap-3">
+              <SettingCard equalizeRows className="flex-1 gap-3">
                 {platformCapabilities.showsMicrophonePermission && (
                   <SettingRow
                     title={t({
                       id: "settings.app.microphone",
                       message: "Microphone",
                     })}
-                    inlineDescription={t({
+                    description={t({
                       id: "settings.app.microphone.description",
                       message: "required for transcription",
                     })}
-                    control={<PermissionStatus granted={micPermission} />}
-                    description={
-                      <OpenSettingsButton
-                        visible={micPermission === false}
-                        onClick={() => {
-                          void onRequestMicrophonePermission();
-                        }}
+                    control={
+                      <PermissionStatus
+                        granted={micPermission}
+                        onRequest={() => void onRequestMicrophonePermission()}
                       />
                     }
                   />
@@ -692,19 +629,16 @@ const AppTab = ({
                       id: "settings.app.accessibility",
                       message: "Accessibility",
                     })}
-                    inlineDescription={t({
+                    description={t({
                       id: "settings.app.accessibility.description",
                       message: "required for auto-paste",
                     })}
                     control={
-                      <PermissionStatus granted={accessibilityPermission} />
-                    }
-                    description={
-                      <OpenSettingsButton
-                        visible={accessibilityPermission === false}
-                        onClick={() => {
-                          void onRequestAccessibilityPermission();
-                        }}
+                      <PermissionStatus
+                        granted={accessibilityPermission}
+                        onRequest={() =>
+                          void onRequestAccessibilityPermission()
+                        }
                       />
                     }
                   />
@@ -716,19 +650,16 @@ const AppTab = ({
                       id: "settings.app.input_monitoring",
                       message: "Input Monitoring",
                     })}
-                    inlineDescription={t({
+                    description={t({
                       id: "settings.app.input_monitoring.description",
                       message: "required for global shortcuts",
                     })}
                     control={
-                      <PermissionStatus granted={inputMonitoringPermission} />
-                    }
-                    description={
-                      <OpenSettingsButton
-                        visible={inputMonitoringPermission === false}
-                        onClick={() => {
-                          void onRequestInputMonitoringPermission();
-                        }}
+                      <PermissionStatus
+                        granted={inputMonitoringPermission}
+                        onRequest={() =>
+                          void onRequestInputMonitoringPermission()
+                        }
                       />
                     }
                   />
@@ -736,11 +667,17 @@ const AppTab = ({
               </SettingCard>
             )}
 
-            <SettingCard
-              className={
-                permissionRowCount > 1 ? "flex-1 grid content-center" : ""
-              }
-            >
+            {permissionRowCount > 0 && (
+              <p className="ui-text-micro ui-color-muted px-0.5">
+                {t({
+                  id: "settings.app.permissions_restart_notice",
+                  message: "Permission changes may require a restart.",
+                })}
+              </p>
+            )}
+
+            {/* One card in each column grows, so both columns end level. */}
+            <SettingCard className={permissionRowCount > 0 ? "" : "flex-1"}>
               <ToggleRow
                 title={t({
                   id: "settings.app.analytics.v2",
@@ -772,15 +709,6 @@ const AppTab = ({
                 }
               />
             </SettingCard>
-
-            {permissionRowCount > 0 && (
-              <p className="ui-text-micro ui-color-muted px-0.5">
-                {t({
-                  id: "settings.app.permissions_restart_notice",
-                  message: "Permission changes may require a restart.",
-                })}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2 flex flex-col">
@@ -936,59 +864,65 @@ const AppTab = ({
                   />
                 </div>
               </ToggleRow>
-              <div className="relative px-2 py-1.5 overflow-visible">
-                <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-                  <span className="ui-text-label-strong ui-color-primary shrink-0">
-                    {t({
-                      id: "settings.app.auto_delete",
-                      message: "Auto-delete",
+              <SettingRow
+                title={t({
+                  id: "settings.app.auto_delete_dictation_audio",
+                  message: "Auto-delete dictation audio",
+                })}
+                control={
+                  <Dropdown
+                    value={autoDeleteDuration}
+                    ariaLabel={t({
+                      id: "settings.app.auto_delete.after_aria",
+                      message: "Delete after",
                     })}
-                  </span>
-                  <div className="shrink-0">
-                    <Dropdown
-                      value={autoDeleteTarget}
-                      ariaLabel={t({
-                        id: "settings.app.auto_delete",
-                        message: "Auto-delete",
-                      })}
-                      onChange={(value) => {
-                        void applyAutoDeleteChange(value, autoDeleteDuration);
-                      }}
-                      options={pruneTargetOptions}
-                      disabled={isPreviewingPrune}
-                      {...inlineAutoDeleteDropdownProps}
+                    onChange={(value) => {
+                      void applyAutoDeleteChange(autoDeleteTarget, value);
+                    }}
+                    options={deleteAfterOptions}
+                    disabled={isPreviewingPrune}
+                    {...inlineAutoDeleteDropdownProps}
+                  />
+                }
+              >
+                <div className="flex items-center justify-between gap-2 ps-3 mt-1.5">
+                  <div className="flex min-w-0 items-center gap-1.5 ui-text-meta text-content-secondary">
+                    <CornerDownRight
+                      size={10}
+                      className="shrink-0 text-content-disabled"
+                      aria-hidden="true"
                     />
+                    <span className="min-w-0">
+                      {t({
+                        id: "settings.app.auto_delete.include_transcripts",
+                        message: "Also delete transcripts",
+                      })}
+                    </span>
                   </div>
-                  <span className="ui-text-label-strong ui-color-muted shrink-0">
-                    {t({
-                      id: "settings.app.auto_delete.after",
-                      message: "after",
+                  <ToggleSwitch
+                    enabled={
+                      autoDeleteDuration !== "never" &&
+                      autoDeleteTarget === "transcripts"
+                    }
+                    disabled={
+                      autoDeleteDuration === "never" || isPreviewingPrune
+                    }
+                    onToggle={() => {
+                      void applyAutoDeleteChange(
+                        autoDeleteTarget === "transcripts"
+                          ? "audio"
+                          : "transcripts",
+                        autoDeleteDuration,
+                      );
+                    }}
+                    ariaLabel={t({
+                      id: "settings.app.auto_delete.include_transcripts",
+                      message: "Also delete transcripts",
                     })}
-                  </span>
-                  <div className="shrink-0">
-                    <Dropdown
-                      value={autoDeleteDuration}
-                      ariaLabel={t({
-                        id: "settings.app.auto_delete.after_aria",
-                        message: "Delete after",
-                      })}
-                      onChange={(value) => {
-                        void applyAutoDeleteChange(autoDeleteTarget, value);
-                      }}
-                      options={recordingPruneOptions}
-                      disabled={isPreviewingPrune}
-                      {...inlineAutoDeleteDropdownProps}
-                    />
-                  </div>
+                    size="xs"
+                  />
                 </div>
-                <span className="ui-text-micro ui-color-muted block mt-1">
-                  {t({
-                    id: "settings.app.auto_delete.body",
-                    message:
-                      "Deleting transcripts also removes their saved audio.",
-                  })}
-                </span>
-              </div>
+              </SettingRow>
             </SettingCard>
           </div>
         </div>
@@ -1011,55 +945,44 @@ const AppTab = ({
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.96, opacity: 0 }}
                   transition={{ duration: 0.18 }}
-                  className="w-full max-w-sm rounded-2xl border border-red-500/30 bg-surface-tertiary p-5 ui-shadow-modal-deep"
+                  className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
                   onClick={(event) => event.stopPropagation()}
                   role="alertdialog"
                   aria-modal="true"
-                  aria-label={t({
-                    id: "settings.app.auto_delete.confirm.title",
-                    message: "Delete older items now?",
-                  })}
+                  aria-labelledby="auto-delete-confirm-title"
+                  aria-describedby="auto-delete-confirm-body"
                 >
-                  <div className="mb-3 flex items-start gap-3">
-                    <AlertTriangle
-                      size={20}
-                      className="mt-1 shrink-0 text-red-400"
-                      aria-hidden="true"
-                    />
-                    <div className="min-w-0">
-                      <p className="ui-text-body-lg font-semibold ui-color-error-strong leading-tight">
-                        {t({
-                          id: "settings.app.auto_delete.confirm.title",
-                          message: "Delete older items now?",
-                        })}
-                      </p>
-                      <p className="mt-1 ui-text-body text-content-primary leading-relaxed">
-                        {pruneConfirmationMessage}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="ui-text-micro text-content-muted">
-                    {pruneConfirmationFootnote}
+                  <p
+                    id="auto-delete-confirm-title"
+                    className="ui-text-body-lg font-semibold text-content-primary"
+                  >
+                    {pruneConfirmation?.title}
                   </p>
-                  <div className="mt-4 flex justify-end gap-2">
+                  <p
+                    id="auto-delete-confirm-body"
+                    className="mt-1 ui-text-body-sm text-content-secondary text-pretty"
+                  >
+                    {pruneConfirmation?.body}
+                  </p>
+                  <div className="mt-5 flex items-center justify-end gap-2">
                     <button
+                      type="button"
                       onClick={handleClosePruneConfirmation}
-                      className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary hover:border-border-hover transition-colors"
+                      className="rounded-lg px-3 py-2 ui-text-body-sm font-medium text-content-muted transition-colors hover:text-content-primary"
                     >
                       {t({
                         id: "settings.app.cancel",
                         message: "Cancel",
                       })}
                     </button>
-                    <button
-                      onClick={handleConfirmPruneChange}
-                      className="rounded-lg bg-red-500/90 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-solid hover:bg-red-500 transition-colors"
-                    >
-                      {t({
-                        id: "settings.app.auto_delete.confirm.apply",
-                        message: "Apply anyway",
-                      })}
-                    </button>
+                    <HoldButton
+                      onConfirm={handleConfirmPruneChange}
+                      label={holdToDeleteLabel}
+                      ariaLabel={holdToDeleteLabel}
+                      holdMs={1500}
+                      className="rounded-lg bg-red-500/90 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-solid transition-colors hover:bg-red-500"
+                      fillClassName="bg-black/20"
+                    />
                   </div>
                 </motion.div>
               </motion.div>

@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Check, Info, Microphone as Mic, Square } from "@phosphor-icons/react";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
+import FieldLabel from "../../../../shared/ui/FieldLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import ShortcutList from "../ShortcutList";
@@ -147,49 +148,50 @@ const GeneralTab = ({
         className={`grid grid-cols-2 gap-3${deviceRowElevated ? " relative z-dropdown-open" : ""}`}
       >
         <div className="space-y-1.5">
-          <div className="flex h-5 items-center justify-between gap-2">
-            <label className="ui-text-label-strong ui-color-primary leading-none">
-              {t({
-                id: "settings.general.microphone",
-                message: "Microphone",
-              })}
-            </label>
-            <button
-              type="button"
-              onClick={handleMicrophoneTestButton}
-              className={`flex h-5 items-center gap-1 rounded-md px-1.5 ui-text-meta transition-colors ${
-                isMicrophoneTestActive
-                  ? "ui-color-error hover:bg-error/10"
-                  : "ui-color-muted hover:bg-surface-elevated hover:text-content-primary"
-              }`}
-            >
-              {isMicrophoneTestActive ? (
-                <>
-                  <Square size={9} fill="currentColor" aria-hidden="true" />
-                  {t({
-                    id: "settings.general.microphone_test.stop",
-                    message: "Stop",
-                  })}
-                </>
-              ) : microphoneTestStatus === "error" ? (
-                <>
-                  <Check size={10} aria-hidden="true" />
-                  {t({
-                    id: "settings.general.microphone_test.done",
-                    message: "Done",
-                  })}
-                </>
-              ) : (
-                <>
-                  <Mic size={10} aria-hidden="true" />
-                  {t({
-                    id: "settings.general.microphone_test.test",
-                    message: "Test",
-                  })}
-                </>
-              )}
-            </button>
-          </div>
+          <FieldLabel
+            trailing={
+              <button
+                type="button"
+                onClick={handleMicrophoneTestButton}
+                className={`flex h-5 items-center gap-1 rounded-md px-1.5 ui-text-meta transition-colors ${
+                  isMicrophoneTestActive
+                    ? "ui-color-error hover:bg-error/10"
+                    : "ui-color-muted hover:bg-surface-elevated hover:text-content-primary"
+                }`}
+              >
+                {isMicrophoneTestActive ? (
+                  <>
+                    <Square size={9} fill="currentColor" aria-hidden="true" />
+                    {t({
+                      id: "settings.general.microphone_test.stop",
+                      message: "Stop",
+                    })}
+                  </>
+                ) : microphoneTestStatus === "error" ? (
+                  <>
+                    <Check size={10} aria-hidden="true" />
+                    {t({
+                      id: "settings.general.microphone_test.done",
+                      message: "Done",
+                    })}
+                  </>
+                ) : (
+                  <>
+                    <Mic size={10} aria-hidden="true" />
+                    {t({
+                      id: "settings.general.microphone_test.test",
+                      message: "Test",
+                    })}
+                  </>
+                )}
+              </button>
+            }
+          >
+            {t({
+              id: "settings.general.microphone",
+              message: "Microphone",
+            })}
+          </FieldLabel>
           <div className="h-[38px]">
             {microphoneTestStatus === "listening" ||
             microphoneTestStatus === "error" ? (
@@ -237,45 +239,42 @@ const GeneralTab = ({
         </div>
 
         <div className="space-y-1.5">
-          <div className="flex h-5 items-center">
-            <div className="flex items-center gap-1">
-              <label className="ui-text-label-strong ui-color-primary leading-none">
-                {t({
-                  id: "settings.general.transcription_language.v2",
-                  message: "Transcription language",
+          <FieldLabel>
+            {t({
+              id: "settings.general.transcription_language.v2",
+              message: "Transcription language",
+            })}
+            <div className="relative group">
+              <button
+                type="button"
+                // Down 1px to center on the lowercase letters, not the capitals.
+                className="flex size-3.5 translate-y-px items-center justify-center rounded-sm text-content-muted hover:text-content-secondary transition-colors"
+                aria-describedby={languageInfoId}
+                aria-label={t({
+                  id: "settings.general.language_info_aria",
+                  message:
+                    "More information about transcription language support",
                 })}
-              </label>
-              <div className="relative group">
-                <button
-                  type="button"
-                  className="flex h-4 w-4 items-center justify-center rounded-sm text-content-muted hover:text-content-secondary transition-colors"
-                  aria-describedby={languageInfoId}
-                  aria-label={t({
-                    id: "settings.general.language_info_aria",
-                    message:
-                      "More information about transcription language support",
-                  })}
+              >
+                <Info size={11} aria-hidden="true" />
+              </button>
+              <div className="absolute right-0 top-full mt-1.5 hidden group-hover:block group-focus-within:block z-tooltip">
+                <div
+                  id={languageInfoId}
+                  role="tooltip"
+                  className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight"
                 >
-                  <Info size={10} aria-hidden="true" />
-                </button>
-                <div className="absolute right-0 top-full mt-1.5 hidden group-hover:block group-focus-within:block z-tooltip">
-                  <div
-                    id={languageInfoId}
-                    role="tooltip"
-                    className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight"
-                  >
-                    <p>
-                      {t({
-                        id: "settings.general.language_info.active_model",
-                        message:
-                          "Unsupported languages aren't available on your active model. Switch to a supported model to use them.",
-                      })}
-                    </p>
-                  </div>
+                  <p>
+                    {t({
+                      id: "settings.general.language_info.active_model",
+                      message:
+                        "Unsupported languages aren't available on your active model. Switch to a supported model to use them.",
+                    })}
+                  </p>
                 </div>
               </div>
             </div>
-          </div>
+          </FieldLabel>
           <div>
             <Dropdown
               value={language}

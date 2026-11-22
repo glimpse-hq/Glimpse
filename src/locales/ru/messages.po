@@ -1353,6 +1353,320 @@ msgstr ""
 #~ msgstr "Для командной строки нужна купленная лицензия Glimpse. Она не входит в пробный период."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.once_note"
+#~ msgstr "Разовый платёж. Диктовка в любом случае остаётся бесплатной."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.picker_aria"
+#~ msgstr "Тариф"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+#~ msgid "plans.buy.v4"
+#~ msgstr "Разблокировать"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.appearance"
+#~ msgstr "Внешний вид"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.version_label"
+#~ msgstr "Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.after"
+#~ msgstr "после"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.audio"
+#~ msgstr "Аудио"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete"
+#~ msgstr "Автоудаление"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.body"
+#~ msgstr "При удалении транскриптов также удаляется сохранённое аудио."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.permission.off"
+#~ msgstr "выкл."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune_target.transcripts"
+#~ msgstr "Транскрипты"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.day"
+#~ msgstr "1 день"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.month"
+#~ msgstr "1 месяц"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.week"
+#~ msgstr "1 неделя"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.year"
+#~ msgstr "1 год"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.apply"
+#~ msgstr "Применить в любом случае"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.one"
+#~ msgstr "аудиофайл"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.audio.other"
+#~ msgstr "аудиофайлы"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
+#~ msgstr "Изменение автоудаления на {policyLabel} может немедленно удалить {noun}, уже превышающие {threshold}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
+#~ msgstr "Изменение автоудаления на {policyLabel} может немедленно удалить ваши существующие {noun}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.threshold.known_count"
+#~ msgstr "Изменение автоудаления на {policyLabel} немедленно удалит {candidateCount} {noun}, уже превышающие {threshold}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.immediately.known_count"
+#~ msgstr "Изменение автоудаления на {policyLabel} немедленно удалит {candidateCount} существующих {noun}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_too"
+#~ msgstr "Удаление транскриптов также удаляет связанные с ними аудиозаписи."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.instantly"
+#~ msgstr "Мгновенно"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.threshold.immediately"
+#~ msgstr "прямо сейчас"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.audio_only"
+#~ msgstr "Будут удалены только сохранённые аудиофайлы, но не транскрипции."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.one"
+#~ msgstr "транскрипт"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.noun.transcripts.other"
+#~ msgstr "транскрипты"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.unknown_count"
+#~ msgstr "Сейчас подсчитать не удалось, но автоудаление запустится сразу после сохранения изменений."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete.confirm.delete"
+#~ msgstr "Удалить"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.add_tag"
+#~ msgstr "Добавить тег"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.tags.add"
+#~ msgstr "Добавить тег"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.detail.tags_failed"
+#~ msgstr "Не удалось сохранить теги."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.imported"
+#~ msgstr "Импортировано"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.new_tag"
+#~ msgstr "Новый тег…"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.new_tag"
+#~ msgstr "Новый тег…"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.no_other_tags"
+#~ msgstr "Других тегов нет"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.no_other_tags"
+#~ msgstr "Других тегов нет"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.no_tags_yet"
+#~ msgstr "Тегов пока нет"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.no_tags_yet"
+#~ msgstr "Тегов пока нет"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.status.ready"
+#~ msgstr "Готово"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.remove_tag"
+#~ msgstr "Удалить {tag}"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.remove"
+#~ msgstr "Удалить {tag}"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.select_existing_tag"
+#~ msgstr "Выбрать существующий тег"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.tags.label"
+#~ msgstr "Тег"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.back"
+#~ msgstr "Назад к библиотеке"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.search.clear"
+#~ msgstr "Очистить поиск"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.view.search_clear"
+#~ msgstr "Очистить поиск"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.copy"
+#~ msgstr "Копировать"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.search.aria"
+#~ msgstr "Поиск в транскрипте"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.active"
+#~ msgstr "Активна"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.header.description"
+#~ msgstr "Добавьте слова, которые Glimpse должен распознавать, и фразы для замены после транскрипции."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.all"
+#~ msgstr "Все"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.description.v2"
+#~ msgstr "Выберите, как ваша языковая модель будет писать в каждом приложении и на каждом сайте."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.done"
+#~ msgstr "Готово"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.failed"
+#~ msgstr "Ошибка"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.aria_label"
+#~ msgstr "Фильтровать библиотеку по статусу"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.view.description"
+#~ msgstr "Импортируйте аудио- и видеофайлы для транскрипции."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.filter.status"
+#~ msgstr "Статус"
+
+#. placeholder {0}: selectedApps.length
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.setup.apps.count"
+#~ msgstr "{0, plural, one {# приложение} other {# приложений}}"
+
+#. placeholder {0}: closedApps.length
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.setup.apps.closed_many"
+#~ msgstr "{0, plural, one {# выбранное приложение не воспроизводит звук и не будет записано.} other {# выбранных приложений не воспроизводят звук и не будут записаны.}}"
+
+#. placeholder {0}: closedApps[0].name
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.setup.apps.closed_one"
+#~ msgstr "{0} не воспроизводит звук и не будет записано."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -1361,12 +1675,6 @@ msgstr "«Glimpse превращает мой голос в текст.»"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit_command"
 msgstr "«Сделать более официальным»"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: selectedApps.length
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.apps.count"
-msgstr "{0, plural, one {# приложение} other {# приложений}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: state.bookmarks.length
@@ -1404,12 +1712,6 @@ msgstr "{0, plural, one {# правило} other {# правил}}"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.personalities.detail"
 msgstr "{0, plural, one {# режим сохранён} few {# режима сохранено} many {# режимов сохранено} other {# режима сохранено}}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: closedApps.length
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.apps.closed_many"
-msgstr "{0, plural, one {# выбранное приложение не воспроизводит звук и не будет записано.} other {# выбранных приложений не воспроизводят звук и не будут записаны.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.transcriptCount
@@ -1469,12 +1771,6 @@ msgid "settings.stats.post.8.v2"
 msgstr "{0} я не потратил(а) на набор текста. @try_glimpse_app"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: closedApps[0].name
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.apps.closed_one"
-msgstr "{0} не воспроизводит звук и не будет записано."
-
-#. js-lingui-explicit-id
 #. placeholder {0}: filteredEntries.length
 #. placeholder {1}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -1494,9 +1790,29 @@ msgid "settings.stats.post.6"
 msgstr "{0} слов продиктовано, ни одного не напечатано. @try_glimpse_app"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_resumed_recording"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_started_recording"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {Около # слова на диктовку сегодня} other {Около # слов на диктовку сегодня}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_audio"
+msgstr "{candidateCount, plural, one {Удалить # аудиофайл?} few {Удалить # аудиофайла?} many {Удалить # аудиофайлов?} other {Удалить # аудиофайла?}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.title_dictations"
+msgstr "{candidateCount, plural, one {Удалить # диктовку?} few {Удалить # диктовки?} many {Удалить # диктовок?} other {Удалить # диктовки?}}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1657,12 +1973,7 @@ msgstr "42 мин"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.day"
-msgstr "в день"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.day"
-msgstr "1 день"
+msgstr "дня"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1672,12 +1983,7 @@ msgstr "Режим для каждого приложения"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.month"
-msgstr "в месяц"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.month"
-msgstr "1 месяц"
+msgstr "месяца"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -1687,22 +1993,12 @@ msgstr "Запись уже выполняется."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.week"
-msgstr "в неделю"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.week"
-msgstr "1 неделя"
+msgstr "недели"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.year"
-msgstr "в год"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.year"
-msgstr "1 год"
+msgstr "года"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1772,11 +2068,6 @@ msgid "settings.models.card.active"
 msgstr "Активна"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.active"
-msgstr "Активна"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.dictionary_add"
 msgstr "Добавить"
@@ -1837,29 +2128,34 @@ msgid "library.detail.add_speaker"
 msgstr "Добавить говорящего"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.add_tag"
-msgstr "Добавить тег"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.tags.add"
-msgstr "Добавить тег"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites.aria"
 msgstr "Добавить домен сайта"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.header.description"
-msgstr "Добавьте слова, которые Glimpse должен распознавать, и фразы для замены после транскрипции."
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_day"
+msgstr "Через день"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.after"
-msgstr "после"
+msgid "settings.app.auto_delete.after_month"
+msgstr "Через месяц"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_week"
+msgstr "Через неделю"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_year"
+msgstr "Через год"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_transcribing"
+msgstr "После транскрибации"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1877,14 +2173,14 @@ msgid "onboarding.license_step.tile_cleanup"
 msgstr "Очистка с помощью ИИ"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.all"
-msgstr "Все"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.global.targets"
 msgstr "Все приложения и сайты"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.all"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -1932,9 +2228,24 @@ msgid "locked.enter_key"
 msgstr "Уже приобрели? Введите лицензионный ключ"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.include_transcripts"
+msgstr "Удалять и транскрипты"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.ask_title_unnamed"
 msgstr "Вопрос от агента"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_resumed_recording_unnamed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.agent_started_recording_unnamed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -1988,11 +2299,6 @@ msgid "settings.modal.tab.app"
 msgstr "Приложение"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.appearance"
-msgstr "Внешний вид"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
 msgstr "Apple Neural Engine"
@@ -2003,9 +2309,9 @@ msgid "personalization.modal.applications"
 msgstr "Приложения"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.apply"
-msgstr "Применить в любом случае"
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.consent.line"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2019,25 +2325,10 @@ msgid "library.detail.assign_new_speaker"
 msgstr "Назначить нового говорящего"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.audio"
-msgstr "Аудио"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.file_filter"
 msgstr "Аудио и видео"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.one"
-msgstr "аудиофайл"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.audio.other"
-msgstr "аудиофайлы"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2066,8 +2357,8 @@ msgstr "Автоматический словарь"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete"
-msgstr "Автоудаление"
+msgid "settings.app.auto_delete_dictation_audio"
+msgstr "Автоудаление аудио диктовок"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2114,11 +2405,6 @@ msgstr "Назад"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.back"
 msgstr "Назад"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.back"
-msgstr "Назад к библиотеке"
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -2229,6 +2515,11 @@ msgid "library.modal.cancel"
 msgstr "Отменить"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.cancel"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.cancel"
 msgstr "Отменить"
@@ -2279,26 +2570,6 @@ msgstr "Изменить сочетание клавиш"
 #: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.change_line"
 msgstr "Изменить говорящего для этой строки"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
-msgstr "Изменение автоудаления на {policyLabel} может немедленно удалить {noun}, уже превышающие {threshold}."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
-msgstr "Изменение автоудаления на {policyLabel} может немедленно удалить ваши существующие {noun}."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.threshold.known_count"
-msgstr "Изменение автоудаления на {policyLabel} немедленно удалит {candidateCount} {noun}, уже превышающие {threshold}."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.immediately.known_count"
-msgstr "Изменение автоудаления на {policyLabel} немедленно удалит {candidateCount} существующих {noun}."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -2371,11 +2642,6 @@ msgid "settings.stats.mode.aria"
 msgstr "Выберите способ отображения активности"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.description.v2"
-msgstr "Выберите, как ваша языковая модель будет писать в каждом приложении и на каждом сайте."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.export_dialog_title"
 msgstr "Выберите место для сохранения набора данных"
@@ -2442,18 +2708,13 @@ msgid "settings.local_api.logs.clear"
 msgstr "Очистить"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/SearchField.tsx
+msgid "search_field.clear"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
-msgstr "Очистить поиск"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.search.clear"
-msgstr "Очистить поиск"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.search_clear"
 msgstr "Очистить поиск"
 
 #. js-lingui-explicit-id
@@ -2692,11 +2953,6 @@ msgid "settings.stats.share.copy"
 msgstr "Копировать"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.copy"
-msgstr "Копировать"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.copy_url"
 msgstr "Копировать базовый URL"
@@ -2747,6 +3003,11 @@ msgid "live.copy"
 msgstr "Скопировать транскрипцию"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.copy_transcript"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_transcription"
 msgstr "Копировать транскрипцию"
@@ -2775,6 +3036,11 @@ msgstr "Не удалось загрузить выбор локальной м�
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.import_dialog_error"
 msgstr "Не удалось открыть диалог импорта."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.folder.change_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -2945,12 +3211,6 @@ msgstr "Не удалось сохранить докладчиков."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-#: src/features/library/components/LibraryView.tsx
-msgid "library.detail.tags_failed"
-msgstr "Не удалось сохранить теги."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.transcript.save_failed"
 msgstr "Не удалось сохранить эту запись. Ваши изменения сохранены здесь."
 
@@ -3009,6 +3269,11 @@ msgstr "Подсчёт записей…"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
 msgstr "Для всех ваших устройств"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.create"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -3178,6 +3443,11 @@ msgid "settings.models.delete_failed"
 msgstr "Ошибка удаления"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.delete"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.delete_mode"
 msgstr "Режим удаления"
@@ -3207,16 +3477,6 @@ msgstr "Удалить замену для {0}"
 #: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.modal.delete_confirm.title"
 msgstr "Удалить этот элемент?"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_too"
-msgstr "Удаление транскриптов также удаляет связанные с ними аудиозаписи."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.body"
-msgstr "При удалении транскриптов также удаляется сохранённое аудио."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3345,6 +3605,11 @@ msgid "settings.general.shortcuts.not_saved.v2"
 msgstr "Не сохранять в Библиотеку"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.dont_show_again"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/ProviderSheet.tsx
 msgid "settings.models.provider.done"
 msgstr "Готово"
@@ -3357,11 +3622,6 @@ msgstr "Готово"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.done"
-msgstr "Готово"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.done"
 msgstr "Готово"
 
 #. js-lingui-explicit-id
@@ -3548,7 +3808,6 @@ msgid "trial_ended.enter_key"
 msgstr "Ввести лицензионный ключ"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "Вся система"
@@ -3639,11 +3898,6 @@ msgid "library.card.status.failed"
 msgstr "Сбой"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.failed"
-msgstr "Ошибка"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.delete_error.default"
 msgstr "Не удалось удалить элемент библиотеки."
@@ -3709,11 +3963,6 @@ msgid "library.import_error.file_not_found"
 msgstr "Файл не найден. Возможно, он был перемещён или удалён."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.aria_label"
-msgstr "Фильтровать библиотеку по статусу"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.aria_v2"
 msgstr "Фильтровать модели"
@@ -3747,6 +3996,16 @@ msgstr "Завершите запись перед установкой обно
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "Завершение..."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.folder.label"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.menu"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3852,11 +4111,6 @@ msgstr "GitHub может быть временно недоступен. Про
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.personalization.line"
 msgstr "Настройте свой стиль письма для каждого приложения или сайта. Для этого используется ваша языковая модель."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.version_label"
-msgstr "Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4051,6 +4305,7 @@ msgstr "Удерживайте немного дольше, затем повт�
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.about.data.hold_to_delete"
 msgstr "Удерживайте для удаления"
 
@@ -4126,11 +4381,6 @@ msgid "import.cta"
 msgstr "Импортировать"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.description"
-msgstr "Импортируйте аудио- и видеофайлы для транскрипции."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.import_failed"
 msgstr "Ошибка импорта"
@@ -4159,11 +4409,6 @@ msgstr "Импорт не удался. Повторите попытку или
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.title"
 msgstr "Импортировать в библиотеку"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.imported"
-msgstr "Импортировано"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4228,11 +4473,6 @@ msgid "settings.about.cli.default_info"
 msgstr "Устанавливает команду {0} для Терминала, скриптов и инструментов автоматизации. Используйте её, когда нужно вызвать Glimpse программно, не открывая интерфейс приложения."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.instantly"
-msgstr "Мгновенно"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.instructions"
 msgstr "Инструкции"
@@ -4241,6 +4481,11 @@ msgstr "Инструкции"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_stamp_issuing"
 msgstr "Выдача"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_replaced"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4413,6 +4658,7 @@ msgid "trial_ended.library.name"
 msgstr "Библиотека"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.title"
 msgstr "Библиотека"
@@ -4798,6 +5044,11 @@ msgid "shortcuts.key.mouse_forward"
 msgstr "Кнопка «Вперёд» мыши"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.folder.move_to"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.subtitle"
 msgstr "MP3, WAV, M4A, MP4, MOV и другие"
@@ -4859,6 +5110,18 @@ msgid "settings.app.prune.never"
 msgstr "Никогда"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.new_title"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.new"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.new_mode.default_name.v2"
@@ -4868,16 +5131,6 @@ msgstr "Новый режим"
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.new_mode"
 msgstr "Новый режим"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.new_tag"
-msgstr "Новый тег…"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.new_tag"
-msgstr "Новый тег…"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -4990,16 +5243,6 @@ msgid "dropdown.no_options"
 msgstr "Параметры не найдены"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.no_other_tags"
-msgstr "Других тегов нет"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.no_other_tags"
-msgstr "Других тегов нет"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results"
 msgstr "Нет результатов для «{resultSearchText}»"
@@ -5034,16 +5277,6 @@ msgstr "Речь не обнаружена. Запись удалена."
 #: src/features/recording/useSilenceWarning.ts
 msgid "live.silent.system"
 msgstr "Системный звук пока не поступает."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.no_tags_yet"
-msgstr "Тегов пока нет"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.no_tags_yet"
-msgstr "Тегов пока нет"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -5192,11 +5425,6 @@ msgid "settings.stats.card.of_dictating"
 msgstr "диктовки в этом году"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.permission.off"
-msgstr "выкл."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelList.tsx
 msgid "settings.models.status.off"
 msgstr "Выкл."
@@ -5217,6 +5445,11 @@ msgid "import.cat.auto_launch.off"
 msgstr "Выкл."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.ok"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.oldest"
 msgstr "Сначала старые"
@@ -5233,8 +5466,8 @@ msgstr "На этом компьютере"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/PlanPicker.tsx
-msgid "plans.once_note"
-msgstr "Разовый платёж. Диктовка в любом случае остаётся бесплатной."
+msgid "plans.one_time"
+msgstr "разовый платёж"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5458,11 +5691,6 @@ msgid "speaker_color.pink"
 msgstr "Розовый"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.picker_aria"
-msgstr "Тариф"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.play_audio"
 msgstr "Воспроизвести аудио"
@@ -5609,11 +5837,6 @@ msgid "onboarding.license_step.tile_raycast"
 msgstr "Raycast"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.status.ready"
-msgstr "Готово"
-
-#. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.ready_to_install"
 msgstr "Готово к установке"
@@ -5669,11 +5892,13 @@ msgid "library.card.recording"
 msgstr "Запись"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.recording.default_name"
 msgstr "Запись: {date}"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.default_name"
 msgstr "Запись: {day}, {time}"
@@ -5766,16 +5991,6 @@ msgid "personalization.modal.remove_site"
 msgstr "Удалить {site}"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.remove_tag"
-msgstr "Удалить {tag}"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.tags.remove"
-msgstr "Удалить {tag}"
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark.remove"
 msgstr "Удалить закладку"
@@ -5784,6 +5999,12 @@ msgstr "Удалить закладку"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.remove"
 msgstr "Удалить закладку"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.folder.remove_item"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -5820,6 +6041,21 @@ msgstr "Переименовать"
 #: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.rename"
 msgstr "Переименовать"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.rename_save"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderDialog.tsx
+msgid "library.folder.rename_title"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryFolderMenu.tsx
+msgid "library.folder.rename"
+msgstr ""
 
 #: src/features/settings/components/AccountView.tsx
 msgid "Renews {renewsAt}"
@@ -6013,11 +6249,6 @@ msgid "shortcuts.key.right_modifier"
 msgstr "Правый {key}"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.immediately"
-msgstr "прямо сейчас"
-
-#. js-lingui-explicit-id
 #: src/features/license/components/LockedFeature.tsx
 msgid "locked.api.line.v3"
 msgstr "Запустите локальный API-сервер транскрипции и инструмент командной строки."
@@ -6170,11 +6401,6 @@ msgstr "Найти или добавить слово..."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.search.aria"
-msgstr "Поиск в транскрипте"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.placeholder"
 msgstr "Поиск в транскрипте..."
 
@@ -6227,11 +6453,6 @@ msgstr "Выбрать всё"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.app_picker.aria"
 msgstr "Выберите приложение для импорта"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.select_existing_tag"
-msgstr "Выбрать существующий тег"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6629,11 +6850,6 @@ msgid "settings.stats.title"
 msgstr "Статистика"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.filter.status"
-msgstr "Статус"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/shared.tsx
 msgid "onboarding.step_progress"
 msgstr "Шаг {step} из {total}"
@@ -6779,11 +6995,6 @@ msgstr "Системный язык по умолчанию"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.microphone.default_named"
 msgstr "По умолчанию ({fallback})"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.tags.label"
-msgstr "Тег"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -6987,6 +7198,26 @@ msgid "settings.about.cli.unavailable_info"
 msgstr "В этой сборке отсутствует вспомогательный инструмент командной строки."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_older"
+msgstr "Будет удалено аудио диктовок старше {threshold}. Транскрипты и Библиотека останутся."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_older"
+msgstr "Будут удалены диктовки старше {threshold} и их аудио. Библиотека останется."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_dictations_all"
+msgstr "Будут удалены все сохранённые диктовки и их аудио. Библиотека останется."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.body_audio_all"
+msgstr "Будет удалено аудио всех сохранённых диктовок. Транскрипты и Библиотека останутся."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.removed"
 msgstr "Это устройство удалено из лицензии."
@@ -7025,11 +7256,6 @@ msgstr "Этот лицензионный ключ отключён."
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.revoked.upgraded"
 msgstr "Лицензия обновлена. Введите новый ключ ниже."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.audio_only"
-msgstr "Будут удалены только сохранённые аудиофайлы, но не транскрипции."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -7072,7 +7298,7 @@ msgid "settings.about.data.include_timestamps"
 msgstr "Временные метки"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
+#: src/shared/lib/dayLabel.ts
 msgid "transcriptions.group.today"
 msgstr "Сегодня"
 
@@ -7164,11 +7390,6 @@ msgid "onboarding.first_dictation.transcribing"
 msgstr "Транскрибирование..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.one"
-msgstr "транскрипт"
-
-#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.history"
 msgstr "История транскрипций"
@@ -7222,16 +7443,6 @@ msgstr "Транскрипция больше недоступна"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.error.transcription_timeout"
 msgstr "Транскрипция заняла слишком много времени. Попробуйте ещё раз на главной странице."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.noun.transcripts.other"
-msgstr "транскрипты"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.transcripts"
-msgstr "Транскрипты"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -7315,11 +7526,6 @@ msgstr "Разблокировать"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy.v4"
-msgstr "Разблокировать"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/PlanPicker.tsx
-msgid "plans.buy.v4"
 msgstr "Разблокировать"
 
 #. js-lingui-explicit-id
@@ -7494,11 +7700,6 @@ msgid "import.title"
 msgstr "Перенести настройки?"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete.confirm.unknown_count"
-msgstr "Сейчас подсчитать не удалось, но автоудаление запустится сразу после сохранения изменений."
-
-#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.error"
 msgstr "Не удалось прочитать данные этого приложения. Вы можете пропустить этот шаг и настроить всё вручную."
@@ -7617,7 +7818,7 @@ msgid "speaker_color.yellow"
 msgstr "Жёлтый"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
+#: src/shared/lib/dayLabel.ts
 msgid "transcriptions.group.yesterday"
 msgstr "Вчера"
 

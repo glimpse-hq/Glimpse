@@ -135,16 +135,15 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -2px 0 rgba(0, 0, 0, 0.38),
     0 1px 0 rgba(0, 0, 0, 0.28);
   --ui-shadow-modal-deep: 0 20px 60px rgba(0, 0, 0, 0.45);
-  --ui-pill-dot-base-rgb: 46, 46, 52;
+  --ui-pill-dot-base-rgb: 34, 34, 38;
   --ui-pill-dot-highlight-rgb: 255, 255, 255;
   --ui-pill-dot-error-rgb: 239, 68, 68;
   --ui-pill-cleanup-rgb: 251, 191, 36;
   --ui-pill-shell-rgb: 10, 10, 12;
   --ui-pill-shell-bg: rgb(var(--ui-pill-shell-rgb));
-  --ui-pill-shell-border: rgba(255, 255, 255, 0.08);
+  --ui-pill-shell-border: transparent;
   --ui-pill-shell-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 1px 3px rgba(0, 0, 0, 0.28), 0 8px 20px rgba(0, 0, 0, 0.3);
 
   --color-success: #10b981;
   --color-error: #ef4444;
@@ -219,15 +218,6 @@
 
 :root[data-platform="windows"] {
   --ui-pill-shell-rgb: 4, 4, 5;
-}
-
-@media (max-resolution: 1.4dppx) {
-  :root {
-    --ui-pill-shell-border: rgba(255, 255, 255, 0.045);
-    --ui-pill-shell-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.34),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
-  }
 }
 
 :root[data-theme="light"] {
@@ -1234,8 +1224,13 @@ body {
   scrollbar-gutter: stable;
 }
 
-.scrollbar-gutter {
-  scrollbar-gutter: stable both-edges;
+/* Puts the scrollbar (the .custom-scrollbar width) in the page margin, so a
+   list lines up with the header above it, with room for focus rings and
+   shadows. The track always shows because WebKit ignores scrollbar-gutter. */
+.column-scroll {
+  overflow-y: scroll;
+  margin-inline: -0.75rem calc(-0.75rem - 6px);
+  padding-inline: 0.75rem;
 }
 
 .scroll-quiet::-webkit-scrollbar {

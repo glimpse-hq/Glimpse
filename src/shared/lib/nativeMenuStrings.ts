@@ -313,6 +313,24 @@ export const NATIVE_MENU_STRINGS = [
       "Dictation is slower because of a graphics driver problem. Updating the driver can fix this.",
   }),
   msg({
+    id: "native.toast.agent_started_recording",
+    message: "{agent} started a recording.",
+  }),
+  msg({
+    id: "native.toast.agent_started_recording_unnamed",
+    message: "An agent started a recording.",
+  }),
+  msg({
+    id: "native.toast.agent_resumed_recording",
+    message: "{agent} resumed your recording.",
+  }),
+  msg({
+    id: "native.toast.agent_resumed_recording_unnamed",
+    message: "An agent resumed your recording.",
+  }),
+  msg({ id: "native.toast.ok", message: "OK" }),
+  msg({ id: "native.toast.dont_show_again", message: "Don't Show Again" }),
+  msg({
     id: "native.toast.recording_low_disk",
     message:
       "Your disk is almost full. Glimpse will stop recording if it runs out of space.",
@@ -436,6 +454,10 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.toast.model_switched",
     message:
       "Automatic picked a newer model for you. Change it anytime in Settings.",
+  }),
+  msg({
+    id: "native.toast.model_replaced",
+    message: "It replaces {model}. Change it anytime in Settings.",
   }),
   msg({ id: "native.toast.open_settings", message: "Settings" }),
   msg({

@@ -1,6 +1,7 @@
 mod bleed;
 pub(crate) mod commands;
 mod export;
+pub(crate) mod folders;
 mod processing;
 mod queue;
 pub(crate) mod repo;
@@ -22,6 +23,6 @@ pub(crate) use types::RecordingOutput;
 pub(crate) use types::default_item_kind;
 pub use types::{
     AudioSources, Bookmark, ExportFormat, JobSource, LibraryFilter, LibraryImportOptions,
-    LibraryItem, LibraryItemPatch, LibraryItemStatus, LiveSpeakerHints, LiveTurn,
+    LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryItemsPage, LiveSpeakerHints, LiveTurn,
     PreviousTranscript, Speaker, TranscriptSegment,
 };

@@ -3,6 +3,10 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      maxWidth: {
+        column: "45rem",
+        "column-wide": "64rem",
+      },
       zIndex: {
         "dropdown-open": "20",
         tooltip: "30",

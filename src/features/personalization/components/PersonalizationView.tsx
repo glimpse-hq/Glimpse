@@ -435,26 +435,11 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   }, [activePersonalityId, isActive, renamingId]);
 
   return (
-    <div className="flex h-full min-h-0 w-full max-w-7xl flex-col text-left mx-auto px-0">
+    <div className="flex h-full min-h-0 w-full flex-col text-left">
       <ScreenHeader
-        icon={
-          <DotMatrix
-            rows={2}
-            cols={3}
-            activeDots={[0, 1, 4, 5]}
-            dotSize={3}
-            gap={3}
-            color="var(--color-section-marker-alt)"
-          />
-        }
         title={t({
           id: "personalization.title",
           message: "Personalization",
-        })}
-        description={t({
-          id: "personalization.description.v2",
-          message:
-            "Choose how your writing model writes in each app and website.",
         })}
         trailing={
           <button
@@ -489,7 +474,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
           />
         </div>
       ) : (
-        <div className="-mt-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar scrollbar-gutter pt-1 pb-6 pr-1">
+        <div className="-mt-1 min-h-0 flex-1 overflow-x-hidden custom-scrollbar column-scroll pt-1 pb-6">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {(globalMode ? [globalMode, ...modes] : modes).map(
               (personality) => {
