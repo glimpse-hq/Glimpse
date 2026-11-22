@@ -75,7 +75,7 @@ const LLM_PROVIDER_PRESETS: LlmProviderPreset[] = [
     id: "xai",
     label: "xAI (Grok)",
     endpoint: "https://api.x.ai/v1",
-    defaultModel: "grok-4.7",
+    defaultModel: "grok-4.20-0309-non-reasoning",
     apiKeyRequired: true,
   },
   {
