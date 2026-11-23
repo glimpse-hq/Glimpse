@@ -910,13 +910,13 @@ async fn run_bonsai_text_task(
             )
         }
     });
-    let run = match tokio::time::timeout(budget, generate).await {
-        Ok(joined) => joined.map_err(task_failed)?.map_err(bonsai_error)?,
-        Err(_) => {
-            cancel.store(true, Ordering::Relaxed);
-            return Err(timed_out());
-        }
-    };
+    // Stops the generation when the request times out or its caller stops waiting.
+    let _stop = std::mem::DropGuard::new(cancel, |cancel| cancel.store(true, Ordering::Relaxed));
+    let run = tokio::time::timeout(budget, generate)
+        .await
+        .map_err(|_| timed_out())?
+        .map_err(task_failed)?
+        .map_err(bonsai_error)?;
     let task = match task {
         TextTaskKind::Cleanup => "cleanup",
         TextTaskKind::Edit => "edit",
