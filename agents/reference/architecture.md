@@ -6,7 +6,7 @@ Rust paths below are relative to `src-tauri/src/`. Frontend paths start with `sr
 
 1. `core/keyboard/` detects the shortcut; `pill.rs` runs the recording lifecycle, captures selected text for Edit Mode, and shows the overlay.
 2. `recorder.rs` captures and preprocesses audio and persists the WAV for crash recovery.
-3. `transcribe.rs` chunks, calls `speech::transcribe()`, filters, applies replacements, personalization, and optional `llm_cleanup.rs`.
+3. `transcribe.rs` calls `speech::transcribe()`, filters, applies replacements, personalization, and optional `llm_cleanup.rs`.
 4. Its post-processing path calls `assistive::paste_text` before completion reporting and history persistence. Preserve cancellation checks before the paste.
 
 Work that can wait (notices, asks, analytics) runs after insertion. For analytics that means not even an enqueue: keep outcomes in locals and report after the paste. `analytics::set_activity` (one atomic store) and the stall watchdog's single timer spawn are the exceptions.

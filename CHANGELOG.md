@@ -33,6 +33,7 @@
 - On Windows PCs where Glimpse C1 got stuck, your words now paste without a long wait, and loading it on Intel graphics no longer makes Glimpse quit.
 - If your computer's graphics can't run Glimpse C1, Glimpse tells you once and Automatic stops choosing it.
 - On a Mac, Norwegian dictation is now cleaned up by Apple Intelligence when it's on, instead of being pasted as spoken.
+- Long dictations no longer repeat a phrase where Glimpse joined pieces of the recording.
 
 1.4.6
 

@@ -355,7 +355,6 @@ pub(crate) fn queue_transcription(
         );
         let app_for_local = &app_handle;
         let settings_for_local = &settings;
-        let cancel_for_local = cancel_token.clone();
         let result = speech::transcribe(
             &app_handle,
             &http,
@@ -371,7 +370,6 @@ pub(crate) fn queue_transcription(
                     app_for_local,
                     settings_for_local,
                     recording_for_task,
-                    Some(cancel_for_local),
                     use_remote,
                     pieces,
                 )
@@ -587,7 +585,6 @@ async fn transcribe_completed_recording_locally(
     app: &AppHandle<AppRuntime>,
     settings: &UserSettings,
     recording: CompletedRecording,
-    cancel_token: Option<CancellationToken>,
     prefer_any_installed: bool,
     pieces: Option<crate::dictation_pieces::PieceSession>,
 ) -> Result<transcription_api::TranscriptionSuccess> {
@@ -599,49 +596,19 @@ async fn transcribe_completed_recording_locally(
     let dictionary_terms = dictionary::dictionary_entries_for_model(&ready_model, settings);
     let language = settings.language.clone();
     let transcriber = app.state::<AppState>().local_transcriber();
-    let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
     let pieces = pieces.filter(|pieces| pieces.model_key() == ready_model.key);
 
     match async_runtime::spawn_blocking(move || {
         if let Some(pieces) = pieces.and_then(crate::dictation_pieces::PieceSession::finish) {
-            return pieces.complete(
-                &transcriber,
-                &ready_model,
-                &dictionary_terms,
-                &language,
-                cancel_token.as_ref(),
-            );
+            return pieces.complete(&transcriber, &ready_model, &dictionary_terms, &language);
         }
-        let (chunk_seconds, overlap_seconds, leading_pad_seconds, strip_hallucinated_thank_you) =
-            if is_whisper {
-                (
-                    speech::WHISPER_CHUNK_SECONDS,
-                    speech::WHISPER_CHUNK_OVERLAP_SECONDS,
-                    speech::WHISPER_LEADING_PAD_SECONDS,
-                    true,
-                )
-            } else {
-                (
-                    speech::PARAKEET_CHUNK_SECONDS,
-                    speech::PARAKEET_CHUNK_OVERLAP_SECONDS,
-                    0.0,
-                    false,
-                )
-            };
-        transcribe_local_chunked(
+        transcribe_local(
             &transcriber,
             &ready_model,
             &recording.samples,
             recording.sample_rate,
-            LocalChunkingConfig {
-                dictionary: &dictionary_terms,
-                language: Some(&language),
-                chunk_seconds: chunk_seconds as f32,
-                overlap_seconds: overlap_seconds as f32,
-                leading_pad_seconds,
-                cancel_token: cancel_token.as_ref(),
-                strip_hallucinated_thank_you,
-            },
+            &dictionary_terms,
+            Some(&language),
         )
     })
     .await
@@ -777,9 +744,7 @@ async fn transcribe_recovered_recording(
         false,
         || false,
         |success| success,
-        move || {
-            transcribe_completed_recording_locally(app, settings, recording, None, use_remote, None)
-        },
+        move || transcribe_completed_recording_locally(app, settings, recording, use_remote, None),
     )
     .await
     {
@@ -903,7 +868,6 @@ async fn transcribe_saved_recording_locally(
     app: &AppHandle<AppRuntime>,
     settings: &UserSettings,
     saved: &RecordingSaved,
-    cancel_token: Option<CancellationToken>,
     prefer_any_installed: bool,
 ) -> Result<transcription_api::TranscriptionSuccess> {
     let (samples, sample_rate) = load_audio_for_transcription(&saved.path)?;
@@ -920,7 +884,6 @@ async fn transcribe_saved_recording_locally(
             speech_percentage: None,
             input: None,
         },
-        cancel_token,
         prefer_any_installed,
         None,
     )
@@ -1297,7 +1260,6 @@ pub(crate) fn retry_transcription_async(
                     &app_handle,
                     &settings,
                     &saved_for_task,
-                    Some(cancel_token.clone()),
                     use_remote,
                 )
             },
@@ -2126,65 +2088,20 @@ fn decode_wav(path: &Path) -> Result<(Vec<i16>, u32)> {
     Ok((samples, spec.sample_rate))
 }
 
-struct LocalChunkingConfig<'a> {
-    dictionary: &'a [String],
-    language: Option<&'a str>,
-    chunk_seconds: f32,
-    overlap_seconds: f32,
-    leading_pad_seconds: f32,
-    cancel_token: Option<&'a CancellationToken>,
-    strip_hallucinated_thank_you: bool,
-}
-
-/// 16 kHz audio through Parakeet, the way a dictation is transcribed.
-pub(crate) fn transcribe_parakeet(
-    transcriber: &crate::local_transcription::LocalTranscriber,
-    model: &model_manager::ReadyModel,
-    samples: &[i16],
-    dictionary: &[String],
-    language: &str,
-    cancel_token: Option<&CancellationToken>,
-) -> Result<transcription_api::TranscriptionSuccess> {
-    transcribe_local_chunked(
-        transcriber,
-        model,
-        samples,
-        16_000,
-        LocalChunkingConfig {
-            dictionary,
-            language: Some(language),
-            chunk_seconds: speech::PARAKEET_CHUNK_SECONDS as f32,
-            overlap_seconds: speech::PARAKEET_CHUNK_OVERLAP_SECONDS as f32,
-            leading_pad_seconds: 0.0,
-            cancel_token,
-            strip_hallucinated_thank_you: false,
-        },
-    )
-}
-
-fn transcribe_local_chunked(
+/// Speech cuts long audio itself, so the whole recording goes in one call.
+pub(crate) fn transcribe_local(
     transcriber: &crate::local_transcription::LocalTranscriber,
     model: &model_manager::ReadyModel,
     samples: &[i16],
     sample_rate: u32,
-    config: LocalChunkingConfig<'_>,
+    dictionary: &[String],
+    language: Option<&str>,
 ) -> Result<transcription_api::TranscriptionSuccess> {
-    let LocalChunkingConfig {
-        dictionary,
-        language,
-        chunk_seconds,
-        overlap_seconds,
-        leading_pad_seconds,
-        cancel_token,
-        strip_hallucinated_thank_you,
-    } = config;
-
     if samples.is_empty() {
         return Err(anyhow!("No audio samples provided"));
     }
 
-    let speech_percent = speech_percentage(samples, sample_rate);
-    if speech_percent < speech::VAD_MIN_SPEECH_PERCENT_FILE {
+    if speech_percentage(samples, sample_rate) < speech::VAD_MIN_SPEECH_PERCENT_FILE {
         return Ok(transcription_api::TranscriptionSuccess {
             transcript: String::new(),
             speech_model: None,
@@ -2195,125 +2112,44 @@ fn transcribe_local_chunked(
         });
     }
 
-    let pad_samples = ((sample_rate as f32) * leading_pad_seconds).round() as usize;
-    let padded_storage: Vec<i16>;
-    let samples: &[i16] = if pad_samples > 0 {
-        let mut padded = Vec::with_capacity(pad_samples + samples.len());
-        padded.resize(pad_samples, 0);
-        padded.extend_from_slice(samples);
-        padded_storage = padded;
-        &padded_storage
-    } else {
-        samples
-    };
-
-    let chunk_samples = ((sample_rate.max(1) as f32) * chunk_seconds).round() as usize;
-    let chunk_samples = chunk_samples.max(1);
-    let overlap_samples = ((sample_rate.max(1) as f32) * overlap_seconds).round() as usize;
-    let overlap_samples = overlap_samples.min(chunk_samples.saturating_sub(1));
-
-    let mut full_text = String::new();
-    let mut start = 0usize;
-    let mut model_label = None;
-    let mut language_detected = None;
-    let mut compute = None;
-
-    while start < samples.len() {
-        if let Some(token) = cancel_token
-            && token.is_cancelled()
-        {
-            return Err(anyhow!("Transcription cancelled"));
-        }
-        let nominal_end = (start + chunk_samples).min(samples.len());
-        let end = if nominal_end == samples.len() {
-            nominal_end
-        } else {
-            start + crate::recorder::quiet_cut_index(&samples[start..nominal_end], sample_rate)
-        };
-        let chunk = &samples[start..end];
-        let chunk_speech_percent = if pad_samples == 0 && start == 0 && end == samples.len() {
-            speech_percent
-        } else {
-            speech_percentage(chunk, sample_rate)
-        };
-        let min_chunk_threshold = if end == samples.len() {
-            speech::VAD_MIN_SPEECH_PERCENT_FILE
-        } else {
-            speech::VAD_MIN_SPEECH_PERCENT_CHUNK
-        };
-        if chunk_speech_percent >= min_chunk_threshold {
-            let chunk_text = if strip_hallucinated_thank_you {
-                // Silero only reads the chunk audio, so it runs while the model transcribes.
-                let (result, regions) = std::thread::scope(|scope| {
-                    let regions = std::thread::Builder::new()
-                        .spawn_scoped(scope, || {
-                            glimpse_speech::vad::speech_regions(chunk, sample_rate)
-                        })
-                        .ok();
-                    let result = transcriber.transcribe_with_segments(
-                        model,
-                        chunk,
-                        sample_rate,
-                        dictionary,
-                        language,
-                        glimpse_speech::TimestampGranularity::Segment,
-                    );
-                    let regions = match regions {
-                        Some(handle) => handle.join().ok().flatten(),
-                        None => glimpse_speech::vad::speech_regions(chunk, sample_rate),
-                    };
-                    (result, regions)
-                });
-                let result = result?;
-                if model_label.is_none() {
-                    model_label = result.speech_model.clone();
-                }
-                compute = compute.or(result.compute);
-                if language_detected.is_none() {
-                    language_detected = result.language.clone();
-                }
-                transcription_api::keep_spoken_segments(
-                    &result.transcript,
-                    result.segments.as_deref(),
-                    regions.as_deref(),
-                )
-            } else {
-                let result =
-                    transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
-                if model_label.is_none() {
-                    model_label = result.speech_model.clone();
-                }
-                compute = compute.or(result.compute);
-                if language_detected.is_none() {
-                    language_detected = result.language;
-                }
-                result.transcript
-            };
-            if !chunk_text.trim().is_empty() {
-                let deduped = dedupe_overlap_text(&full_text, &chunk_text);
-                if !deduped.trim().is_empty() {
-                    append_deduped_chunk(&mut full_text, &deduped);
-                }
-            }
-        }
-
-        if end == samples.len() {
-            break;
-        }
-        start = end
-            .saturating_sub(overlap_samples)
-            .max(start.saturating_add(1));
+    if !matches!(model.engine, model_manager::LocalModelEngine::Whisper) {
+        return transcriber.transcribe(model, samples, sample_rate, dictionary, language);
     }
 
-    let transcript = full_text.trim().to_string();
-
+    let pad_samples = ((sample_rate as f32) * speech::WHISPER_LEADING_PAD_SECONDS).round() as usize;
+    let mut padded = vec![0; pad_samples];
+    padded.extend_from_slice(samples);
+    // Silero only reads the audio, so it runs while the model transcribes.
+    let (result, regions) = std::thread::scope(|scope| {
+        let regions = std::thread::Builder::new()
+            .spawn_scoped(scope, || {
+                glimpse_speech::vad::speech_regions(&padded, sample_rate)
+            })
+            .ok();
+        let result = transcriber.transcribe_with_segments(
+            model,
+            &padded,
+            sample_rate,
+            dictionary,
+            language,
+            glimpse_speech::TimestampGranularity::Segment,
+        );
+        let regions = match regions {
+            Some(handle) => handle.join().ok().flatten(),
+            None => glimpse_speech::vad::speech_regions(&padded, sample_rate),
+        };
+        (result, regions)
+    });
+    let result = result?;
     Ok(transcription_api::TranscriptionSuccess {
-        transcript,
-        speech_model: model_label,
+        transcript: transcription_api::keep_spoken_segments(
+            &result.transcript,
+            result.segments.as_deref(),
+            regions.as_deref(),
+        ),
         segments: None,
         words: None,
-        language: language_detected,
-        compute,
+        ..result
     })
 }
 
