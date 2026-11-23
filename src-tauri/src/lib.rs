@@ -19,6 +19,7 @@ mod library;
 mod license;
 mod llm_cleanup;
 mod local_api;
+mod logs;
 mod mode_context;
 mod model_language_table;
 mod music;
@@ -74,48 +75,6 @@ use tauri::ActivationPolicy;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as AutostartManagerExt};
 use tauri_plugin_opener::OpenerExt;
-
-static LOG_GUARD: std::sync::OnceLock<tracing_appender::non_blocking::WorkerGuard> =
-    std::sync::OnceLock::new();
-
-/// Writes app logs to daily-rotated files in the OS log dir (kept 7 days)
-fn init_logging(app: &AppHandle<AppRuntime>) {
-    use tracing_subscriber::fmt::writer::MakeWriterExt;
-    use tracing_subscriber::layer::SubscriberExt;
-
-    let Ok(dir) = app.path().app_log_dir() else {
-        return;
-    };
-    let _ = std::fs::create_dir_all(&dir);
-
-    let appender = match tracing_appender::rolling::RollingFileAppender::builder()
-        .rotation(tracing_appender::rolling::Rotation::DAILY)
-        .filename_prefix("glimpse")
-        .filename_suffix("log")
-        .max_log_files(7)
-        .build(&dir)
-    {
-        Ok(appender) => appender,
-        Err(err) => {
-            eprintln!("Failed to create log file appender: {err}");
-            return;
-        }
-    };
-    let (writer, guard) = tracing_appender::non_blocking(appender);
-
-    let filter = tracing_subscriber::filter::Targets::new()
-        .with_default(tracing::level_filters::LevelFilter::WARN)
-        .with_target("glimpse_lib", tracing::level_filters::LevelFilter::INFO)
-        .with_target("glimpse_speech", tracing::level_filters::LevelFilter::INFO);
-    let subscriber = tracing_subscriber::fmt()
-        .with_writer(writer.and(std::io::stderr))
-        .with_ansi(false)
-        .finish()
-        .with(filter);
-    if tracing::subscriber::set_global_default(subscriber).is_ok() {
-        let _ = LOG_GUARD.set(guard);
-    }
-}
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 pub(crate) const SETTINGS_WINDOW_LABEL: &str = "settings";
@@ -435,7 +394,7 @@ pub fn run() {
 
             let handle = app.handle();
             analytics::set_crash_phase("logging");
-            init_logging(handle);
+            logs::init(handle);
             analytics::set_crash_phase("crash_handler");
             let previous_session = analytics::begin_session(handle);
             analytics::set_app(handle);
@@ -444,12 +403,11 @@ pub fn run() {
                 .app_data_dir()
                 .ok()
                 .map(|dir| dir.join(analytics::CRASH_MARKER_FILE));
-            let crash_log = handle.path().app_log_dir().ok().map(|dir| {
-                let _ = std::fs::create_dir_all(&dir);
-                dir.join("crash.log")
-            });
+            let previous_marker = crash_marker
+                .as_ref()
+                .and_then(|path| std::fs::read_to_string(path).ok());
             if let Some(path) = crash_marker.clone() {
-                analytics::install_crash_handler(path.clone(), crash_log);
+                analytics::install_crash_handler(path.clone());
                 #[cfg(target_os = "windows")]
                 {
                     if let Ok(log_dir) = handle.path().app_log_dir() {
@@ -468,6 +426,7 @@ pub fn run() {
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            logs::log_launch(handle, previous_session.clone(), previous_marker);
             cleanup_model::init(handle);
             #[cfg(target_os = "windows")]
             platform::windows::elevation::watch_foreground(handle.clone());
@@ -780,7 +739,7 @@ pub fn run() {
             asks::get_ask_prompt,
             asks::mark_ask_prompt_seen,
             asks::resolve_ask_prompt,
-            reveal_logs,
+            logs::reveal_logs,
             update_checker::get_update_status,
             update_checker::check_for_updates,
             update_checker::download_and_install_update
@@ -824,6 +783,7 @@ pub fn run() {
                     (now - state.session_started_at).as_secs_f64(),
                     counters.transcription_count,
                 );
+                logs::flush();
                 #[cfg(target_os = "macos")]
                 platform::macos::skip_static_destructors();
                 #[cfg(target_os = "windows")]
@@ -1928,14 +1888,6 @@ fn open_settings_page(app: &AppHandle<AppRuntime>, page: SettingsPage) -> Result
 }
 
 #[tauri::command]
-fn reveal_logs(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    let dir = app.path().app_log_dir().map_err(|err| err.to_string())?;
-    app.opener()
-        .open_path(dir.to_string_lossy(), None::<&str>)
-        .map_err(|err| err.to_string())
-}
-
-#[tauri::command]
 fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(), String> {
     let path = path.ok_or_else(|| "Path is empty".to_string())?;
     let path = PathBuf::from(&path);
@@ -2204,7 +2156,17 @@ pub(crate) fn discard_recording(
         recording.input,
         Some(trigger),
     );
-    tracing::error!("Recording rejected: {reason}");
+    match recording.input {
+        Some(input) => tracing::info!(
+            "Recording discarded: {reason} (mic open {}ms, first audio {}, peak {:.4})",
+            input.open_ms,
+            input
+                .first_audio_ms
+                .map_or("none".to_string(), |ms| format!("{ms}ms")),
+            input.peak
+        ),
+        None => tracing::info!("Recording discarded: {reason}"),
+    }
     notify_discarded(app, notice);
 
     emit_event(

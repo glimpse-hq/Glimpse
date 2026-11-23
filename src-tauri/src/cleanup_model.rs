@@ -463,8 +463,7 @@ fn load(
     let started = std::time::Instant::now();
     let bonsai = Arc::new(Bonsai::load(&dir, Some(&adapter))?);
     tracing::info!(
-        "[cleanup model] loaded {model} with {} in {} ms",
-        adapter.display(),
+        "[cleanup model] loaded {model} in {} ms",
         started.elapsed().as_millis()
     );
     let adapter = adapter

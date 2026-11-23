@@ -334,8 +334,6 @@ pub(crate) fn queue_transcription(
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
 
-        tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
-
         // Read while transcribing, so it never delays the paste.
         let cleanup_enabled = settings.cleanup_enabled;
         let context_task =
@@ -994,12 +992,12 @@ async fn process_transcript_text(
             {
                 Ok(edited) => (edited, true),
                 Err(err) => {
-                    let message = llm_cleanup::llm_issue_message(&err);
+                    let reason = crate::speech::remote::log_reason(&err);
                     if let Some(context) = log_context {
-                        tracing::error!("LLM edit failed ({context}): {message}");
+                        tracing::error!("LLM edit failed ({context}): {reason}");
                     } else {
                         tracing::error!(
-                            "LLM edit failed, keeping original selected text: {message}"
+                            "LLM edit failed, keeping original selected text: {reason}"
                         );
                     }
                     if !llm_cleanup::is_transient_llm_error(&err) {
@@ -1030,16 +1028,16 @@ async fn process_transcript_text(
             {
                 Ok(cleaned) => (cleaned, true),
                 Err(err) if llm_cleanup::is_input_unsuitable(&err) => {
-                    tracing::info!("Cleanup skipped, using raw transcript: {}", err.message);
+                    tracing::info!("Cleanup skipped: the cleanup model can't take this transcript");
                     input_skipped = true;
                     (raw_transcript.clone(), false)
                 }
                 Err(err) => {
-                    let message = llm_cleanup::llm_issue_message(&err);
+                    let reason = crate::speech::remote::log_reason(&err);
                     if let Some(context) = log_context {
-                        tracing::error!("Cleanup failed ({context}): {message}");
+                        tracing::error!("Cleanup failed ({context}): {reason}");
                     } else {
-                        tracing::error!("Cleanup failed, using raw transcript: {message}");
+                        tracing::error!("Cleanup failed, using raw transcript: {reason}");
                     }
                     if !llm_cleanup::is_transient_llm_error(&err) {
                         llm_cleanup::note_preflight_failure(preflight_generation);
@@ -1157,6 +1155,14 @@ async fn process_transcript_text(
         match paste_result {
             Ok(None) => return ProcessTranscriptOutcome::Cancelled,
             Ok(Some((Ok(()), pre_paste_snapshot, pasted_text, field_read, paste))) => {
+                tracing::info!(
+                    "Paste sent, field {}",
+                    match (can_read_field, pre_paste_snapshot.is_some()) {
+                        (false, _) => "not read",
+                        (true, true) => "readable",
+                        (true, false) => "unreadable",
+                    }
+                );
                 pasted = true;
                 field_read_ms = field_read.map(|read| read.as_millis() as u32);
                 paste_ms = Some(paste.as_millis() as u32);
@@ -1271,10 +1277,6 @@ pub(crate) fn retry_transcription_async(
             return;
         }
 
-        tracing::info!(
-            "[retry_transcription] mode={:?}",
-            settings.transcription_mode,
-        );
         let model_id = speech::selected_model(&settings);
         let use_remote = remote_speech::is_remote_model(&model_id);
         let result = speech::transcribe(
@@ -1332,15 +1334,14 @@ pub(crate) fn retry_transcription_async(
                         Ok(cleaned) => (cleaned, true),
                         Err(err) if llm_cleanup::is_input_unsuitable(&err) => {
                             tracing::info!(
-                                "Cleanup skipped during retry, using raw transcript: {}",
-                                err.message
+                                "Cleanup skipped during retry: the cleanup model can't take this transcript"
                             );
                             (raw_transcript.clone(), false)
                         }
                         Err(err) => {
-                            let message = llm_cleanup::llm_issue_message(&err);
                             tracing::error!(
-                                "Cleanup failed during retry, using raw transcript: {message}"
+                                "Cleanup failed during retry, using raw transcript: {}",
+                                crate::speech::remote::log_reason(&err)
                             );
                             analytics::track_llm_failed(
                                 &app_handle,
@@ -1396,13 +1397,6 @@ pub(crate) fn retry_transcription_async(
                 } else {
                     None
                 };
-
-                tracing::info!(
-                    "[retry_transcription] Updating local record {}: text_len={} llm_cleaned={}",
-                    retry_id,
-                    final_transcript.len(),
-                    llm_cleaned
-                );
 
                 let updated_record = match app_handle
                     .state::<AppState>()

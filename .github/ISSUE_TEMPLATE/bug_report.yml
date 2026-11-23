@@ -38,7 +38,13 @@ body:
         Recording mode / model:
 
   - type: textarea
+    id: report
+    attributes:
+      label: Glimpse report
+      description: In Glimpse, open Settings, go to About and click Logs. Drag the Glimpse Report.txt it shows here.
+
+  - type: textarea
     id: context
     attributes:
       label: Anything else?
-      description: Screenshots, videos, logs, or any extra context.
+      description: Screenshots, videos, or any extra context.

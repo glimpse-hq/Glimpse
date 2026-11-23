@@ -231,7 +231,7 @@ pub fn report_frontend_crash(
     );
 }
 
-pub fn install_crash_handler(marker_path: PathBuf, crash_log_path: Option<PathBuf>) {
+pub fn install_crash_handler(marker_path: PathBuf) {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         let location = info
@@ -245,31 +245,21 @@ pub fn install_crash_handler(marker_path: PathBuf, crash_log_path: Option<PathBu
             .downcast_ref::<&str>()
             .copied()
             .or_else(|| info.payload().downcast_ref::<String>().map(String::as_str));
+        let crash_type = classify_panic(message);
+        let thread = thread_label(std::thread::current().name());
+        tracing::error!(
+            "panic {crash_type} at {} thread={thread}",
+            sanitized_crash_location(&location, crash_type)
+        );
         // Later panics would overwrite the first, which is usually the cause.
         if !PANIC_RECORDED.swap(true, Ordering::Relaxed) {
-            let when = chrono::Local::now().to_rfc3339();
-            write_panic_artifacts(
-                &marker_path,
-                crash_log_path.as_deref(),
-                &location,
-                message,
-                &thread_label(std::thread::current().name()),
-                &when,
-            );
+            write_panic_marker(&marker_path, &location, crash_type, &thread);
         }
         previous(info);
     }));
 }
 
-fn write_panic_artifacts(
-    marker_path: &Path,
-    crash_log_path: Option<&Path>,
-    location: &str,
-    message: Option<&str>,
-    thread: &str,
-    when: &str,
-) {
-    let crash_type = classify_panic(message);
+fn write_panic_marker(marker_path: &Path, location: &str, crash_type: &str, thread: &str) {
     write_marker_atomically(
         marker_path,
         &format!(
@@ -278,21 +268,6 @@ fn write_panic_artifacts(
             activity().as_str(),
         ),
     );
-    if let Some(path) = crash_log_path {
-        let detail: String = message
-            .unwrap_or("<non-string panic payload>")
-            .chars()
-            .take(2000)
-            .collect();
-        let _ = std::fs::write(
-            path,
-            format!(
-                "Glimpse {APP_VERSION} crashed\n\
-                 # Stays on your device. May contain text you typed or file paths; review before sharing.\n\
-                 time: {when}\nlocation: {location}\ntype: {crash_type}\nmessage: {detail}\n"
-            ),
-        );
-    }
 }
 
 /// Temp-then-rename so a crash mid-write can't leave a truncated marker.
@@ -319,6 +294,7 @@ fn thread_label(name: Option<&str>) -> String {
 }
 
 /// What the previous run left behind when it did not quit cleanly.
+#[derive(Clone)]
 pub struct PreviousSession {
     version: String,
     started_at: Option<u64>,
@@ -429,24 +405,8 @@ pub fn report_unclean_exit(app: &tauri::AppHandle<AppRuntime>, previous: &Previo
     if !app.state::<AppState>().analytics_state().0 {
         return;
     }
-    let rebooted = !previous.had_crash_marker
-        && previous
-            .started_at
-            .zip(boot_time())
-            .is_some_and(|(started_at, booted_at)| booted_at > started_at);
-    // Before 1.3.1 the Windows updater quit into the installer without
-    // ending the session.
-    let cause = if rebooted {
-        "reboot"
-    } else if previous.update_pending {
-        "update"
-    } else {
-        "unknown"
-    };
-    let uptime_bucket = match previous.started_at.zip(previous.alive_at) {
-        Some((started_at, alive_at)) => uptime_bucket(alive_at.saturating_sub(started_at)),
-        None => "unknown",
-    };
+    let cause = previous.cause();
+    let uptime_bucket = previous.uptime_bucket();
     capture_event(
         app,
         "unclean_exit",
@@ -467,6 +427,73 @@ pub fn report_unclean_exit(app: &tauri::AppHandle<AppRuntime>, previous: &Previo
     {
         super::os_reports::report_os_crash(app, started_at, &previous.version);
     }
+}
+
+impl PreviousSession {
+    fn cause(&self) -> &'static str {
+        let rebooted = !self.had_crash_marker
+            && self
+                .started_at
+                .zip(boot_time())
+                .is_some_and(|(started_at, booted_at)| booted_at > started_at);
+        // Before 1.3.1 the Windows updater quit into the installer without
+        // ending the session.
+        if rebooted {
+            "reboot"
+        } else if self.update_pending {
+            "update"
+        } else {
+            "unknown"
+        }
+    }
+
+    fn uptime_bucket(&self) -> &'static str {
+        match self.started_at.zip(self.alive_at) {
+            Some((started_at, alive_at)) => uptime_bucket(alive_at.saturating_sub(started_at)),
+            None => "unknown",
+        }
+    }
+}
+
+/// How the previous run ended, for the launch log line: `clean`, or an
+/// unclean exit's cause and uptime, plus the crash marker's type, location
+/// and activity when one was left.
+pub fn previous_run_summary(previous: Option<&PreviousSession>, marker: Option<&str>) -> String {
+    let mut summary = match previous {
+        None => "clean".to_string(),
+        Some(previous) => format!(
+            "unclean cause={} uptime={} v{}{}{}",
+            previous.cause(),
+            previous.uptime_bucket(),
+            previous.version,
+            if previous.dictation_interrupted {
+                " dictation_interrupted"
+            } else {
+                ""
+            },
+            if previous.recording_session_interrupted {
+                " recording_interrupted"
+            } else {
+                ""
+            },
+        ),
+    };
+    if let Some(marker) = marker {
+        let payload = parse_crash_marker(marker);
+        let field = |key: &str| payload[key].as_str().unwrap_or("unknown").to_string();
+        let crash_type = field("crash_type");
+        let location = if crash_type == "native" {
+            format!("{} {}", field("faulting_module"), field("exception_code"))
+        } else {
+            sanitized_crash_location(&field("location"), &crash_type)
+        };
+        summary.push_str(&format!(
+            " crashed={crash_type} {location} activity={} phase={}",
+            field("activity"),
+            field("crash_phase"),
+        ));
+    }
+    summary
 }
 
 // Lower bound: the heartbeat runs at 1 minute, then every 10 minutes.
@@ -755,19 +782,16 @@ mod tests {
     }
 
     #[test]
-    fn writes_marker_and_crash_log_then_parses_back() {
+    fn writes_marker_then_parses_back() {
         let dir = std::env::temp_dir().join(format!("glimpse-crash-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("create temp dir");
         let marker = dir.join("last_crash.txt");
-        let log = dir.join("crash.log");
 
-        write_panic_artifacts(
+        write_panic_marker(
             &marker,
-            Some(&log),
             "src/foo.rs:10",
-            Some("boom: index out of bounds"),
+            classify_panic(Some("boom: index out of bounds")),
             "tokio-runtime-worker",
-            "2026-06-24T00:00:00+00:00",
         );
 
         let marker_text = std::fs::read_to_string(&marker).expect("read marker");
@@ -775,14 +799,7 @@ mod tests {
         assert_eq!(lines.next().unwrap(), APP_VERSION);
         assert_eq!(lines.next().unwrap(), "src/foo.rs:10");
         assert_eq!(lines.next().unwrap(), "bounds_check");
-
-        // Marker stays anonymized; the local log keeps the message.
         assert!(!marker_text.contains("boom"));
-        let log_text = std::fs::read_to_string(&log).expect("read crash log");
-        assert!(log_text.contains("location: src/foo.rs:10"));
-        assert!(log_text.contains("type: bounds_check"));
-        assert!(log_text.contains("message: boom: index out of bounds"));
-        assert!(log_text.contains("review before sharing"));
 
         let parsed = parse_crash_marker(&marker_text);
         assert_eq!(parsed["crash_type"], "bounds_check");

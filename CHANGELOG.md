@@ -23,6 +23,7 @@
 - The cleanup model's name in Settings and setup now includes its version, Glimpse C1.1 2B.
 - Cmd+F, or Ctrl+F on Windows, opens search on Home.
 - Model descriptions in the Library's import and retranscribe dialogs are translated and no longer cut off.
+- Logs in About now saves one report to attach to a bug report and shows it in Finder or File Explorer. It leaves out your user name and what you dictated.
 
 ### Fixes
 

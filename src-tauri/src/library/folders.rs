@@ -202,8 +202,8 @@ fn move_dir(conn: &mut Connection, root: &Path, from: &Path, to: &Path) -> Resul
     if let Err(err) = rebase_paths(conn, rows, from, to) {
         if let Err(undo) = fs::rename(to, from) {
             tracing::error!(
-                "Couldn't move {} back after a failed path update: {undo}",
-                to.display()
+                "Couldn't move a folder back after a failed path update: {}",
+                undo.kind()
             );
         }
         return Err(err);
