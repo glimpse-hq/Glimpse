@@ -910,7 +910,8 @@ async fn run_bonsai_text_task(
             )
         }
     });
-    let _stop = StopOnDrop(cancel);
+    // Stops the generation when the request times out or its caller stops waiting.
+    let _stop = std::mem::DropGuard::new(cancel, |cancel| cancel.store(true, Ordering::Relaxed));
     let run = tokio::time::timeout(budget, generate)
         .await
         .map_err(|_| timed_out())?
@@ -935,15 +936,6 @@ async fn run_bonsai_text_task(
         return Err(error);
     }
     Ok(generation.text)
-}
-
-// Stops the generation when the request times out or its caller stops waiting.
-struct StopOnDrop(Arc<AtomicBool>);
-
-impl Drop for StopOnDrop {
-    fn drop(&mut self) {
-        self.0.store(true, Ordering::Relaxed);
-    }
 }
 
 fn bonsai_error(err: BonsaiError) -> RemoteError {
