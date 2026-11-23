@@ -129,6 +129,8 @@ pub async fn cleanup_transcription_with_context(
     } else {
         OutputBound::Cleanup
     };
+    let save_prompt = bound == OutputBound::Cleanup
+        || !prompt_uses_snippets(settings, mode, context, has_style_guidance);
 
     let result = run_text_task(
         client,
@@ -145,6 +147,7 @@ pub async fn cleanup_transcription_with_context(
         ),
         text,
         bound,
+        save_prompt,
     )
     .await?;
     let result = restore_input_escapes(text, &result);
@@ -186,6 +189,7 @@ pub async fn edit_transcription(
         ),
         selected_text,
         OutputBound::Edit,
+        true,
     )
     .await?;
 
@@ -357,12 +361,19 @@ pub fn prewarm_cleanup(settings: &UserSettings) {
         } else {
             None
         };
+        let save_prompt = (guidance.is_none() && custom_rules.is_none())
+            || !prompt_uses_snippets(
+                &settings,
+                mode.as_ref(),
+                context.as_ref(),
+                guidance.is_some(),
+            );
         let prompt =
             build_cleanup_system_prompt(&settings, guidance.as_deref(), custom_rules.as_deref());
         if apple {
             let _ = glimpse_language::apple::apple_prewarm(&prompt);
         } else {
-            let _ = crate::cleanup_model::prewarm(&prompt);
+            let _ = crate::cleanup_model::prewarm(&prompt, save_prompt);
         }
     });
 }
@@ -384,7 +395,7 @@ pub fn prewarm_edit(settings: &UserSettings) {
         if uses_apple_provider(&settings) {
             let _ = glimpse_language::apple::apple_prewarm(EDIT_PROMPT.trim());
         } else {
-            let _ = crate::cleanup_model::prewarm(EDIT_PROMPT.trim());
+            let _ = crate::cleanup_model::prewarm(EDIT_PROMPT.trim(), true);
         }
     });
 }
@@ -740,6 +751,7 @@ struct ModelEntry {
     id: String,
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn run_text_task(
     client: &Client,
     settings: &UserSettings,
@@ -748,6 +760,7 @@ async fn run_text_task(
     user_content: String,
     fallback_text: &str,
     bound: OutputBound,
+    save_prompt: bool,
 ) -> Result<String, RemoteError> {
     if uses_bonsai_provider(settings) {
         let model = crate::cleanup_model::resolve()
@@ -759,6 +772,7 @@ async fn run_text_task(
             system_prompt,
             user_content,
             fallback_text,
+            save_prompt,
         )
         .await?;
         return Ok(
@@ -861,6 +875,7 @@ async fn run_bonsai_text_task(
     system_prompt: String,
     user_content: String,
     input: &str,
+    save_prompt: bool,
 ) -> Result<String, RemoteError> {
     let started = Instant::now();
     let task_failed =
@@ -898,6 +913,7 @@ async fn run_bonsai_text_task(
                 &system_prompt,
                 &user_content,
                 max_tokens,
+                save_prompt,
                 &cancel,
                 |piece| {
                     text.push_str(piece);
@@ -1060,6 +1076,28 @@ fn style_guidance(
             mode_context::format_cleanup_style_guidance_for_personality(personality, context)
         }
         None => mode_context::format_active_cleanup_style_guidance(settings, context),
+    }
+}
+
+// Whether the modes (or, without one, the edited Global rules) behind this prompt use snippets
+// such as {{window}}, which put per-dictation text in it; a saved prompt state keeps the prompt
+// on disk.
+fn prompt_uses_snippets(
+    settings: &UserSettings,
+    mode: Option<&Personality>,
+    context: Option<&ActiveContext>,
+    mode_prompt: bool,
+) -> bool {
+    let snippets = |mode: &Personality| mode.instructions.iter().any(|line| line.contains("{{"));
+    match (mode_prompt, mode) {
+        (true, Some(mode)) => snippets(mode),
+        (true, None) => context
+            .is_some_and(|context| mode_context::matched_modes(settings, context).any(snippets)),
+        (false, _) => settings
+            .personalities
+            .iter()
+            .find(|mode| mode.id == crate::settings::GLOBAL_PERSONALITY_ID)
+            .is_some_and(snippets),
     }
 }
 

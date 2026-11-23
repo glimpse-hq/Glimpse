@@ -2203,13 +2203,12 @@ dependencies = [
 
 [[package]]
 name = "glimpse-language"
-version = "0.3.0"
-source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?tag=0.3.0#4c4aeff628dcf3b00ab16f39e3a423a9036124c9"
+version = "0.4.0"
+source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?tag=0.4.0#94a7efa1f32168a82231ea29123851fb399d2498"
 dependencies = [
  "ash",
  "dispatch2",
  "half",
- "image",
  "libc",
  "objc2",
  "objc2-foundation",
@@ -2701,8 +2700,6 @@ dependencies = [
  "num-traits",
  "png",
  "tiff",
- "zune-core",
- "zune-jpeg",
 ]
 
 [[package]]
@@ -6039,7 +6036,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
