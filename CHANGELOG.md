@@ -28,6 +28,7 @@
 
 ### Fixes
 
+- The cleanup model on this computer no longer keeps window titles or web addresses from snippets like {{window}} and {{url}} on disk, and removes the ones it kept before the next time it runs.
 - Going back to an open recording no longer slides the word underline in from the corner.
 - Pressing Escape in Home search no longer closes the recording you have open in the Library.
 - On Windows PCs where the graphics driver made Glimpse quit, speech recognition now runs on the processor instead of quitting again.

@@ -106,16 +106,24 @@ pub fn active_context() -> Option<ActiveContext> {
         .flatten()
 }
 
+/// The enabled modes, Global aside, that apply to `context`.
+pub fn matched_modes<'a>(
+    settings: &'a UserSettings,
+    context: &'a ActiveContext,
+) -> impl Iterator<Item = &'a Personality> {
+    settings
+        .personalities
+        .iter()
+        .filter(|mode| mode.enabled && mode.id != GLOBAL_PERSONALITY_ID)
+        .filter(|mode| mode_matches(mode, context))
+}
+
 pub fn format_active_cleanup_style_guidance(
     settings: &UserSettings,
     context: Option<&ActiveContext>,
 ) -> Option<String> {
     let context = context?;
-    let modes: Vec<ModeContextMode> = settings
-        .personalities
-        .iter()
-        .filter(|mode| mode.enabled && mode.id != GLOBAL_PERSONALITY_ID)
-        .filter(|mode| mode_matches(mode, context))
+    let modes: Vec<ModeContextMode> = matched_modes(settings, context)
         .map(|mode| ModeContextMode {
             name: mode.name.clone(),
             instructions: mode.instructions.clone(),
