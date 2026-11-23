@@ -490,16 +490,16 @@ fn release_when_idle(runtime: &'static Runtime, bonsai: Arc<Bonsai>, after: Dura
     });
 }
 
-/// Loads the model and caches `system_prompt`'s state for the next request.
-/// Blocking.
-pub fn prewarm(system_prompt: &str) -> Result<(), BonsaiError> {
+/// Loads the model and caches `system_prompt`'s state for the next request,
+/// also on disk with `save_prompt`. Blocking.
+pub fn prewarm(system_prompt: &str, save_prompt: bool) -> Result<(), BonsaiError> {
     let runtime = runtime_for_use()?;
     let model = resolve()
         .ok_or_else(|| error(BonsaiErrorKind::Load, "The cleanup model is not installed"))?;
     runtime.check_cancel.store(true, Ordering::SeqCst);
     let (bonsai, _, _) = load(runtime, model)?;
     runtime.uses.fetch_add(1, Ordering::SeqCst);
-    let result = bonsai.prewarm(system_prompt);
+    let result = bonsai.prewarm(system_prompt, save_prompt);
     release_when_idle(runtime, bonsai, IDLE_AFTER_PREWARM);
     result
 }
@@ -546,12 +546,14 @@ impl Session {
         system_prompt: &str,
         user_text: &str,
         max_tokens: usize,
+        save_prompt: bool,
         cancel: &AtomicBool,
         on_text: impl FnMut(&str) -> ControlFlow<()>,
     ) -> Result<Run, BonsaiError> {
         self.runtime.uses.fetch_add(1, Ordering::SeqCst);
         let options = GenerateOptions {
             max_tokens,
+            save_prompt,
             ..GenerateOptions::default()
         };
         let result = self.bonsai.generate_streaming(
