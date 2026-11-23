@@ -256,6 +256,7 @@ impl LocalTranscriber {
 
     /// Whisper computes word timings in an extra pass, so ask for
     /// `Segment` unless the words are used.
+    #[allow(clippy::too_many_arguments)]
     pub fn transcribe_with_segments(
         &self,
         model: &ReadyModel,
@@ -309,6 +310,7 @@ impl LocalTranscriber {
         ))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn transcribe_internal(
         &self,
         model: &ReadyModel,
@@ -332,6 +334,7 @@ impl LocalTranscriber {
     }
 
     // Caller must hold `exclusive`.
+    #[allow(clippy::too_many_arguments)]
     fn transcribe_locked(
         &self,
         model: &ReadyModel,
