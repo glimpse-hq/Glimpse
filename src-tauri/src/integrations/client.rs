@@ -153,7 +153,11 @@ fn connect_or_launch() -> Result<Stream> {
 /// silenced so a detached launch can't bleed output into the CLI's own output.
 fn launch_app() -> Result<()> {
     use std::process::Stdio;
-    let exe = std::env::current_exe().context("Could not resolve the Glimpse binary path")?;
+    // Action scripts call a copy of the binary, which can't start the app itself.
+    let exe = match std::env::var_os("GLIMPSE_APP_EXECUTABLE") {
+        Some(exe) => std::path::PathBuf::from(exe),
+        None => std::env::current_exe().context("Could not resolve the Glimpse binary path")?,
+    };
 
     #[cfg(target_os = "macos")]
     {
@@ -162,11 +166,32 @@ fn launch_app() -> Result<()> {
         if let Some(bundle) = macos_app_bundle(&exe) {
             std::process::Command::new("/usr/bin/open")
                 .arg(bundle)
+                .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .spawn()
                 .context("Failed to launch Glimpse via `open`")?;
             return Ok(());
+        }
+    }
+
+    // Windows hands every inheritable handle to the child, so the app would hold
+    // the caller's pipes open and a caller reading `glimpse` output waits until it quits.
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::io::AsRawHandle;
+        use windows::Win32::Foundation::{
+            HANDLE, HANDLE_FLAG_INHERIT, HANDLE_FLAGS, SetHandleInformation,
+        };
+        for handle in [
+            std::io::stdin().as_raw_handle(),
+            std::io::stdout().as_raw_handle(),
+            std::io::stderr().as_raw_handle(),
+        ] {
+            // SAFETY: the standard handles stay open for the call; a missing one just fails.
+            let _ = unsafe {
+                SetHandleInformation(HANDLE(handle), HANDLE_FLAG_INHERIT.0, HANDLE_FLAGS(0))
+            };
         }
     }
 

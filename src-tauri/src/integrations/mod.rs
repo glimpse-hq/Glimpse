@@ -3,6 +3,7 @@
 //! mutations and transcription are routed to the running app over a control
 //! socket ([`ipc`]/[`client`]/[`server`], answered in [`handlers`]).
 
+mod actions;
 mod api;
 mod client;
 #[cfg(debug_assertions)]
@@ -83,6 +84,36 @@ const COMMANDS: &[CliCommand] = &[
     CliCommand {
         name: "mcp",
         help: "Let AI agents read your Library and dictations, follow recordings and ask you questions.",
+        owned: true,
+    },
+    CliCommand {
+        name: "actions",
+        help: "List, run and stop actions.",
+        owned: true,
+    },
+    CliCommand {
+        name: "toast",
+        help: "Show a toast.",
+        owned: true,
+    },
+    CliCommand {
+        name: "pill",
+        help: "Show text in the pill while an insert action runs.",
+        owned: true,
+    },
+    CliCommand {
+        name: "ask",
+        help: "Ask a question and print the spoken or clicked answer.",
+        owned: true,
+    },
+    CliCommand {
+        name: "llm",
+        help: "Run an instruction on stdin with a language model.",
+        owned: true,
+    },
+    CliCommand {
+        name: "clean",
+        help: "Clean up the text on stdin like a dictation.",
         owned: true,
     },
     CliCommand {
@@ -169,7 +200,7 @@ pub fn print_help() {
 /// machine-readable errors in `--json` mode.
 pub fn dispatch(identifier: &str, args: &[String]) -> Result<()> {
     ipc::init_socket_label(identifier);
-    let json = args.iter().any(|arg| arg == "--json");
+    let json = has_flag(args, "--json");
     match run(identifier, args, json) {
         Ok(()) => Ok(()),
         Err(err) => {
@@ -191,6 +222,13 @@ fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
     let (verb, rest) = args
         .split_first()
         .expect("dispatch is only called with a leading verb");
+    if let Some((flag, _)) = flag_args(rest)
+        .iter()
+        .filter(|arg| looks_like_flag(arg))
+        .find_map(|arg| arg.split_once('='))
+    {
+        bail!("Use {flag} <value>.");
+    }
     match verb.as_str() {
         "history" => history::run(identifier, rest, json),
         "dictionary" => dictionary::run(identifier, rest, json),
@@ -204,6 +242,12 @@ fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "status" => status::run(rest, json),
         "api" => api::run(rest, json),
         "transcribe" => transcribe::run(identifier, rest, json),
+        "actions" => actions::actions(rest, json),
+        "toast" => actions::toast(rest, json),
+        "pill" => actions::pill(rest, json),
+        "ask" => actions::ask(rest, json),
+        "llm" => actions::llm(rest, json),
+        "clean" => actions::clean(rest, json),
         #[cfg(debug_assertions)]
         "dev" => dev::run(identifier, rest, json),
         other => bail!("Unknown command: {other}"),
@@ -244,17 +288,34 @@ pub(crate) fn open_storage(identifier: &str) -> Result<crate::storage::StorageMa
 
 /// Returns true if the args request help for a subcommand.
 pub(crate) fn wants_help(args: &[String]) -> bool {
-    args.iter().any(|arg| arg == "-h" || arg == "--help")
+    flag_args(args)
+        .iter()
+        .any(|arg| arg == "-h" || arg == "--help")
 }
 
-/// A token that looks like a flag (e.g. `--json`, `-x`) rather than a value.
+/// A token shaped like a flag: `-h`, or `--` and a name like `--json` or
+/// `--name=value`. Anything else, like `- milk` or `-1`, is a value.
 fn looks_like_flag(value: &str) -> bool {
-    value.starts_with("--") || (value.starts_with('-') && value.len() > 1)
+    let flag = value.split_once('=').map_or(value, |(flag, _)| flag);
+    flag == "-h"
+        || flag.strip_prefix("--").is_some_and(|name| {
+            name.starts_with(|c: char| c.is_ascii_alphabetic())
+                && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        })
+}
+
+/// The args before `--`, which ends the flags.
+fn flag_args(args: &[String]) -> &[String] {
+    &args[..args
+        .iter()
+        .position(|arg| arg == "--")
+        .unwrap_or(args.len())]
 }
 
 /// Parse a `--flag <value>` string option. Errors if the value is missing or is
 /// itself another flag; returns None only when the flag is absent.
 pub(crate) fn str_flag<'a>(args: &'a [String], flag: &str) -> Result<Option<&'a str>> {
+    let args = flag_args(args);
     let Some(idx) = args.iter().position(|arg| arg == flag) else {
         return Ok(None);
     };
@@ -278,26 +339,40 @@ pub(crate) fn usize_flag(args: &[String], flag: &str, default: usize) -> Result<
 }
 
 pub(crate) fn has_flag(args: &[String], flag: &str) -> bool {
-    args.iter().any(|arg| arg == flag)
+    flag_args(args).iter().any(|arg| arg == flag)
 }
 
-/// Collect positional args (everything that isn't a flag or a flag's value).
+/// Every value of a repeatable `--flag <value>` option.
+pub(crate) fn str_flags(args: &[String], flag: &str) -> Result<Vec<String>> {
+    let args = flag_args(args);
+    let mut values = Vec::new();
+    for (idx, _) in args.iter().enumerate().filter(|(_, arg)| *arg == flag) {
+        match args.get(idx + 1) {
+            Some(value) if !looks_like_flag(value) => values.push(value.clone()),
+            _ => bail!("{flag} requires a value"),
+        }
+    }
+    Ok(values)
+}
+
+/// Collect positional args: everything that isn't a flag or a flag's value,
+/// and everything after `--`.
 pub(crate) fn positionals<'a>(args: &'a [String], value_flags: &[&str]) -> Vec<&'a String> {
     let mut out = Vec::new();
     let mut skip_next = false;
+    let mut flags_ended = false;
     for arg in args {
-        if skip_next {
+        if flags_ended {
+            out.push(arg);
+        } else if skip_next {
             skip_next = false;
-            continue;
-        }
-        if value_flags.contains(&arg.as_str()) {
+        } else if arg == "--" {
+            flags_ended = true;
+        } else if value_flags.contains(&arg.as_str()) {
             skip_next = true;
-            continue;
+        } else if !looks_like_flag(arg) {
+            out.push(arg);
         }
-        if arg.starts_with("--") || (arg.starts_with('-') && arg.len() > 1) {
-            continue;
-        }
-        out.push(arg);
     }
     out
 }

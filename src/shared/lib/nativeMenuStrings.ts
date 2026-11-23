@@ -97,6 +97,14 @@ export const NATIVE_MENU_STRINGS = [
     message: "No words detected. Recording deleted.",
   }),
   msg({ id: "native.toast.ask_title", message: "{client} asks" }),
+  msg({
+    id: "native.toast.action_no_match",
+    message: "No action for “{text}”",
+  }),
+  msg({
+    id: "native.toast.action_timed_out",
+    message: "Stopped after {seconds} s.",
+  }),
   msg({ id: "native.toast.ask_title_unnamed", message: "An agent asks" }),
   msg({
     id: "native.toast.ask_hint",

@@ -28,6 +28,7 @@ import {
 } from "../../shared/lib/modelCapabilities";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { useLicenseGate, useLicenseState } from "../license/queries";
+import { useActions, useSetActionShortcut } from "../actions/queries";
 import {
   buildActiveTranscriptionLanguageOptions,
   collectAllTranscriptionLanguages,
@@ -77,13 +78,23 @@ import type {
 } from "../../types";
 
 type ShortcutMode = "smart" | "hold" | "toggle";
-type CaptureTarget = { mode: ShortcutMode; index: number } | null;
+type CaptureTarget = {
+  mode: ShortcutMode;
+  index: number;
+  action?: string;
+} | null;
 type ShortcutTarget = { mode: ShortcutMode; index: number };
 type SettingsErrorSourceTab = Exclude<SettingsPane, "account">;
 type InvalidShortcutDrafts = Partial<
   Record<ShortcutMode, Record<number, string>>
 >;
 type InvalidShortcutDraft = { target: ShortcutTarget; message: string } | null;
+type ActionShortcutError = {
+  action: string;
+  index: number;
+  shortcut: string;
+  message: string;
+} | null;
 
 type SaveSettingsOverrides = {
   localModel?: string;
@@ -243,6 +254,10 @@ export function useSettingsForm({
   const [invalidShortcutDraft, setInvalidShortcutDraftState] =
     useState<InvalidShortcutDraft>(null);
   const invalidShortcutDraftRef = useRef<InvalidShortcutDraft>(null);
+  const [actionShortcutError, setActionShortcutErrorState] =
+    useState<ActionShortcutError>(null);
+  const actionShortcutErrorRef = useRef<ActionShortcutError>(null);
+  const { mutateAsync: saveActionShortcut } = useSetActionShortcut();
   const [transcriptionMode, setTranscriptionModeRaw] =
     useState<TranscriptionMode>("local");
   const [localModel, setLocalModel] = useState("");
@@ -337,6 +352,7 @@ export function useSettingsForm({
   const settingsQuery = useSettings();
   const licenseStateQuery = useLicenseState();
   const licenseGateActive = useLicenseGate();
+  const actionsQuery = useActions(licenseGateActive);
   const appInfoQuery = useAppInfo();
   const inputDevicesQuery = useInputDevices();
   // Settings stays mounted, and only macOS reports device changes, so a mic
@@ -378,7 +394,8 @@ export function useSettingsForm({
     modelCatalogQuery.isLoading ||
     inputDevicesQuery.isLoading ||
     appInfoQuery.isLoading ||
-    licenseStateQuery.isLoading;
+    licenseStateQuery.isLoading ||
+    actionsQuery.isLoading;
 
   const clearSettingsError = useCallback(() => {
     setError(null);
@@ -386,7 +403,7 @@ export function useSettingsForm({
   }, []);
 
   const clearSettingsErrorIfNoInvalidDrafts = useCallback(() => {
-    if (!invalidShortcutDraftRef.current) {
+    if (!invalidShortcutDraftRef.current && !actionShortcutErrorRef.current) {
       clearSettingsError();
     }
   }, [clearSettingsError]);
@@ -415,6 +432,50 @@ export function useSettingsForm({
     invalidShortcutDraftRef.current = null;
     setInvalidShortcutDraftState(null);
   }, []);
+
+  const setActionShortcutError = useCallback((next: ActionShortcutError) => {
+    actionShortcutErrorRef.current = next;
+    setActionShortcutErrorState(next);
+  }, []);
+
+  // Action shortcuts live in their script files, outside the settings save.
+  const updateActionShortcut = useCallback(
+    (action: string, index: number, shortcut: string, mode: ShortcutMode) => {
+      setActionShortcutError(null);
+      saveActionShortcut({ file: action, index, shortcut, behavior: mode })
+        .then(clearSettingsErrorIfNoInvalidDrafts)
+        .catch((err) => {
+          const message = String(err);
+          setActionShortcutError({ action, index, shortcut, message });
+          showSettingsError(message, "general");
+        });
+    },
+    [
+      clearSettingsErrorIfNoInvalidDrafts,
+      saveActionShortcut,
+      setActionShortcutError,
+      showSettingsError,
+    ],
+  );
+
+  // An edit elsewhere can remove the row the error belongs to.
+  useEffect(() => {
+    const failed = actionShortcutErrorRef.current;
+    if (!failed) return;
+    const rowShown = actionsQuery.data?.actions.some(
+      (action) =>
+        action.file === failed.action &&
+        action.enabled &&
+        action.shortcuts.length > failed.index,
+    );
+    if (rowShown) return;
+    setActionShortcutError(null);
+    clearSettingsErrorIfNoInvalidDrafts();
+  }, [
+    actionsQuery.data,
+    clearSettingsErrorIfNoInvalidDrafts,
+    setActionShortcutError,
+  ]);
 
   const invalidShortcutDrafts = useMemo<InvalidShortcutDrafts>(() => {
     if (!invalidShortcutDraft) return {};
@@ -878,7 +939,7 @@ export function useSettingsForm({
 
   const discardEmptyCaptureDraft = useCallback(() => {
     const target = captureActiveRef.current;
-    if (target) {
+    if (target && !target.action) {
       const current = shortcutBindingsRef.current;
       const binding = current[target.mode][target.index];
       if (
@@ -941,7 +1002,10 @@ export function useSettingsForm({
     onShortcutCaptured: (combo) => {
       clearPendingSettingsSave();
       const target = captureActiveRef.current;
-      if (target) {
+      if (target?.action) {
+        captureActiveRef.current = null;
+        updateActionShortcut(target.action, target.index, combo, target.mode);
+      } else if (target) {
         captureActiveRef.current = null;
         updateShortcutBindings(
           (current) => ({
@@ -1277,9 +1341,14 @@ export function useSettingsForm({
   }, [appInfo?.data_dir_path]);
 
   const handleStartCapture = useCallback(
-    (mode: ShortcutMode, index = 0) => {
+    (mode: ShortcutMode, index = 0, action?: string) => {
       discardInvalidShortcutDraft();
-      if (captureActive?.mode === mode && captureActive.index === index) {
+      setActionShortcutError(null);
+      if (
+        captureActive?.mode === mode &&
+        captureActive.index === index &&
+        captureActive.action === action
+      ) {
         captureActiveRef.current = null;
         setCaptureActive(null);
         finalizeCapture();
@@ -1288,7 +1357,7 @@ export function useSettingsForm({
         return;
       }
       resetCaptureState();
-      const target = { mode, index };
+      const target = { mode, index, action };
       captureActiveRef.current = target;
       setCaptureActive(target);
       clearSettingsErrorIfNoInvalidDrafts();
@@ -1306,6 +1375,7 @@ export function useSettingsForm({
       discardInvalidShortcutDraft,
       finalizeCapture,
       resetCaptureState,
+      setActionShortcutError,
       showSettingsError,
     ],
   );
@@ -1358,7 +1428,7 @@ export function useSettingsForm({
       if (bindingCount(shortcutBindingsRef.current) <= 1) return;
       discardInvalidShortcutDraft();
       const activeTarget = captureActiveRef.current;
-      if (activeTarget?.mode === mode) {
+      if (activeTarget?.mode === mode && !activeTarget.action) {
         if (activeTarget.index === index) {
           captureActiveRef.current = null;
           setCaptureActive(null);
@@ -1808,6 +1878,8 @@ export function useSettingsForm({
     captureActive,
     capturePreview,
     handleStartCapture,
+    actionShortcutError,
+    updateActionShortcut,
     updateShortcutBinding,
     addShortcutBinding,
     removeShortcutBinding,

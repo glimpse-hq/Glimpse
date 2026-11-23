@@ -6,6 +6,7 @@ import {
   PresenceContext,
 } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { actionKeys } from "../features/actions/queries";
 import { askKeys } from "../features/asks/queries";
 import { licenseKeys } from "../features/license/queries";
 import { useTextScale, useTheme } from "../shared/hooks/useAppearance";
@@ -84,6 +85,9 @@ function QuerySyncBridge() {
   });
   useTauriEvent("audio:input-devices-changed", () => {
     queryClient.invalidateQueries({ queryKey: settingsKeys.devices() });
+  });
+  useTauriEvent("actions:changed", () => {
+    queryClient.invalidateQueries({ queryKey: actionKeys.list() });
   });
 
   return null;

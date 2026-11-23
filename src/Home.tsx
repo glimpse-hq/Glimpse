@@ -22,6 +22,7 @@ import {
   ArrowCircleUp as ArrowUpCircle,
   Books as Library,
   Record as RecordIcon,
+  Lightning,
 } from "@phosphor-icons/react";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import WindowControls from "./shared/ui/WindowControls";
@@ -51,6 +52,7 @@ import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
 import RecordingView from "./features/recording/components/RecordingView";
+import ActionsView from "./features/actions/components/ActionsView";
 import LocalApiSidebarStatus from "./features/settings/components/LocalApiSidebarStatus";
 import NewsMenu from "./features/news/components/NewsMenu";
 import AskPrompt from "./features/asks/components/AskPrompt";
@@ -81,7 +83,9 @@ const importSettingsScreen = () =>
 const SettingsScreen = lazy(importSettingsScreen);
 const FAQModal = lazy(() => import("./shared/ui/FAQModal"));
 
-type ActiveView = "home" | "dictionary" | "brain" | "library" | "record";
+type ActiveView =
+  "home" | "dictionary" | "brain" | "library" | "record" | "actions";
+type GatedView = Exclude<ActiveView, "home" | "dictionary">;
 
 let cachedLocalApiStatus: LocalApiStatus | null = null;
 
@@ -96,7 +100,7 @@ const FIRST_SCREEN_QUERY_ROOTS: readonly string[] = [
   updateKeys.status()[0],
 ];
 
-const gatedFeatureName = (view: "brain" | "library" | "record") =>
+const gatedFeatureName = (view: GatedView) =>
   view === "brain" ? "personalization" : view;
 
 type HomeProps = {
@@ -244,7 +248,7 @@ const Home = ({ onReady }: HomeProps) => {
   }, [licenseGateActive]);
 
   // A locked view opens on its locked screen, which offers it in place.
-  const openGatedView = useCallback((view: "brain" | "library" | "record") => {
+  const openGatedView = useCallback((view: GatedView) => {
     setIsSettingsOpen(false);
     setActiveView(view);
     if (licenseGateActiveRef.current) return;
@@ -289,7 +293,9 @@ const Home = ({ onReady }: HomeProps) => {
   useEffect(() => {
     let cancelled = false;
     const unlisteners: UnlistenFn[] = [];
-    const openView = (view: "dictionary" | "brain" | "library" | "record") => {
+    const openView = (
+      view: "dictionary" | "brain" | "library" | "record" | "actions",
+    ) => {
       if (view === "dictionary") {
         setIsSettingsOpen(false);
         setActiveView(view);
@@ -344,6 +350,7 @@ const Home = ({ onReady }: HomeProps) => {
       ["navigate:personalization", () => openView("brain")],
       ["navigate:library", () => openView("library")],
       ["navigate:record", () => openView("record")],
+      ["navigate:actions", () => openView("actions")],
       [
         "navigate:announcement",
         () =>
@@ -480,6 +487,7 @@ const Home = ({ onReady }: HomeProps) => {
     brain: Brain,
     library: Library,
     record: RecordIcon,
+    actions: Lightning,
   }[activeView];
   useTimeOfDayPeriodTick(homeViewActive);
   const {
@@ -662,6 +670,23 @@ const Home = ({ onReady }: HomeProps) => {
                   locked={!licenseGateActive}
                   lockedHint={lockedHint}
                   onClick={() => openGatedView("record")}
+                />
+                <div className="flex h-5 items-center pr-3 pl-[var(--sidebar-icon-pl,17px)]">
+                  <div className="flex w-[20px] shrink-0 justify-center">
+                    <div className="h-px w-3.5 bg-[var(--border-strong)]" />
+                  </div>
+                </div>
+                <SidebarItem
+                  icon={Lightning}
+                  label={t({
+                    id: "home.sidebar.actions",
+                    message: "Actions",
+                  })}
+                  active={activeView === "actions"}
+                  collapsed={isSidebarCollapsed}
+                  locked={!licenseGateActive}
+                  lockedHint={lockedHint}
+                  onClick={() => openGatedView("actions")}
                 />
               </>
             )}
@@ -1076,6 +1101,14 @@ const Home = ({ onReady }: HomeProps) => {
                 setOpenLibraryItemId(id);
                 setActiveView("library");
               }}
+            />
+          </div>
+
+          <div
+            className={`w-full max-w-column-wide mx-auto min-h-0 flex-1 ${activeView === "actions" && !lockedFeature ? "flex flex-col" : "hidden"}`}
+          >
+            <ActionsView
+              isActive={activeView === "actions" && licenseGateActive}
             />
           </div>
         </div>

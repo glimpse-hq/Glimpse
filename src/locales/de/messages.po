@@ -1726,6 +1726,9 @@ msgstr "Lokales Whisper-Modell, mehrsprachig und mit Wörterbuchunterstützung."
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0} gibt kein Audio wieder und wird daher nicht aufgezeichnet."
 
+
+
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -2101,6 +2104,21 @@ msgid "home.account.fallback"
 msgstr "Account"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.sidebar.actions"
+msgstr "Aktionen"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.title"
+msgstr "Aktionen"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.actions.title"
+msgstr "Aktionen gibt es mit einer Glimpse-Lizenz"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.submit"
 msgstr "Aktivieren"
@@ -2151,6 +2169,11 @@ msgstr "Notiz hinzufügen"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.label_placeholder"
 msgstr "Notiz hinzufügen"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.empty"
+msgstr "Füge dem Ordner „Aktionen“ ein Skript hinzu."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2211,6 +2234,11 @@ msgstr "Nach einer Woche"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after_year"
 msgstr "Nach einem Jahr"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.dictation_saved"
+msgstr "Nach jedem Diktat"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3459,6 +3487,11 @@ msgstr "Löschen"
 #: src/features/library/components/LibraryDeleteDialog.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.delete"
+msgstr "Löschen"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.delete"
 msgstr "Löschen"
 
 #. js-lingui-explicit-id
@@ -5104,6 +5137,11 @@ msgid "shortcuts.key.mouse_forward"
 msgstr "Maustaste „Vorwärts“"
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.move_to_trash"
+msgstr "In den Papierkorb legen"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.folder.move_to"
 msgstr ""
@@ -5206,6 +5244,11 @@ msgstr "Neuigkeiten von Glimpse"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.raise"
 msgstr "Nächste Medienaktion"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_no_match"
+msgstr "Keine Aktion für „{text}“"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -5560,6 +5603,11 @@ msgid "onboarding.done.auto_launch"
 msgstr "Beim Anmelden öffnen"
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.open_folder"
+msgstr "Ordner öffnen"
+
+#. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "GitHub öffnen"
@@ -5784,6 +5832,11 @@ msgstr "Übe deine erste Diktataufnahme"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.preloaded_model"
 msgstr "Vorgeladenes Modell"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.press"
+msgstr "Drücken"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
@@ -6314,9 +6367,19 @@ msgid "locked.api.line.v3"
 msgstr "Nutze eine lokale Transkriptions-API und das Kommandozeilen-Tool."
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.trigger.none"
+msgstr "Per Name ausführen"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.run_cleanup"
 msgstr "Bereinigung ausführen"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.actions.line"
+msgstr "Führe eigene Skripte mit einem Kurzbefehl, einem gesprochenen Satz oder einem Ereignis in Glimpse aus."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -6621,6 +6684,18 @@ msgstr "Alle Sprecher einblenden"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
 msgstr "Fehlerdetails anzeigen"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+#: src/features/settings/components/ShortcutList.tsx
+msgid "actions.show_in_explorer"
+msgstr "Im Datei-Explorer anzeigen"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+#: src/features/settings/components/ShortcutList.tsx
+msgid "actions.show_in_finder"
+msgstr "Im Finder anzeigen"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -6943,6 +7018,11 @@ msgstr "Transkription stoppen"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.status.stopped"
 msgstr "Angehalten"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_timed_out"
+msgstr "Nach {seconds} s angehalten."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -7818,6 +7898,21 @@ msgstr "Was ist neu?"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.filter.when"
 msgstr "Wann"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.library_error"
+msgstr "Wenn eine Aufnahme fehlschlägt"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.library_added"
+msgstr "Wenn eine Aufnahme hinzugefügt wird"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.library_complete"
+msgstr "Wenn eine Aufnahme bereit ist"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

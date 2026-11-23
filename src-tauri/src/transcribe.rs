@@ -34,6 +34,7 @@ struct ProcessedTranscript {
     insert_latency_seconds: Option<f32>,
     field_read_ms: Option<u32>,
     paste_ms: Option<u32>,
+    action: Option<crate::actions::Routed>,
 }
 
 enum ProcessTranscriptOutcome {
@@ -58,6 +59,8 @@ struct ProcessTranscriptInput<'a> {
     stopped_at: Option<Instant>,
     /// Read with `settings`, so a failure on settings changed since is ignored.
     preflight_generation: u64,
+    /// None when the text can't go to an action, like a recovered recording.
+    actions: Option<crate::actions::DictationTrigger<'a>>,
 }
 
 /// How a dictation was started, carried from the pill for analytics.
@@ -66,6 +69,7 @@ pub(crate) struct DictationOrigin {
     /// hold or toggle.
     pub(crate) trigger: &'static str,
     pub(crate) cleanup_shortcut: bool,
+    pub(crate) action_key: Option<crate::core::hotkeys::Hotkey>,
     /// When the recording started, before the model load it kicks off.
     pub(crate) started_at: Option<Instant>,
     /// When the shortcut was released or pressed to stop.
@@ -179,6 +183,7 @@ struct CompletionInput {
     temporary: bool,
     timestamp_override: Option<chrono::DateTime<chrono::Local>>,
     stats: DictationStats,
+    action: Option<crate::actions::Routed>,
 }
 
 pub(crate) struct StreamingTranscriptionInput {
@@ -246,6 +251,7 @@ fn watch_for_stall(
                 analytics::activity(),
                 Activity::ModelLoading | Activity::Llm
             ) || transcriber.is_loading()
+                || crate::actions::inserting()
             {
                 limit
             } else {
@@ -463,6 +469,11 @@ pub(crate) fn queue_transcription(
                         audio_duration_seconds,
                         stopped_at: Some(origin.stopped_at),
                         preflight_generation: origin.preflight_generation,
+                        actions: auto_paste.then_some(crate::actions::DictationTrigger {
+                            key: origin.action_key,
+                            temporary,
+                            audio_path: &saved_for_task.path,
+                        }),
                     },
                 )
                 .await
@@ -543,6 +554,7 @@ pub(crate) fn queue_transcription(
                         temporary,
                         timestamp_override: None,
                         stats,
+                        action: processed.action,
                     },
                 );
 
@@ -825,6 +837,7 @@ async fn transcribe_recovered_recording(
             audio_duration_seconds,
             stopped_at: None,
             preflight_generation,
+            actions: None,
         },
     )
     .await
@@ -878,6 +891,7 @@ async fn transcribe_recovered_recording(
             temporary: false,
             timestamp_override: Some(saved.started_at),
             stats,
+            action: None,
         },
     );
 
@@ -935,7 +949,49 @@ async fn process_transcript_text(
         audio_duration_seconds,
         stopped_at,
         preflight_generation,
+        actions,
     } = input;
+
+    if let Some(trigger) = actions
+        && !crate::voice_prompt::is_answering()
+    {
+        let routed = match crate::actions::route_dictation(
+            app,
+            settings,
+            &trigger,
+            &raw_transcript,
+            detected_language,
+            active_context,
+            pending_selected_text,
+        )
+        .await
+        {
+            crate::actions::Route::Dictate => None,
+            crate::actions::Route::Skip => Some((false, crate::actions::Routed::Skipped)),
+            crate::actions::Route::Run(run) => match run.dictated(app, cancel_token).await {
+                Some((pasted, ran)) => Some((pasted, crate::actions::Routed::Ran(ran))),
+                None => return ProcessTranscriptOutcome::Cancelled,
+            },
+        };
+        if let Some((pasted, action)) = routed {
+            return ProcessTranscriptOutcome::Ready(ProcessedTranscript {
+                final_transcript: dictionary::apply_replacements(
+                    &raw_transcript,
+                    &settings.replacements,
+                ),
+                llm_cleaned: false,
+                llm_model: None,
+                pasted,
+                answered: None,
+                llm_seconds: None,
+                llm_outcome: "off",
+                insert_latency_seconds: None,
+                field_read_ms: None,
+                paste_ms: None,
+                action: Some(action),
+            });
+        }
+    }
 
     let previous_activity = analytics::activity();
     let is_edit_mode = pending_selected_text.is_some();
@@ -1240,6 +1296,7 @@ async fn process_transcript_text(
         insert_latency_seconds,
         field_read_ms,
         paste_ms,
+        action: None,
     })
 }
 
@@ -1503,14 +1560,27 @@ fn emit_transcription_complete_with_cleanup(
         audio_path,
         pending_path,
         llm_cleaned,
-        metadata,
+        mut metadata,
         mode,
         transcription_duration_seconds,
         audio_source,
         temporary,
         timestamp_override,
         stats,
+        action,
     } = input;
+    // An answer to a question would start the action that asked it again.
+    let fires_saved = action.is_none() && metadata.question.is_none();
+    let action = match action {
+        Some(crate::actions::Routed::Ran(ran)) => Some(ran),
+        _ => None,
+    };
+    if let Some(action) = &action {
+        metadata.action = Some(action.name().to_string());
+        metadata.selected_text = None;
+        metadata.edit_instruction = None;
+    }
+    let id_override = action.as_ref().and_then(crate::actions::DictationRun::id);
 
     analytics::track_transcription_completed(
         app,
@@ -1558,7 +1628,7 @@ fn emit_transcription_complete_with_cleanup(
                     final_transcript.clone(),
                     audio_path.clone(),
                     metadata,
-                    None,
+                    id_override,
                     timestamp_override,
                 )
         } else {
@@ -1568,7 +1638,7 @@ fn emit_transcription_complete_with_cleanup(
                 storage::TranscriptionStatus::Success,
                 None,
                 metadata,
-                None,
+                id_override,
                 timestamp_override,
             )
         };
@@ -1593,6 +1663,7 @@ fn emit_transcription_complete_with_cleanup(
         }
     };
 
+    let saved_id = record.as_ref().map(|record| record.id.clone());
     crate::emit_event(
         app,
         EVENT_TRANSCRIPTION_COMPLETE,
@@ -1606,6 +1677,11 @@ fn emit_transcription_complete_with_cleanup(
     let state = app.state::<AppState>();
     if state.owns_pending_path(Path::new(&audio_path)) {
         state.pill().finish_processing(app);
+    }
+    match (action, saved_id) {
+        (Some(action), _) => action.start(app),
+        (None, Some(id)) if fires_saved => crate::actions::fire_event(app, "dictation.saved", &id),
+        _ => {}
     }
 
     if temporary {
@@ -2462,6 +2538,11 @@ pub(crate) fn finalize_streaming_transcription(
                 audio_duration_seconds: duration_seconds,
                 stopped_at: Some(origin.stopped_at),
                 preflight_generation: origin.preflight_generation,
+                actions: auto_paste.then_some(crate::actions::DictationTrigger {
+                    key: origin.action_key,
+                    temporary,
+                    audio_path: &audio_path,
+                }),
             },
         )
         .await
@@ -2513,6 +2594,7 @@ pub(crate) fn finalize_streaming_transcription(
             selected_text: pending_selected_text,
             question: processed.answered.as_ref().map(|a| a.question.clone()),
             question_client: processed.answered.as_ref().map(|a| a.client.clone()),
+            action: None,
         };
 
         crate::pill::collapse_expanded_pill(&app_handle);
@@ -2532,6 +2614,7 @@ pub(crate) fn finalize_streaming_transcription(
                 temporary,
                 timestamp_override: None,
                 stats,
+                action: processed.action,
             },
         );
         app_handle

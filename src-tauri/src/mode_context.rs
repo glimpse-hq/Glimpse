@@ -50,23 +50,28 @@ fn app_matches(active_app_name: &str, configured_app_name: &str) -> bool {
         || tokens_contain_all(&active_tokens, &configured_tokens)
 }
 
-fn mode_matches(mode: &Personality, context: &ActiveContext) -> bool {
-    let app_match = mode.apps.iter().any(|app| {
+pub(crate) fn any_app_matches(apps: &[String], context: &ActiveContext) -> bool {
+    apps.iter().any(|app| {
         app_matches(&context.app_name, app)
             || context
                 .other_names
                 .iter()
                 .any(|name| app_matches(name, app))
-    });
-    let site_match = if let Some(url) = context.url.as_ref() {
-        mode.websites.iter().any(|site| site_matches(url, site))
+    })
+}
+
+pub(crate) fn any_site_matches(sites: &[String], context: &ActiveContext) -> bool {
+    if let Some(url) = context.url.as_ref() {
+        sites.iter().any(|site| site_matches(url, site))
     } else {
-        mode.websites.iter().any(|site| {
+        sites.iter().any(|site| {
             site_matches(&context.window_title, site) || site_matches(&context.app_name, site)
         })
-    };
+    }
+}
 
-    app_match || site_match
+fn mode_matches(mode: &Personality, context: &ActiveContext) -> bool {
+    any_app_matches(&mode.apps, context) || any_site_matches(&mode.websites, context)
 }
 
 fn format_mode_context_with_snippets(

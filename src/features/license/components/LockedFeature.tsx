@@ -1,7 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
 import PlanPicker from "./PlanPicker";
 
-export type LockedFeatureId = "personalization" | "library" | "record" | "api";
+export type LockedFeatureId =
+  "personalization" | "library" | "record" | "actions" | "api";
 
 type LockedFeatureProps = {
   feature: LockedFeatureId;
@@ -50,6 +51,17 @@ const LockedFeature = ({
         id: "locked.record.line",
         message:
           "Record meetings from your microphone and computer audio, with bookmarks and speaker labels.",
+      }),
+    },
+    actions: {
+      title: t({
+        id: "locked.actions.title",
+        message: "Actions come with a Glimpse license",
+      }),
+      line: t({
+        id: "locked.actions.line",
+        message:
+          "Run your own scripts with a shortcut, a spoken phrase, or an event in Glimpse.",
       }),
     },
     api: {

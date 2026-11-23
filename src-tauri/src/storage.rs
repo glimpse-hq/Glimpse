@@ -37,6 +37,9 @@ pub struct TranscriptionRecord {
     /// Who asked `question`.
     #[serde(default)]
     pub question_client: Option<String>,
+    /// The action this dictation ran instead of being pasted.
+    #[serde(default)]
+    pub action: Option<String>,
     pub audio_path: String,
     #[serde(default)]
     pub audio_available: bool,
@@ -139,6 +142,7 @@ pub struct TranscriptionMetadata {
     pub edit_instruction: Option<String>,
     pub question: Option<String>,
     pub question_client: Option<String>,
+    pub action: Option<String>,
     pub speech_model: String,
     pub llm_model: Option<String>,
     pub word_count: u32,
@@ -161,6 +165,7 @@ impl Default for TranscriptionMetadata {
             edit_instruction: None,
             question: None,
             question_client: None,
+            action: None,
             speech_model: String::new(),
             llm_model: None,
             word_count: 0,
@@ -278,6 +283,7 @@ impl StorageManager {
             edit_instruction: metadata.edit_instruction,
             question: metadata.question,
             question_client: metadata.question_client,
+            action: metadata.action,
         };
 
         let conn = self.connection.lock();
@@ -333,6 +339,7 @@ impl StorageManager {
                 edit_instruction: None,
                 question: None,
                 question_client: None,
+                action: None,
                 speech_model: String::new(),
                 llm_model: None,
                 word_count: count_words(text),
@@ -469,7 +476,7 @@ impl StorageManager {
 
         let query = format!(
             "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client
+                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client, action
              FROM transcriptions{where_clause}
              ORDER BY {order_clause}
              LIMIT ? OFFSET ?"
@@ -526,7 +533,7 @@ impl StorageManager {
             let conn = self.connection.lock();
             let mut stmt = conn.prepare(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client, action
                  FROM transcriptions
                  WHERE status = ?1 AND text <> ''
                  ORDER BY timestamp DESC, id DESC
@@ -566,7 +573,7 @@ impl StorageManager {
             let conn = self.connection.lock();
             let mut stmt = conn.prepare(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client, action
                  FROM transcriptions
                  WHERE status = ?1 AND text <> ''
                    AND (text LIKE ?2 ESCAPE '\\' OR raw_text LIKE ?2 ESCAPE '\\')
@@ -761,8 +768,8 @@ impl StorageManager {
                 audio_duration_seconds,
                 synced,
                 mode_id,
-                mode_name, selected_text, edit_instruction, question, question_client
-             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+                mode_name, selected_text, edit_instruction, question, question_client, action
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
             params![
                 record.id,
                 timestamp,
@@ -783,6 +790,7 @@ impl StorageManager {
                 record.edit_instruction,
                 record.question,
                 record.question_client,
+                record.action,
             ],
         )?;
         Ok(())
@@ -847,7 +855,7 @@ impl StorageManager {
         let mut record = conn
             .query_row(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name, selected_text, edit_instruction, question, question_client, action
                  FROM transcriptions WHERE id = ?1",
                 params![id],
                 Self::record_from_row,
@@ -921,6 +929,7 @@ impl StorageManager {
             edit_instruction: row.get("edit_instruction")?,
             question: row.get("question")?,
             question_client: row.get("question_client")?,
+            action: row.get("action")?,
             audio_path: row.get("audio_path")?,
             // Filled in by resolve_audio_availability after the query.
             audio_available: false,
@@ -1088,6 +1097,12 @@ impl StorageManager {
             "transcriptions",
             "question_client",
             "ALTER TABLE transcriptions ADD COLUMN question_client TEXT",
+        )?;
+        Self::ensure_column(
+            conn,
+            "transcriptions",
+            "action",
+            "ALTER TABLE transcriptions ADD COLUMN action TEXT",
         )?;
 
         let stats_seeded: bool = conn.query_row(

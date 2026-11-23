@@ -84,6 +84,40 @@ fn remove_cli_link() -> Result<(), String> {
     }
 }
 
+/// Puts a `glimpse` command in `dir` for action scripts, whether or not the
+/// person installed the CLI.
+pub(crate) fn write_link(dir: &Path) -> Result<(), String> {
+    let source = cli_source_binary()?;
+    fs::create_dir_all(dir).map_err(|err| format!("Failed to create {}: {err}", dir.display()))?;
+
+    #[cfg(unix)]
+    {
+        let destination = dir.join("glimpse");
+        let _ = fs::remove_file(&destination);
+        std::os::unix::fs::symlink(&source, &destination)
+            .map_err(|err| format!("Failed to link the Glimpse command: {err}"))
+    }
+
+    // Python and Node can only start an .exe, so this is the program itself.
+    // A copy stands in when the folders can't share a hard link.
+    #[cfg(windows)]
+    {
+        let destination = dir.join("glimpse.exe");
+        let stamp = |path: &Path| {
+            fs::metadata(path)
+                .and_then(|metadata| Ok((metadata.len(), metadata.modified()?)))
+                .ok()
+        };
+        if stamp(&destination).is_some() && stamp(&destination) == stamp(&source) {
+            return Ok(());
+        }
+        let _ = fs::remove_file(&destination);
+        fs::hard_link(&source, &destination)
+            .or_else(|_| fs::copy(&source, &destination).map(drop))
+            .map_err(|err| format!("Failed to put the Glimpse command in place: {err}"))
+    }
+}
+
 pub(crate) fn cli_install_status() -> CliInstallStatus {
     let source = cli_source_binary().ok();
     let default_path = default_install_path().ok();
