@@ -374,7 +374,7 @@ function FeatureMarquee({ smartShortcut }: { smartShortcut: string }) {
       icon={Cpu}
       title={t({
         id: "onboarding.license_step.tile_c1",
-        message: "Glimpse C1.1 2B",
+        message: "Glimpse C1.2 2B",
       })}
     >
       <p className="ui-text-body-sm text-content-muted">
