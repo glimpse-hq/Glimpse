@@ -181,6 +181,16 @@ pub struct ErrorDetail {
     pub os_error: Option<i64>,
 }
 
+impl std::fmt::Display for ErrorDetail {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({})", self.reason, self.error_type)?;
+        if let Some(code) = self.os_error {
+            write!(f, " os_error={code}")?;
+        }
+        Ok(())
+    }
+}
+
 /// Classifies by the first typed error in the cause chain, then by keywords.
 /// Only numbers are ever read out of message text.
 pub fn error_detail(err: &anyhow::Error) -> ErrorDetail {

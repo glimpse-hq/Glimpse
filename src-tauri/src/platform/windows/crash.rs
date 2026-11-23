@@ -134,6 +134,7 @@ pub fn exit_if_session_end_panic(location: &str) {
     {
         crate::analytics::set_crash_phase("shutdown");
         crate::analytics::end_session();
+        crate::logs::flush();
         std::process::exit(0);
     }
 }

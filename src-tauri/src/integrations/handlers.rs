@@ -449,7 +449,10 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
                 text = cleaned;
                 llm_cleaned = true;
             }
-            Err(err) => tracing::warn!("CLI transcribe cleanup skipped: {err}"),
+            Err(err) => tracing::warn!(
+                "CLI transcribe cleanup skipped: {}",
+                crate::speech::remote::log_reason(&err)
+            ),
         }
     }
 

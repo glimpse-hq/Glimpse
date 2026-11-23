@@ -114,7 +114,6 @@ pub async fn cleanup_transcription_with_context(
         ));
     }
 
-    tracing::info!("[LLM] Processing transcription: {} chars", text.len());
     let style_guidance = style_guidance(settings, mode, context);
     let has_style_guidance = style_guidance.is_some();
     // A matched mode owns the prompt; Global's rules apply only without one.
@@ -158,8 +157,6 @@ pub async fn cleanup_transcription_with_context(
         return Ok(text.to_string());
     }
 
-    tracing::info!("[LLM] Cleanup complete: {} chars", result.len());
-
     Ok(result)
 }
 
@@ -174,12 +171,6 @@ pub async fn edit_transcription(
             "Edit mode requires a selected language model in Settings -> Models",
         ));
     }
-
-    tracing::info!(
-        "[LLM Edit] Processing {} char command on {} chars of text",
-        voice_command.len(),
-        selected_text.len()
-    );
 
     let result = run_text_task(
         client,
@@ -202,8 +193,6 @@ pub async fn edit_transcription(
         tracing::error!("[LLM Edit] Candidate rejected by safety checks, keeping selected text");
         return Ok(selected_text.to_string());
     }
-
-    tracing::info!("[LLM Edit] Final output: {} chars", result.len());
 
     Ok(result)
 }
@@ -371,11 +360,9 @@ pub fn prewarm_cleanup(settings: &UserSettings) {
         let prompt =
             build_cleanup_system_prompt(&settings, guidance.as_deref(), custom_rules.as_deref());
         if apple {
-            if let Err(err) = glimpse_language::apple::apple_prewarm(&prompt) {
-                tracing::debug!("[Apple LLM] prewarm skipped: {err}");
-            }
-        } else if let Err(err) = crate::cleanup_model::prewarm(&prompt) {
-            tracing::debug!("[cleanup model] prewarm skipped: {err}");
+            let _ = glimpse_language::apple::apple_prewarm(&prompt);
+        } else {
+            let _ = crate::cleanup_model::prewarm(&prompt);
         }
     });
 }
@@ -395,11 +382,9 @@ pub fn prewarm_edit(settings: &UserSettings) {
             return;
         };
         if uses_apple_provider(&settings) {
-            if let Err(err) = glimpse_language::apple::apple_prewarm(EDIT_PROMPT.trim()) {
-                tracing::debug!("[Apple LLM] edit prewarm skipped: {err}");
-            }
-        } else if let Err(err) = crate::cleanup_model::prewarm(EDIT_PROMPT.trim()) {
-            tracing::debug!("[cleanup model] edit prewarm skipped: {err}");
+            let _ = glimpse_language::apple::apple_prewarm(EDIT_PROMPT.trim());
+        } else {
+            let _ = crate::cleanup_model::prewarm(EDIT_PROMPT.trim());
         }
     });
 }
@@ -487,10 +472,6 @@ const INPUT_UNSUITABLE_CODE: &str = "input_unsuitable";
 /// language). Dictation keeps the raw transcript without a warning.
 pub fn is_input_unsuitable(error: &RemoteError) -> bool {
     error.code.as_deref() == Some(INPUT_UNSUITABLE_CODE)
-}
-
-pub fn llm_issue_message(error: &RemoteError) -> String {
-    crate::speech::remote::issue_message("Language model", error)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -824,9 +805,8 @@ async fn run_text_task(
             if matches!(err.kind, RemoteErrorKind::InvalidRequest) && body.sets_reasoning() =>
         {
             tracing::warn!(
-                "[LLM] {} rejected the reasoning setting, retrying without it: {}",
-                body.model,
-                llm_issue_message(&err)
+                "[LLM] reasoning setting rejected, retrying without it: {}",
+                crate::speech::remote::log_reason(&err)
             );
             body.drop_reasoning_setting();
             send_chat_request(client, settings, &body).await?
@@ -837,11 +817,7 @@ async fn run_text_task(
             let Some(delay) = short_retry_delay(&err) else {
                 return Err(err);
             };
-            tracing::warn!(
-                "[LLM] rate limited, retrying in {:?}: {}",
-                delay,
-                llm_issue_message(&err)
-            );
+            tracing::warn!("[LLM] rate limited, retrying in {delay:?}");
             tokio::time::sleep(delay).await;
             send_chat_request(client, settings, &body).await?
         }
@@ -872,9 +848,8 @@ async fn run_apple_text_task(
         message: format!("task failed: {err}"),
     })??;
     tracing::info!(
-        "[Apple LLM] responded in {} ms ({} chars)",
-        started.elapsed().as_millis(),
-        result.len()
+        "[Apple LLM] responded in {} ms",
+        started.elapsed().as_millis()
     );
     Ok(result)
 }
@@ -948,13 +923,9 @@ async fn run_bonsai_text_task(
     };
     crate::analytics::dictation::track_cleanup_model_run(task, model, &run, input);
     let generation = run.generation;
-    let stats = &generation.stats;
     tracing::info!(
-        "[cleanup model] {model} responded in {} ms ({} prompt + {} cached tokens, {} generated, {:?})",
+        "[cleanup model] {model} responded in {} ms ({:?})",
         started.elapsed().as_millis(),
-        stats.prompt_tokens,
-        stats.cached_tokens,
-        stats.generated_tokens,
         generation.stop
     );
     // A stop short of the end-of-turn token can cut the text off mid-sentence. An early stop is

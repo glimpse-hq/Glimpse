@@ -37,11 +37,9 @@ fn serve(app: AppHandle<AppRuntime>) -> std::io::Result<()> {
             #[cfg(target_os = "windows")]
             let answered = answered.filter(super::ipc::served_by_current_user);
             if answered.is_some() {
-                tracing::debug!("CLI control socket already served by another instance");
                 return Ok(());
-            } else {
-                tracing::warn!("CLI control socket address in use but unreachable; reclaiming");
             }
+            tracing::warn!("CLI control socket address in use but unreachable; reclaiming");
 
             ListenerOptions::new()
                 .name(socket_name()?)
@@ -53,18 +51,11 @@ fn serve(app: AppHandle<AppRuntime>) -> std::io::Result<()> {
     };
 
     tracing::info!("CLI control socket listening");
-    for incoming in listener.incoming() {
-        match incoming {
-            Ok(stream) => {
-                let app = app.clone();
-                std::thread::spawn(move || {
-                    if let Err(err) = handle_connection(&app, stream) {
-                        tracing::debug!("CLI control socket connection error: {err}");
-                    }
-                });
-            }
-            Err(err) => tracing::debug!("CLI control socket accept error: {err}"),
-        }
+    for stream in listener.incoming().flatten() {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            let _ = handle_connection(&app, stream);
+        });
     }
     Ok(())
 }

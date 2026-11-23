@@ -166,6 +166,23 @@ pub fn track_transcription_completed(
     props: TranscriptionEvent,
 ) {
     DISCARD_STREAK.store(0, Ordering::Relaxed);
+    let ms = |value: Option<u32>| value.map_or("-".to_string(), |ms| format!("{ms}ms"));
+    let secs = |value: Option<f32>| value.map_or("-".to_string(), |s| format!("{s:.2}s"));
+    tracing::info!(
+        "Transcribed {} {} audio={:.1}s total={:.2}s asr={} cleanup={} {} mic_open={} first_audio={} model_load={} paste={} insert={}",
+        props.audio_source,
+        props.mode,
+        props.audio_duration_seconds,
+        props.transcription_duration_seconds,
+        secs(props.asr_seconds),
+        props.llm_outcome.unwrap_or("off"),
+        props.compute.unwrap_or("-"),
+        ms(props.mic_open_ms),
+        ms(props.first_audio_ms),
+        ms(props.model_load_ms),
+        ms(props.paste_ms),
+        secs(props.insert_latency_seconds),
+    );
     let mut props = serde_json::to_value(&props).unwrap_or_else(|_| json!({}));
     if let Some(reason) = crate::speech::engine::cpu_fallback() {
         props["cpu_fallback"] = reason.into();
@@ -237,7 +254,7 @@ static FIRST_DICTATION_REPORTED: AtomicBool = AtomicBool::new(false);
 
 // Report the first shortcut attempt once per install.
 pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outcome: &str) {
-    if FIRST_DICTATION_REPORTED.load(Ordering::Relaxed) {
+    if FIRST_DICTATION_REPORTED.swap(true, Ordering::Relaxed) {
         return;
     }
     // Build first so an opted-out attempt never burns the marker.
@@ -254,7 +271,6 @@ pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outco
         .read_app_value::<String>(KEY_FIRST_DICTATION_REPORTED, String::new())
         .map(|v| !v.is_empty())
         .unwrap_or(true);
-    FIRST_DICTATION_REPORTED.store(true, Ordering::Relaxed);
     if already
         || store
             .write_app_value(KEY_FIRST_DICTATION_REPORTED, &"1".to_string())
