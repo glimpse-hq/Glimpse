@@ -268,9 +268,10 @@ fn watch_for_stall(
         if recovery.cancel_token.is_cancelled() {
             return;
         }
-        recovery.cancel_token.cancel();
+        // Claim the recording before cancelling, so the task's abort can't delete it.
         app.state::<AppState>()
             .release_pending_path(&recovery.audio_path);
+        recovery.cancel_token.cancel();
         emit_transcription_error_inner(
             &app,
             TranscriptionFailure {
