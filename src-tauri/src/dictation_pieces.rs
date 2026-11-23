@@ -10,7 +10,6 @@ use std::time::Duration;
 
 use anyhow::Result;
 use tauri::{AppHandle, Manager};
-use tokio_util::sync::CancellationToken;
 
 use crate::local_transcription::LocalTranscriber;
 use crate::recorder::{self, LiveBufferState};
@@ -160,19 +159,20 @@ impl Pieces {
         model: &ReadyModel,
         dictionary: &[String],
         language: &str,
-        cancel_token: Option<&CancellationToken>,
+        cancel: &glimpse_speech::service::CancelToken,
     ) -> Result<TranscriptionSuccess> {
         let mut transcript = self.text;
         let mut detected = self.language;
         let mut compute = self.compute;
         if !self.tail.is_empty() {
-            let tail = crate::transcribe::transcribe_parakeet(
+            let tail = crate::transcribe::transcribe_local(
                 transcriber,
                 model,
                 &self.tail,
+                16_000,
                 dictionary,
-                language,
-                cancel_token,
+                Some(language),
+                Some(cancel),
             )?;
             crate::transcribe::append_deduped_chunk(&mut transcript, &tail.transcript);
             detected = detected.or(tail.language);

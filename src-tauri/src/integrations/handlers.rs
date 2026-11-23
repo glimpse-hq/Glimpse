@@ -407,6 +407,7 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
                 } else {
                     glimpse_speech::TimestampGranularity::Segment
                 },
+                None,
             )
         },
     ));
