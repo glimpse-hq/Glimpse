@@ -3048,7 +3048,7 @@ msgstr "Glimpse C1はまだ{missingLanguage}に対応していません。"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_c1"
-msgstr "Glimpse C1.1 2B"
+msgstr "Glimpse C1.2 2B"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
