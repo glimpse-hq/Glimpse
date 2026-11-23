@@ -210,7 +210,10 @@ pub(crate) async fn reveal_logs(app: AppHandle<AppRuntime>) -> Result<(), String
             state.hotkeys.summary(),
             secure_input(),
         );
-        report.push_str(&recent_logs(&dir));
+        // Without logging this run there is no launch line to cut older logs at.
+        if LOG_GUARD.lock().is_some() {
+            report.push_str(&recent_logs(&dir));
+        }
         if let Ok(home) = app.path().home_dir() {
             let home = home.to_string_lossy();
             report = report
