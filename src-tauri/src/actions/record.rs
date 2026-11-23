@@ -13,8 +13,9 @@ use serde_json::{Value, json};
 const STDERR_LINES: usize = 20;
 const STDERR_CHARS: usize = 4_000;
 const OUTPUT_CHARS: usize = 4_000;
-// Ended headless runs a late `glimpse` call can still name.
-const ENDED_HEADLESS: usize = 64;
+// Marks a headless run's id, so a late call from it is refused after the run
+// is gone.
+const HEADLESS_ID: &str = "headless-";
 
 #[derive(Clone, Serialize)]
 pub(crate) struct RunRecord {
@@ -92,7 +93,6 @@ pub(crate) struct Live {
 }
 
 static LIVE: Mutex<Vec<Arc<Live>>> = Mutex::new(Vec::new());
-static ENDED: Mutex<VecDeque<String>> = Mutex::new(VecDeque::new());
 
 impl Live {
     pub(crate) fn start(
@@ -102,7 +102,11 @@ impl Live {
         answers: Vec<String>,
     ) -> Arc<Self> {
         let live = Arc::new(Self {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: format!(
+                "{}{}",
+                if record.headless { HEADLESS_ID } else { "" },
+                uuid::Uuid::new_v4()
+            ),
             headless: record.headless,
             insert,
             caller,
@@ -139,14 +143,6 @@ impl Live {
     }
 
     pub(crate) fn finish(&self) -> RunRecord {
-        // Ended first, so a call that arrives in between is never shown.
-        if self.headless {
-            let mut ended = ENDED.lock();
-            if ended.len() == ENDED_HEADLESS {
-                ended.pop_front();
-            }
-            ended.push_back(self.id.clone());
-        }
         LIVE.lock().retain(|live| live.id != self.id);
         let began = *self.began.lock();
         let mut record = self.record.lock().clone();
@@ -174,7 +170,7 @@ fn live(run: Option<&str>) -> Result<Option<Arc<Live>>, String> {
     if let Some(live) = LIVE.lock().iter().find(|live| live.id == run) {
         return Ok(Some(Arc::clone(live)));
     }
-    if ENDED.lock().iter().any(|ended| ended == run) {
+    if run.starts_with(HEADLESS_ID) {
         return Err("The headless run that called this has ended.".to_string());
     }
     Ok(None)

@@ -501,7 +501,13 @@ pub fn generate_base(
     let model = resolve()
         .ok_or_else(|| error(BonsaiErrorKind::Load, "The on-device model isn't installed"))?;
     runtime.check_cancel.store(true, Ordering::SeqCst);
-    runtime.uses.fetch_add(1, Ordering::SeqCst);
+    // A use cancels the cached cleanup model's unload, so schedule it again.
+    match runtime.loaded.lock().as_ref() {
+        Some(loaded) => release_when_idle(runtime, Arc::clone(&loaded.bonsai), IDLE_AFTER_USE),
+        None => {
+            runtime.uses.fetch_add(1, Ordering::SeqCst);
+        }
+    }
     let base = Bonsai::load(&runtime.models_dir.join(model), None)?;
     let tokens = base.count_tokens(system_prompt)? + base.count_tokens(user_text)?;
     if tokens >= bonsai::CONTEXT {
