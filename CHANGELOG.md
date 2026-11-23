@@ -20,7 +20,8 @@
 - Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
 - New xAI setups for cleanup start on Grok 4.20 non-reasoning, which is faster and costs less than Grok 4.7.
 - Fireworks AI is no longer offered for speech. It shut down its transcription service.
-- The cleanup model's name in Settings and setup now includes its version, Glimpse C1.1 2B.
+- Glimpse C1.2, a new version of the cleanup model, removes more filler and is less likely to change what you meant.
+- The cleanup model's name in Settings and setup now includes its version, Glimpse C1.2 2B.
 - Cmd+F, or Ctrl+F on Windows, opens search on Home.
 - Model descriptions in the Library's import and retranscribe dialogs are translated and no longer cut off.
 - Logs in About now saves one report to attach to a bug report and shows it in Finder or File Explorer. It leaves out your user name and what you dictated.
@@ -38,6 +39,7 @@
 - Very quiet dictations with Whisper are no longer erased as silence.
 - Library transcription with Apple Speech now works in languages such as Dutch, Polish, Russian and Turkish.
 - The API server reads MP3, M4A, FLAC and Ogg uploads without ffmpeg, and an uploaded playlist can no longer make it read other files on your computer.
+- Cancelling a dictation during cleanup now stops Glimpse C1 right away instead of leaving it running in the background.
 
 1.4.6
 
