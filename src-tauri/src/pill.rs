@@ -497,6 +497,7 @@ impl PillController {
         previous: PillStatus,
         new_status: PillStatus,
     ) {
+        tracing::info!("pill {previous} -> {new_status}");
         self.update_overlay_visibility(app, previous, new_status);
         self.emit_state(app);
         if new_status == PillStatus::Idle {
@@ -523,22 +524,19 @@ impl PillController {
     }
 
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
-        if self.enter_error_state(app, message) {
+        if self.enter_error_state(app) {
             let simple_msg = simplify_recording_error(app, message);
             toast::show(app, "error", None, &simple_msg);
         }
     }
 
     /// False when an active recording suppresses the error.
-    fn enter_error_state(&self, app: &AppHandle<AppRuntime>, message: &str) -> bool {
+    fn enter_error_state(&self, app: &AppHandle<AppRuntime>) -> bool {
         let status = self.status();
         if matches!(status, PillStatus::Listening | PillStatus::Processing) {
-            tracing::error!(
-                "[Pill] Suppressing error during active recording ({status}): {message}"
-            );
+            tracing::warn!("[Pill] Suppressing an error during active recording ({status})");
             return false;
         }
-        tracing::error!("[Pill] {message}");
         self.resume_paused_media();
         self.reset_recording_state();
         self.set_hold_key_down(false);
@@ -548,7 +546,6 @@ impl PillController {
 
     fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, context: &str, err: &anyhow::Error) {
         let message = format!("{context}: {err}");
-        tracing::error!("[Pill] {message}");
         let settings = app.state::<AppState>().current_settings();
         analytics::track_recording_failed(
             app,
@@ -750,11 +747,13 @@ impl PillController {
         options: hotkeys::ShortcutOptions,
     ) -> bool {
         if !check_mic_permission(app) {
+            tracing::warn!("Dictation refused: no microphone access");
             crate::analytics::track_first_dictation_attempted(app, "mic_blocked");
             return false;
         }
 
         if !self.model_is_ready(app) {
+            tracing::warn!("Dictation refused: speech model not ready");
             return false;
         }
 
@@ -842,7 +841,7 @@ impl PillController {
                 // generic error; it stays until the next press or a working start.
                 #[cfg(windows)]
                 if self.recorder.start_failures() >= crate::recorder::STUCK_START_FAILURES {
-                    if self.enter_error_state(app, &message) {
+                    if self.enter_error_state(app) {
                         toast::emit_toast(
                             app,
                             toast::Payload {
@@ -1516,6 +1515,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     // as it is granted instead of waiting for a restart.
     #[cfg(target_os = "macos")]
     if !permissions::check_accessibility_permission() {
+        tracing::warn!("Shortcuts off until Accessibility is allowed");
         state.hotkeys.stop_registration();
         watch_for_accessibility(app);
         return Ok(());
@@ -1602,6 +1602,11 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
         );
     }
 
+    let registered: Vec<String> = parsed_shortcuts
+        .iter()
+        .map(|(label, hotkey)| format!("{label}={hotkey}"))
+        .collect();
+    tracing::info!("Shortcuts {}", registered.join(" "));
     state.hotkeys.replace_registrations(app, bindings)
 }
 

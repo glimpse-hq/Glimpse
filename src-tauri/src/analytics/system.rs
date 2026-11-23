@@ -69,7 +69,7 @@ pub fn track_model_changed(app: &tauri::AppHandle<AppRuntime>, from: &str, to: &
 
 /// Coarse hardware profile: memory as a bucket, the chip family, and on
 /// Windows the graphics vendor. Anything that can't be read is left out.
-pub(super) fn hardware_profile() -> serde_json::Map<String, serde_json::Value> {
+pub(crate) fn hardware_profile() -> serde_json::Map<String, serde_json::Value> {
     let mut profile = serde_json::Map::new();
     if let Some(bytes) = total_memory_bytes() {
         profile.insert("ram_bucket".into(), ram_bucket(bytes).into());

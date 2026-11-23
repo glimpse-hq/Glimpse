@@ -1,6 +1,7 @@
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Result, anyhow};
 use crossbeam_channel::{Receiver, Sender, select, unbounded};
@@ -15,6 +16,30 @@ use super::keyboard::{
 use crate::{AppRuntime, pill};
 
 pub(crate) const SHORTCUT_CAPTURE_EVENT: &str = "shortcut:capture";
+
+// Unix seconds, 0 for never. Times only, never which keys.
+static LAST_KEY_AT: AtomicU64 = AtomicU64::new(0);
+static LAST_MATCH_AT: AtomicU64 = AtomicU64::new(0);
+
+fn unix_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |elapsed| elapsed.as_secs())
+}
+
+fn age(at: &AtomicU64) -> String {
+    match at.load(Ordering::Relaxed) {
+        0 => "never".into(),
+        at => {
+            let seconds = unix_now().saturating_sub(at);
+            match seconds {
+                0..120 => format!("{seconds}s"),
+                120..7_200 => format!("{}m", seconds / 60),
+                _ => format!("{}h", seconds / 3_600),
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum HotkeyState {
@@ -81,11 +106,16 @@ impl HotkeyCoordinator {
                             break;
                         };
 
+                        LAST_KEY_AT.store(unix_now(), Ordering::Relaxed);
                         if event.is_escape_press() && crate::voice_prompt::skip_shown(&app_handle) {
                             continue;
                         }
 
-                        for (action, hotkey_state, options) in state.process(event) {
+                        let matched = state.process(event);
+                        if !matched.is_empty() {
+                            LAST_MATCH_AT.store(unix_now(), Ordering::Relaxed);
+                        }
+                        for (action, hotkey_state, options) in matched {
                             pill::handle_registered_hotkey_event(
                                 &app_handle,
                                 action,
@@ -122,6 +152,26 @@ impl HotkeyCoordinator {
                 .as_ref()
                 .is_some_and(|handle| !handle.is_finished())
         })
+    }
+
+    /// Whether the listener runs, and how long ago it last heard a key and
+    /// last matched a shortcut.
+    pub(crate) fn summary(&self) -> String {
+        format!(
+            "listener={} last_key={} last_match={} capture={}",
+            if self.is_listening() {
+                "running"
+            } else {
+                "stopped"
+            },
+            age(&LAST_KEY_AT),
+            age(&LAST_MATCH_AT),
+            if self.capture.lock().is_some() {
+                "on"
+            } else {
+                "off"
+            },
+        )
     }
 
     pub(crate) fn stop_registration(&self) {

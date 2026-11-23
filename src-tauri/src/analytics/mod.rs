@@ -299,12 +299,39 @@ pub async fn init(app: &tauri::AppHandle<AppRuntime>) {
     send(identify);
 }
 
+/// Logs every event locally, analytics on or off: its name and only the
+/// bounded failure fields below.
+fn log_event(event_name: &str, props: &serde_json::Value) {
+    const FIELDS: &[&str] = &[
+        "stage",
+        "reason",
+        "reason_code",
+        "cause",
+        "outcome",
+        "source",
+        "window",
+        "error_kind",
+        "error_type",
+        "os_error",
+    ];
+    let mut line = format!("event {event_name}");
+    for key in FIELDS {
+        match props.get(key) {
+            Some(serde_json::Value::String(value)) => line.push_str(&format!(" {key}={value}")),
+            Some(serde_json::Value::Number(value)) => line.push_str(&format!(" {key}={value}")),
+            _ => {}
+        }
+    }
+    tracing::info!("{line}");
+}
+
 fn build_event(
     app: &tauri::AppHandle<AppRuntime>,
     event_name: &str,
     props: serde_json::Value,
     require_enabled: bool,
 ) -> Option<posthog_rs::Event> {
+    log_event(event_name, &props);
     if credentials().is_none() && !debug_log_enabled() {
         return None;
     }

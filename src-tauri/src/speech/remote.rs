@@ -147,7 +147,10 @@ pub(crate) async fn attempt_remote(
         Ok(result) => RemoteAttempt::Success(result),
         Err(_) if is_cancelled() => RemoteAttempt::Cancelled,
         Err(error) => {
-            tracing::error!("Remote speech failed, falling back to local model: {error}");
+            tracing::error!(
+                "Remote speech failed, falling back to local model: {}",
+                log_reason(&error)
+            );
             let remote_model = speech_model_storage_label(settings, None);
             let reason = remote_error_reason(&error);
             match model_manager::ensure_local_fallback_model(app, local_fallback_model) {
@@ -178,6 +181,12 @@ pub(crate) async fn attempt_remote(
             }
         }
     }
+}
+
+/// The kind and HTTP status of a provider error. Provider replies can echo
+/// what was sent, so their text is never logged.
+pub(crate) fn log_reason(error: &RemoteError) -> String {
+    format!("{} status={}", remote_error_reason(error), error.status)
 }
 
 fn remote_error_reason(error: &RemoteError) -> &'static str {

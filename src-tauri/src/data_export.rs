@@ -336,7 +336,7 @@ fn wipe_targets(app: &AppHandle<AppRuntime>) -> Result<Vec<PathBuf>, String> {
 }
 
 #[cfg(windows)]
-fn msix_local_cache_dir() -> Option<PathBuf> {
+pub(crate) fn msix_local_cache_dir() -> Option<PathBuf> {
     if !crate::platform::windows::store::is_msix_packaged() {
         return None;
     }
