@@ -2222,7 +2222,7 @@ dependencies = [
 [[package]]
 name = "glimpse-speech"
 version = "3.0.5"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.5#a59a320ebf48eea961a12d2b92592bb4068fad43"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?rev=724349de5e5d49782a7b42850c46e6bc6558010a#724349de5e5d49782a7b42850c46e6bc6558010a"
 dependencies = [
  "anyhow",
  "axum",
@@ -2237,6 +2237,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "symphonia",
  "thiserror 2.0.21",
  "tokio",
  "tokio-util",

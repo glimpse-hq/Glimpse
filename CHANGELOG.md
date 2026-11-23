@@ -35,6 +35,9 @@
 - On a Mac, Norwegian dictation is now cleaned up by Apple Intelligence when it's on, instead of being pasted as spoken.
 - Long dictations no longer repeat a phrase where Glimpse joined pieces of the recording.
 - Cancelling a dictation while it's being transcribed stops the speech model right away, so the next dictation doesn't wait for it.
+- Very quiet dictations with Whisper are no longer erased as silence.
+- Library transcription with Apple Speech now works in languages such as Dutch, Polish, Russian and Turkish.
+- The API server reads MP3, M4A, FLAC and Ogg uploads without ffmpeg, and an uploaded playlist can no longer make it read other files on your computer.
 
 1.4.6
 
