@@ -6,7 +6,9 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use glimpse_speech::TimestampGranularity;
-use glimpse_speech::service::{AudioInput, SpeechConfig, SpeechService, TranscribeRequest};
+use glimpse_speech::service::{
+    AudioInput, CancelToken, SpeechConfig, SpeechService, TranscribeRequest,
+};
 use parking_lot::{Condvar, Mutex};
 
 use crate::{
@@ -209,9 +211,17 @@ impl LocalTranscriber {
         sample_rate: u32,
         dictionary: &[String],
         language: Option<&str>,
+        cancel: Option<&CancelToken>,
     ) -> Result<TranscriptionSuccess> {
-        let result =
-            self.transcribe_internal(model, samples, sample_rate, dictionary, language, None)?;
+        let result = self.transcribe_internal(
+            model,
+            samples,
+            sample_rate,
+            dictionary,
+            language,
+            None,
+            cancel,
+        )?;
         Ok(plain_success(model, result))
     }
 
@@ -231,13 +241,22 @@ impl LocalTranscriber {
             return None;
         }
         Some(
-            self.transcribe_locked(model, samples, sample_rate, dictionary, language, None)
-                .map(|result| plain_success(model, result)),
+            self.transcribe_locked(
+                model,
+                samples,
+                sample_rate,
+                dictionary,
+                language,
+                None,
+                None,
+            )
+            .map(|result| plain_success(model, result)),
         )
     }
 
     /// Whisper computes word timings in an extra pass, so ask for
     /// `Segment` unless the words are used.
+    #[allow(clippy::too_many_arguments)]
     pub fn transcribe_with_segments(
         &self,
         model: &ReadyModel,
@@ -246,6 +265,7 @@ impl LocalTranscriber {
         dictionary: &[String],
         language: Option<&str>,
         granularity: TimestampGranularity,
+        cancel: Option<&CancelToken>,
     ) -> Result<TranscriptionSuccess> {
         let result = self.transcribe_internal(
             model,
@@ -254,6 +274,7 @@ impl LocalTranscriber {
             dictionary,
             language,
             Some(granularity),
+            cancel,
         )?;
 
         Ok(TranscriptionSuccess {
@@ -285,9 +306,11 @@ impl LocalTranscriber {
             dictionary,
             language,
             Some(granularity),
+            None,
         ))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn transcribe_internal(
         &self,
         model: &ReadyModel,
@@ -296,6 +319,7 @@ impl LocalTranscriber {
         dictionary: &[String],
         language: Option<&str>,
         granularity: Option<TimestampGranularity>,
+        cancel: Option<&CancelToken>,
     ) -> Result<glimpse_speech::Transcription> {
         let _exclusive = self.exclusive.lock();
         self.transcribe_locked(
@@ -305,10 +329,12 @@ impl LocalTranscriber {
             dictionary,
             language,
             granularity,
+            cancel,
         )
     }
 
     // Caller must hold `exclusive`.
+    #[allow(clippy::too_many_arguments)]
     fn transcribe_locked(
         &self,
         model: &ReadyModel,
@@ -317,6 +343,7 @@ impl LocalTranscriber {
         dictionary: &[String],
         language: Option<&str>,
         granularity: Option<TimestampGranularity>,
+        cancel: Option<&CancelToken>,
     ) -> Result<glimpse_speech::Transcription> {
         check_cpu()?;
         let was_loaded = self.loaded_model_id().as_deref() == Some(model.key.as_str());
@@ -327,7 +354,7 @@ impl LocalTranscriber {
             self.end_load(false, started);
             loaded?;
         }
-        let response = self.service.transcribe(TranscribeRequest {
+        let request = TranscribeRequest {
             audio: AudioInput::PcmI16 {
                 samples: samples.to_vec(),
                 sample_rate,
@@ -338,7 +365,11 @@ impl LocalTranscriber {
             dictionary: dictionary.to_vec(),
             timestamps: granularity.is_some(),
             timestamp_granularity: granularity,
-        })?;
+        };
+        let response = match cancel {
+            Some(cancel) => self.service.transcribe_cancellable(request, cancel),
+            None => self.service.transcribe(request),
+        }?;
         tracing::info!(
             "[LocalTranscriber] transcribe took {:.2}s (audio {:.2}s, was_loaded={})",
             started.elapsed().as_secs_f32(),
@@ -573,6 +604,7 @@ mod parakeet_ane_tests {
                 &[],
                 Some("en"),
                 TimestampGranularity::Word,
+                None,
             )?;
             assert!(!result.transcript.trim().is_empty());
             assert_eq!(result.speech_model.as_deref(), Some("Parakeet TDT V3"));

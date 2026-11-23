@@ -1039,6 +1039,7 @@ fn transcribe_direct(run: &LocalRun, audio_path: &Path) -> Result<LibraryTranscr
         run.dictionary,
         Some(run.language),
         glimpse_speech::TimestampGranularity::Word,
+        None,
     )?;
     if run.token.is_cancelled() {
         return Err(cancelled_error());
@@ -1218,6 +1219,7 @@ impl ChunkedTrack {
             run.dictionary,
             Some(run.language),
             glimpse_speech::TimestampGranularity::Word,
+            None,
         )?;
         if run.token.is_cancelled() {
             return Err(cancelled_error());

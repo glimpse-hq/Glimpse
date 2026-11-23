@@ -2220,8 +2220,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "3.0.5"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.0.5#a59a320ebf48eea961a12d2b92592bb4068fad43"
+version = "3.1.0"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.1.0#94bbdc3921cedc5cb8f8ec79a654c1b494c64645"
 dependencies = [
  "anyhow",
  "axum",
@@ -2236,6 +2236,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "symphonia",
  "thiserror 2.0.21",
  "tokio",
  "tokio-util",
@@ -6440,7 +6441,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp"
 version = "0.4.2"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=14a4fc94a9bfb76e8c1ddcff82167081c907c98e#14a4fc94a9bfb76e8c1ddcff82167081c907c98e"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=b6003b90b76f43f0a3cf66d07e3546be44ad50c7#b6003b90b76f43f0a3cf66d07e3546be44ad50c7"
 dependencies = [
  "log",
  "thiserror 2.0.21",
@@ -6450,7 +6451,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp-sys"
 version = "0.4.2"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=14a4fc94a9bfb76e8c1ddcff82167081c907c98e#14a4fc94a9bfb76e8c1ddcff82167081c907c98e"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=b6003b90b76f43f0a3cf66d07e3546be44ad50c7#b6003b90b76f43f0a3cf66d07e3546be44ad50c7"
 dependencies = [
  "cmake",
  "serde_json",

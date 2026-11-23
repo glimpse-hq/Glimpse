@@ -35,6 +35,11 @@
 - On Windows PCs where Glimpse C1 got stuck, your words now paste without a long wait, and loading it on Intel graphics no longer makes Glimpse quit.
 - If your computer's graphics can't run Glimpse C1, Glimpse tells you once and Automatic stops choosing it.
 - On a Mac, Norwegian dictation is now cleaned up by Apple Intelligence when it's on, instead of being pasted as spoken.
+- Long dictations no longer repeat a phrase where Glimpse joined pieces of the recording.
+- Cancelling a dictation while it's being transcribed stops the speech model right away, so the next dictation doesn't wait for it.
+- Very quiet dictations with Whisper are no longer erased as silence.
+- Library transcription with Apple Speech now works in languages such as Dutch, Polish, Russian and Turkish.
+- The API server reads MP3, M4A, FLAC and Ogg uploads without ffmpeg, and an uploaded playlist can no longer make it read other files on your computer.
 - Cancelling a dictation during cleanup now stops Glimpse C1 right away instead of leaving it running in the background.
 
 1.4.6
