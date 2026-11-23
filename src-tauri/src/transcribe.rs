@@ -268,9 +268,10 @@ fn watch_for_stall(
         if recovery.cancel_token.is_cancelled() {
             return;
         }
-        recovery.cancel_token.cancel();
+        // Claim the recording before cancelling, so the task's abort can't delete it.
         app.state::<AppState>()
             .release_pending_path(&recovery.audio_path);
+        recovery.cancel_token.cancel();
         emit_transcription_error_inner(
             &app,
             TranscriptionFailure {
@@ -989,10 +990,23 @@ async fn process_transcript_text(
         } else {
             crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
         }
+        let cancelled = async {
+            match cancel_token {
+                Some(token) => token.cancelled().await,
+                None => std::future::pending().await,
+            }
+        };
         let outcome = if let Some(selected) = pending_selected_text {
-            match llm_cleanup::edit_transcription(http, selected, &raw_transcript, llm_settings)
-                .await
-            {
+            let edited = tokio::select! {
+                edited = llm_cleanup::edit_transcription(
+                    http,
+                    selected,
+                    &raw_transcript,
+                    llm_settings,
+                ) => edited,
+                () = cancelled => return ProcessTranscriptOutcome::Cancelled,
+            };
+            match edited {
                 Ok(edited) => (edited, true),
                 Err(err) => {
                     let reason = crate::speech::remote::log_reason(&err);
@@ -1020,15 +1034,17 @@ async fn process_transcript_text(
                 }
             }
         } else {
-            match llm_cleanup::cleanup_transcription_with_context(
-                http,
-                &raw_transcript,
-                llm_settings,
-                active_mode,
-                active_context,
-            )
-            .await
-            {
+            let cleaned = tokio::select! {
+                cleaned = llm_cleanup::cleanup_transcription_with_context(
+                    http,
+                    &raw_transcript,
+                    llm_settings,
+                    active_mode,
+                    active_context,
+                ) => cleaned,
+                () = cancelled => return ProcessTranscriptOutcome::Cancelled,
+            };
+            match cleaned {
                 Ok(cleaned) => (cleaned, true),
                 Err(err) if llm_cleanup::is_input_unsuitable(&err) => {
                     tracing::info!("Cleanup skipped: the cleanup model can't take this transcript");
@@ -1326,14 +1342,16 @@ pub(crate) fn retry_transcription_async(
                     should_refine_transcript && !preflight_unavailable && routed.is_some();
 
                 let (final_transcript, llm_cleaned) = if should_use_llm {
-                    match llm_cleanup::cleanup_transcription(
-                        &http,
-                        &raw_transcript,
-                        llm_settings,
-                        saved_personality.as_ref(),
-                    )
-                    .await
-                    {
+                    let cleaned = tokio::select! {
+                        cleaned = llm_cleanup::cleanup_transcription(
+                            &http,
+                            &raw_transcript,
+                            llm_settings,
+                            saved_personality.as_ref(),
+                        ) => cleaned,
+                        () = cancel_token.cancelled() => return,
+                    };
+                    match cleaned {
                         Ok(cleaned) => (cleaned, true),
                         Err(err) if llm_cleanup::is_input_unsuitable(&err) => {
                             tracing::info!(
@@ -1636,6 +1654,8 @@ fn abort_transcription(
     if !state.release_pending_path(audio_path) {
         return;
     }
+    // The cancel can wake this task before the pill takes the path to delete it.
+    let _ = std::fs::remove_file(audio_path);
     if collapse_pill {
         crate::pill::collapse_expanded_pill(app);
     }
