@@ -173,12 +173,7 @@ const ToastOverlay: React.FC = () => {
     e.stopPropagation();
     if (!toast) return;
 
-    const copyText = [
-      toast.type !== "update" ? null : toast.title,
-      toast.message,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const copyText = [toast.title, toast.message].filter(Boolean).join("\n");
 
     copy(copyText);
   };
@@ -359,13 +354,15 @@ const ToastOverlay: React.FC = () => {
                 GLIMPSE
               </p>
             )}
-            {toast.type === "ask" && (
-              <p className="ask-reveal ui-text-label ui-color-gray-500 font-medium mb-0.5">
+            {toast.title && (
+              <p
+                className={`${toast.type === "ask" ? "ask-reveal" : ""} ui-text-label ui-color-gray-500 font-medium mb-0.5`}
+              >
                 {toast.title}
               </p>
             )}
             <p
-              className={`${toast.type === "ask" ? "ask-reveal" : ""} ui-text-body ui-color-gray-200 leading-relaxed break-words`}
+              className={`${toast.type === "ask" ? "ask-reveal" : ""} ui-text-body ui-color-gray-200 leading-relaxed break-words whitespace-pre-line`}
             >
               {toast.message}
             </p>
@@ -387,7 +384,7 @@ const ToastOverlay: React.FC = () => {
                       e.stopPropagation();
                       void handleToastAction(toast.action!);
                     }}
-                    className={`shrink-0 whitespace-nowrap ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : toast.type === "ask" ? "ui-color-cloud" : "ui-color-info-strong"} ui-hover-on-solid transition-colors font-medium`}
+                    className={`shrink-0 whitespace-nowrap ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : toast.type === "ask" ? "order-last ui-color-cloud" : "ui-color-info-strong"} ui-hover-on-solid transition-colors font-medium`}
                   >
                     {toast.actionLabel}
                     {toast.type !== "ask" && <span aria-hidden="true"> →</span>}
@@ -404,7 +401,7 @@ const ToastOverlay: React.FC = () => {
                       e.stopPropagation();
                       void handleToastAction(toast.secondaryAction!);
                     }}
-                    className={`ui-text-body-sm transition-colors font-medium ${copySecondary ? "inline-flex items-center gap-1 ui-color-info-strong ui-hover-on-solid" : "ui-color-error-soft ui-hover-error-strong"}`}
+                    className={`ui-text-body-sm transition-colors font-medium ${copySecondary ? "inline-flex items-center gap-1 ui-color-info-strong ui-hover-on-solid" : toast.type === "ask" ? "ml-auto shrink-0 whitespace-nowrap ui-color-muted ui-hover-on-solid" : "ui-color-error-soft ui-hover-error-strong"}`}
                   >
                     {copySecondary && <Copy size={12} aria-hidden="true" />}
                     {toast.secondaryActionLabel}

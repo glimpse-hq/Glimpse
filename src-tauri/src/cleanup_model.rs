@@ -490,6 +490,41 @@ fn release_when_idle(runtime: &'static Runtime, bonsai: Arc<Bonsai>, after: Dura
     });
 }
 
+/// One request to the base model without the cleanup adapter, loaded for this request only.
+/// Blocking; setting `cancel` stops it.
+pub fn generate_base(
+    system_prompt: &str,
+    user_text: &str,
+    cancel: &AtomicBool,
+) -> Result<Generation, BonsaiError> {
+    let runtime = runtime_for_use()?;
+    let model = resolve()
+        .ok_or_else(|| error(BonsaiErrorKind::Load, "The on-device model isn't installed"))?;
+    runtime.check_cancel.store(true, Ordering::SeqCst);
+    runtime.uses.fetch_add(1, Ordering::SeqCst);
+    let base = Bonsai::load(&runtime.models_dir.join(model), None)?;
+    let tokens = base.count_tokens(system_prompt)? + base.count_tokens(user_text)?;
+    if tokens >= bonsai::CONTEXT {
+        return Err(BonsaiError {
+            kind: BonsaiErrorKind::ContextTooLarge,
+            message: format!(
+                "The input is {tokens} tokens; the on-device model takes up to {}.",
+                bonsai::CONTEXT
+            ),
+        });
+    }
+    base.generate(
+        system_prompt,
+        user_text,
+        &GenerateOptions {
+            max_tokens: bonsai::CONTEXT,
+            save_prompt: false,
+            ..GenerateOptions::default()
+        },
+        Some(cancel),
+    )
+}
+
 /// Loads the model and caches `system_prompt`'s state for the next request,
 /// also on disk with `save_prompt`. Blocking.
 pub fn prewarm(system_prompt: &str, save_prompt: bool) -> Result<(), BonsaiError> {

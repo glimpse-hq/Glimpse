@@ -19,6 +19,9 @@ pub struct Request {
     /// The tool driving the CLI, from `GLIMPSE_CLIENT` (e.g. "raycast").
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client: Option<String>,
+    /// The action run that called, from `GLIMPSE_RUN`, so what it shows is recorded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run: Option<String>,
 }
 
 impl Request {
@@ -27,6 +30,7 @@ impl Request {
             command: command.into(),
             args,
             client: std::env::var("GLIMPSE_CLIENT").ok(),
+            run: std::env::var("GLIMPSE_RUN").ok(),
         }
     }
 }

@@ -19,6 +19,7 @@ fn help() {
                     ("personalization", "Open the personalization view."),
                     ("library", "Open the library view."),
                     ("record", "Open the Record screen."),
+                    ("actions", "Open the Actions screen."),
                     ("models", "Open the models view."),
                 ],
             ),

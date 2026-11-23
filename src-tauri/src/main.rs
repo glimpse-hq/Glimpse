@@ -25,15 +25,12 @@ fn launched_as_cli() -> bool {
         return false;
     };
 
-    if stem == "glimpse-cli" {
+    // Installs expose a lowercase `glimpse` (a symlink on macOS, a copy of the
+    // exe for action scripts on Windows). The app binary is `Glimpse`,
+    // including in `tauri dev`, and should launch the GUI.
+    if stem == "glimpse-cli" || stem == "glimpse" {
         return true;
     }
 
-    if cfg!(target_os = "windows") {
-        return std::env::var_os(WINDOWS_CLI_SHIM_ENV).is_some();
-    }
-
-    // macOS installs expose a lowercase `glimpse` symlink. The app binary is
-    // `Glimpse`, including in `tauri dev`, and should launch the GUI.
-    stem == "glimpse"
+    cfg!(target_os = "windows") && std::env::var_os(WINDOWS_CLI_SHIM_ENV).is_some()
 }

@@ -51,6 +51,7 @@ const KEY_PERSONALITIES_NOTES_SEEDED: &str = "personalities_notes_seeded";
 const KEY_DICTIONARY: &str = "dictionary";
 const KEY_AUTO_DICTIONARY_ENABLED: &str = "auto_dictionary_enabled";
 const KEY_AUTO_DICTIONARY_IGNORED: &str = "auto_dictionary_ignored";
+const KEY_ENABLED_ACTIONS: &str = "enabled_actions";
 const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_MEDIA_ACTION: &str = "media_action";
@@ -192,6 +193,9 @@ pub struct UserSettings {
     pub auto_dictionary_enabled: bool,
     #[serde(default)]
     pub auto_dictionary_ignored: Vec<String>,
+    /// File names of the actions switched on.
+    #[serde(default)]
+    pub enabled_actions: Vec<String>,
     #[serde(default)]
     pub replacements: Vec<Replacement>,
     #[serde(default = "default_personalities")]
@@ -517,6 +521,7 @@ impl Default for UserSettings {
             dictionary: Vec::new(),
             auto_dictionary_enabled: false,
             auto_dictionary_ignored: Vec::new(),
+            enabled_actions: Vec::new(),
             replacements: Vec::new(),
             personalities: default_personalities(),
             media_action: MediaAction::Off,
@@ -990,6 +995,8 @@ impl SettingsStore {
                 KEY_AUTO_DICTIONARY_IGNORED,
                 settings.auto_dictionary_ignored.clone(),
             )?;
+            settings.enabled_actions =
+                loader.value(KEY_ENABLED_ACTIONS, settings.enabled_actions.clone())?;
             settings.replacements =
                 loader.value(KEY_REPLACEMENTS, settings.replacements.clone())?;
             settings.personalities =
@@ -1303,6 +1310,7 @@ impl SettingsStore {
                 KEY_AUTO_DICTIONARY_IGNORED,
                 json(&settings.auto_dictionary_ignored)?,
             ),
+            (KEY_ENABLED_ACTIONS, json(&settings.enabled_actions)?),
             (KEY_REPLACEMENTS, json(&settings.replacements)?),
             (KEY_PERSONALITIES, json(&settings.personalities)?),
             (KEY_MEDIA_ACTION, json(&settings.media_action)?),

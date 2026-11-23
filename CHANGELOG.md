@@ -1,5 +1,20 @@
 1.5.0
 
+### Actions
+
+- Put a script in the Actions folder, in Python, JavaScript, a shell script or any other language, and Glimpse runs it when you press its shortcut or start a dictation with its phrase. The script gets what you said and can show its answer, type it for you, or ask you a question.
+- An action can also run after every dictation, or when a Library recording is ready.
+- Actions have their own screen in the sidebar, where you turn each one on. An action's shortcuts show in Settings under its name, where you can change them.
+- Scripts and AI agents can use new `glimpse` commands to show a notice (`toast`), ask you something (`ask`), use the writing model set in Settings or the one on this computer (`llm`), and clean up text (`clean`).
+
+### New Features
+
+- The Record screen reminds you to ask before recording others.
+- AI agents can pause a recording, resume it and check on it. When an agent starts or resumes a recording, Glimpse shows which one did.
+- The Library has folders, kept as real folders on disk. Pick one from the menu next to the Library title, and move items from their menu.
+- Glimpse C1.2, a new version of the cleanup model, removes more filler and is less likely to change what you meant.
+- Cmd+F, or Ctrl+F on Windows, opens search on Home.
+
 ### Changes
 
 - Short dictations with Parakeet on Windows take about half the time on NVIDIA graphics and 40% less on Intel graphics.
@@ -7,12 +22,9 @@
 - Library now sits with Record in the sidebar.
 - Parakeet TDT V3 and Whisper Small move to Legacy. If you use Parakeet TDT V3, Glimpse switches you to Parakeet Ultra, which is more accurate at the same size and speed.
 - Each plan on the Account screen now has its own buy button, and prices show they're a one-time payment.
-- The Record screen reminds you to ask before recording others.
 - System Audio on the Record screen shows the apps it records as their icons, and dims one that isn't playing anything.
-- AI agents can pause a recording, resume it and check on it. When an agent starts or resumes a recording, Glimpse shows which one did.
 - Every screen now lines up on the same margins, and Start Recording sits between Pause and Bookmark.
 - The Library opens faster.
-- The Library has folders, kept as real folders on disk. Pick one from the menu next to the Library title, and move items from their menu.
 - An open recording has one row at the top: where it is, search, and a menu with its details, Copy, Export and Retranscribe. Speakers moved next to the player.
 - Search is always shown at the top of the Library and an open recording.
 - On a Mac trackpad you feel a light tap when the player catches a bookmark as you drag it, and on each step when you drag the speed or the auto-pause setting.
@@ -20,9 +32,7 @@
 - Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
 - New xAI setups for cleanup start on Grok 4.20 non-reasoning, which is faster and costs less than Grok 4.7.
 - Fireworks AI is no longer offered for speech. It shut down its transcription service.
-- Glimpse C1.2, a new version of the cleanup model, removes more filler and is less likely to change what you meant.
 - The cleanup model's name in Settings and setup now includes its version, Glimpse C1.2 2B.
-- Cmd+F, or Ctrl+F on Windows, opens search on Home.
 - Model descriptions in the Library's import and retranscribe dialogs are translated and no longer cut off.
 - Logs in About now saves one report to attach to a bug report and shows it in Finder or File Explorer. It leaves out your user name and what you dictated.
 
