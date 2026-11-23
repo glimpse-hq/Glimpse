@@ -2204,7 +2204,7 @@ dependencies = [
 [[package]]
 name = "glimpse-language"
 version = "0.3.0"
-source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?tag=0.3.0#4c4aeff628dcf3b00ab16f39e3a423a9036124c9"
+source = "git+https://github.com/glimpse-hq/Glimpse-Language.git?rev=bd3c5d0f8bc19c4bd57ffdeb147ab1895ac3b88a#bd3c5d0f8bc19c4bd57ffdeb147ab1895ac3b88a"
 dependencies = [
  "ash",
  "dispatch2",
