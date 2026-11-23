@@ -10,7 +10,8 @@ static LOG_GUARD: Mutex<Option<tracing_appender::non_blocking::WorkerGuard>> = M
 const REPORT_FILE: &str = "Glimpse Report.txt";
 const REPORT_LOG_BYTES: usize = 2 * 1024 * 1024;
 // Lines before the first launch line were written by older versions, which
-// logged provider replies and file paths.
+// logged provider replies and file paths. With no launch line left, rotation
+// has already removed everything older.
 const LAUNCH_MARK: &str = "glimpse_lib::logs: start ";
 
 /// Writes app logs to daily-rotated files in the OS log dir (kept 7 days)
@@ -238,22 +239,28 @@ fn recent_logs(dir: &Path) -> String {
         .collect();
     files.sort();
     let mut logs = String::new();
+    let mut seen_launch = false;
     for file in files {
-        if let Ok(bytes) = std::fs::read(&file) {
-            logs.push_str(&String::from_utf8_lossy(&bytes));
+        let Ok(bytes) = std::fs::read(&file) else {
+            continue;
+        };
+        let text = String::from_utf8_lossy(&bytes);
+        match text.find(LAUNCH_MARK) {
+            Some(launch) if !seen_launch => {
+                seen_launch = true;
+                let start = text[..launch].rfind('\n').map_or(0, |index| index + 1);
+                logs.clear();
+                logs.push_str(&text[start..]);
+            }
+            _ => logs.push_str(&text),
         }
+        let mut tail_start = logs.len().saturating_sub(REPORT_LOG_BYTES);
+        while !logs.is_char_boundary(tail_start) {
+            tail_start += 1;
+        }
+        logs.drain(..tail_start);
     }
-    let Some(first_launch) = logs.find(LAUNCH_MARK) else {
-        return String::new();
-    };
-    let start = logs[..first_launch]
-        .rfind('\n')
-        .map_or(0, |index| index + 1);
-    let mut tail_start = start.max(logs.len().saturating_sub(REPORT_LOG_BYTES));
-    while !logs.is_char_boundary(tail_start) {
-        tail_start += 1;
-    }
-    logs.split_off(tail_start)
+    logs
 }
 
 // Store builds write AppData into the package's own folder, which Explorer

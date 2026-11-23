@@ -1238,7 +1238,10 @@ impl Runner {
                 ))
             }
             Err(err) => {
-                tracing::warn!("Live transcription failed: {err}");
+                tracing::warn!(
+                    "Live transcription failed: {}",
+                    crate::analytics::error_detail(&err)
+                );
                 None
             }
         };

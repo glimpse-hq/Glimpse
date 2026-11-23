@@ -704,7 +704,10 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
                     saved_count += 1;
                 }
                 Ok(RecoveredTranscriptionOutcome::Empty) => {}
-                Err(err) => tracing::error!("Failed to transcribe recovered recording: {err}"),
+                Err(err) => tracing::error!(
+                    "Failed to transcribe recovered recording: {}",
+                    analytics::error_detail(&err)
+                ),
             }
         }
 
