@@ -43,7 +43,7 @@
     "xstate": "^5.33.4"
   },
   "overrides": {
-    "@tauri-apps/api": "2.12.4"
+    "@tauri-apps/api": "2.12.5"
   },
   "devDependencies": {
     "@babel/core": "8.1.2",
