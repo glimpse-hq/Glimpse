@@ -2221,8 +2221,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "3.0.5"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?rev=724349de5e5d49782a7b42850c46e6bc6558010a#724349de5e5d49782a7b42850c46e6bc6558010a"
+version = "3.1.0"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=3.1.0#94bbdc3921cedc5cb8f8ec79a654c1b494c64645"
 dependencies = [
  "anyhow",
  "axum",
@@ -6040,7 +6040,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
@@ -6444,7 +6444,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp"
 version = "0.4.2"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=14a4fc94a9bfb76e8c1ddcff82167081c907c98e#14a4fc94a9bfb76e8c1ddcff82167081c907c98e"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=b6003b90b76f43f0a3cf66d07e3546be44ad50c7#b6003b90b76f43f0a3cf66d07e3546be44ad50c7"
 dependencies = [
  "log",
  "thiserror 2.0.21",
@@ -6454,7 +6454,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp-sys"
 version = "0.4.2"
-source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=14a4fc94a9bfb76e8c1ddcff82167081c907c98e#14a4fc94a9bfb76e8c1ddcff82167081c907c98e"
+source = "git+https://github.com/glimpse-hq/transcribe.cpp.git?rev=b6003b90b76f43f0a3cf66d07e3546be44ad50c7#b6003b90b76f43f0a3cf66d07e3546be44ad50c7"
 dependencies = [
  "cmake",
  "serde_json",
