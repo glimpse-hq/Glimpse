@@ -910,13 +910,12 @@ async fn run_bonsai_text_task(
             )
         }
     });
-    let run = match tokio::time::timeout(budget, generate).await {
-        Ok(joined) => joined.map_err(task_failed)?.map_err(bonsai_error)?,
-        Err(_) => {
-            cancel.store(true, Ordering::Relaxed);
-            return Err(timed_out());
-        }
-    };
+    let _stop = StopOnDrop(cancel);
+    let run = tokio::time::timeout(budget, generate)
+        .await
+        .map_err(|_| timed_out())?
+        .map_err(task_failed)?
+        .map_err(bonsai_error)?;
     let task = match task {
         TextTaskKind::Cleanup => "cleanup",
         TextTaskKind::Edit => "edit",
@@ -936,6 +935,15 @@ async fn run_bonsai_text_task(
         return Err(error);
     }
     Ok(generation.text)
+}
+
+// Stops the generation when the request times out or its caller stops waiting.
+struct StopOnDrop(Arc<AtomicBool>);
+
+impl Drop for StopOnDrop {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::Relaxed);
+    }
 }
 
 fn bonsai_error(err: BonsaiError) -> RemoteError {
