@@ -159,6 +159,7 @@ impl Pieces {
         model: &ReadyModel,
         dictionary: &[String],
         language: &str,
+        cancel: &glimpse_speech::service::CancelToken,
     ) -> Result<TranscriptionSuccess> {
         let mut transcript = self.text;
         let mut detected = self.language;
@@ -171,6 +172,7 @@ impl Pieces {
                 16_000,
                 dictionary,
                 Some(language),
+                Some(cancel),
             )?;
             crate::transcribe::append_deduped_chunk(&mut transcript, &tail.transcript);
             detected = detected.or(tail.language);

@@ -355,6 +355,7 @@ pub(crate) fn queue_transcription(
         );
         let app_for_local = &app_handle;
         let settings_for_local = &settings;
+        let cancel_for_local = cancel_token.clone();
         let result = speech::transcribe(
             &app_handle,
             &http,
@@ -370,6 +371,7 @@ pub(crate) fn queue_transcription(
                     app_for_local,
                     settings_for_local,
                     recording_for_task,
+                    Some(cancel_for_local),
                     use_remote,
                     pieces,
                 )
@@ -585,6 +587,7 @@ async fn transcribe_completed_recording_locally(
     app: &AppHandle<AppRuntime>,
     settings: &UserSettings,
     recording: CompletedRecording,
+    cancel_token: Option<CancellationToken>,
     prefer_any_installed: bool,
     pieces: Option<crate::dictation_pieces::PieceSession>,
 ) -> Result<transcription_api::TranscriptionSuccess> {
@@ -597,10 +600,24 @@ async fn transcribe_completed_recording_locally(
     let language = settings.language.clone();
     let transcriber = app.state::<AppState>().local_transcriber();
     let pieces = pieces.filter(|pieces| pieces.model_key() == ready_model.key);
+    let speech_cancel = glimpse_speech::service::CancelToken::new();
+    let stop_on_cancel = cancel_token.map(|token| {
+        let speech_cancel = speech_cancel.clone();
+        async_runtime::spawn(async move {
+            token.cancelled().await;
+            speech_cancel.cancel();
+        })
+    });
 
-    match async_runtime::spawn_blocking(move || {
+    let result = async_runtime::spawn_blocking(move || {
         if let Some(pieces) = pieces.and_then(crate::dictation_pieces::PieceSession::finish) {
-            return pieces.complete(&transcriber, &ready_model, &dictionary_terms, &language);
+            return pieces.complete(
+                &transcriber,
+                &ready_model,
+                &dictionary_terms,
+                &language,
+                &speech_cancel,
+            );
         }
         transcribe_local(
             &transcriber,
@@ -609,10 +626,14 @@ async fn transcribe_completed_recording_locally(
             recording.sample_rate,
             &dictionary_terms,
             Some(&language),
+            Some(&speech_cancel),
         )
     })
-    .await
-    {
+    .await;
+    if let Some(stop_on_cancel) = stop_on_cancel {
+        stop_on_cancel.abort();
+    }
+    match result {
         Ok(inner) => inner,
         Err(err) => Err(anyhow!("Local transcription task failed: {err}")),
     }
@@ -744,7 +765,9 @@ async fn transcribe_recovered_recording(
         false,
         || false,
         |success| success,
-        move || transcribe_completed_recording_locally(app, settings, recording, use_remote, None),
+        move || {
+            transcribe_completed_recording_locally(app, settings, recording, None, use_remote, None)
+        },
     )
     .await
     {
@@ -868,6 +891,7 @@ async fn transcribe_saved_recording_locally(
     app: &AppHandle<AppRuntime>,
     settings: &UserSettings,
     saved: &RecordingSaved,
+    cancel_token: Option<CancellationToken>,
     prefer_any_installed: bool,
 ) -> Result<transcription_api::TranscriptionSuccess> {
     let (samples, sample_rate) = load_audio_for_transcription(&saved.path)?;
@@ -884,6 +908,7 @@ async fn transcribe_saved_recording_locally(
             speech_percentage: None,
             input: None,
         },
+        cancel_token,
         prefer_any_installed,
         None,
     )
@@ -1260,6 +1285,7 @@ pub(crate) fn retry_transcription_async(
                     &app_handle,
                     &settings,
                     &saved_for_task,
+                    Some(cancel_token.clone()),
                     use_remote,
                 )
             },
@@ -2096,6 +2122,7 @@ pub(crate) fn transcribe_local(
     sample_rate: u32,
     dictionary: &[String],
     language: Option<&str>,
+    cancel: Option<&glimpse_speech::service::CancelToken>,
 ) -> Result<transcription_api::TranscriptionSuccess> {
     if samples.is_empty() {
         return Err(anyhow!("No audio samples provided"));
@@ -2113,7 +2140,7 @@ pub(crate) fn transcribe_local(
     }
 
     if !matches!(model.engine, model_manager::LocalModelEngine::Whisper) {
-        return transcriber.transcribe(model, samples, sample_rate, dictionary, language);
+        return transcriber.transcribe(model, samples, sample_rate, dictionary, language, cancel);
     }
 
     let pad_samples = ((sample_rate as f32) * speech::WHISPER_LEADING_PAD_SECONDS).round() as usize;
@@ -2133,6 +2160,7 @@ pub(crate) fn transcribe_local(
             dictionary,
             language,
             glimpse_speech::TimestampGranularity::Segment,
+            cancel,
         );
         let regions = match regions {
             Some(handle) => handle.join().ok().flatten(),
