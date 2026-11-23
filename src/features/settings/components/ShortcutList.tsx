@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState, type ReactNode } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
 import { Broom, DotsThree, Ghost, Trash } from "@phosphor-icons/react";
@@ -9,10 +9,26 @@ import { Dropdown } from "../../../shared/ui/Dropdown";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import { formatShortcutForDisplay } from "../../../shared/lib/shortcuts";
+import { showErrorToast } from "../../../shared/lib/errorToast";
+import { useLicenseGate } from "../../license/queries";
+import { useActions } from "../../actions/queries";
+import { revealActionFile } from "../../actions/api";
+import { detectAppPlatform } from "../../../platform/service";
 import type { ShortcutBinding, ShortcutBindings } from "../../../types";
 
+const isWindows = detectAppPlatform() === "windows";
+
 type ShortcutMode = "smart" | "hold" | "toggle";
-type CaptureMode = { mode: ShortcutMode; index: number } | null;
+type CaptureMode = {
+  mode: ShortcutMode;
+  index: number;
+  action?: string;
+} | null;
+type ActionShortcutError = {
+  action: string;
+  index: number;
+  shortcut: string;
+} | null;
 
 const MODES: ShortcutMode[] = ["smart", "hold", "toggle"];
 export const MAX_PER_MODE = 3;
@@ -22,8 +38,15 @@ type ShortcutListProps = {
   invalidDrafts: Partial<Record<ShortcutMode, Record<number, string>>>;
   captureActive: CaptureMode;
   capturePreview: string;
+  actionShortcutError: ActionShortcutError;
   cleanupDisabled: boolean;
-  onStartCapture: (mode: ShortcutMode, index?: number) => void;
+  onStartCapture: (mode: ShortcutMode, index?: number, action?: string) => void;
+  onUpdateActionShortcut: (
+    action: string,
+    index: number,
+    shortcut: string,
+    mode: ShortcutMode,
+  ) => void;
   onUpdate: (
     mode: ShortcutMode,
     index: number,
@@ -39,21 +62,30 @@ const ShortcutList = ({
   invalidDrafts,
   captureActive,
   capturePreview,
+  actionShortcutError,
   cleanupDisabled,
   onStartCapture,
+  onUpdateActionShortcut,
   onUpdate,
   onAdd,
   onRemove,
   onMove,
 }: ShortcutListProps) => {
   const { t } = useLingui();
+  const licensed = useLicenseGate();
+  const { data: actionsList } = useActions(licensed);
+  const actions = licensed
+    ? (actionsList?.actions ?? []).filter(
+        (action) => action.enabled && action.shortcuts.length > 0,
+      )
+    : [];
   const rows = MODES.flatMap((mode) =>
     bindings[mode].map((binding, index) => ({ mode, index, binding })),
   );
   const modeWithRoom = MODES.find(
     (mode) => bindings[mode].length < MAX_PER_MODE,
   );
-  const behaviorOptions = (current: ShortcutMode) => [
+  const behaviorOptions = [
     {
       value: "smart" as const,
       label: t({ id: "settings.general.shortcuts.smart", message: "Smart" }),
@@ -61,7 +93,6 @@ const ShortcutList = ({
         id: "settings.general.shortcuts.smart_description",
         message: "tap to toggle, hold to talk",
       }),
-      locked: current !== "smart" && bindings.smart.length >= MAX_PER_MODE,
     },
     {
       value: "hold" as const,
@@ -70,7 +101,6 @@ const ShortcutList = ({
         id: "settings.general.shortcuts.hold_description",
         message: "hold to talk, release to stop",
       }),
-      locked: current !== "hold" && bindings.hold.length >= MAX_PER_MODE,
     },
     {
       value: "toggle" as const,
@@ -79,9 +109,12 @@ const ShortcutList = ({
         id: "settings.general.shortcuts.toggle_description",
         message: "tap to start, tap to stop",
       }),
-      locked: current !== "toggle" && bindings.toggle.length >= MAX_PER_MODE,
     },
   ];
+  const behaviorLabel = t({
+    id: "settings.general.shortcuts.column.behavior",
+    message: "Behavior",
+  });
   const addShortcutLabel = t({
     id: "settings.general.shortcuts.add_shortcut",
     message: "+ Add shortcut",
@@ -110,12 +143,7 @@ const ShortcutList = ({
               message: "Shortcut",
             })}
           </span>
-          <span className="px-1">
-            {t({
-              id: "settings.general.shortcuts.column.behavior",
-              message: "Behavior",
-            })}
-          </span>
+          <span className="px-1">{behaviorLabel}</span>
           <HoverTip
             label={cleanupLabel}
             detail={t({
@@ -139,63 +167,39 @@ const ShortcutList = ({
 
         {rows.map(({ mode, index, binding }) => {
           const capturing =
-            captureActive?.mode === mode && captureActive.index === index;
+            !captureActive?.action &&
+            captureActive?.mode === mode &&
+            captureActive.index === index;
           const display = binding.shortcut
             ? formatShortcutForDisplay(binding.shortcut, { symbols: true })
             : addShortcutLabel;
+          const invalid = Boolean(invalidDrafts[mode]?.[index]);
           return (
             <div
               key={`${mode}-${index}`}
               role="group"
               aria-label={display}
-              className={`group col-span-5 grid min-h-8 grid-cols-subgrid items-center border-b py-1 transition-colors ${
-                capturing
-                  ? "border-border-hover"
-                  : invalidDrafts[mode]?.[index]
-                    ? "border-error/40"
-                    : "border-border-primary hover:border-border-secondary"
-              }`}
+              className={rowClassName(capturing, invalid)}
             >
-              <button
-                type="button"
+              <ShortcutKeyButton
+                display={display}
+                capturing={capturing}
+                capturePreview={capturePreview}
+                invalid={invalid}
                 onClick={() => onStartCapture(mode, index)}
-                className={`flex min-w-0 items-center gap-1.5 text-left ui-text-kbd transition-colors hover:text-content-primary ${
-                  invalidDrafts[mode]?.[index]
-                    ? "ui-color-error"
-                    : capturing
-                      ? "ui-color-primary"
-                      : "ui-color-secondary"
-                }`}
-              >
-                {capturing ? (
-                  <>
-                    <motion.span
-                      aria-hidden="true"
-                      className="h-1 w-1 shrink-0 rounded-full bg-cloud"
-                      animate={{ opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    />
-                    <span
-                      aria-live="polite"
-                      className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
-                    >
-                      {capturePreview || "..."}
-                    </span>
-                  </>
-                ) : (
-                  <span className="truncate">{display}</span>
-                )}
-              </button>
+              />
               <Dropdown<ShortcutMode>
                 value={mode}
-                ariaLabel={t({
-                  id: "settings.general.shortcuts.column.behavior",
-                  message: "Behavior",
-                })}
+                ariaLabel={behaviorLabel}
                 onChange={(next) => onMove(mode, index, next)}
-                options={behaviorOptions(mode)}
+                options={behaviorOptions.map((option) => ({
+                  ...option,
+                  locked:
+                    option.value !== mode &&
+                    bindings[option.value].length >= MAX_PER_MODE,
+                }))}
                 fitButtonToWidestOption
-                buttonClassName="h-7 !rounded-md !border-0 !bg-transparent !px-1 !py-0 ui-text-body-sm hover:!bg-transparent"
+                buttonClassName={BEHAVIOR_BUTTON_CLASS}
                 menuClassName="!left-auto min-w-[220px]"
               />
               <div className="flex w-6 justify-center justify-self-center">
@@ -222,8 +226,14 @@ const ShortcutList = ({
                 />
               </div>
               <ShortcutRowMenu
-                canRemove={rows.length > 1}
-                onRemove={() => onRemove(mode, index)}
+                label={t({
+                  id: "settings.general.shortcuts.remove_shortcut",
+                  message: "Remove shortcut",
+                })}
+                icon={<Trash size={12} aria-hidden="true" />}
+                destructive
+                disabled={rows.length <= 1}
+                onSelect={() => onRemove(mode, index)}
               />
             </div>
           );
@@ -237,17 +247,175 @@ const ShortcutList = ({
         >
           {addShortcutLabel}
         </button>
+
+        {actions.map((action) => (
+          <Fragment key={action.file}>
+            <div className="col-span-5 flex h-5 min-w-0 items-end mt-3">
+              <span className="truncate ui-text-uppercase-meta ui-color-disabled font-semibold">
+                {action.name}
+              </span>
+            </div>
+            {action.shortcuts.map((entry, index) => {
+              const capturing =
+                captureActive?.action === action.file &&
+                captureActive.index === index;
+              const failed =
+                actionShortcutError?.action === action.file &&
+                actionShortcutError.index === index
+                  ? actionShortcutError
+                  : null;
+              const display = formatShortcutForDisplay(
+                failed?.shortcut ?? entry.shortcut,
+                { symbols: true },
+              );
+              return (
+                <div
+                  key={index}
+                  role="group"
+                  aria-label={`${action.name}, ${display}`}
+                  className={rowClassName(
+                    capturing,
+                    Boolean(failed || entry.problem),
+                  )}
+                >
+                  <ShortcutKeyButton
+                    display={display}
+                    capturing={capturing}
+                    capturePreview={capturePreview}
+                    invalid={Boolean(failed || entry.problem)}
+                    onClick={() =>
+                      onStartCapture(entry.behavior, index, action.file)
+                    }
+                  />
+                  {action.listen ? (
+                    <Dropdown<ShortcutMode>
+                      value={entry.behavior}
+                      ariaLabel={behaviorLabel}
+                      onChange={(next) =>
+                        onUpdateActionShortcut(
+                          action.file,
+                          index,
+                          entry.shortcut,
+                          next,
+                        )
+                      }
+                      options={behaviorOptions}
+                      fitButtonToWidestOption
+                      buttonClassName={BEHAVIOR_BUTTON_CLASS}
+                      menuClassName="!left-auto min-w-[220px]"
+                    />
+                  ) : (
+                    <span className="px-1 ui-text-body-sm ui-color-primary">
+                      {t({
+                        id: "settings.general.shortcuts.press",
+                        message: "Press",
+                      })}
+                    </span>
+                  )}
+                  <span aria-hidden="true" className="w-6" />
+                  <span aria-hidden="true" className="w-6" />
+                  <ShortcutRowMenu
+                    label={
+                      isWindows
+                        ? t({
+                            id: "actions.show_in_explorer",
+                            message: "Show in File Explorer",
+                          })
+                        : t({
+                            id: "actions.show_in_finder",
+                            message: "Show in Finder",
+                          })
+                    }
+                    onSelect={() =>
+                      void revealActionFile(action.file).catch((err) =>
+                        showErrorToast(String(err)),
+                      )
+                    }
+                  />
+                  {entry.problem && !failed && (
+                    <p className="col-span-5 -mt-1 pb-0.5 ui-text-meta ui-color-error">
+                      {entry.problem}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </Fragment>
+        ))}
       </div>
     </SettingCard>
   );
 };
 
-const ShortcutRowMenu = ({
-  canRemove,
-  onRemove,
+const BEHAVIOR_BUTTON_CLASS =
+  "h-7 !rounded-md !border-0 !bg-transparent !px-1 !py-0 ui-text-body-sm hover:!bg-transparent";
+
+const rowClassName = (capturing: boolean, invalid: boolean) =>
+  `group col-span-5 grid min-h-8 grid-cols-subgrid items-center border-b py-1 transition-colors ${
+    capturing
+      ? "border-border-hover"
+      : invalid
+        ? "border-error/40"
+        : "border-border-primary hover:border-border-secondary"
+  }`;
+
+const ShortcutKeyButton = ({
+  display,
+  capturing,
+  capturePreview,
+  invalid,
+  onClick,
 }: {
-  canRemove: boolean;
-  onRemove: () => void;
+  display: string;
+  capturing: boolean;
+  capturePreview: string;
+  invalid: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex min-w-0 items-center gap-1.5 text-left ui-text-kbd transition-colors hover:text-content-primary ${
+      invalid
+        ? "ui-color-error"
+        : capturing
+          ? "ui-color-primary"
+          : "ui-color-secondary"
+    }`}
+  >
+    {capturing ? (
+      <>
+        <motion.span
+          aria-hidden="true"
+          className="h-1 w-1 shrink-0 rounded-full bg-cloud"
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 1, repeat: Infinity }}
+        />
+        <span
+          aria-live="polite"
+          className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
+        >
+          {capturePreview || "..."}
+        </span>
+      </>
+    ) : (
+      <span className="truncate">{display}</span>
+    )}
+  </button>
+);
+
+const ShortcutRowMenu = ({
+  label,
+  icon,
+  destructive = false,
+  disabled = false,
+  onSelect,
+}: {
+  label: string;
+  icon?: ReactNode;
+  destructive?: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
 }) => {
   const { t } = useLingui();
   const [open, setOpen] = useState(false);
@@ -292,20 +460,15 @@ const ShortcutRowMenu = ({
             <button
               type="button"
               role="menuitem"
-              disabled={!canRemove}
+              disabled={disabled}
               onClick={() => {
-                onRemove();
+                onSelect();
                 setOpen(false);
               }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              className={`flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ${destructive ? "ui-color-error" : "ui-color-primary"} hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50 disabled:pointer-events-none`}
             >
-              <Trash size={12} aria-hidden="true" />
-              <span>
-                {t({
-                  id: "settings.general.shortcuts.remove_shortcut",
-                  message: "Remove shortcut",
-                })}
-              </span>
+              {icon}
+              <span>{label}</span>
             </button>
           </motion.div>
         )}

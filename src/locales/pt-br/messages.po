@@ -589,6 +589,9 @@ msgstr "Modelo Whisper local, multilíngue e com suporte ao dicionário."
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0} não está reproduzindo áudio e não será gravado."
 
+
+
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -964,6 +967,21 @@ msgid "home.account.fallback"
 msgstr "Conta"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.sidebar.actions"
+msgstr "Ações"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.title"
+msgstr "Ações"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.actions.title"
+msgstr "As Ações estão incluídas em uma licença do Glimpse"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.submit"
 msgstr "Ativar"
@@ -1014,6 +1032,11 @@ msgstr "Adicionar uma nota"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.label_placeholder"
 msgstr "Adicionar uma nota"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.empty"
+msgstr "Adicione um script à pasta Ações."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1074,6 +1097,11 @@ msgstr "Após uma semana"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after_year"
 msgstr "Após um ano"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.dictation_saved"
+msgstr "Após cada ditado"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2322,6 +2350,11 @@ msgstr "Excluir"
 #: src/features/library/components/LibraryDeleteDialog.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.delete"
+msgstr "Excluir"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.delete"
 msgstr "Excluir"
 
 #. js-lingui-explicit-id
@@ -3967,6 +4000,11 @@ msgid "shortcuts.key.mouse_forward"
 msgstr "Botão avançar do mouse"
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.move_to_trash"
+msgstr "Mover para o Lixo"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.folder.move_to"
 msgstr ""
@@ -4069,6 +4107,11 @@ msgstr "Novidades do Glimpse"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.raise"
 msgstr "Próxima ação de mídia"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_no_match"
+msgstr "Nenhuma ação para “{text}”"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4423,6 +4466,11 @@ msgid "onboarding.done.auto_launch"
 msgstr "Abrir ao iniciar sessão"
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.open_folder"
+msgstr "Abrir pasta"
+
+#. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "Abrir GitHub"
@@ -4647,6 +4695,11 @@ msgstr "Praticar seu primeiro ditado"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.preloaded_model"
 msgstr "Modelo pré-carregado"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ShortcutList.tsx
+msgid "settings.general.shortcuts.press"
+msgstr "Pressionar"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
@@ -5177,9 +5230,19 @@ msgid "locked.api.line.v3"
 msgstr "Execute uma API local de transcrição e a ferramenta de linha de comando."
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.trigger.none"
+msgstr "Executar por nome"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.run_cleanup"
 msgstr "Revisar com IA"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.actions.line"
+msgstr "Execute seus próprios scripts com um atalho, uma frase falada ou um evento no Glimpse."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -5484,6 +5547,18 @@ msgstr "Mostrar todos os falantes"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
 msgstr "Mostrar detalhes do erro"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+#: src/features/settings/components/ShortcutList.tsx
+msgid "actions.show_in_explorer"
+msgstr "Mostrar no Explorador de Arquivos"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+#: src/features/settings/components/ShortcutList.tsx
+msgid "actions.show_in_finder"
+msgstr "Mostrar no Finder"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -5806,6 +5881,11 @@ msgstr "Parar transcrição"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.status.stopped"
 msgstr "Parado"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_timed_out"
+msgstr "Interrompido após {seconds} s."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -6681,6 +6761,21 @@ msgstr "Novidades?"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.filter.when"
 msgstr "Quando"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.library_error"
+msgstr "Quando uma gravação falha"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.library_added"
+msgstr "Quando uma gravação é adicionada"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.event.library_complete"
+msgstr "Quando uma gravação está pronta"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

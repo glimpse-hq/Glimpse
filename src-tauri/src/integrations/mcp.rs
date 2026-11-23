@@ -1,7 +1,8 @@
 //! `glimpse mcp` - a Model Context Protocol server on stdio, so AI agents can
 //! search and read the Library and dictations, follow a recording live, ask the
-//! user a question and transcribe files. Queuing files needs `--allow-import`;
-//! starting, resuming or finishing a recording needs `--allow-recording`.
+//! user a question, transcribe files and run actions. Queuing files needs
+//! `--allow-import`; starting, resuming or finishing a recording needs
+//! `--allow-recording`; running an action needs `--allow-actions`.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
@@ -56,6 +57,7 @@ fn help() {
                         "--allow-recording",
                         "Let the agent start, resume and finish recordings.",
                     ),
+                    ("--allow-actions", "Let the agent run actions."),
                     ("-h, --help", "Show help information."),
                 ],
             ),
@@ -94,6 +96,7 @@ pub(crate) fn run(identifier: &str, args: &[String]) -> Result<()> {
         Arc::new(SettingsStore::for_cli(identifier)?),
         has_flag(args, "--allow-import"),
         has_flag(args, "--allow-recording"),
+        has_flag(args, "--allow-actions"),
     );
     tokio::runtime::Runtime::new()?.block_on(async {
         let service = server.serve(rmcp::transport::stdio()).await?;
@@ -245,6 +248,55 @@ struct AskParams {
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[schemars(crate = "rmcp::schemars")]
+struct RunActionParams {
+    #[schemars(
+        description = "The action's name: its file name without the extension. Optional with say."
+    )]
+    name: Option<String>,
+    #[schemars(description = "Text the script reads on stdin, as if it had been spoken.")]
+    text: Option<String>,
+    #[schemars(
+        description = "Full spoken text to route through the phrases like a real dictation, on Glimpse's own keys or on key. Every action without problems counts, switched on or not. The record says which action ran and with which phrase."
+    )]
+    say: Option<String>,
+    #[schemars(
+        description = "With say: the action shortcut it was spoken on, like Control+Alt+T."
+    )]
+    key: Option<String>,
+    #[schemars(
+        description = "Run as this event (dictation.saved, library.added, library.complete or library.error), with text as stdin."
+    )]
+    event: Option<String>,
+    #[schemars(
+        description = "Values Glimpse would read from the user's screen: GLIMPSE_APP, GLIMPSE_WINDOW_TITLE, GLIMPSE_URL, GLIMPSE_SELECTED_TEXT, GLIMPSE_FIELD_TEXT, GLIMPSE_LANGUAGE, GLIMPSE_ID. A headless run reads none of them otherwise."
+    )]
+    env: Option<std::collections::BTreeMap<String, String>>,
+    #[schemars(
+        description = "Replies to the script's glimpse ask calls, in order: spoken text or a button label. Without one left, ask is skipped."
+    )]
+    answers: Option<Vec<String>>,
+    #[schemars(
+        description = "Run without showing or typing anything; what would show is only returned. Defaults to true. False shows it to the user and types an insert action's output."
+    )]
+    headless: Option<bool>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct ListActionsParams {
+    #[schemars(description = "Only the action with this name.")]
+    name: Option<String>,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+struct ActionNameParams {
+    #[schemars(description = "The action's name: its file name without the extension.")]
+    name: String,
+}
+
+#[derive(Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
 struct RecentDictationsParams {
     #[schemars(description = "Only dictations containing these words.")]
     query: Option<String>,
@@ -322,6 +374,7 @@ impl LibraryServer {
         settings: Arc<SettingsStore>,
         allow_import: bool,
         allow_recording: bool,
+        allow_actions: bool,
     ) -> Self {
         let mut tool_router = Self::tool_router();
         if !allow_import {
@@ -331,6 +384,9 @@ impl LibraryServer {
             tool_router.remove_route("start_recording");
             tool_router.remove_route("resume_recording");
             tool_router.remove_route("finish_recording");
+        }
+        if !allow_actions {
+            tool_router.remove_route("run_action");
         }
         Self {
             storage,
@@ -726,6 +782,79 @@ impl LibraryServer {
             .map(|data| data.to_string())
             .ok_or_else(|| "No recording is in progress.".to_string())
     }
+
+    #[tool(
+        description = "List the user's Glimpse actions and the folder they live in (folder). Returns each action's name, file, description, shortcuts, phrases, events, enabled, show, listen, problems and last_failure. Opens Glimpse if it isn't running.\n\
+An action is one script file in that folder, in any language. The name is the file name without its extension. The program comes from the #! line, else the extension: .py python3, .js node, .sh sh, .ps1 PowerShell, .cmd/.bat cmd. Comment lines at the top say when it runs:\n\
+@glimpse.description <text>: one line for the Actions screen.\n\
+@glimpse.shortcut <keys> [smart|hold|toggle]: a key that records and runs it. Repeatable.\n\
+@glimpse.say <phrase>: runs when a dictation starts with it; the rest is stdin. Without a shortcut it needs two words. Repeatable.\n\
+@glimpse.on <event>: dictation.saved, library.added, library.complete or library.error. Repeatable.\n\
+@glimpse.app <name>, @glimpse.site <host>: only there.\n\
+@glimpse.show toast|insert: stdout as a toast (default) or typed where the user was.\n\
+@glimpse.timeout <seconds>: default 30, 0 for none.\n\
+@glimpse.listen false: the shortcut runs it at once, without dictation.\n\
+The script reads the text on stdin. Env: GLIMPSE_PHRASE, GLIMPSE_EVENT, GLIMPSE_ID, GLIMPSE_LANGUAGE, GLIMPSE_AUDIO_FILE, GLIMPSE_APP, GLIMPSE_WINDOW_TITLE, GLIMPSE_URL, GLIMPSE_SELECTED_TEXT, GLIMPSE_FIELD_TEXT, GLIMPSE_STATE_DIR (a folder it keeps), GLIMPSE_HEADLESS=1 in a test run. Trimmed stdout is shown; empty shows nothing; a non-zero exit shows the last stderr line as an error. It can call glimpse toast <message> [--title t] [--type info|success|warning|error], glimpse ask <question> [--button label] (prints the answer, exit 1 when skipped), glimpse pill <text> (insert actions), glimpse llm <instruction> (stdin in, model reply out) and glimpse clean (stdin in, cleaned text out).\n\
+New files start switched off; the switch only turns the triggers on, and run_action works either way. Write the file, then call run_action and read the record.",
+        annotations(read_only_hint = true, open_world_hint = false)
+    )]
+    async fn list_actions(
+        &self,
+        Parameters(params): Parameters<ListActionsParams>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let mut list = app_request("actions.list", json!({})).await?;
+        if let (Some(name), Some(actions)) = (params.name, list["actions"].as_array_mut()) {
+            actions.retain(|action| action["name"] == name.as_str());
+        }
+        Ok(list.to_string())
+    }
+
+    #[tool(
+        description = "Run one of the user's Glimpse actions and wait for it. Returns the record of what the user saw, in order in shown (toast, pill, insert, ask with its answer, error), with trigger, phrase or event, ended (exited, timeout, stopped, not_started), exit_code, ok, output (trimmed stdout), duration_ms, waited_ms and the end of stderr. A run that didn't succeed is an error result with the same record. Headless by default: the script really runs, but nothing shows, nothing is typed, and the user's app and selection aren't read; give them with env. Iterate by editing the file and calling this again.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = true,
+            open_world_hint = true
+        )
+    )]
+    async fn run_action(
+        &self,
+        Parameters(params): Parameters<RunActionParams>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        let args = json!({
+            "name": params.name,
+            "text": params.text.unwrap_or_default(),
+            "headless": params.headless.unwrap_or(true),
+            "answers": params.answers.unwrap_or_default(),
+            "say": params.say,
+            "key": params.key,
+            "event": params.event,
+            "env": params.env.unwrap_or_default(),
+        });
+        let record = app_request("actions.run", args).await?;
+        if record["ok"] == true {
+            Ok(record.to_string())
+        } else {
+            Err(record.to_string())
+        }
+    }
+
+    #[tool(
+        description = "What the last run of a Glimpse action showed the user, from any trigger: a shortcut, a spoken phrase, an event or run_action. Use it after asking the user to try an action. Same record as run_action.",
+        annotations(read_only_hint = true, open_world_hint = false)
+    )]
+    async fn last_action_run(
+        &self,
+        Parameters(params): Parameters<ActionNameParams>,
+    ) -> Result<String, String> {
+        self.require_license()?;
+        running_app_request("actions.last", json!({ "name": params.name }))
+            .await?
+            .map(|data| data.to_string())
+            .ok_or_else(|| "Glimpse isn't running.".to_string())
+    }
 }
 
 // The default router is rebuilt per call and would bring back routes removed in `new`.
@@ -741,7 +870,8 @@ impl ServerHandler for LibraryServer {
                  Their dictations are in recent_dictations. To get a spoken answer from them, call ask_user. \
                  Find items with search_library or list_recent, then read one with get_transcript. \
                  To work along with a recording in progress, call wait_for_live_transcript in a loop. \
-                 Transcribe a file directly with transcribe_audio.",
+                 Transcribe a file directly with transcribe_audio. \
+                 The user's actions (scripts run by a shortcut or a spoken phrase) are in list_actions.",
             )
     }
 }
@@ -1084,7 +1214,7 @@ mod tests {
         storage.insert_library_item(meeting()).expect("insert");
         storage.set_query_only().expect("query only");
         let settings = SettingsStore::open(root.join("settings.db")).expect("settings store");
-        let server = LibraryServer::new(Arc::new(storage), Arc::new(settings), false, false);
+        let server = LibraryServer::new(Arc::new(storage), Arc::new(settings), false, false, false);
 
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let (mut writer, server_read) = tokio::io::duplex(64 * 1024);
@@ -1135,6 +1265,8 @@ mod tests {
                     "ask_user",
                     "get_live_transcript",
                     "get_transcript",
+                    "last_action_run",
+                    "list_actions",
                     "list_recent",
                     "pause_recording",
                     "recent_dictations",

@@ -717,12 +717,21 @@ impl PillController {
         }
 
         if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(action) {
+            let origin = *self.shortcut_origin.lock();
+            let action_holds = crate::actions::holds_pill();
+            // A hold from `actions run` has no key of its own, so any press stops it.
+            if origin == Some(action) || (origin.is_none() && action_holds) {
                 let since_stop = self.stopped_at.lock().map(|stopped| stopped.elapsed());
                 match since_stop {
                     Some(elapsed) if elapsed < CANCEL_PRESS_GRACE => {
                         analytics::track_cancel_press_ignored(app, processing_stage(), elapsed);
                     }
+                    _ if action_holds && crate::actions::stop_holding() => toast::show(
+                        app,
+                        "info",
+                        None,
+                        &toast::native(app, "native.toast.cancelled"),
+                    ),
                     _ => self.cancel_processing(app, "shortcut"),
                 }
             }
@@ -1059,6 +1068,7 @@ impl PillController {
         let origin = crate::transcribe::DictationOrigin {
             trigger,
             cleanup_shortcut: recording_options.cleanup_enabled,
+            action_key: recording_options.action_key,
             started_at,
             stopped_at,
             preflight_generation,
@@ -1208,6 +1218,39 @@ impl PillController {
         }
     }
 
+    /// Shows Processing while an insert action runs without a dictation. A
+    /// press of `origin`'s kind stops it. False when the pill is busy.
+    pub(crate) fn hold_for_action(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        origin: Option<hotkeys::ShortcutAction>,
+    ) -> bool {
+        {
+            let mut status = self.status.lock();
+            if *status != PillStatus::Idle {
+                return false;
+            }
+            *status = PillStatus::Processing;
+            *self.shortcut_origin.lock() = origin;
+            *self.stopped_at.lock() = Some(Instant::now());
+        }
+        self.announce_transition(app, PillStatus::Idle, PillStatus::Processing);
+        true
+    }
+
+    /// Lets go of an insert action's Processing, so a press can start a dictation.
+    pub(crate) fn release_hold(&self, app: &AppHandle<AppRuntime>) -> bool {
+        if self.status() != PillStatus::Processing {
+            return false;
+        }
+        self.reset(app);
+        true
+    }
+
+    pub(crate) fn shortcut_origin(&self) -> Option<hotkeys::ShortcutAction> {
+        *self.shortcut_origin.lock()
+    }
+
     pub fn cancel_processing(&self, app: &AppHandle<AppRuntime>, how: &str) {
         if self.status() != PillStatus::Processing {
             return;
@@ -1267,6 +1310,13 @@ fn end_dictation_activity() {
             | Activity::ModelLoading
     ) {
         analytics::set_activity(Activity::Idle);
+    }
+}
+
+/// Registering shortcuts again ends a held recording, so callers wait for it.
+pub(crate) async fn dictation_ended(app: &AppHandle<AppRuntime>) {
+    while app.state::<AppState>().pill().status() == PillStatus::Listening {
+        tokio::time::sleep(Duration::from_millis(250)).await;
     }
 }
 
@@ -1482,6 +1532,15 @@ pub(crate) fn handle_registered_hotkey_event(
     let app_state = app.state::<AppState>();
     let pill = app_state.pill();
 
+    if let Some(key) = options.action_key
+        && !crate::actions::key_listens(key)
+    {
+        if state == HotkeyState::Pressed && pill.prepare_shortcut_press(app, action) {
+            crate::actions::press(app, key, action);
+        }
+        return;
+    }
+
     match action {
         hotkeys::ShortcutAction::Smart => match state {
             HotkeyState::Pressed => pill.handle_smart_press(app, options, occurred_at),
@@ -1574,6 +1633,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             hotkeys::ShortcutOptions {
                 temporary: binding.temporary,
                 cleanup_enabled: binding.cleanup_enabled,
+                action_key: None,
             },
         );
     }
@@ -1586,6 +1646,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             hotkeys::ShortcutOptions {
                 temporary: binding.temporary,
                 cleanup_enabled: binding.cleanup_enabled,
+                action_key: None,
             },
         );
     }
@@ -1598,6 +1659,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             hotkeys::ShortcutOptions {
                 temporary: binding.temporary,
                 cleanup_enabled: binding.cleanup_enabled,
+                action_key: None,
             },
         );
     }
@@ -1607,6 +1669,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
         .map(|(label, hotkey)| format!("{label}={hotkey}"))
         .collect();
     tracing::info!("Shortcuts {}", registered.join(" "));
+    bindings.extend(crate::actions::shortcut_bindings(app, &settings));
     state.hotkeys.replace_registrations(app, bindings)
 }
 

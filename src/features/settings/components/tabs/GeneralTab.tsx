@@ -2,7 +2,14 @@ import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import { Check, Info, Microphone as Mic, Square } from "@phosphor-icons/react";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import FieldLabel from "../../../../shared/ui/FieldLabel";
@@ -15,7 +22,11 @@ import type { TranscriptionLanguageOption } from "../../../../shared/lib/transcr
 import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
 
 type ShortcutMode = "smart" | "hold" | "toggle";
-type CaptureMode = { mode: ShortcutMode; index: number } | null;
+type CaptureMode = {
+  mode: ShortcutMode;
+  index: number;
+  action?: string;
+} | null;
 type InvalidShortcutDrafts = Partial<
   Record<ShortcutMode, Record<number, string>>
 >;
@@ -32,7 +43,13 @@ type GeneralTabProps = {
   invalidShortcutDrafts: InvalidShortcutDrafts;
   captureActive: CaptureMode;
   capturePreview: string;
-  onStartCapture: (mode: ShortcutMode, index?: number) => void;
+  actionShortcutError: ComponentProps<
+    typeof ShortcutList
+  >["actionShortcutError"];
+  onStartCapture: (mode: ShortcutMode, index?: number, action?: string) => void;
+  updateActionShortcut: ComponentProps<
+    typeof ShortcutList
+  >["onUpdateActionShortcut"];
   updateShortcutBinding: (
     mode: ShortcutMode,
     index: number,
@@ -70,7 +87,9 @@ const GeneralTab = ({
   invalidShortcutDrafts,
   captureActive,
   capturePreview,
+  actionShortcutError,
   onStartCapture,
+  updateActionShortcut,
   updateShortcutBinding,
   addShortcutBinding,
   removeShortcutBinding,
@@ -316,8 +335,10 @@ const GeneralTab = ({
             invalidDrafts={invalidShortcutDrafts}
             captureActive={captureActive}
             capturePreview={capturePreview}
+            actionShortcutError={actionShortcutError}
             cleanupDisabled={!licenseGateActive}
             onStartCapture={onStartCapture}
+            onUpdateActionShortcut={updateActionShortcut}
             onUpdate={updateShortcutBinding}
             onAdd={addShortcutBinding}
             onRemove={removeShortcutBinding}

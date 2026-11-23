@@ -13,6 +13,7 @@ use crate::{AppRuntime, AppState, pill, toast};
 
 const MAX_OPEN: usize = 5;
 const MAX_QUESTION_CHARS: usize = 160;
+const MAX_BUTTONS: usize = 2;
 // An asker that stops polling this long is treated as gone, so its question
 // can't keep taking dictations.
 const ABANDONED_AFTER: Duration = Duration::from_secs(90);
@@ -29,6 +30,8 @@ struct Prompt {
     id: String,
     client: String,
     question: String,
+    /// Labels the person can click instead of speaking.
+    buttons: Vec<String>,
     stage: Stage,
     last_poll: Instant,
 }
@@ -58,16 +61,10 @@ pub(crate) fn open(
     app: &AppHandle<AppRuntime>,
     client: &str,
     question: &str,
+    buttons: Vec<String>,
 ) -> Result<String, String> {
+    check_question(question, &buttons)?;
     let question = question.trim();
-    if question.is_empty() {
-        return Err("question must not be empty".to_string());
-    }
-    if question.chars().count() > MAX_QUESTION_CHARS {
-        return Err(format!(
-            "question must be {MAX_QUESTION_CHARS} characters or fewer"
-        ));
-    }
     let id = uuid::Uuid::new_v4().to_string();
     let start_reaper = {
         let mut prompts = PROMPTS.lock();
@@ -78,6 +75,10 @@ pub(crate) fn open(
             id: id.clone(),
             client: client.trim().to_string(),
             question: question.to_string(),
+            buttons: buttons
+                .iter()
+                .map(|label| label.trim().to_string())
+                .collect(),
             stage: Stage::Waiting,
             last_poll: Instant::now(),
         });
@@ -120,6 +121,24 @@ pub(crate) fn close(app: &AppHandle<AppRuntime>, id: &str) {
     }
 }
 
+pub(crate) fn check_question(question: &str, buttons: &[String]) -> Result<(), String> {
+    let question = question.trim();
+    if question.is_empty() {
+        return Err("question must not be empty".to_string());
+    }
+    if question.chars().count() > MAX_QUESTION_CHARS {
+        return Err(format!(
+            "question must be {MAX_QUESTION_CHARS} characters or fewer"
+        ));
+    }
+    if buttons.len() > MAX_BUTTONS || buttons.iter().any(|label| label.trim().is_empty()) {
+        return Err(format!(
+            "Use up to {MAX_BUTTONS} buttons, each with a label."
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(debug_assertions)]
 pub(crate) fn close_all() {
     let mut prompts = PROMPTS.lock();
@@ -134,6 +153,26 @@ pub fn voice_prompt_skip(id: String) {
         prompt.stage = Stage::Skipped;
     }
     take_shown(&mut prompts, &id);
+}
+
+#[tauri::command]
+pub fn voice_prompt_pick_first(id: String) {
+    pick(&id, 0);
+}
+
+#[tauri::command]
+pub fn voice_prompt_pick_second(id: String) {
+    pick(&id, 1);
+}
+
+fn pick(id: &str, button: usize) {
+    let mut prompts = PROMPTS.lock();
+    if let Some(prompt) = prompts.items.iter_mut().find(|p| p.id == id && p.is_open())
+        && let Some(label) = prompt.buttons.get(button)
+    {
+        prompt.stage = Stage::Answered(label.clone());
+    }
+    take_shown(&mut prompts, id);
 }
 
 // Not while answering: Escape is used in other apps during a dictation.
@@ -170,6 +209,15 @@ pub(crate) fn claim_for_dictation() {
     if let Some(index) = shown_waiting_index(&prompts) {
         prompts.items[index].stage = Stage::Answering;
     }
+}
+
+/// A question from `client` waits for an answer, or is being answered.
+pub(crate) fn question_open(client: &str) -> bool {
+    PROMPTS
+        .lock()
+        .items
+        .iter()
+        .any(|prompt| prompt.is_open() && prompt.client == client)
 }
 
 pub(crate) fn is_answering() -> bool {
@@ -245,7 +293,7 @@ fn take_shown(prompts: &mut Prompts, id: &str) -> bool {
 // taking the text already being spoken.
 fn show_current(app: &AppHandle<AppRuntime>) {
     let idle = app.state::<AppState>().pill().status() == pill::PillStatus::Idle;
-    let (id, client, question) = {
+    let (id, client, question, buttons) = {
         let mut prompts = PROMPTS.lock();
         if prompts.shown.is_some() || prompts.covered {
             return;
@@ -260,6 +308,7 @@ fn show_current(app: &AppHandle<AppRuntime>) {
             prompt.id.clone(),
             prompt.client.clone(),
             prompt.question.clone(),
+            prompt.buttons.clone(),
         );
         prompts.shown = Some(current.0.clone());
         current
@@ -269,6 +318,15 @@ fn show_current(app: &AppHandle<AppRuntime>) {
     } else {
         toast::native_format(app, "native.toast.ask_title", &[("client", &client)])
     };
+    let mut buttons = buttons.into_iter();
+    let (action, action_label) = match buttons.next() {
+        Some(label) => ("voice_prompt_pick_first", label),
+        None => (
+            "voice_prompt_skip",
+            toast::native(app, "native.toast.ask_skip"),
+        ),
+    };
+    let second = buttons.next();
     toast::emit_toast(
         app,
         toast::Payload {
@@ -278,8 +336,12 @@ fn show_current(app: &AppHandle<AppRuntime>) {
             detail: Some(toast::native(app, "native.toast.ask_hint")),
             auto_dismiss: Some(false),
             keep_while_recording: Some(true),
-            action: Some("voice_prompt_skip".to_string()),
-            action_label: Some(toast::native(app, "native.toast.ask_skip")),
+            action: Some(action.to_string()),
+            action_label: Some(action_label),
+            secondary_action: second
+                .is_some()
+                .then(|| "voice_prompt_pick_second".to_string()),
+            secondary_action_label: second,
             action_args: Some(json!({ "id": id })),
             close_action: Some("voice_prompt_skip".to_string()),
             ..Default::default()

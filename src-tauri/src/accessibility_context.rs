@@ -2,6 +2,7 @@
 #[cfg(target_os = "macos")]
 pub(crate) const AX_MESSAGING_TIMEOUT_SECS: f32 = 2.0;
 
+#[derive(Clone)]
 pub struct ActiveContext {
     pub app_name: String,
     /// Other names the app goes by on Windows (exe name, Start menu and

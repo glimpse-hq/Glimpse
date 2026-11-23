@@ -218,6 +218,7 @@ fn show_toast(app: &AppHandle<AppRuntime>, id: &str) -> Result<(), String> {
             app,
             "Claude Code",
             "Should the summary go at the top of the note or the bottom?",
+            Vec::new(),
         )?;
         return Ok(());
     }

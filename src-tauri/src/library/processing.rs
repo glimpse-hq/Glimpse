@@ -105,6 +105,7 @@ pub(crate) fn create_item_from_path(
     };
 
     storage.insert_library_item(item.clone())?;
+    crate::actions::fire_event(app, "library.added", &item.id);
     Ok(item)
 }
 
@@ -212,6 +213,7 @@ pub(crate) fn create_recording_item(
         return Err(err);
     }
     super::speakers::save_live_hints(&item.id, &audio_path, &output.live);
+    crate::actions::fire_event(app, "library.added", &item.id);
     Ok(item)
 }
 

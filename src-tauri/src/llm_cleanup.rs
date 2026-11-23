@@ -201,6 +201,53 @@ pub async fn edit_transcription(
     Ok(result)
 }
 
+/// `instruction` as the system prompt and `text` as the user turn, on the provider from Settings.
+/// The cleanup model is trained only for cleanup, so `local` and that provider use its base model.
+pub async fn run_instruction(
+    client: &Client,
+    settings: &UserSettings,
+    instruction: &str,
+    text: &str,
+    local: bool,
+) -> Result<String, RemoteError> {
+    if !local && !is_llm_available(settings) {
+        return Err(remote_lib::config_error(
+            "Choose a language model in Settings -> Models",
+        ));
+    }
+    if local || uses_bonsai_provider(settings) {
+        let cancel = Arc::new(AtomicBool::new(false));
+        let generate = tokio::task::spawn_blocking({
+            let (instruction, text) = (instruction.to_string(), text.to_string());
+            let cancel = Arc::clone(&cancel);
+            move || crate::cleanup_model::generate_base(&instruction, &text, &cancel)
+        });
+        let _stop =
+            std::mem::DropGuard::new(cancel, |cancel| cancel.store(true, Ordering::Relaxed));
+        let generation = tokio::time::timeout(CHAT_TIMEOUT, generate)
+            .await
+            .map_err(|_| remote_lib::transport_error("The on-device model timed out"))?
+            .map_err(|err| remote_lib::transport_error(format!("On-device model failed: {err}")))?
+            .map_err(|err| remote_lib::transport_error(err.to_string()))?;
+        return Ok(generation.text);
+    }
+    let task = TextTaskKind::Edit;
+    if uses_apple_provider(settings) {
+        return run_apple_text_task(
+            task,
+            task.max_tokens(),
+            instruction.to_string(),
+            text.to_string(),
+        )
+        .await
+        .map_err(|err| remote_lib::transport_error(format!("On-device model failed: {err}")));
+    }
+    let model = configured_model(settings)
+        .ok_or_else(|| remote_lib::config_error("Choose a language model in Settings -> Models"))?;
+    let body = ChatRequest::new(model, task, instruction.to_string(), text.to_string());
+    send_chat_request(client, settings, &body).await
+}
+
 pub const APPLE_PROVIDER: &str = "apple";
 pub const BONSAI_PROVIDER: &str = "bonsai";
 

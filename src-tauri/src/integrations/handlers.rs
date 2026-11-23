@@ -34,8 +34,24 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "record.bookmark" => record_bookmark(app, &request.args),
         "record.finish" => record_finish(app, &request.args),
         "record.live" => record_live(app, &request.args),
-        "prompt.open" => prompt_open(app, &request.args),
-        "prompt.poll" => arg_str(&request.args, "id").map(|id| crate::voice_prompt::poll(&id)),
+        "prompt.open" => prompt_open(app, &request.args, request.run.as_deref()),
+        "prompt.poll" => arg_str(&request.args, "id").map(|id| {
+            let polled = crate::voice_prompt::poll(&id);
+            crate::actions::record_answer(request.run.as_deref(), &polled);
+            polled
+        }),
+        "toast" => show_toast(app, &request.args, request.run.as_deref()),
+        "pill" => pill_text(app, &request.args, request.run.as_deref()),
+        "llm" => llm(app, &request.args),
+        "clean" => clean(app, &request.args),
+        "actions.list" => actions_list(app),
+        "actions.run" => actions_run(app, &request.args, request.run.as_deref()),
+        "actions.stop" => actions_stop(app, &request.args),
+        "actions.last" => arg_str(&request.args, "name").and_then(|name| {
+            require_license(&app.state::<AppState>())?;
+            let record = crate::actions::last_run(&name)?;
+            serde_json::to_value(record).map_err(|err| err.to_string())
+        }),
         #[cfg(debug_assertions)]
         dev if dev.starts_with("dev.") => super::dev::handle(app, dev, &request.args),
         other => Err(format!("Unknown command: {other}")),
@@ -158,6 +174,7 @@ fn open(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
         ("personalization", _) => Some(SettingsPage::Personalization),
         ("library", _) => Some(SettingsPage::Library),
         ("record", _) => Some(SettingsPage::Record),
+        ("actions", _) => Some(SettingsPage::Actions),
         ("models", _) | ("settings", Some("models")) => Some(SettingsPage::Models),
         ("settings", Some("about")) => Some(SettingsPage::About),
         ("settings", Some("account")) => Some(SettingsPage::Account),
@@ -595,15 +612,170 @@ fn record_bookmark(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, S
     Ok(json!({ "bookmark": bookmark }))
 }
 
-fn prompt_open(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
+/// A headless action run gets its answer at once instead of a question.
+fn prompt_open(
+    app: &AppHandle<AppRuntime>,
+    args: &Value,
+    run: Option<&str>,
+) -> Result<Value, String> {
     require_license(&app.state::<AppState>())?;
     let question = arg_str(args, "question")?;
     let client = args
         .get("client")
         .and_then(Value::as_str)
         .unwrap_or_default();
-    let id = crate::voice_prompt::open(app, client, &question)?;
-    Ok(json!({ "id": id }))
+    let buttons = match args.get("buttons") {
+        Some(_) => arg_string_array(args, "buttons")?,
+        None => Vec::new(),
+    };
+    crate::actions::record_ask(run, &question, buttons, |buttons| {
+        let id = crate::voice_prompt::open(app, client, &question, buttons)?;
+        Ok(json!({ "id": id }))
+    })
+}
+
+fn show_toast(
+    app: &AppHandle<AppRuntime>,
+    args: &Value,
+    run: Option<&str>,
+) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    let message = arg_str(args, "message")?;
+    // The toast window can't draw a type it doesn't know.
+    let toast_type = args.get("type").and_then(Value::as_str).unwrap_or("info");
+    if !matches!(toast_type, "info" | "success" | "warning" | "error") {
+        return Err(format!("Unknown toast type: {toast_type}"));
+    }
+    let seconds = args.get("duration").and_then(Value::as_f64);
+    let title = args.get("title").and_then(Value::as_str);
+    if seconds.is_some_and(|seconds| !(0.0..=3600.0).contains(&seconds)) {
+        return Err("duration must be 0 to 3600 seconds".to_string());
+    }
+    if !crate::actions::record_toast(run, toast_type, title, &message)? {
+        return Ok(json!({}));
+    }
+    crate::toast::emit_toast(
+        app,
+        crate::toast::Payload {
+            toast_type: toast_type.to_string(),
+            title: title.map(str::to_string),
+            message,
+            auto_dismiss: seconds.map(|seconds| seconds > 0.0),
+            duration: seconds
+                .filter(|seconds| *seconds > 0.0)
+                .map(|seconds| (seconds * 1000.0) as u64),
+            ..Default::default()
+        },
+    );
+    Ok(json!({}))
+}
+
+fn pill_text(
+    app: &AppHandle<AppRuntime>,
+    args: &Value,
+    run: Option<&str>,
+) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    let text = arg_str(args, "text")?;
+    crate::actions::record_pill(run, &text, || crate::actions::set_pill_text(app, &text))?;
+    Ok(json!({}))
+}
+
+fn llm(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
+    let state = app.state::<AppState>();
+    require_license(&state)?;
+    let instruction = arg_str(args, "instruction")?;
+    let text = arg_str(args, "text")?;
+    let local = args.get("local").and_then(Value::as_bool).unwrap_or(false);
+    let settings = state.current_settings_unmasked();
+    let output = tauri::async_runtime::block_on(crate::llm_cleanup::run_instruction(
+        &state.http(),
+        &settings,
+        &instruction,
+        &text,
+        local,
+    ))
+    // The user-facing text of a remote error speaks of speech providers.
+    .map_err(|err| err.message)?;
+    Ok(json!({ "text": output }))
+}
+
+/// Cleans up `text` with the mode that matches the app in front.
+fn clean(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
+    let state = app.state::<AppState>();
+    require_license(&state)?;
+    let text = arg_str(args, "text")?;
+    let settings = state.current_settings_unmasked();
+    let routed = crate::llm_cleanup::settings_for_language(&settings, None);
+    let Some(llm_settings) = routed
+        .as_deref()
+        .filter(|routed| crate::llm_cleanup::is_llm_available(routed))
+    else {
+        return Err("Set up a writing model in Glimpse first.".to_string());
+    };
+    let context = crate::mode_context::active_context();
+    let mode = context
+        .as_ref()
+        .and_then(|context| crate::mode_context::matched_modes(&settings, context).next());
+    let cleaned =
+        tauri::async_runtime::block_on(crate::llm_cleanup::cleanup_transcription_with_context(
+            &state.http(),
+            &text,
+            llm_settings,
+            mode,
+            context.as_ref(),
+        ))
+        .map_err(|err| err.message)?;
+    Ok(json!({ "text": cleaned }))
+}
+
+fn actions_list(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    serde_json::to_value(crate::actions::list(app, true)).map_err(|err| err.to_string())
+}
+
+fn actions_run(
+    app: &AppHandle<AppRuntime>,
+    args: &Value,
+    run: Option<&str>,
+) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    let text = |key: &str| args.get(key).and_then(Value::as_str).map(str::to_string);
+    let input = crate::actions::RunInput {
+        name: text("name"),
+        text: text("text").unwrap_or_default(),
+        headless: args
+            .get("headless")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
+        answers: match args.get("answers") {
+            Some(_) => arg_string_array(args, "answers")?,
+            None => Vec::new(),
+        },
+        say: text("say"),
+        key: text("key"),
+        event: text("event"),
+        env: args
+            .get("env")
+            .and_then(Value::as_object)
+            .into_iter()
+            .flatten()
+            .map(|(key, value)| match value.as_str() {
+                Some(value) => Ok((key.clone(), value.to_string())),
+                None => Err(format!("{key} must be text")),
+            })
+            .collect::<Result<_, _>>()?,
+        caller: run.map(str::to_string),
+    };
+    let record = crate::actions::run_named(app, input)?;
+    serde_json::to_value(record).map_err(|err| err.to_string())
+}
+
+fn actions_stop(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    let name = arg_str(args, "name")?;
+    crate::actions::stop(&name)?;
+    Ok(json!({ "stopped": name }))
 }
 
 fn record_finish(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {

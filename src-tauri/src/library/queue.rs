@@ -383,6 +383,7 @@ fn start_library_transcription_internal(
                                 EVENT_LIBRARY_COMPLETE,
                                 LibraryCompletePayload { id: id.clone() },
                             );
+                            crate::actions::fire_event(&app_handle, "library.complete", &id);
                         }
                         Err(err) => {
                             tracing::error!(
@@ -478,6 +479,9 @@ pub(crate) fn fail_library_item(
     };
     if let Err(err) = storage.update_library_item(id, patch) {
         tracing::error!("Failed to save status of library item {id}: {err}");
+    }
+    if !cancelled {
+        crate::actions::fire_event(app, "library.error", id);
     }
     let _ = app.emit(
         EVENT_LIBRARY_ERROR,

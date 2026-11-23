@@ -48,6 +48,21 @@ pub fn get_selected_text_ax() -> Option<String> {
     copy_selection_via_clipboard(Duration::from_millis(50))
 }
 
+/// The selection as Accessibility reports it, never copying. None when it can't tell.
+#[cfg(target_os = "macos")]
+pub fn selected_text_without_copy() -> Option<String> {
+    match macos_ax::probe_selection() {
+        macos_ax::SelectionProbe::Text(text) if !text.trim().is_empty() => Some(text),
+        _ => None,
+    }
+}
+
+/// The selection as UI Automation reports it, never copying. None when it can't tell.
+#[cfg(target_os = "windows")]
+pub fn selected_text_without_copy() -> Option<String> {
+    windows_uia::selected_text()
+}
+
 #[cfg(target_os = "macos")]
 mod macos_ax {
     use core_foundation::base::{CFRelease, CFType, CFTypeRef, TCFType};
@@ -299,7 +314,7 @@ mod windows_uia {
             CoUninitialize,
         },
         UI::Accessibility::{
-            CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
+            CUIAutomation8, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
             IUIAutomationValuePattern, UIA_TextPatternId, UIA_ValuePatternId,
         },
     };
@@ -308,7 +323,7 @@ mod windows_uia {
         unsafe {
             let _guard = ComGuard::new()?;
             let automation: IUIAutomation =
-                CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()?;
+                CoCreateInstance(&CUIAutomation8, None, CLSCTX_INPROC_SERVER).ok()?;
             let element = automation.GetFocusedElement().ok()?;
 
             if element.CurrentIsPassword().ok()?.as_bool() {
@@ -345,6 +360,29 @@ mod windows_uia {
                 value,
                 frame,
             })
+        }
+    }
+
+    pub(super) fn selected_text() -> Option<String> {
+        unsafe {
+            let _guard = ComGuard::new()?;
+            let automation: IUIAutomation =
+                CoCreateInstance(&CUIAutomation8, None, CLSCTX_INPROC_SERVER).ok()?;
+            let element = automation.GetFocusedElement().ok()?;
+            if element.CurrentIsPassword().ok()?.as_bool() {
+                return None;
+            }
+            let pattern = element
+                .GetCurrentPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId)
+                .ok()?;
+            let ranges = pattern.GetSelection().ok()?;
+            let max_length = MAX_FOCUSED_TEXT_SNAPSHOT_LEN.try_into().ok()?;
+            let mut text = String::new();
+            for index in 0..ranges.Length().ok()? {
+                let range = ranges.GetElement(index).ok()?;
+                text.push_str(&range.GetText(max_length).ok()?.to_string());
+            }
+            (!text.trim().is_empty()).then_some(text)
         }
     }
 

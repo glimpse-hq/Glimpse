@@ -58,6 +58,8 @@ pub(crate) enum ShortcutAction {
 pub(crate) struct ShortcutOptions {
     pub temporary: bool,
     pub cleanup_enabled: bool,
+    /// The key, for a shortcut that belongs to actions instead of Glimpse.
+    pub action_key: Option<Hotkey>,
 }
 
 #[derive(Debug, Clone, Copy)]
