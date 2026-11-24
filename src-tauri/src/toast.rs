@@ -1,60 +1,95 @@
+use crate::tray::SettingsPage;
 use crate::{AppRuntime, AppState, pill};
-use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, Monitor, WebviewWindow};
+use tauri::{AppHandle, Manager};
 
-pub const WINDOW_LABEL: &str = "toast";
-/// Size from tauri.conf.json; the frontend shrinks the window to fit the card.
-const WINDOW_WIDTH: f64 = 420.0;
-const WINDOW_HEIGHT: f64 = 200.0;
-pub const EVENT_SHOW: &str = "toast:show";
-pub const EVENT_HIDE: &str = "toast:hide";
+/// What a toast button does.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Action {
+    /// Only closes the toast.
+    Close,
+    OpenSettings(SettingsPage),
+    OpenAccount,
+    #[cfg(target_os = "macos")]
+    OpenAccessibilitySettings,
+    OpenMicrophoneSettings,
+    OpenSoundSettings,
+    OpenFfmpegHelp,
+    CopyLastTranscription,
+    AcceptDictionarySuggestion(String),
+    RejectDictionarySuggestion(String),
+    /// Answers voice prompt `id` with its first or second button.
+    PickVoicePrompt(String, usize),
+    SkipVoicePrompt(String),
+    TurnOffAgentNotice,
+    RunAnnouncement,
+    OpenAnnouncement,
+}
 
-#[derive(Serialize, Clone, Default)]
+impl Action {
+    pub fn run(self, app: &AppHandle<AppRuntime>) -> Result<(), String> {
+        match self {
+            Self::Close => Ok(()),
+            Self::OpenSettings(page) => crate::open_settings_page(app, page),
+            Self::OpenAccount => crate::open_account_page(app.clone()),
+            #[cfg(target_os = "macos")]
+            Self::OpenAccessibilitySettings => crate::open_accessibility_settings(app.clone()),
+            Self::OpenMicrophoneSettings => crate::permissions::open_microphone_settings(),
+            Self::OpenSoundSettings => crate::permissions::open_sound_settings(),
+            Self::OpenFfmpegHelp => crate::open_ffmpeg_install(app.clone()),
+            Self::CopyLastTranscription => crate::copy_last_transcription(app.clone(), app.state()),
+            Self::AcceptDictionarySuggestion(word) => {
+                crate::auto_dictionary::accept_auto_dictionary_suggestion(
+                    word,
+                    app.clone(),
+                    app.state(),
+                )
+                .map(drop)
+            }
+            Self::RejectDictionarySuggestion(word) => {
+                crate::auto_dictionary::reject_auto_dictionary_suggestion(
+                    word,
+                    app.clone(),
+                    app.state(),
+                )
+                .map(drop)
+            }
+            Self::PickVoicePrompt(id, button) => {
+                crate::voice_prompt::pick(&id, button);
+                Ok(())
+            }
+            Self::SkipVoicePrompt(id) => {
+                crate::voice_prompt::skip(&id);
+                Ok(())
+            }
+            Self::TurnOffAgentNotice => crate::recording::turn_off_agent_notice(app),
+            Self::RunAnnouncement => crate::announcements::run_toasted_announcement(app),
+            Self::OpenAnnouncement => crate::announcements::open_toasted_announcement(app),
+        }
+    }
+}
+
+#[derive(Clone, Default)]
 pub struct Payload {
-    #[serde(rename = "type")]
     pub toast_type: String,
     pub title: Option<String>,
     pub message: String,
-    #[serde(rename = "autoDismiss")]
     pub auto_dismiss: Option<bool>,
     pub duration: Option<u64>,
-    pub action: Option<String>,
-    // Arguments for both action commands.
-    #[serde(rename = "actionArgs")]
-    pub action_args: Option<serde_json::Value>,
-    #[serde(rename = "actionLabel")]
+    pub action: Option<Action>,
     pub action_label: Option<String>,
-    #[serde(rename = "secondaryAction")]
-    pub secondary_action: Option<String>,
-    #[serde(rename = "secondaryActionLabel")]
+    pub secondary_action: Option<Action>,
     pub secondary_action_label: Option<String>,
     pub detail: Option<String>,
-    // Runs with `action_args` when the user closes the toast.
-    #[serde(rename = "closeAction")]
-    pub close_action: Option<String>,
-    #[serde(rename = "keepWhileRecording")]
+    /// Runs when the user closes the toast.
+    pub close_action: Option<Action>,
     pub keep_while_recording: Option<bool>,
 }
 
-pub fn emit_toast(app: &AppHandle<AppRuntime>, payload: Payload) {
+pub fn emit_toast(_app: &AppHandle<AppRuntime>, payload: Payload) {
     if payload.toast_type != "ask" {
         crate::voice_prompt::toast_covered();
     }
-    if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
-        let _ = toast_window.set_size(tauri::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
-        position_toast_window(app, &toast_window, WINDOW_WIDTH, WINDOW_HEIGHT);
-        show_toast_window(app, &toast_window);
-    }
-    let _ = app.emit(EVENT_SHOW, payload);
-}
-
-fn show_toast_window(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime>) {
-    #[cfg(debug_assertions)]
-    if crate::integrations::dev_sandbox() {
-        let _ = crate::integrations::dev::show_in_background(toast_window);
-        return;
-    }
-    crate::platform::toast::show(app, toast_window);
+    crate::native_ui::toast::show(payload);
 }
 
 pub fn native(app: &AppHandle<AppRuntime>, key: &'static str) -> String {
@@ -90,7 +125,7 @@ pub fn show_with_action(
     toast_type: &str,
     title: Option<&str>,
     message: &str,
-    action: &str,
+    action: Action,
     action_label: &str,
 ) {
     emit_toast(
@@ -99,120 +134,29 @@ pub fn show_with_action(
             toast_type: toast_type.to_string(),
             title: title.map(String::from),
             message: message.to_string(),
-            action: Some(action.to_string()),
+            action: Some(action),
             action_label: Some(action_label.to_string()),
             ..Default::default()
         },
     );
 }
 
-pub fn hide(app: &AppHandle<AppRuntime>) {
-    let _ = app.emit(EVENT_HIDE, ());
-
-    // Best-effort: also hide the toast surface at the platform level.
-    if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
-        crate::platform::toast::hide(app, &toast_window);
-    }
+/// Plays the toast's exit animation, then closes it.
+pub fn hide(_app: &AppHandle<AppRuntime>) {
+    crate::native_ui::toast::hide();
 }
 
-/// Size is passed in because `set_size` applies asynchronously on macOS.
-fn position_toast_window(
-    app: &AppHandle<AppRuntime>,
-    toast_window: &WebviewWindow<AppRuntime>,
-    width: f64,
-    height: f64,
-) {
-    // The sandbox keeps its toast where `glimpse dev` put it.
-    if crate::integrations::dev_sandbox() {
-        return;
-    }
-    let state = app.state::<AppState>();
-    let is_expanded = state.pill().is_expanded();
-    let pill_is_visible = state.pill().status() != pill::PillStatus::Idle;
-    let base_margin = if is_expanded { 180.0 } else { 100.0 };
-
-    let Some(monitor) = target_toast_monitor(app, toast_window, pill_is_visible) else {
-        return;
-    };
-
-    let scale_factor = monitor.scale_factor();
-    let window_width = (width * scale_factor) as i32;
-    let window_height = (height * scale_factor) as i32;
-    let bottom_margin = (base_margin * scale_factor) as i32;
-
-    let screen = monitor.size();
-    let mon_pos = monitor.position();
-    let x = mon_pos.x + (screen.width as i32 - window_width) / 2;
-    let y = mon_pos.y + screen.height as i32 - bottom_margin - window_height;
-    let _ = toast_window.set_position(tauri::PhysicalPosition::new(x, y));
-}
-
-#[tauri::command]
-pub fn resize_toast_window(width: f64, height: f64, app: AppHandle<AppRuntime>) {
-    if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
-        let _ = toast_window.set_size(tauri::LogicalSize::new(width, height));
-        position_toast_window(&app, &toast_window, width, height);
-    }
-}
-
-fn target_toast_monitor(
-    app: &AppHandle<AppRuntime>,
-    toast_window: &WebviewWindow<AppRuntime>,
-    pill_is_visible: bool,
-) -> Option<Monitor> {
-    if pill_is_visible {
-        app.get_webview_window(crate::MAIN_WINDOW_LABEL)
-            .and_then(|pill_window| pill_window.current_monitor().ok().flatten())
-            .or_else(|| monitor_containing_cursor(toast_window))
-            .or_else(|| toast_window.current_monitor().ok().flatten())
-    } else {
-        monitor_containing_cursor(toast_window)
-            .or_else(|| toast_window.current_monitor().ok().flatten())
-    }
-}
-
-pub(crate) fn monitor_containing_cursor(window: &WebviewWindow<AppRuntime>) -> Option<Monitor> {
-    let cursor_pos = window.cursor_position().ok()?;
-    window
-        .available_monitors()
-        .ok()?
-        .into_iter()
-        .find(|monitor| {
-            let pos = monitor.position();
-            let size = monitor.size();
-            cursor_pos.x >= pos.x as f64
-                && cursor_pos.x < (pos.x + size.width as i32) as f64
-                && cursor_pos.y >= pos.y as f64
-                && cursor_pos.y < (pos.y + size.height as i32) as f64
-        })
-}
-
-#[tauri::command]
-pub fn toast_dismissed(app: AppHandle<AppRuntime>) -> bool {
-    // The toast window already cleared itself; emitting the hide event back
-    // would make it dismiss again and call this in a loop.
-    if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
-        crate::platform::toast::hide(&app, &toast_window);
-    }
+/// After a toast closed: an error pill goes back to idle, and the next voice prompt can show.
+pub fn toast_dismissed(app: &AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
     if state.pill().status() == pill::PillStatus::Error {
-        state.pill().reset(&app);
+        state.pill().reset(app);
     }
-    crate::voice_prompt::toast_closed(&app)
+    crate::voice_prompt::toast_closed(app);
 }
 
-/// For a toast button that only closes the toast.
 #[tauri::command]
-pub fn close_toast() {}
-
-#[tauri::command]
-pub fn debug_show_toast(
-    toast_type: String,
-    message: String,
-    action: Option<String>,
-    action_label: Option<String>,
-    app: AppHandle<AppRuntime>,
-) {
+pub fn debug_show_toast(toast_type: String, message: String, app: AppHandle<AppRuntime>) {
     emit_toast(
         &app,
         Payload {
@@ -220,8 +164,6 @@ pub fn debug_show_toast(
             message,
             auto_dismiss: Some(true),
             duration: Some(8000),
-            action,
-            action_label,
             ..Default::default()
         },
     );

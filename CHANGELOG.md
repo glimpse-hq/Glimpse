@@ -17,6 +17,11 @@
 
 ### Changes
 
+- Notices grow out of the dictation pill, and a new notice reshapes the one on screen instead of popping in again. A notice shown again, like when you press the shortcut repeatedly, no longer jumps.
+- When the pill shows your words as you speak, it grows and shrinks smoothly, and earlier words slide over as new ones arrive.
+- The pill and notices use under a third of the CPU they did, and less memory, while you dictate.
+- While Glimpse transcribes, the pill's dots are a little squarer.
+- A notice's close and copy buttons sit together in its top corner.
 - Short dictations with Parakeet on Windows take about half the time on NVIDIA graphics and 40% less on Intel graphics.
 - The 14-day trial now includes the command line, the MCP server and the API server.
 - Library now sits with Record in the sidebar.

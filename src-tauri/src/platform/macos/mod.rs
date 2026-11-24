@@ -2,9 +2,8 @@ pub mod audio_devices;
 pub mod icons;
 pub mod live;
 pub mod menu;
-pub mod overlay;
+pub mod native_window;
 pub mod quit_prompt;
-pub mod toast;
 
 pub fn major_version() -> u32 {
     static MAJOR: std::sync::OnceLock<u32> = std::sync::OnceLock::new();

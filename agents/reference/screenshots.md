@@ -15,6 +15,9 @@ bun run screenshots   # README images into assets/readme
 | `onboarding`  | Every setup step, the FAQ, the license step per license, and failed setup and downloads   |
 | `settings`    | Every Settings pane                                                                       |
 | `paywall`     | Home and Account for each license, locked screens without one, and the trial-ended screen |
+| `pill`        | The pill listening (synthetic voice), its live transcript, processing, cleanup and error  |
+| `toasts`      | Every discard notice and toast, without the rest of the walkthrough                       |
+| `motion`      | A video of the pill and toast transitions in a row (macOS), into `motion.mov`             |
 | `readme`      | The four README images (default)                                                          |
 
 Files are numbered in walkthrough order. One run builds once, launches once and takes about 30 seconds for the walkthrough; `--skip-build` reuses the build a `--keep` run left behind, for frontend-only changes; delete `$TMPDIR/glimpse-screenshots-build/` when done. For before and after, run the same command in two checkouts into two folders.
@@ -35,9 +38,11 @@ Debug builds only, and only the sandbox app answers. Use them through the sandbo
 - `glimpse open <view>` and `glimpse open settings --tab account|general|app|about|models|api`
 - `glimpse dev license none|trial|trial-last-day|expired|unlocked-1|unlocked-3`
 - `glimpse dev onboarding reset|complete|<step>|dictated|download-failed|disk-full|setup-failed|faq|close`
-- `glimpse dev show trial-ended|release-notes [--markdown <text>]|toast <milestone|update|no-words|disk-full|ask>|discarded <short|no_audio|quiet|no_speech|blocked>|nothing`
+- `glimpse dev show trial-ended|release-notes [--markdown <text>]|toast <milestone|update|no-words|disk-full|titled|ask>|discarded <short|no_audio|quiet|no_speech|blocked>|pill <idle|listening|transcript|processing|cleanup|error>|nothing`
 - `glimpse dev window <label> info|show|hide|size <w> <h>|position <x> <y>`
 - `glimpse dev focus on|off`: macOS only, for `readme`
 - `glimpse dev wait-idle [--window <label>]`: fonts, queries, images, lazy screens and animations settled. Animations skip to their last frame in the sandbox.
 
-Not covered: the pill and live view (they need a real recording), and a quit-while-recording prompt (none exists). Outside `readme`, macOS window chrome renders inactive, with grey traffic lights.
+`glimpse dev show pill` sets the pill state without recording; `transcript` also streams words into the expanded pill. The pill and toasts draw in one native window, `overlay`, only while it's on screen, so their shots show it in front for a moment, without focus, like a real dictation. `glimpse dev window overlay info` also returns the toast's button rectangles in window points.
+
+Not covered: the live view (it needs a real recording), and a quit-while-recording prompt (none exists). Outside `readme`, macOS window chrome renders inactive, with grey traffic lights.

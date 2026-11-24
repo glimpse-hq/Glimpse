@@ -197,6 +197,7 @@ fn show(
             license_changed(app)?;
         }
         "toast" => show_toast(app, words.get(1).copied().unwrap_or_default())?,
+        "pill" => show_pill(app, words.get(1).copied().unwrap_or_default())?,
         "discarded" => {
             let notice = words.get(1).copied().unwrap_or_default();
             let notice = serde_json::from_value(json!(notice))
@@ -206,6 +207,69 @@ fn show(
         other => return Err(format!("Unknown screen `{other}`.")),
     }
     Ok(json!({ "shown": words.join(" ") }))
+}
+
+/// Puts the pill in a state without recording; listening plays a synthetic voice for six
+/// seconds, and transcript also streams words into the expanded pill.
+fn show_pill(app: &AppHandle<AppRuntime>, state: &str) -> Result<(), String> {
+    use crate::pill::PillStatus;
+    let status = match state {
+        "idle" => PillStatus::Idle,
+        "listening" | "transcript" => PillStatus::Listening,
+        "processing" | "cleanup" => PillStatus::Processing,
+        "error" => PillStatus::Error,
+        other => return Err(format!("Unknown pill state `{other}`.")),
+    };
+    let was_idle = app.state::<AppState>().pill().status() == PillStatus::Idle;
+    app.state::<AppState>().pill().transition_to(app, status);
+    // Like a real recording start, which closes a toast that didn't ask to stay.
+    if was_idle && status == PillStatus::Listening {
+        crate::native_ui::toast::recording_started();
+    }
+    if state == "cleanup" {
+        crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
+    } else if state != "transcript" {
+        crate::pill::collapse_expanded_pill(app);
+    }
+    if state == "transcript" {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            const WORDS: &str = "So the plan for this week is to finish the overlay, test it on \
+                Windows, and then write up what we measured before anything ships.";
+            let mut shown = String::new();
+            for word in WORDS.split(' ') {
+                std::thread::sleep(Duration::from_millis(350));
+                if app.state::<AppState>().pill().status() != PillStatus::Listening {
+                    break;
+                }
+                shown.push_str(word);
+                crate::pill::emit_pill_mode(&app, true, &shown);
+                shown.push(' ');
+            }
+        });
+    }
+    if status == PillStatus::Listening {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            for frame in 0..150u16 {
+                if app.state::<AppState>().pill().status() != PillStatus::Listening {
+                    break;
+                }
+                let t = f32::from(frame) * 0.04;
+                let level = (0.55 + 0.45 * (t * 7.0).sin()) * (0.6 + 0.4 * (t * 2.3).sin());
+                let bins: Vec<u8> = (0..256u16)
+                    .map(|i| {
+                        let f = f32::from(i);
+                        let ripple = 0.7 + 0.3 * (f * 0.3 + t * 5.0).sin();
+                        (level * 255.0 * (-f / 40.0).exp() * ripple).clamp(0.0, 255.0) as u8
+                    })
+                    .collect();
+                crate::native_ui::pill::set_spectrum(&bins);
+                std::thread::sleep(Duration::from_millis(40));
+            }
+        });
+    }
+    Ok(())
 }
 
 fn show_toast(app: &AppHandle<AppRuntime>, id: &str) -> Result<(), String> {
@@ -222,11 +286,27 @@ fn show_toast(app: &AppHandle<AppRuntime>, id: &str) -> Result<(), String> {
         )?;
         return Ok(());
     }
+    if id == "titled" {
+        toast::emit_toast(
+            app,
+            toast::Payload {
+                toast_type: "warning".to_string(),
+                title: Some("Summarize".to_string()),
+                message: "The script stopped after 30 seconds.".to_string(),
+                auto_dismiss: Some(false),
+                ..Default::default()
+            },
+        );
+        return Ok(());
+    }
     let (toast_type, key, action) = match id {
         "update" => (
             "update",
             "native.toast.update_available",
-            Some(("open_about_page", "native.toast.update_action")),
+            Some((
+                toast::Action::OpenSettings(crate::tray::SettingsPage::About),
+                "native.toast.update_action",
+            )),
         ),
         "no-words" => ("warning", "native.toast.no_words", None),
         "disk-full" => ("warning", "native.toast.dictation_disk_full", None),
@@ -238,8 +318,8 @@ fn show_toast(app: &AppHandle<AppRuntime>, id: &str) -> Result<(), String> {
             toast_type: toast_type.to_string(),
             message: toast::native(app, key),
             auto_dismiss: Some(false),
-            action: action.map(|(action, _)| action.to_string()),
-            action_label: action.map(|(_, label)| toast::native(app, label)),
+            action_label: action.as_ref().map(|(_, label)| toast::native(app, label)),
+            action: action.map(|(action, _)| action),
             ..Default::default()
         },
     );
@@ -250,9 +330,17 @@ fn window(app: &AppHandle<AppRuntime>, words: &[&str]) -> Result<Value, String> 
     let [label, action, rest @ ..] = words else {
         return Err("Usage: glimpse dev window <label> <action>".to_string());
     };
-    let window = app
-        .get_webview_window(label)
-        .ok_or_else(|| format!("No `{label}` window is open."))?;
+    let Some(window) = app.get_webview_window(label) else {
+        // The pill and toasts draw in the native overlay, which only reports its info.
+        return match (*label, *action, crate::native_ui::overlay::info()) {
+            ("overlay", "info", Some(info)) => native_window_info(label, info).map(|mut info| {
+                info["buttons"] = crate::native_ui::toast::buttons();
+                info
+            }),
+            ("overlay", other, Some(_)) => Err(format!("`overlay` has no webview for `{other}`.")),
+            _ => Err(format!("No `{label}` window is open.")),
+        };
+    };
     let numbers = || -> Result<(f64, f64), String> {
         match rest {
             [a, b] => a
@@ -278,6 +366,25 @@ fn window(app: &AppHandle<AppRuntime>, words: &[&str]) -> Result<Value, String> 
     };
     result.map_err(|err| err.to_string())?;
     window_info(&window)
+}
+
+// A native window's info, in the shape `window_info` gives webview windows.
+fn native_window_info(
+    label: &str,
+    (id, visible, frame, scale): (i64, bool, tauri::PhysicalRect<i32, u32>, f64),
+) -> Result<Value, String> {
+    let position = frame.position.to_logical::<f64>(scale);
+    let size = frame.size.to_logical::<f64>(scale);
+    Ok(json!({
+        "label": label,
+        "id": id,
+        "visible": visible,
+        "x": position.x,
+        "y": position.y,
+        "width": size.width,
+        "height": size.height,
+        "scale": scale,
+    }))
 }
 
 /// The README shots want active window chrome, which needs the app active.

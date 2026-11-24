@@ -43,7 +43,7 @@ const SETTINGS_FREE_DELAY: std::time::Duration = std::time::Duration::from_secs(
 static SETTINGS_WINDOW_GENERATION: AtomicU64 = AtomicU64::new(0);
 static SETTINGS_WINDOW_BUILDING: AtomicBool = AtomicBool::new(false);
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum SettingsPage {
     About,
     History,

@@ -450,7 +450,7 @@ fn handle_library_job_error(
             "error",
             Some("FFmpeg Required"),
             "FFmpeg is required to import this file.",
-            "open_ffmpeg_install",
+            toast::Action::OpenFfmpegHelp,
             "FFmpeg Help",
         );
     }

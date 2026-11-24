@@ -1,12 +1,9 @@
 import { lazy, Suspense, useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { MotionConfig } from "framer-motion";
 import "./App.css";
 
 const SettingsWindow = lazy(() => import("./SettingsWindow"));
 const LiveWindow = lazy(() => import("./LiveWindow"));
-const PillOverlay = lazy(() => import("../features/pill/PillOverlay"));
-const ToastOverlay = lazy(() => import("../features/toast/ToastOverlay"));
 
 function App() {
   const [windowLabel] = useState(() => getCurrentWindow().label);
@@ -47,32 +44,10 @@ function App() {
     );
   }
 
-  if (windowLabel === "live") {
-    return (
-      <Suspense fallback={null}>
-        <LiveWindow />
-      </Suspense>
-    );
-  }
-
-  if (windowLabel !== "toast") {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
-        <MotionConfig reducedMotion="user">
-          <Suspense fallback={null}>
-            <PillOverlay />
-          </Suspense>
-        </MotionConfig>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
-      <Suspense fallback={null}>
-        <ToastOverlay />
-      </Suspense>
-    </div>
+    <Suspense fallback={null}>
+      <LiveWindow />
+    </Suspense>
   );
 }
 

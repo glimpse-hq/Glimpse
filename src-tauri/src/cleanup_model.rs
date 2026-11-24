@@ -259,7 +259,7 @@ fn finish_check(
             "warning",
             None,
             &crate::toast::native(app, "native.toast.cleanup_model_unsupported"),
-            "open_llm_cleanup_settings",
+            crate::toast::Action::OpenSettings(crate::tray::SettingsPage::Models),
             &crate::toast::native(app, "native.toast.open_settings_action"),
         );
     }

@@ -1726,8 +1726,45 @@ msgstr "स्थानीय Whisper मॉडल, बहुभाषी और
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0} में ऑडियो नहीं चल रहा है, इसलिए इसे रिकॉर्ड नहीं किया जाएगा।"
 
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.visualizer"
+#~ msgstr "ऑडियो विज़ुअलाइज़र"
 
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.background_visualizer"
+#~ msgstr "पृष्ठभूमि ऑडियो विज़ुअलाइज़र"
 
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.close"
+#~ msgstr "सूचना बंद करें"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copied"
+#~ msgstr "कॉपी हो गया"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copy_message"
+#~ msgstr "संदेश कॉपी करें"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.error"
+#~ msgstr "त्रुटि हुई"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.listening"
+#~ msgstr "सुन रहा है..."
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.processing"
+#~ msgstr "प्रोसेस हो रहा है..."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -2429,11 +2466,6 @@ msgid "library.modal.audio_unavailable"
 msgstr "ऑडियो उपलब्ध नहीं"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.visualizer"
-msgstr "ऑडियो विज़ुअलाइज़र"
-
-#. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "transcription.language.auto"
 msgstr "ऑटो"
@@ -2493,11 +2525,6 @@ msgstr "पीछे"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.back"
 msgstr "पीछे"
-
-#. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.background_visualizer"
-msgstr "पृष्ठभूमि ऑडियो विज़ुअलाइज़र"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -2861,8 +2888,8 @@ msgid "personalization.modal.close"
 msgstr "मोडल बंद करें"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.close"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.close"
 msgstr "सूचना बंद करें"
 
 #. js-lingui-explicit-id
@@ -2996,13 +3023,13 @@ msgid "model_picker.error.copied"
 msgstr "कॉपी किया गया"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copied"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_done"
 msgstr "कॉपी हो गया"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copied"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copied"
 msgstr "कॉपी हो गया"
 
 #. js-lingui-explicit-id
@@ -3066,8 +3093,8 @@ msgid "settings.local_api.logs.copy_aria"
 msgstr "लॉग्स कॉपी करें"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copy_message"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_message"
 msgstr "संदेश कॉपी करें"
 
 #. js-lingui-explicit-id
@@ -3906,8 +3933,8 @@ msgid "record.setup.system_mode.all"
 msgstr "पूरा सिस्टम"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.error"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.error"
 msgstr "त्रुटि हुई"
 
 #. js-lingui-explicit-id
@@ -4802,13 +4829,13 @@ msgid "settings.local_api.listen_on_lan_aria"
 msgstr "LAN पर सुनें"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-msgid "live.empty.listening"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.listening"
 msgstr "सुन रहा है..."
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.listening"
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.listening"
 msgstr "सुन रहा है..."
 
 #. js-lingui-explicit-id
@@ -5895,8 +5922,8 @@ msgid "faq.privacy.link"
 msgstr "गोपनीयता नीति"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.processing"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.processing"
 msgstr "प्रोसेस हो रहा है..."
 
 #. js-lingui-explicit-id
@@ -7192,8 +7219,12 @@ msgid "native.toast.admin_app_paste"
 msgstr "यह ऐप एडमिनिस्ट्रेटर के रूप में चल रहा है, इसलिए Windows Glimpse को इसमें टाइप नहीं करने देता। आपका टेक्स्ट क्लिपबोर्ड पर है। पेस्ट करने के लिए Ctrl+V दबाएँ।"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_failed"
+msgstr "यह काम नहीं किया। फिर से कोशिश करें।"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-#: src/features/toast/ToastOverlay.tsx
 msgid "toast.action_failed"
 msgstr "यह काम नहीं किया। फिर से कोशिश करें।"
 

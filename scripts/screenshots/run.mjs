@@ -589,9 +589,14 @@ const watchFocus = () => {
 };
 
 let shotCount = 0;
-const shot = async (name, window = "settings") => {
-  const idle = await dev("wait-idle", "--window", window);
-  if (!idle.settled) log(`${name}: still busy after 10 s (${idle.reason})`);
+const shot = async (name, window = "settings", { settle = true } = {}) => {
+  if (settle && window === "overlay") {
+    // The overlay has no webview to wait on; ask toasts reveal for 0.9 s.
+    await sleep(1000);
+  } else if (settle) {
+    const idle = await dev("wait-idle", "--window", window);
+    if (!idle.settled) log(`${name}: still busy after 10 s (${idle.reason})`);
+  }
   const info = await dev("window", window, "info");
   const { id } = info;
   shotCount += 1;
@@ -644,7 +649,14 @@ const LICENSES = [
   "unlocked-3",
 ];
 const LOCKED_VIEWS = ["personalization", "library", "record"];
-const TOASTS = ["milestone", "update", "no-words", "disk-full", "ask"];
+const TOASTS = [
+  "milestone",
+  "update",
+  "no-words",
+  "disk-full",
+  "ask",
+  "titled",
+];
 const DISCARD_NOTICES = ["short", "no_audio", "quiet", "no_speech", "blocked"];
 
 const onboardingShots = async () => {
@@ -679,7 +691,7 @@ const onboardingShots = async () => {
   for (const notice of DISCARD_NOTICES) {
     await dev("show", "discarded", notice);
     await shot(`setup-practice-${notice}`);
-    await shot(`toast-${notice}`, "toast");
+    await shot(`toast-${notice}`, "overlay");
   }
   await dev("show", "nothing");
   for (const license of ["trial", "none", "unlocked-1"]) {
@@ -752,6 +764,18 @@ const releaseNotes = () => {
     .trim();
 };
 
+const toastShots = async () => {
+  for (const notice of DISCARD_NOTICES) {
+    await dev("show", "discarded", notice);
+    await shot(`toast-${notice}`, "overlay");
+  }
+  for (const toast of TOASTS) {
+    await dev("show", "toast", toast);
+    await shot(`toast-${toast}`, "overlay");
+  }
+  await dev("show", "nothing");
+};
+
 const extraShots = async () => {
   await dev("license", "trial");
   await open("home");
@@ -760,9 +784,76 @@ const extraShots = async () => {
   await dev("show", "nothing");
   for (const toast of TOASTS) {
     await dev("show", "toast", toast);
-    await shot(`toast-${toast}`, "toast");
+    await shot(`toast-${toast}`, "overlay");
   }
   await dev("show", "nothing");
+};
+
+// The pill animates, so it's captured at set times rather than when settled.
+const pillShots = async () => {
+  const window = "overlay";
+  const times = {
+    listening: [300, 700, 700, 700],
+    transcript: [1500, 2500],
+    processing: [500, 600],
+    cleanup: [1200],
+    error: [200, 1400],
+  };
+  for (const [state, waits] of Object.entries(times)) {
+    await dev("show", "pill", state);
+    for (const [i, wait] of waits.entries()) {
+      await sleep(wait);
+      await shot(`pill-${state}-${i}`, window, { settle: false });
+    }
+  }
+  await dev("show", "pill", "idle");
+};
+
+// Plays the pill and toast transitions in a row and records the overlay as a video (macOS).
+const motionVideo = async () => {
+  if (IS_WINDOWS)
+    throw new Error(
+      "The motion scenario records with screencapture, on macOS.",
+    );
+  await dev("show", "pill", "listening");
+  await sleep(300);
+  const { x, y, width, height } = await dev("window", "overlay", "info");
+  const out = join(OUT_DIR, "motion.mov");
+  const steps = [
+    [1200, "pill", "transcript"],
+    [5200, "pill", "processing"],
+    [1400, "pill", "error"],
+    [400, "discarded", "blocked"],
+    [1600, "discarded", "blocked"],
+    [300, "discarded", "blocked"],
+    [300, "discarded", "blocked"],
+    [1400, "toast", "no-words"],
+    [1600, "pill", "idle"],
+    [800, "pill", "transcript"],
+    [1600, "pill", "idle"],
+    [1200, "toast", "ask"],
+    [1400, "pill", "transcript"],
+    [3000, "pill", "processing"],
+    [1500, "pill", "idle"],
+    [1500, "nothing"],
+  ];
+  const seconds = Math.ceil(
+    steps.reduce((sum, [wait]) => sum + wait, 1500) / 1000,
+  );
+  const recording = Bun.spawn([
+    "screencapture",
+    "-x",
+    "-v",
+    `-V${seconds}`,
+    `-R${x},${y},${width},${height}`,
+    out,
+  ]);
+  for (const [wait, ...step] of steps) {
+    await sleep(wait);
+    await dev("show", ...step);
+  }
+  await recording.exited;
+  log(`recorded ${out}`);
 };
 
 const SCENARIOS = {
@@ -819,6 +910,9 @@ const SCENARIOS = {
   onboarding: { license: "trial", onboarded: false, run: onboardingShots },
   settings: { license: "trial", run: settingsShots },
   paywall: { license: "trial", run: paywallShots },
+  pill: { license: "trial", run: pillShots },
+  motion: { license: "trial", run: motionVideo },
+  toasts: { license: "trial", run: toastShots },
   walkthrough: {
     license: "trial",
     onboarded: false,

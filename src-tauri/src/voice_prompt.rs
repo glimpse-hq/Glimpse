@@ -146,26 +146,15 @@ pub(crate) fn close_all() {
     prompts.shown = None;
 }
 
-#[tauri::command]
-pub fn voice_prompt_skip(id: String) {
+pub(crate) fn skip(id: &str) {
     let mut prompts = PROMPTS.lock();
     if let Some(prompt) = prompts.items.iter_mut().find(|p| p.id == id) {
         prompt.stage = Stage::Skipped;
     }
-    take_shown(&mut prompts, &id);
+    take_shown(&mut prompts, id);
 }
 
-#[tauri::command]
-pub fn voice_prompt_pick_first(id: String) {
-    pick(&id, 0);
-}
-
-#[tauri::command]
-pub fn voice_prompt_pick_second(id: String) {
-    pick(&id, 1);
-}
-
-fn pick(id: &str, button: usize) {
+pub(crate) fn pick(id: &str, button: usize) {
     let mut prompts = PROMPTS.lock();
     if let Some(prompt) = prompts.items.iter_mut().find(|p| p.id == id && p.is_open())
         && let Some(label) = prompt.buttons.get(button)
@@ -270,15 +259,14 @@ pub(crate) fn toast_covered() {
     prompts.covered = prompts.shown.is_some();
 }
 
-/// The toast window closed its card. Returns true when a question took its place.
-pub(crate) fn toast_closed(app: &AppHandle<AppRuntime>) -> bool {
+/// The toast closed its card, so the next question can show.
+pub(crate) fn toast_closed(app: &AppHandle<AppRuntime>) {
     {
         let mut prompts = PROMPTS.lock();
         prompts.shown = None;
         prompts.covered = false;
     }
     show_current(app);
-    PROMPTS.lock().shown.is_some()
 }
 
 fn take_shown(prompts: &mut Prompts, id: &str) -> bool {
@@ -320,9 +308,9 @@ fn show_current(app: &AppHandle<AppRuntime>) {
     };
     let mut buttons = buttons.into_iter();
     let (action, action_label) = match buttons.next() {
-        Some(label) => ("voice_prompt_pick_first", label),
+        Some(label) => (toast::Action::PickVoicePrompt(id.clone(), 0), label),
         None => (
-            "voice_prompt_skip",
+            toast::Action::SkipVoicePrompt(id.clone()),
             toast::native(app, "native.toast.ask_skip"),
         ),
     };
@@ -336,14 +324,13 @@ fn show_current(app: &AppHandle<AppRuntime>) {
             detail: Some(toast::native(app, "native.toast.ask_hint")),
             auto_dismiss: Some(false),
             keep_while_recording: Some(true),
-            action: Some(action.to_string()),
+            action: Some(action),
             action_label: Some(action_label),
             secondary_action: second
                 .is_some()
-                .then(|| "voice_prompt_pick_second".to_string()),
+                .then(|| toast::Action::PickVoicePrompt(id.clone(), 1)),
             secondary_action_label: second,
-            action_args: Some(json!({ "id": id })),
-            close_action: Some("voice_prompt_skip".to_string()),
+            close_action: Some(toast::Action::SkipVoicePrompt(id)),
             ..Default::default()
         },
     );

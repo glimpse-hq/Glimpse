@@ -182,7 +182,7 @@ pub fn report_frontend_crash(
     reason_code: String,
 ) {
     let window_label = match window_label.as_str() {
-        "main" | "toast" | "settings" => window_label.as_str(),
+        "settings" | "live" => window_label.as_str(),
         _ => "unknown",
     };
     let source = match source.as_str() {

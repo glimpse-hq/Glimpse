@@ -112,10 +112,11 @@ pub(crate) fn start_after_paste(
                             &[("word", &candidate)],
                         ),
                         auto_dismiss: Some(false),
-                        action_args: Some(serde_json::json!({ "suggestion": candidate })),
-                        action: Some("accept_auto_dictionary_suggestion".to_string()),
+                        action: Some(toast::Action::AcceptDictionarySuggestion(candidate.clone())),
                         action_label: Some(toast::native(&app, "native.toast.dictionary_add")),
-                        secondary_action: Some("reject_auto_dictionary_suggestion".to_string()),
+                        secondary_action: Some(toast::Action::RejectDictionarySuggestion(
+                            candidate.clone(),
+                        )),
                         secondary_action_label: Some(toast::native(
                             &app,
                             "native.toast.dictionary_never",
@@ -156,7 +157,6 @@ fn edit_bucket(pre_value: &str, inserted_text: &str, current_value: &str) -> &'s
     }
 }
 
-#[tauri::command]
 pub(crate) fn accept_auto_dictionary_suggestion(
     suggestion: String,
     app: AppHandle<AppRuntime>,
@@ -184,7 +184,6 @@ pub(crate) fn accept_auto_dictionary_suggestion(
     Ok(saved.dictionary)
 }
 
-#[tauri::command]
 pub(crate) fn reject_auto_dictionary_suggestion(
     suggestion: String,
     app: AppHandle<AppRuntime>,

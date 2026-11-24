@@ -589,8 +589,45 @@ msgstr "ローカルのWhisperモデル。多言語と辞書に対応してい�
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0}は音声を再生していないため、録音されません。"
 
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.visualizer"
+#~ msgstr "音声ビジュアライザー"
 
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.background_visualizer"
+#~ msgstr "背景の音声ビジュアライザー"
 
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.close"
+#~ msgstr "通知を閉じる"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copied"
+#~ msgstr "コピーしました"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copy_message"
+#~ msgstr "メッセージをコピー"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.error"
+#~ msgstr "エラーが発生しました"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.listening"
+#~ msgstr "聞き取り中..."
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.processing"
+#~ msgstr "処理中..."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -1292,11 +1329,6 @@ msgid "library.modal.audio_unavailable"
 msgstr "音声を利用できません"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.visualizer"
-msgstr "音声ビジュアライザー"
-
-#. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "transcription.language.auto"
 msgstr "自動"
@@ -1356,11 +1388,6 @@ msgstr "戻る"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.back"
 msgstr "戻る"
-
-#. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.background_visualizer"
-msgstr "背景の音声ビジュアライザー"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -1724,8 +1751,8 @@ msgid "personalization.modal.close"
 msgstr "モーダルを閉じる"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.close"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.close"
 msgstr "通知を閉じる"
 
 #. js-lingui-explicit-id
@@ -1859,13 +1886,13 @@ msgid "model_picker.error.copied"
 msgstr "コピーしました"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copied"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_done"
 msgstr "コピーしました"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copied"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copied"
 msgstr "コピーしました"
 
 #. js-lingui-explicit-id
@@ -1929,8 +1956,8 @@ msgid "settings.local_api.logs.copy_aria"
 msgstr "ログをコピー"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copy_message"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_message"
 msgstr "メッセージをコピー"
 
 #. js-lingui-explicit-id
@@ -2769,8 +2796,8 @@ msgid "record.setup.system_mode.all"
 msgstr "システム全体"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.error"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.error"
 msgstr "エラーが発生しました"
 
 #. js-lingui-explicit-id
@@ -3665,13 +3692,13 @@ msgid "settings.local_api.listen_on_lan_aria"
 msgstr "LANで待ち受ける"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-msgid "live.empty.listening"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.listening"
 msgstr "聞き取り中..."
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.listening"
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.listening"
 msgstr "聞き取り中..."
 
 #. js-lingui-explicit-id
@@ -4758,8 +4785,8 @@ msgid "faq.privacy.link"
 msgstr "プライバシーポリシー"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.processing"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.processing"
 msgstr "処理中..."
 
 #. js-lingui-explicit-id
@@ -6055,8 +6082,12 @@ msgid "native.toast.admin_app_paste"
 msgstr "このアプリは管理者として実行されているため、WindowsではGlimpseから文字を入力できません。テキストはクリップボードにあります。Ctrl+Vで貼り付けてください。"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_failed"
+msgstr "うまくいきませんでした。もう一度お試しください。"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-#: src/features/toast/ToastOverlay.tsx
 msgid "toast.action_failed"
 msgstr "うまくいきませんでした。もう一度お試しください。"
 

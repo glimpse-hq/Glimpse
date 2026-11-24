@@ -738,9 +738,11 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
                     },
                 ),
                 auto_dismiss: Some(false),
-                action: Some("view_recovered_transcriptions".to_string()),
+                action: Some(toast::Action::OpenSettings(
+                    crate::tray::SettingsPage::History,
+                )),
                 action_label: Some(toast::native(&app, "native.toast.view_home")),
-                secondary_action: Some("copy_last_transcription".to_string()),
+                secondary_action: Some(toast::Action::CopyLastTranscription),
                 secondary_action_label: Some("Copy".to_string()),
                 ..Default::default()
             },
@@ -2353,7 +2355,9 @@ fn maybe_warn_llm_issue(app: &AppHandle<AppRuntime>, is_edit_mode: bool, reason:
                 ),
                 auto_dismiss: Some(true),
                 duration: Some(10_000),
-                action: Some("open_llm_cleanup_settings".to_string()),
+                action: Some(toast::Action::OpenSettings(
+                    crate::tray::SettingsPage::Models,
+                )),
                 action_label: Some(open_settings),
                 ..Default::default()
             },
@@ -2367,7 +2371,7 @@ fn maybe_warn_llm_issue(app: &AppHandle<AppRuntime>, is_edit_mode: bool, reason:
                 "{reason} {}",
                 toast::native(app, "native.toast.writing_model_raw_kept")
             ),
-            "open_llm_cleanup_settings",
+            toast::Action::OpenSettings(crate::tray::SettingsPage::Models),
             &open_settings,
         );
     }
