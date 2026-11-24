@@ -98,6 +98,8 @@ fn start(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             && update(|s| s.shown)
         {
             o.window.place_bottom_center(BOTTOM_MARGIN);
+            // A settled toast redraws at the new size and scale.
+            update(|s| s.toast.mark_dirty());
         }
     });
     std::thread::Builder::new()
@@ -416,6 +418,7 @@ fn render_loop() {
         if let Some(offset) = toast::offset(&frames).filter(|o| Some(*o) != last_offset) {
             last_offset = Some(offset);
             update(|s| s.toast.set_offset(offset));
+            o.refresh_a11y();
         }
 
         // Read every frame, so a display scale change is followed.

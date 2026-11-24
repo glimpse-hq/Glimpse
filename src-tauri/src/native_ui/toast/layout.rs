@@ -7,6 +7,10 @@ pub const WINDOW_INSET_TOP: f32 = 16.0;
 pub const WINDOW_INSET_BOTTOM: f32 = 24.0;
 const MAX_WIDTH: f32 = 420.0;
 const MAX_HEIGHT: f32 = 140.0;
+// Questions get more room, but still fit above an expanded pill, and scroll past that.
+const ASK_MAX_HEIGHT: f32 = 240.0;
+// A hint the buttons would squeeze narrower than this gets its own line above them.
+const MIN_DETAIL: f32 = 96.0;
 const BORDER: f32 = 1.0;
 const PAD_X: f32 = 16.0;
 const PAD_Y: f32 = 12.0;
@@ -147,9 +151,10 @@ pub fn layout(content: &ToastContent, engine: &mut TextEngine) -> Layout {
     .into_iter()
     .fold(0.0, f32::max);
 
+    let max_height = if ask { ASK_MAX_HEIGHT } else { MAX_HEIGHT };
     let mut placed = place(content, engine, natural.min(MAX_WIDTH - chrome), chrome);
     let mut scrollbar = 0.0;
-    if !ask && placed.height > MAX_HEIGHT {
+    if placed.height > max_height {
         scrollbar = SCROLLBAR;
         let column = natural.min(MAX_WIDTH - chrome - SCROLLBAR);
         placed = place(content, engine, column, chrome + SCROLLBAR);
@@ -160,11 +165,7 @@ pub fn layout(content: &ToastContent, engine: &mut TextEngine) -> Layout {
     } else {
         0.0
     };
-    let card_h = if ask {
-        placed.height
-    } else {
-        placed.height.max(buttons_h).min(MAX_HEIGHT)
-    };
+    let card_h = placed.height.max(buttons_h).min(max_height);
     let window = (
         (placed.width + 2.0 * WINDOW_INSET_X).ceil(),
         (card_h + WINDOW_INSET_TOP + WINDOW_INSET_BOTTOM).ceil(),
@@ -352,11 +353,30 @@ fn place(content: &ToastContent, engine: &mut TextEngine, column: f32, chrome: f
         let row_w = column + if ask { ASK_ROW_OVERHANG } else { 0.0 };
         let items = row_items(content, engine);
         let fixed: f32 = items.iter().map(|i| i.width).sum();
-        let count =
-            items.len() + usize::from(content.detail.is_some()) + usize::from(has_spacer(content));
-        let gaps = ROW_GAP * count.saturating_sub(1) as f32;
+        let gaps_with = |detail: bool| {
+            let count = items.len() + usize::from(detail) + usize::from(has_spacer(content));
+            ROW_GAP * count.saturating_sub(1) as f32
+        };
+        let room = (row_w - fixed - gaps_with(true)).max(0.0);
+        let mut inline = content.detail.as_deref();
+        if let Some(d) = inline
+            && room < MIN_DETAIL
+            && engine.shape(d, Style::BodySm, None).width > room
+        {
+            let text = engine.shape(d, Style::BodySm, Some(row_w + 0.01));
+            let height = text.height;
+            blocks.push(Block {
+                text,
+                x,
+                y,
+                role: Role::Detail,
+            });
+            y += height + ROW_TOP / 2.0;
+            inline = None;
+        }
+        let gaps = gaps_with(inline.is_some());
         // A wrapped detail keeps the width it shrank to, not its widest line.
-        let detail = content.detail.as_deref().map(|d| {
+        let detail = inline.map(|d| {
             let natural = engine.shape(d, Style::BodySm, None).width;
             let width = natural.min((row_w - fixed - gaps).max(0.0));
             (engine.shape(d, Style::BodySm, Some(width + 0.01)), width)

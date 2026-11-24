@@ -153,7 +153,7 @@ fn contains(rect: NSRect, point: NSPoint) -> bool {
 }
 
 /// Runs `on_change` on the main thread whenever displays are added, removed or rescaled.
-pub fn on_screens_changed(on_change: impl Fn() + 'static) {
+pub fn on_screens_changed(on_change: impl Fn() + Send + Sync + 'static) {
     let block =
         block2::RcBlock::new(move |_: NonNull<objc2_foundation::NSNotification>| on_change());
     let center = objc2_foundation::NSNotificationCenter::defaultCenter();

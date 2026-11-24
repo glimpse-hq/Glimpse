@@ -22,10 +22,10 @@ use windows::Win32::UI::WindowsAndMessaging::{
     GetWindowLongPtrW, GetWindowRect, HWND_TOPMOST, IDC_ARROW, LoadCursorW, MA_NOACTIVATE,
     RegisterClassExW, SPI_GETCLIENTAREAANIMATION, SW_HIDE, SW_SHOWNOACTIVATE, SWP_NOACTIVATE,
     SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SWP_SHOWWINDOW, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
-    SetWindowLongPtrW, SetWindowPos, ShowWindow, SystemParametersInfoW, WHEEL_DELTA, WM_DPICHANGED,
-    WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE, WM_MOUSEWHEEL, WNDCLASSEXW,
-    WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_NOREDIRECTIONBITMAP, WS_EX_TOOLWINDOW, WS_EX_TOPMOST,
-    WS_EX_TRANSPARENT, WS_POPUP,
+    SetWindowLongPtrW, SetWindowPos, ShowWindow, SystemParametersInfoW, WHEEL_DELTA,
+    WM_DISPLAYCHANGE, WM_DPICHANGED, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEACTIVATE, WM_MOUSEMOVE,
+    WM_MOUSEWHEEL, WNDCLASSEXW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_NOREDIRECTIONBITMAP,
+    WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_POPUP,
 };
 use windows::core::{PCWSTR, w};
 
@@ -65,8 +65,19 @@ fn monitor_frame(monitor: HMONITOR) -> anyhow::Result<(RECT, f64)> {
     Ok((info.rcMonitor, f64::from(dpi) / 96.0))
 }
 
-/// Windows reads window geometry live, so nothing needs refreshing.
-pub fn on_screens_changed(_on_change: impl Fn() + 'static) {}
+static SCREENS_CHANGED: std::sync::OnceLock<Box<dyn Fn() + Send + Sync>> =
+    std::sync::OnceLock::new();
+
+/// Runs `on_change` on the main thread whenever displays are added, removed or rescaled.
+pub fn on_screens_changed(on_change: impl Fn() + Send + Sync + 'static) {
+    let _ = SCREENS_CHANGED.set(Box::new(on_change));
+}
+
+fn screens_changed() {
+    if let Some(on_change) = SCREENS_CHANGED.get() {
+        on_change();
+    }
+}
 
 /// Windows' "Animation effects" setting, off.
 pub fn reduce_motion() -> bool {
@@ -268,6 +279,7 @@ unsafe extern "system" fn window_proc(
 ) -> LRESULT {
     match message {
         WM_MOUSEACTIVATE => return LRESULT(MA_NOACTIVATE as isize),
+        WM_DISPLAYCHANGE => screens_changed(),
         // The window now sits on a display with another scale. A move by `place_bottom_center`
         // already sized it for that scale, and the rectangle Windows suggests would scale it
         // again, so it's sized from points here, keeping its bottom center.
@@ -294,6 +306,7 @@ unsafe extern "system" fn window_proc(
                     };
                 }
             }
+            screens_changed();
             return LRESULT(0);
         }
         WM_MOUSEMOVE | WM_MOUSELEAVE | WM_LBUTTONDOWN | WM_LBUTTONUP | WM_MOUSEWHEEL => {

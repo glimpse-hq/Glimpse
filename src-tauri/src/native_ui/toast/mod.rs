@@ -77,7 +77,7 @@ impl State {
         self.current.is_some()
     }
 
-    /// Where the card was drawn, so clicks land on what's on screen.
+    /// Where the card sits, so clicks and screen readers find its buttons.
     pub(super) fn set_offset(&mut self, offset: (f32, f32)) {
         self.offset = offset;
     }
@@ -441,6 +441,10 @@ pub(super) fn nodes(o: &Overlay, s: &State, scale: f64) -> Vec<(NodeId, Node)> {
         return nodes;
     };
     let (ox, oy) = s.offset;
+    let scrolled = |r: Rect| Rect {
+        y: r.y - s.scroll,
+        ..r
+    };
     let px = |r: Rect| accesskit::Rect {
         x0: f64::from(r.x + ox) * scale,
         y0: f64::from(r.y + oy) * scale,
@@ -476,7 +480,7 @@ pub(super) fn nodes(o: &Overlay, s: &State, scale: f64) -> Vec<(NodeId, Node)> {
         };
         let mut button = Node::new(Role::Button);
         button.set_label(label);
-        button.set_bounds(px(rect));
+        button.set_bounds(px(scrolled(rect)));
         button.add_action(accesskit::Action::Click);
         nodes.push((node_id(s.generation, slot), button));
     }
@@ -602,6 +606,8 @@ pub(super) struct Frame {
     content: Arc<ToastContent>,
     layout: Arc<Layout>,
     view: ToastView,
+    /// Where layout point (0, 0) is once the card has settled, in window points.
+    target_offset: (f32, f32),
 }
 
 fn place(layout: &Layout, pill: &PillShape) -> [f32; 4] {
@@ -724,7 +730,24 @@ impl Motion {
             let t = now.duration_since(at).as_secs_f32() - delay;
             ease_out(t / NEW_CONTENT_FADE)
         });
-        let mut frames = Vec::new();
+        // The new card goes under the old text, so the old text fades out on top of it.
+        let mut frames = vec![Frame {
+            slot: card.slot,
+            content: card.shown.content.clone(),
+            layout: card.shown.layout.clone(),
+            view: ToastView {
+                offset: offset_for(&card.shown.layout),
+                content_alpha,
+                ..base
+            },
+            target_offset: {
+                let c = card.shown.layout.card;
+                (
+                    target[0] - c.x - c.w / 2.0,
+                    target[1] - target[3] / 2.0 - c.y - c.h / 2.0,
+                )
+            },
+        }];
         if let Some(fading) = &self.fading {
             let t = now.duration_since(fading.since).as_secs_f32() / OLD_CONTENT_FADE;
             if t >= 1.0 {
@@ -746,19 +769,10 @@ impl Motion {
                         ),
                         ..base
                     },
+                    target_offset: (0.0, 0.0),
                 });
             }
         }
-        frames.push(Frame {
-            slot: card.slot,
-            content: card.shown.content.clone(),
-            layout: card.shown.layout.clone(),
-            view: ToastView {
-                offset: offset_for(&card.shown.layout),
-                content_alpha,
-                ..base
-            },
-        });
         frames
     }
 
@@ -872,7 +886,8 @@ impl Painter {
     }
 }
 
-/// Where the current card's layout origin was drawn this frame, in window points.
+/// Where the current card's layout origin settles, in window points, for clicks and
+/// screen readers; it only changes when the card's place does.
 pub(super) fn offset(frames: &[Frame]) -> Option<(f32, f32)> {
-    frames.last().map(|f| f.view.offset)
+    frames.first().map(|f| f.target_offset)
 }

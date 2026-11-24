@@ -348,6 +348,8 @@ fn uniforms(
         origin = shape.y + shape.h * 0.5;
     }
 
+    let still = crate::native_ui::spring::reduced();
+    let rise = if still { 0.0 } else { 5.0 };
     let (reveal, reveal_late) = if ask && view.keyframes {
         (
             progress(view.age, REVEAL_DELAY, REVEAL, EXPO_OUT),
@@ -356,12 +358,13 @@ fn uniforms(
     } else {
         (1.0, 1.0)
     };
-    let (ring_spread, ring_alpha) = if ask && (RING_DELAY..RING_DELAY + RING).contains(&view.age) {
-        let p = progress(view.age, RING_DELAY, RING, EXPO_OUT);
-        (9.0 * p, 0.6 * (1.0 - p))
-    } else {
-        (0.0, 0.0)
-    };
+    let (ring_spread, ring_alpha) =
+        if ask && !still && (RING_DELAY..RING_DELAY + RING).contains(&view.age) {
+            let p = progress(view.age, RING_DELAY, RING, EXPO_OUT);
+            (9.0 * p, 0.6 * (1.0 - p))
+        } else {
+            (0.0, 0.0)
+        };
     let marker_opacity = if content.kind == ToastKind::Error {
         let phase = (view.age / PULSE_PERIOD).fract() * 2.0;
         if phase < 1.0 {
@@ -439,9 +442,9 @@ fn uniforms(
         thumb_y,
         thumb_h,
         reveal,
-        5.0 * (1.0 - reveal),
+        rise * (1.0 - reveal),
         reveal_late,
-        5.0 * (1.0 - reveal_late),
+        rise * (1.0 - reveal_late),
         layout.reveal_split,
         track_x,
         text_size.0 as f32,

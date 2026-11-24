@@ -342,7 +342,9 @@ impl Anim {
     }
 
     fn shake(&self, now: Instant) -> f32 {
-        let Some(at) = self.error_at else { return 0.0 };
+        let Some(at) = self.error_at.filter(|_| !super::super::spring::reduced()) else {
+            return 0.0;
+        };
         let t = now.duration_since(at).as_secs_f32();
         if t >= SHAKE {
             return 0.0;
