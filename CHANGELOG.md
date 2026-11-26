@@ -1,3 +1,9 @@
+1.4.7
+
+### Fixes
+
+- Without an internet connection, new recordings and imported files now show up in the Library right away instead of waiting until you're back online.
+
 1.4.6
 
 ### Changes
