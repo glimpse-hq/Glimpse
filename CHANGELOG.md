@@ -51,6 +51,7 @@
 - Library transcription with Apple Speech now works in languages such as Dutch, Polish, Russian and Turkish.
 - The API server reads MP3, M4A, FLAC and Ogg uploads without ffmpeg, and an uploaded playlist can no longer make it read other files on your computer.
 - Cancelling a dictation during cleanup now stops Glimpse C1 right away instead of leaving it running in the background.
+- Without an internet connection, new recordings and imported files now show up in the Library right away instead of waiting until you're back online.
 
 1.4.6
 

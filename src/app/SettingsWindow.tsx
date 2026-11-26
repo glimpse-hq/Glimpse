@@ -26,13 +26,16 @@ const OnboardingScreen = lazy(
   () => import("../features/onboarding/OnboardingScreen"),
 );
 
+// Every call is a local Tauri command; the default networkMode pauses them while the Mac is offline.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
       retry: 1,
       refetchOnWindowFocus: false,
+      networkMode: "always",
     },
+    mutations: { networkMode: "always" },
   },
 });
 
