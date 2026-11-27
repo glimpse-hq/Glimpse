@@ -26,6 +26,7 @@ export function useNewsFeed() {
     staleTime: Infinity,
     retry: false,
     refetchOnWindowFocus: false,
+    networkMode: "online",
   });
 }
 
@@ -37,6 +38,7 @@ export function useAnnouncement(enabled: boolean) {
     staleTime: Infinity,
     retry: false,
     refetchOnWindowFocus: false,
+    networkMode: "online",
   });
 }
 
@@ -47,5 +49,6 @@ export function useAnnouncements() {
     staleTime: Infinity,
     retry: false,
     refetchOnWindowFocus: false,
+    networkMode: "online",
   });
 }
