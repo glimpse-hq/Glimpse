@@ -61,8 +61,9 @@ const ACTIVATION_TIMEOUT: Duration = Duration::from_secs(5);
 const SAMPLE_RATE: u32 = 48_000;
 const CHANNELS: u16 = 2;
 // Streams are mixed by capture time and written this far behind it, so a
-// packet that arrives late still lands in place.
-const MIX_DELAY_FRAMES: u64 = SAMPLE_RATE as u64 / 10;
+// packet that arrives late still lands in place. Packets were measured
+// arriving up to 16 ms after capture.
+const MIX_DELAY_FRAMES: u64 = SAMPLE_RATE as u64 / 25;
 // A packet this close to where its stream's last one ended continues it, so
 // timestamp jitter leaves no gaps. Further off, as after a pause or clock
 // drift between devices, it goes where its timestamp says.
@@ -267,6 +268,9 @@ fn run_loopback(
         None => {
             let mut streams = Vec::new();
             sync_outputs(&enumerator, &mut streams, &mut failed);
+            if streams.is_empty() {
+                return Err(anyhow!("No output device could be recorded"));
+            }
             streams
         }
         Some(roots) => roots
