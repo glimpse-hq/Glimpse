@@ -1726,9 +1726,6 @@ msgstr "Modelo Whisper local, multilingüe y compatible con diccionario."
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0} no está reproduciendo audio, por lo que no se grabará."
 
-
-
-
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -1820,6 +1817,12 @@ msgstr "{0, plural, one {Se omitió # archivo en un formato no compatible.} othe
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
 msgstr "{0, plural, one {Encontramos otra app de dictado. Elige qué importar.} other {Encontramos otras apps de dictado. Elige qué importar.}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "Las llamadas de {0} solo se pueden grabar con «Todo el sistema»."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: personality.name
@@ -2559,6 +2562,11 @@ msgstr "Integrado en macOS"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Comercial"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "Las llamadas de estas apps solo se pueden grabar con «Todo el sistema»."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

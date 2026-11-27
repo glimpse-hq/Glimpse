@@ -1,7 +1,12 @@
 //! System audio via Core Audio process taps (macOS 14.2+). A tap mixes the
 //! output of chosen processes; reading it requires a private aggregate device.
 
-use std::{ffi::c_void, mem, ptr::NonNull};
+use std::{
+    ffi::c_void,
+    mem,
+    ptr::NonNull,
+    sync::{Arc, atomic::AtomicBool},
+};
 
 use anyhow::{Result, anyhow};
 use objc2::AnyThread;
@@ -239,6 +244,7 @@ impl SystemAudioCapture {
     /// `make_sink` receives the tap sample rate and returns the audio callback.
     pub(crate) fn start(
         scope: &SystemAudioScope,
+        _missed: Arc<AtomicBool>,
         make_sink: impl FnOnce(u32) -> SamplesCallback,
     ) -> Result<Self> {
         if !supported() {

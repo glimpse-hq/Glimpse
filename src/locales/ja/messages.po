@@ -589,9 +589,6 @@ msgstr "ローカルのWhisperモデル。多言語と辞書に対応してい�
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0}は音声を再生していないため、録音されません。"
 
-
-
-
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -683,6 +680,12 @@ msgstr "{0, plural, other {対応していない形式のファイルを#件ス�
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
 msgstr "{0, plural, other {別の音声入力アプリが見つかりました。インポートする項目を選択してください。}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "{0}の通話は「システム全体」でのみ録音できます。"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: personality.name
@@ -1422,6 +1425,11 @@ msgstr "macOSに内蔵"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "ビジネス"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "これらのアプリの通話は「システム全体」でのみ録音できます。"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
