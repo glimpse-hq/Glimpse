@@ -14,6 +14,7 @@ const IDLE_STATE: RecordingSessionState = {
   follower: null,
   microphone_off: false,
   system_audio_off: false,
+  system_audio_missed: false,
 };
 
 // Meters rise fast and fall slowly so speech reads as movement, not flicker.
