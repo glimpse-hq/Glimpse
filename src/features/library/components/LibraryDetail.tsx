@@ -75,6 +75,7 @@ import type {
 } from "../../../types";
 import { SPEAKER_COLORS, withSpeakerColors } from "../speakerColors";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { isFindShortcut } from "../../../shared/lib/shortcuts";
 import { hapticTick, startDragStep } from "../../settings/dragStep";
 
 const MAX_SPEAKERS = 16;
@@ -1619,7 +1620,7 @@ const LibraryDetail = ({
         target?.getAttribute("role") === "link" ||
         target?.getAttribute("role") === "menuitem";
 
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+      if (isFindShortcut(event)) {
         event.preventDefault();
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
