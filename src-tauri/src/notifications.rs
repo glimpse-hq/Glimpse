@@ -129,7 +129,7 @@ pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) -> boo
             message,
             auto_dismiss: Some(true),
             duration: Some(9000),
-            action: Some("open_account_page".to_string()),
+            action: Some(crate::toast::Action::OpenAccount),
             action_label: Some(action_label),
             ..Default::default()
         },

@@ -24,7 +24,7 @@ Work that can wait (notices, asks, analytics) runs after insertion. For analytic
 
 ## Toasts
 
-Toasts render only in the `toast` window, which must be shown natively, so always raise them from Rust (`toast::emit_toast`, `toast::show_with_action`). A toast button calls `invoke(action)`, so actions must be real commands; `retryId` carries per-toast data, mapped in `handleToastAction`. If another window must react, the command emits an event it listens for.
+Toasts are drawn by the native overlay, so always raise them from Rust (`toast::emit_toast`, `toast::show_with_action`). A toast button runs a `toast::Action`, which carries its own data. If a webview must react, the action emits an event it listens for.
 
 ## Storage
 

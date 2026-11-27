@@ -101,11 +101,11 @@ enum ToastAction {
 }
 
 impl ToastAction {
-    fn command(self) -> &'static str {
+    fn action(self) -> toast::Action {
         match self {
-            Self::Button => "run_toasted_announcement",
-            Self::Open => "open_toasted_announcement",
-            Self::Close => "close_toast",
+            Self::Button => toast::Action::RunAnnouncement,
+            Self::Open => toast::Action::OpenAnnouncement,
+            Self::Close => toast::Action::Close,
         }
     }
 }
@@ -228,9 +228,9 @@ pub fn toast_after_use(app: &AppHandle<AppRuntime>, show: bool) {
                 message: item.toast.clone().unwrap_or_default(),
                 auto_dismiss: Some(true),
                 duration: Some(9000),
-                action: button(0).map(|b| b.action.command().to_string()),
+                action: button(0).map(|b| b.action.action()),
                 action_label: button(0).map(|b| b.label.clone()),
-                secondary_action: button(1).map(|b| b.action.command().to_string()),
+                secondary_action: button(1).map(|b| b.action.action()),
                 secondary_action_label: button(1).map(|b| b.label.clone()),
                 ..Default::default()
             },
@@ -260,34 +260,35 @@ pub fn toast_after_use(app: &AppHandle<AppRuntime>, show: bool) {
     });
 }
 
-#[tauri::command]
-pub fn open_toasted_announcement(app: AppHandle<AppRuntime>) -> Result<(), String> {
+pub fn open_toasted_announcement(app: &AppHandle<AppRuntime>) -> Result<(), String> {
     let Some(item) = TOASTED.lock().clone() else {
         return Ok(());
     };
     *OPEN_REQUESTED.lock() = Some(item);
-    crate::tray::open_settings_page(&app, crate::tray::SettingsPage::Announcement)
+    crate::tray::open_settings_page(app, crate::tray::SettingsPage::Announcement)
         .map_err(|err| err.to_string())
 }
 
 /// Does what the dialog's button would, so the dialog doesn't follow.
-#[tauri::command]
-pub fn run_toasted_announcement(
-    app: AppHandle<AppRuntime>,
-    state: tauri::State<'_, AppState>,
-) -> Result<(), String> {
+pub fn run_toasted_announcement(app: &AppHandle<AppRuntime>) -> Result<(), String> {
     let Some(item) = TOASTED.lock().clone() else {
         return Ok(());
     };
     if let Some(tier) = item.checkout {
-        license::open_checkout(app, tier, "announcement".to_string(), None, item.code)?;
+        license::open_checkout(
+            app.clone(),
+            tier,
+            "announcement".to_string(),
+            None,
+            item.code,
+        )?;
     } else if let Some(url) = item.url {
         app.opener()
             .open_url(url, None::<&str>)
             .map_err(|err| err.to_string())?;
     }
     TOASTED.lock().take();
-    dismiss_announcement(state, item.id)
+    dismiss_announcement(app.state(), item.id)
 }
 
 async fn targeted_items(store: &SettingsStore, client: &Client) -> Result<Vec<FeedItem>, String> {

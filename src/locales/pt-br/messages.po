@@ -590,6 +590,46 @@ msgstr "Modelo Whisper local, multilíngue e com suporte ao dicionário."
 #~ msgstr "{0} não está reproduzindo áudio e não será gravado."
 
 #. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.visualizer"
+#~ msgstr "Visualizador de áudio"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.background_visualizer"
+#~ msgstr "Visualizador de áudio de fundo"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.close"
+#~ msgstr "Fechar notificação"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copied"
+#~ msgstr "Copiado"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copy_message"
+#~ msgstr "Copiar mensagem"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.error"
+#~ msgstr "Ocorreu um erro"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.listening"
+#~ msgstr "Ouvindo..."
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.processing"
+#~ msgstr "Processando..."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“O Glimpse transforma minha voz em texto.”"
@@ -1295,11 +1335,6 @@ msgid "library.modal.audio_unavailable"
 msgstr "Áudio indisponível"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.visualizer"
-msgstr "Visualizador de áudio"
-
-#. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "transcription.language.auto"
 msgstr "Automático"
@@ -1359,11 +1394,6 @@ msgstr "Voltar"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.back"
 msgstr "Voltar"
-
-#. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.background_visualizer"
-msgstr "Visualizador de áudio de fundo"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -1732,8 +1762,8 @@ msgid "personalization.modal.close"
 msgstr "Fechar janela"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.close"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.close"
 msgstr "Fechar notificação"
 
 #. js-lingui-explicit-id
@@ -1867,13 +1897,13 @@ msgid "model_picker.error.copied"
 msgstr "Copiado"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copied"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_done"
 msgstr "Copiado"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copied"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copied"
 msgstr "Copiado"
 
 #. js-lingui-explicit-id
@@ -1937,8 +1967,8 @@ msgid "settings.local_api.logs.copy_aria"
 msgstr "Copiar logs"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copy_message"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_message"
 msgstr "Copiar mensagem"
 
 #. js-lingui-explicit-id
@@ -2777,8 +2807,8 @@ msgid "record.setup.system_mode.all"
 msgstr "Sistema inteiro"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.error"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.error"
 msgstr "Ocorreu um erro"
 
 #. js-lingui-explicit-id
@@ -3673,13 +3703,13 @@ msgid "settings.local_api.listen_on_lan_aria"
 msgstr "Escutar na rede local"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-msgid "live.empty.listening"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.listening"
 msgstr "Ouvindo..."
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.listening"
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.listening"
 msgstr "Ouvindo..."
 
 #. js-lingui-explicit-id
@@ -4766,8 +4796,8 @@ msgid "faq.privacy.link"
 msgstr "Política de privacidade"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.processing"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.processing"
 msgstr "Processando..."
 
 #. js-lingui-explicit-id
@@ -6063,8 +6093,12 @@ msgid "native.toast.admin_app_paste"
 msgstr "Esse aplicativo está sendo executado como administrador, então o Windows não permite que o Glimpse digite nele. Seu texto está na área de transferência. Pressione Ctrl+V para colá-lo."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_failed"
+msgstr "Não deu certo. Tente novamente."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-#: src/features/toast/ToastOverlay.tsx
 msgid "toast.action_failed"
 msgstr "Não deu certo. Tente novamente."
 

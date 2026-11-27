@@ -1,9 +1,9 @@
 use crate::analytics::{self, Activity};
 use crate::permissions;
 use crate::{
-    AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL, assistive,
+    AppRuntime, AppState, assistive,
     core::hotkeys::{self, HotkeyState},
-    emit_event, model_manager, music, platform,
+    emit_event, model_manager, music,
     recorder::{MIN_RECORDING_DURATION_MS, NoInputDevice, RecorderManager, SPECTRUM_SIZE},
     settings::{MediaAction, UserSettings},
     toast,
@@ -16,12 +16,11 @@ use std::sync::{
     atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
 };
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager};
 
 const MODEL_NOTICE_INTERVAL: Duration = Duration::from_secs(20);
 const SLOW_LOAD_NOTICE: Duration = Duration::from_secs(3);
 const SMART_MODE_TAP_THRESHOLD: Duration = Duration::from_millis(200);
-const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
 const CAPTURE_ARM_DELAY: Duration = Duration::from_millis(280);
 // A press this soon after stopping is a double press, not a request to cancel.
@@ -40,8 +39,6 @@ pub(crate) fn take_model_ready_announcement(model: &str) -> bool {
     true
 }
 pub const EVENT_PILL_STATE: &str = "pill:state";
-pub const EVENT_PILL_MODE: &str = "pill:mode";
-pub const EVENT_PILL_HOVER: &str = "pill:hover";
 pub(crate) const PILL_TONE_DEFAULT: &str = "default";
 pub(crate) const PILL_TONE_CLEANUP: &str = "cleanup";
 
@@ -136,10 +133,7 @@ fn start_microphone_level_emitter(
     })
 }
 
-fn start_spectrum_emitter(
-    app: AppHandle<AppRuntime>,
-    recorder: Arc<RecorderManager>,
-) -> BackgroundEmitter {
+fn start_spectrum_emitter(recorder: Arc<RecorderManager>) -> BackgroundEmitter {
     BackgroundEmitter::spawn(move |stop_signal| {
         let interval = Duration::from_millis(40);
         let mut planner = FftPlanner::<f32>::new();
@@ -179,51 +173,28 @@ fn start_spectrum_emitter(
                     bins[idx] = (smoothed[idx] * 255.0).round().clamp(0.0, 255.0) as u8;
                 }
 
-                emit_event(
-                    &app,
-                    EVENT_AUDIO_SPECTRUM,
-                    AudioSpectrumPayload { bins: bins.clone() },
-                );
+                crate::native_ui::pill::set_spectrum(&bins);
             }
             std::thread::sleep(interval);
         }
     })
 }
 
-#[derive(Serialize, Clone)]
-pub struct PillHoverPayload {
-    pub hovering: bool,
-}
-
-fn start_hover_emitter(app: AppHandle<AppRuntime>) -> BackgroundEmitter {
+fn start_hover_emitter() -> BackgroundEmitter {
     BackgroundEmitter::spawn(move |stop_signal| {
         let interval = Duration::from_millis(50);
         let mut last_emitted: Option<bool> = None;
         while !stop_signal.load(Ordering::Relaxed) {
-            if let Some(hovering) = cursor_over_pill_window(&app)
+            if let Some(hovering) = crate::native_ui::pill::contains_cursor()
                 && last_emitted != Some(hovering)
             {
                 last_emitted = Some(hovering);
-                emit_event(&app, EVENT_PILL_HOVER, PillHoverPayload { hovering });
+                crate::native_ui::pill::set_hover(hovering);
             }
             std::thread::sleep(interval);
         }
-        emit_event(&app, EVENT_PILL_HOVER, PillHoverPayload { hovering: false });
+        crate::native_ui::pill::set_hover(false);
     })
-}
-
-fn cursor_over_pill_window(app: &AppHandle<AppRuntime>) -> Option<bool> {
-    let window = app.get_webview_window(MAIN_WINDOW_LABEL)?;
-    let cursor = window.cursor_position().ok()?;
-    let pos = window.outer_position().ok()?;
-    let size = window.outer_size().ok()?;
-
-    let left = pos.x as f64;
-    let top = pos.y as f64;
-    let right = left + size.width as f64;
-    let bottom = top + size.height as f64;
-
-    Some(cursor.x >= left && cursor.x < right && cursor.y >= top && cursor.y < bottom)
 }
 
 pub struct PillController {
@@ -295,15 +266,12 @@ impl PillController {
         &self.recorder
     }
 
-    fn start_audio_spectrum_emitter(&self, app: &AppHandle<AppRuntime>) {
+    fn start_audio_spectrum_emitter(&self) {
         let mut emitter = self.audio_spectrum_emitter.lock();
         if emitter.is_some() {
             return;
         }
-        *emitter = Some(start_spectrum_emitter(
-            app.clone(),
-            Arc::clone(&self.recorder),
-        ));
+        *emitter = Some(start_spectrum_emitter(Arc::clone(&self.recorder)));
     }
 
     fn stop_audio_spectrum_emitter(&self) {
@@ -351,12 +319,12 @@ impl PillController {
         let _ = app.emit("microphone-test:stopped", ());
     }
 
-    fn start_hover_emitter(&self, app: &AppHandle<AppRuntime>) {
+    fn start_hover_emitter(&self) {
         let mut emitter = self.hover_emitter.lock();
         if emitter.is_some() {
             return;
         }
-        *emitter = Some(start_hover_emitter(app.clone()));
+        *emitter = Some(start_hover_emitter());
     }
 
     fn stop_hover_emitter(&self) {
@@ -377,7 +345,7 @@ impl PillController {
                 "warning",
                 None,
                 &toast::native(app, "native.error.cpu_unsupported"),
-                "open_models_page",
+                toast::Action::OpenSettings(crate::tray::SettingsPage::Models),
                 &toast::native(app, "native.toast.model_action"),
             );
             return false;
@@ -427,7 +395,7 @@ impl PillController {
                                 "native.toast.model_none"
                             },
                         ),
-                        "open_models_page",
+                        toast::Action::OpenSettings(crate::tray::SettingsPage::Models),
                         &toast::native(app, "native.toast.model_action"),
                     );
                 }
@@ -498,7 +466,8 @@ impl PillController {
         new_status: PillStatus,
     ) {
         tracing::info!("pill {previous} -> {new_status}");
-        self.update_overlay_visibility(app, previous, new_status);
+        crate::native_ui::pill::sync_status();
+        self.update_overlay_visibility(previous, new_status);
         self.emit_state(app);
         if new_status == PillStatus::Idle {
             crate::voice_prompt::pill_became_idle(app);
@@ -565,27 +534,13 @@ impl PillController {
         toast::show(app, "error", None, &simple_msg);
     }
 
-    fn update_overlay_visibility(
-        &self,
-        app: &AppHandle<AppRuntime>,
-        previous: PillStatus,
-        next: PillStatus,
-    ) {
+    fn update_overlay_visibility(&self, previous: PillStatus, next: PillStatus) {
+        // The overlay hides itself once the pill has faded out.
         if next == PillStatus::Idle {
-            let app_handle = app.clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(Duration::from_millis(OVERLAY_HIDE_AFTER_IDLE_MS));
-                if app_handle.state::<AppState>().pill().status() == PillStatus::Idle {
-                    app_handle.state::<AppState>().pill().stop_hover_emitter();
-                    hide_overlay(&app_handle);
-                }
-            });
-            return;
-        }
-
-        if previous == PillStatus::Idle {
-            show_overlay(app);
-            self.start_hover_emitter(app);
+            self.stop_hover_emitter();
+        } else if previous == PillStatus::Idle {
+            crate::native_ui::pill::show();
+            self.start_hover_emitter();
         }
     }
 
@@ -805,7 +760,7 @@ impl PillController {
                 permissions::refresh_microphone_permission_detached();
 
                 self.arm_capture_after_settle(app, generation);
-                self.start_audio_spectrum_emitter(app);
+                self.start_audio_spectrum_emitter();
                 self.pause_media_if_playing(app);
                 self.start_streaming_session_if_supported(app, &settings);
                 // A stop from another thread may have run its cleanup before these started.
@@ -818,6 +773,7 @@ impl PillController {
                 }
                 self.spawn_recording_cap(app, generation);
 
+                crate::native_ui::toast::recording_started();
                 emit_event(
                     app,
                     crate::EVENT_RECORDING_START,
@@ -1331,13 +1287,8 @@ pub(crate) fn emit_pill_mode_with_tone(
     tone: &str,
 ) {
     app.state::<AppState>().pill().set_expanded(expanded);
-
-    if let Err(err) = app.emit(
-        EVENT_PILL_MODE,
-        serde_json::json!({ "expanded": expanded, "text": text, "tone": tone }),
-    ) {
-        tracing::error!("Failed to emit pill mode: {err}");
-    }
+    crate::native_ui::pill::set_cleanup(tone == PILL_TONE_CLEANUP);
+    crate::native_ui::pill::set_text(expanded, text);
 }
 
 pub(crate) fn collapse_expanded_pill(app: &AppHandle<AppRuntime>) {
@@ -1387,7 +1338,7 @@ fn start_model_download(app: &AppHandle<AppRuntime>, model: &str) -> bool {
                 "info",
                 None,
                 &toast::native(&app, "native.toast.model_none"),
-                "open_models_page",
+                toast::Action::OpenSettings(crate::tray::SettingsPage::Models),
                 &toast::native(&app, "native.toast.model_action"),
             );
         }
@@ -1481,7 +1432,7 @@ pub(crate) fn show_accessibility_toast(app: &AppHandle<AppRuntime>, message_key:
             message: toast::native(app, message_key),
             auto_dismiss: Some(true),
             duration: Some(15_000),
-            action: Some("open_accessibility_settings".to_string()),
+            action: Some(toast::Action::OpenAccessibilitySettings),
             action_label: Some(toast::native(app, "native.toast.open_system_settings")),
             ..Default::default()
         },
@@ -1671,59 +1622,6 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     tracing::info!("Shortcuts {}", registered.join(" "));
     bindings.extend(crate::actions::shortcut_bindings(app, &settings));
     state.hotkeys.replace_registrations(app, bindings)
-}
-
-pub fn show_overlay(app: &AppHandle<AppRuntime>) {
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        position_overlay_on_cursor_screen(&window);
-        platform::overlay::show(app, &window);
-        if !app.state::<AppState>().pill().is_expanded() {
-            collapse_expanded_pill(app);
-        }
-    }
-}
-
-pub fn hide_overlay(app: &AppHandle<AppRuntime>) {
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        platform::overlay::hide(app, &window);
-    }
-}
-
-fn position_overlay(window: &WebviewWindow<AppRuntime>) {
-    if let Ok(Some(monitor)) = window.current_monitor() {
-        place_on_monitor(window, &monitor);
-    }
-}
-
-fn position_overlay_on_cursor_screen(window: &WebviewWindow<AppRuntime>) {
-    match crate::toast::monitor_containing_cursor(window) {
-        Some(monitor) => place_on_monitor(window, &monitor),
-        None => position_overlay(window),
-    }
-}
-
-/// Centers the window horizontally near the bottom edge of the monitor.
-fn place_on_monitor(window: &WebviewWindow<AppRuntime>, monitor: &tauri::Monitor) {
-    let place = |size: tauri::PhysicalSize<u32>| {
-        let scale_factor = monitor.scale_factor();
-        let screen = monitor.size();
-        let mon_pos = monitor.position();
-        let x = mon_pos.x + (screen.width.saturating_sub(size.width) / 2) as i32;
-        let bottom_padding_physical = (69.0 * scale_factor) as i32;
-        let y = mon_pos.y + screen.height as i32 - size.height as i32 - bottom_padding_physical;
-        let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
-    };
-    let Ok(size) = window.outer_size() else {
-        return;
-    };
-    place(size);
-    // Moving onto a monitor with other display scaling resizes the window and
-    // keeps its top-left corner, so center it again at the new size.
-    if let Ok(resized) = window.outer_size()
-        && resized != size
-    {
-        place(resized);
-    }
 }
 
 pub fn start_hold_recording(app: &AppHandle<AppRuntime>) -> bool {

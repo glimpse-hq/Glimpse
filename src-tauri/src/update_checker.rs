@@ -424,7 +424,9 @@ pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdate
             toast_type: "update".to_string(),
             message,
             auto_dismiss: Some(false),
-            action: Some("open_about_page".to_string()),
+            action: Some(crate::toast::Action::OpenSettings(
+                crate::tray::SettingsPage::About,
+            )),
             action_label: Some(toast::native(app, "native.toast.update_action")),
             ..Default::default()
         },
