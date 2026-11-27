@@ -1726,9 +1726,6 @@ msgstr "Lokales Whisper-Modell, mehrsprachig und mit Wörterbuchunterstützung."
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0} gibt kein Audio wieder und wird daher nicht aufgezeichnet."
 
-
-
-
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -1820,6 +1817,12 @@ msgstr "{0, plural, one {# Datei in einem nicht unterstützten Format übersprun
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
 msgstr "{0, plural, one {Wir haben eine andere Diktier-App gefunden. Wähle aus, was importiert werden soll.} other {Wir haben andere Diktier-Apps gefunden. Wähle aus, was importiert werden soll.}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "Anrufe in {0} können nur mit „Gesamtes System“ aufgezeichnet werden."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: personality.name
@@ -2559,6 +2562,11 @@ msgstr "In macOS integriert"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Geschäftlich"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "Anrufe in diesen Apps können nur mit „Gesamtes System“ aufgezeichnet werden."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

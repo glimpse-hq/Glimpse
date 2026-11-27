@@ -52,6 +52,14 @@
 - The API server reads MP3, M4A, FLAC and Ogg uploads without ffmpeg, and an uploaded playlist can no longer make it read other files on your computer.
 - Cancelling a dictation during cleanup now stops Glimpse C1 right away instead of leaving it running in the background.
 - In the Library, Ctrl+F on Windows now opens search with keyboards such as Russian and Arabic, and on a Mac, Ctrl+Cmd+F goes full screen instead of opening search.
+- On Windows, recording the entire system now includes Teams meetings and other calls, on any speaker or headset, including one you switch to while recording.
+- On Windows, the Record screen tells you when an app you chose is in a call that can only be recorded with Entire system.
+
+1.4.7
+
+### Fixes
+
+- Without an internet connection, new recordings and imported files now show up in the Library right away instead of waiting until you're back online.
 
 1.4.6
 

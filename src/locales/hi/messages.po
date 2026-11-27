@@ -1726,9 +1726,6 @@ msgstr "स्थानीय Whisper मॉडल, बहुभाषी और
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0} में ऑडियो नहीं चल रहा है, इसलिए इसे रिकॉर्ड नहीं किया जाएगा।"
 
-
-
-
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -1820,6 +1817,12 @@ msgstr "{0, plural, one {असमर्थित प्रारूप मे�
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
 msgstr "{0, plural, one {हमें एक और डिक्टेशन ऐप मिला। क्या आयात करना है, चुनें।} other {हमें और डिक्टेशन ऐप मिले। क्या आयात करना है, चुनें।}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "{0} की कॉल केवल “पूरा सिस्टम” के साथ रिकॉर्ड की जा सकती हैं।"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: personality.name
@@ -2559,6 +2562,11 @@ msgstr "macOS में शामिल"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "बिज़नेस"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "इन ऐप्स की कॉल केवल “पूरा सिस्टम” के साथ रिकॉर्ड की जा सकती हैं।"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
