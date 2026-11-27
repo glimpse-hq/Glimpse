@@ -254,10 +254,11 @@ struct RowItem {
     role: Role,
 }
 
-fn row_items(content: &ToastContent, engine: &mut TextEngine) -> Vec<RowItem> {
+// `wrap` is the widest an item may be, icon included.
+fn row_items(content: &ToastContent, engine: &mut TextEngine, wrap: Option<f32>) -> Vec<RowItem> {
     let mut items = Vec::new();
     if let Some(text) = action_text(content) {
-        let text = engine.shape(&text, Style::BodySmMedium, None);
+        let text = engine.shape(&text, Style::BodySmMedium, wrap.map(|w| w + 0.01));
         items.push(RowItem {
             width: text.width,
             text,
@@ -265,12 +266,12 @@ fn row_items(content: &ToastContent, engine: &mut TextEngine) -> Vec<RowItem> {
         });
     }
     if let Some(label) = &content.secondary_label {
-        let text = engine.shape(label, Style::BodySmMedium, None);
         let icon = if content.secondary_is_copy {
             ICON + ICON_GAP
         } else {
             0.0
         };
+        let text = engine.shape(label, Style::BodySmMedium, wrap.map(|w| w - icon + 0.01));
         items.push(RowItem {
             width: text.width + icon,
             text,
@@ -292,7 +293,7 @@ fn row_width(content: &ToastContent, engine: &mut TextEngine) -> f32 {
     if !has_row(content) {
         return 0.0;
     }
-    let items = row_items(content, engine);
+    let items = row_items(content, engine, None);
     let detail = content
         .detail
         .as_deref()
@@ -351,16 +352,18 @@ fn place(content: &ToastContent, engine: &mut TextEngine, column: f32, chrome: f
         y += ROW_TOP;
         let ask = content.kind == ToastKind::Ask;
         let row_w = column + if ask { ASK_ROW_OVERHANG } else { 0.0 };
-        let items = row_items(content, engine);
+        let items = row_items(content, engine, None);
         let fixed: f32 = items.iter().map(|i| i.width).sum();
         let gaps_with = |detail: bool| {
             let count = items.len() + usize::from(detail) + usize::from(has_spacer(content));
             ROW_GAP * count.saturating_sub(1) as f32
         };
+        // Answers too long for one line go one per line, each wrapped to the row.
+        let stacked = fixed + gaps_with(false) > row_w;
         let room = (row_w - fixed - gaps_with(true)).max(0.0);
         let mut inline = content.detail.as_deref();
         if let Some(d) = inline
-            && room < MIN_DETAIL
+            && (stacked || room < MIN_DETAIL)
             && engine.shape(d, Style::BodySm, None).width > room
         {
             let text = engine.shape(d, Style::BodySm, Some(row_w + 0.01));
@@ -374,58 +377,82 @@ fn place(content: &ToastContent, engine: &mut TextEngine, column: f32, chrome: f
             y += height + ROW_TOP / 2.0;
             inline = None;
         }
-        let gaps = gaps_with(inline.is_some());
-        // A wrapped detail keeps the width it shrank to, not its widest line.
-        let detail = inline.map(|d| {
-            let natural = engine.shape(d, Style::BodySm, None).width;
-            let width = natural.min((row_w - fixed - gaps).max(0.0));
-            (engine.shape(d, Style::BodySm, Some(width + 0.01)), width)
-        });
-        let row_h = detail
-            .as_ref()
-            .map_or(ROW_HEIGHT, |(d, _)| d.height.max(ROW_HEIGHT));
-
-        let mut widths: Vec<f32> = detail.iter().map(|(_, w)| *w).collect();
-        widths.extend(items.iter().map(|i| i.width));
-        let mut xs = Vec::with_capacity(widths.len());
-        let mut cursor = x;
-        for w in &widths {
-            xs.push(cursor);
-            cursor += w + ROW_GAP;
-        }
-        let used = cursor - ROW_GAP - x;
-        let free = (row_w - used - if has_spacer(content) { ROW_GAP } else { 0.0 }).max(0.0);
-        if has_spacer(content) {
-            // The flex-1 spacer sits before the secondary button and takes the free space.
-            if content.secondary_label.is_some()
-                && let Some(last) = xs.last_mut()
-            {
-                *last += free + ROW_GAP;
+        // Each item with its x, its line's top and its line's height.
+        let mut placed_items = Vec::new();
+        if stacked {
+            let mut items = row_items(content, engine, Some(row_w));
+            // The first answer on top.
+            if ask {
+                items.reverse();
             }
-        } else if ask {
-            let buttons = usize::from(detail.is_some());
-            for x in xs.iter_mut().skip(buttons) {
-                *x += free;
+            for (i, item) in items.into_iter().enumerate() {
+                if i > 0 {
+                    y += ROW_TOP / 2.0;
+                }
+                let h = item.text.height.max(ROW_HEIGHT);
+                let ix = if ask { x + row_w - item.width } else { x };
+                placed_items.push((item, ix, y, h));
+                y += h;
             }
-        }
-
-        let mut xs = xs.into_iter();
-        if let Some((text, _)) = detail {
-            let dx = xs.next().unwrap_or(x);
-            let dy = y + (row_h - text.height) / 2.0;
-            blocks.push(Block {
-                text,
-                x: dx,
-                y: dy,
-                role: Role::Detail,
+        } else {
+            let gaps = gaps_with(inline.is_some());
+            // A wrapped detail keeps the width it shrank to, not its widest line.
+            let detail = inline.map(|d| {
+                let natural = engine.shape(d, Style::BodySm, None).width;
+                let width = natural.min((row_w - fixed - gaps).max(0.0));
+                (engine.shape(d, Style::BodySm, Some(width + 0.01)), width)
             });
+            let row_h = detail
+                .as_ref()
+                .map_or(ROW_HEIGHT, |(d, _)| d.height.max(ROW_HEIGHT));
+
+            let mut widths: Vec<f32> = detail.iter().map(|(_, w)| *w).collect();
+            widths.extend(items.iter().map(|i| i.width));
+            let mut xs = Vec::with_capacity(widths.len());
+            let mut cursor = x;
+            for w in &widths {
+                xs.push(cursor);
+                cursor += w + ROW_GAP;
+            }
+            let used = cursor - ROW_GAP - x;
+            let free = (row_w - used - if has_spacer(content) { ROW_GAP } else { 0.0 }).max(0.0);
+            if has_spacer(content) {
+                // The flex-1 spacer sits before the secondary button and takes the free space.
+                if content.secondary_label.is_some()
+                    && let Some(last) = xs.last_mut()
+                {
+                    *last += free + ROW_GAP;
+                }
+            } else if ask {
+                let buttons = usize::from(detail.is_some());
+                for x in xs.iter_mut().skip(buttons) {
+                    *x += free;
+                }
+            }
+
+            let mut xs = xs.into_iter();
+            if let Some((text, _)) = detail {
+                let dx = xs.next().unwrap_or(x);
+                let dy = y + (row_h - text.height) / 2.0;
+                blocks.push(Block {
+                    text,
+                    x: dx,
+                    y: dy,
+                    role: Role::Detail,
+                });
+            }
+            for (item, ix) in items.into_iter().zip(xs) {
+                placed_items.push((item, ix, y, row_h));
+            }
+            y += row_h;
         }
-        for (item, ix) in items.into_iter().zip(xs) {
+        for (item, ix, line_y, line_h) in placed_items {
+            let h = item.text.height.max(ROW_HEIGHT);
             let rect = Rect {
                 x: ix,
-                y: y + (row_h - ROW_HEIGHT) / 2.0,
+                y: line_y + (line_h - h) / 2.0,
                 w: item.width,
-                h: ROW_HEIGHT,
+                h,
             };
             let mut tx = ix;
             if item.role == Role::Secondary {
@@ -438,13 +465,12 @@ fn place(content: &ToastContent, engine: &mut TextEngine, column: f32, chrome: f
                 action = Some(rect);
             }
             blocks.push(Block {
-                y: y + (row_h - item.text.height) / 2.0,
+                y: line_y + (line_h - item.text.height) / 2.0,
                 text: item.text,
                 x: tx,
                 role: item.role,
             });
         }
-        y += row_h;
     }
     let bottom = y.max(marker.y + marker.h) + PAD_Y + BORDER;
     Placed {

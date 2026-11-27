@@ -366,7 +366,7 @@ fn render_loop() {
     let mut toasts = toast::Motion::default();
     let mut last = Instant::now();
     let mut frame_start = None;
-    let mut last_offset = None;
+    let mut last_offsets = None;
     loop {
         let (input, snapshot, pace) = {
             let mut s = o.state.lock();
@@ -415,10 +415,11 @@ fn render_loop() {
         let pill_frame = pill_anim.step(&input, now, dt);
         let shape = pill::PillShape::of(&pill_frame, input.status);
         let frames = toasts.step(&snapshot, &shape, now, dt);
-        if let Some(offset) = toast::offset(&frames).filter(|o| Some(*o) != last_offset) {
-            last_offset = Some(offset);
-            update(|s| s.toast.set_offset(offset));
-            o.refresh_a11y();
+        if let Some(offsets) = toast::offsets(&frames).filter(|o| Some(*o) != last_offsets) {
+            last_offsets = Some(offsets);
+            if update(|s| s.toast.set_offsets(offsets)) {
+                o.refresh_a11y();
+            }
         }
 
         // Read every frame, so a display scale change is followed.

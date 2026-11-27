@@ -46,8 +46,10 @@ pub(super) struct State {
     scroll: f32,
     /// Something to redraw that no animation would catch.
     dirty: bool,
-    /// Where layout point (0, 0) of the current card sits, in window points.
+    /// Where layout point (0, 0) of the current card is drawn, in window points.
     offset: (f32, f32),
+    /// Where it settles, for screen readers.
+    settled_offset: (f32, f32),
 }
 
 struct Current {
@@ -77,9 +79,10 @@ impl State {
         self.current.is_some()
     }
 
-    /// Where the card sits, so clicks and screen readers find its buttons.
-    pub(super) fn set_offset(&mut self, offset: (f32, f32)) {
-        self.offset = offset;
+    /// Where the card is drawn and where it settles; true when screen readers need new bounds.
+    pub(super) fn set_offsets(&mut self, (drawn, settled): ((f32, f32), (f32, f32))) -> bool {
+        self.offset = drawn;
+        std::mem::replace(&mut self.settled_offset, settled) != settled
     }
 
     pub(super) fn mark_dirty(&mut self) {
@@ -291,6 +294,7 @@ fn hide_now(generation: u64) {
 /// Mouse input in window points, on the main thread; anything that waits runs on its own thread.
 pub(super) fn on_window_event(event: WindowEvent) {
     let mut activated = None;
+    let mut scrolled = false;
     overlay::update(|s| {
         let t = &mut s.toast;
         let Some(current) = t.current.as_ref().filter(|c| c.leaving_since.is_none()) else {
@@ -319,11 +323,16 @@ pub(super) fn on_window_event(event: WindowEvent) {
             }
             WindowEvent::Scroll { dy } => {
                 let max = current.layout.max_scroll;
-                t.scroll = (t.scroll - dy as f32).clamp(0.0, max);
+                let scroll = (t.scroll - dy as f32).clamp(0.0, max);
+                scrolled = scroll != t.scroll;
+                t.scroll = scroll;
             }
         }
         t.dirty = true;
     });
+    if scrolled && let Some(o) = overlay::get() {
+        o.refresh_a11y();
+    }
     if let Some((hit, generation)) = activated {
         activate(hit, generation);
     }
@@ -440,7 +449,7 @@ pub(super) fn nodes(o: &Overlay, s: &State, scale: f64) -> Vec<(NodeId, Node)> {
     let Some(current) = &s.current else {
         return nodes;
     };
-    let (ox, oy) = s.offset;
+    let (ox, oy) = s.settled_offset;
     let scrolled = |r: Rect| Rect {
         y: r.y - s.scroll,
         ..r
@@ -886,8 +895,7 @@ impl Painter {
     }
 }
 
-/// Where the current card's layout origin settles, in window points, for clicks and
-/// screen readers; it only changes when the card's place does.
-pub(super) fn offset(frames: &[Frame]) -> Option<(f32, f32)> {
-    frames.first().map(|f| f.target_offset)
+/// Where the current card's layout origin is drawn this frame and where it settles, in window points.
+pub(super) fn offsets(frames: &[Frame]) -> Option<((f32, f32), (f32, f32))> {
+    frames.first().map(|f| (f.view.offset, f.target_offset))
 }
