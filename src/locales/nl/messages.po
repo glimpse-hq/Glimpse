@@ -2656,6 +2656,11 @@ msgid "library.retranscribe.cancel"
 msgstr "Annuleren"
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.cancel"
+msgstr "Annuleren"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.cancel_shortcut_aria"
@@ -3400,6 +3405,11 @@ msgstr "Dekt je apparaten"
 #: src/features/library/components/LibraryFolderDialog.tsx
 msgid "library.folder.create"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.create"
+msgstr "Aanmaken"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -5244,6 +5254,11 @@ msgstr "Nooit"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.never"
 msgstr "Nooit"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new"
+msgstr "Nieuwe actie"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryFolderDialog.tsx

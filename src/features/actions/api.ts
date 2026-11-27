@@ -25,6 +25,10 @@ export async function openActionsFolder(): Promise<void> {
   await invoke("open_actions_folder");
 }
 
+export async function createActionFile(name: string): Promise<void> {
+  await invoke("create_action_file", { name });
+}
+
 export async function revealActionFile(file: string): Promise<void> {
   await invoke("reveal_action_file", { file });
 }
