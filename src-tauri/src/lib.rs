@@ -687,6 +687,7 @@ pub fn run() {
             actions::set_action_enabled,
             actions::set_action_shortcut,
             actions::open_actions_folder,
+            actions::create_action_file,
             actions::reveal_action_file,
             actions::trash_action_file,
             open_accessibility_settings,

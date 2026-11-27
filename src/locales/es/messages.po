@@ -2656,6 +2656,11 @@ msgid "library.retranscribe.cancel"
 msgstr "Cancelar"
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.cancel"
+msgstr "Cancelar"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.cancel_shortcut_aria"
@@ -3400,6 +3405,11 @@ msgstr "Cubre tus dispositivos"
 #: src/features/library/components/LibraryFolderDialog.tsx
 msgid "library.folder.create"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.create"
+msgstr "Crear"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -5244,6 +5254,11 @@ msgstr "Nunca"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.never"
 msgstr "Nunca"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new"
+msgstr "Nueva acción"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryFolderDialog.tsx

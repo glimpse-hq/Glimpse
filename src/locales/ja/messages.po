@@ -1519,6 +1519,11 @@ msgid "library.retranscribe.cancel"
 msgstr "キャンセル"
 
 #. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.cancel"
+msgstr "キャンセル"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.cancel_shortcut_aria"
@@ -2263,6 +2268,11 @@ msgstr "お使いのデバイスで利用可能"
 #: src/features/library/components/LibraryFolderDialog.tsx
 msgid "library.folder.create"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.create"
+msgstr "作成"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4107,6 +4117,11 @@ msgstr "今後表示しない"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.never"
 msgstr "削除しない"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new"
+msgstr "新規アクション"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryFolderDialog.tsx
