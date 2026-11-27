@@ -1551,17 +1551,16 @@ pub(crate) fn show_agent_notice(app: &AppHandle<AppRuntime>, agent: &str, resume
             message,
             auto_dismiss: Some(false),
             keep_while_recording: Some(true),
-            action: Some("close_toast".to_string()),
+            action: Some(crate::toast::Action::Close),
             action_label: Some(crate::toast::native(app, "native.toast.ok")),
-            secondary_action: Some("turn_off_agent_notice".to_string()),
+            secondary_action: Some(crate::toast::Action::TurnOffAgentNotice),
             secondary_action_label: Some(crate::toast::native(app, "native.toast.dont_show_again")),
             ..Default::default()
         },
     );
 }
 
-#[tauri::command]
-pub fn turn_off_agent_notice(app: AppHandle<AppRuntime>) -> Result<(), String> {
+pub fn turn_off_agent_notice(app: &AppHandle<AppRuntime>) -> Result<(), String> {
     app.state::<AppState>()
         .settings_store
         .write_app_value(KEY_AGENT_NOTICE_OFF, &true)

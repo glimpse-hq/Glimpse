@@ -135,15 +135,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -2px 0 rgba(0, 0, 0, 0.38),
     0 1px 0 rgba(0, 0, 0, 0.28);
   --ui-shadow-modal-deep: 0 20px 60px rgba(0, 0, 0, 0.45);
-  --ui-pill-dot-base-rgb: 34, 34, 38;
-  --ui-pill-dot-highlight-rgb: 255, 255, 255;
-  --ui-pill-dot-error-rgb: 239, 68, 68;
-  --ui-pill-cleanup-rgb: 251, 191, 36;
-  --ui-pill-shell-rgb: 10, 10, 12;
-  --ui-pill-shell-bg: rgb(var(--ui-pill-shell-rgb));
-  --ui-pill-shell-border: transparent;
-  --ui-pill-shell-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.28), 0 8px 20px rgba(0, 0, 0, 0.3);
 
   --color-success: #10b981;
   --color-error: #ef4444;
@@ -214,10 +205,6 @@
   --radius-md: 6px;
   --radius-lg: 10px;
   --radius-xl: 14px;
-}
-
-:root[data-platform="windows"] {
-  --ui-pill-shell-rgb: 4, 4, 5;
 }
 
 :root[data-theme="light"] {
@@ -302,8 +289,6 @@
   --color-scrollbar-thumb-subtle-hover: rgba(26, 23, 22, 0.2);
   --color-shadow-soft-40: rgba(20, 17, 16, 0.1);
   --color-shadow-soft-50: rgba(20, 17, 16, 0.14);
-
-  --ui-pill-cleanup-rgb: 229, 160, 25;
 
   --color-section-marker: var(--color-text-secondary);
   --color-section-marker-alt: var(--color-text-secondary);
@@ -831,14 +816,6 @@
 
   .ui-shadow-modal-deep {
     box-shadow: var(--ui-shadow-modal-deep);
-  }
-
-  .ui-hover-on-solid:hover {
-    color: #ffffff;
-  }
-
-  .ui-hover-error-strong:hover {
-    color: #f87171;
   }
 
   .ui-hover-error-50:hover {
@@ -1418,145 +1395,6 @@ body {
   }
 }
 
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  10%,
-  30%,
-  50%,
-  70%,
-  90% {
-    transform: translateX(-4px);
-  }
-
-  20%,
-  40%,
-  60%,
-  80% {
-    transform: translateX(4px);
-  }
-}
-
-.animate-shake {
-  animation: shake 0.4s ease-in-out;
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.92);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toast-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(12px) scale(0.92);
-  }
-}
-
-.animate-toast-in {
-  animation: toast-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-toast-out {
-  animation: toast-out 0.15s ease-in forwards;
-}
-
-@keyframes ask-in {
-  from {
-    opacity: 0;
-    filter: blur(6px);
-    transform: translateY(18px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes ask-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes ask-dot {
-  from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-cloud) 60%, transparent);
-  }
-
-  to {
-    box-shadow: 0 0 0 9px transparent;
-  }
-}
-
-.animate-ask-in {
-  animation: ask-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transform-origin: bottom center;
-}
-
-.ask-reveal {
-  animation: ask-reveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
-}
-
-.ask-reveal-late {
-  animation: ask-reveal 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
-}
-
-.ask-dot {
-  animation: ask-dot 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.18s 1;
-}
-
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 0.15;
-    transform: scale(0.8);
-  }
-
-  50% {
-    opacity: 0.7;
-    transform: scale(1.2);
-    box-shadow: 0 0 2px var(--color-cloud);
-  }
-}
-
-@keyframes twinkle-accent {
-  0%,
-  100% {
-    opacity: 0.15;
-    transform: scale(0.8);
-  }
-
-  50% {
-    opacity: 0.7;
-    transform: scale(1.2);
-    box-shadow: 0 0 2px var(--color-accent);
-  }
-}
-
 .line-clamp-2,
 .line-clamp-3 {
   display: -webkit-box;
@@ -1809,22 +1647,11 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-shake,
-  .animate-toast-in,
-  .animate-toast-out,
-  .animate-ask-in,
-  .ask-reveal,
-  .ask-reveal-late,
-  .ask-dot,
   .animate-pulse,
   .recording-pulse,
   .hover-tip,
   .tag-input-intro {
     animation: none;
-  }
-
-  .twinkling-grid > div {
-    animation: none !important;
   }
 }
 

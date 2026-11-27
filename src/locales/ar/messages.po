@@ -1727,6 +1727,46 @@ msgstr "نموذج Whisper محلي، متعدد اللغات ويدعم الق�
 #~ msgstr "{0} لا يشغّل صوتًا، لذا لن يتم تسجيله."
 
 #. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.visualizer"
+#~ msgstr "مُرئيّات الصوت"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.background_visualizer"
+#~ msgstr "مُرئيّات الصوت في الخلفية"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.close"
+#~ msgstr "إغلاق الإشعار"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copied"
+#~ msgstr "تم النسخ"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+#~ msgid "toast.copy_message"
+#~ msgstr "نسخ الرسالة"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.error"
+#~ msgstr "حدث خطأ"
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.listening"
+#~ msgstr "جارٍ الاستماع..."
+
+#. js-lingui-explicit-id
+#: src/features/pill/PillOverlay.tsx
+#~ msgid "pill.status.processing"
+#~ msgstr "جارٍ المعالجة..."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -2432,11 +2472,6 @@ msgid "library.modal.audio_unavailable"
 msgstr "الصوت غير متاح"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.visualizer"
-msgstr "مُرئيّات الصوت"
-
-#. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "transcription.language.auto"
 msgstr "تلقائي"
@@ -2496,11 +2531,6 @@ msgstr "رجوع"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.back"
 msgstr "رجوع"
-
-#. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.background_visualizer"
-msgstr "مُرئيّات الصوت في الخلفية"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ShortcutList.tsx
@@ -2869,8 +2899,8 @@ msgid "personalization.modal.close"
 msgstr "إغلاق النافذة"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.close"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.close"
 msgstr "إغلاق الإشعار"
 
 #. js-lingui-explicit-id
@@ -3004,13 +3034,13 @@ msgid "model_picker.error.copied"
 msgstr "تم النسخ"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx
-msgid "transcriptions.item.copied"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_done"
 msgstr "تم النسخ"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copied"
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.copied"
 msgstr "تم النسخ"
 
 #. js-lingui-explicit-id
@@ -3074,8 +3104,8 @@ msgid "settings.local_api.logs.copy_aria"
 msgstr "نسخ السجلات"
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx
-msgid "toast.copy_message"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_message"
 msgstr "نسخ الرسالة"
 
 #. js-lingui-explicit-id
@@ -3914,8 +3944,8 @@ msgid "record.setup.system_mode.all"
 msgstr "النظام بأكمله"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.error"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.error"
 msgstr "حدث خطأ"
 
 #. js-lingui-explicit-id
@@ -4810,13 +4840,13 @@ msgid "settings.local_api.listen_on_lan_aria"
 msgstr "الاستماع عبر الشبكة المحلية"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-msgid "live.empty.listening"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.listening"
 msgstr "جارٍ الاستماع..."
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.listening"
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.listening"
 msgstr "جارٍ الاستماع..."
 
 #. js-lingui-explicit-id
@@ -5903,8 +5933,8 @@ msgid "faq.privacy.link"
 msgstr "سياسة الخصوصية"
 
 #. js-lingui-explicit-id
-#: src/features/pill/PillOverlay.tsx
-msgid "pill.status.processing"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.pill.processing"
 msgstr "جارٍ المعالجة..."
 
 #. js-lingui-explicit-id
@@ -7200,8 +7230,12 @@ msgid "native.toast.admin_app_paste"
 msgstr "يعمل هذا التطبيق بصلاحيات المسؤول، لذلك لا يسمح Windows لـ Glimpse بالكتابة فيه. يوجد النص في الحافظة. اضغط Ctrl+V للصقه."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.action_failed"
+msgstr "لم ينجح ذلك. حاول مرة أخرى."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
-#: src/features/toast/ToastOverlay.tsx
 msgid "toast.action_failed"
 msgstr "لم ينجح ذلك. حاول مرة أخرى."
 

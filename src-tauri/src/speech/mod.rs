@@ -274,7 +274,9 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
                 },
                 auto_dismiss: Some(true),
                 duration: Some(8000),
-                action: Some("open_models_page".to_string()),
+                action: Some(crate::toast::Action::OpenSettings(
+                    crate::tray::SettingsPage::Models,
+                )),
                 action_label: Some(crate::toast::native(&app, "native.toast.open_settings")),
                 ..Default::default()
             },

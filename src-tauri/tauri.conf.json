@@ -9,42 +9,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      {
-        "label": "main",
-        "title": "Glimpse",
-        "width": 300,
-        "height": 190,
-        "x": -9999,
-        "y": -9999,
-        "resizable": false,
-        "decorations": false,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "transparent": true,
-        "shadow": false,
-        "center": false,
-        "focus": false,
-        "visible": false
-      },
-      {
-        "label": "toast",
-        "title": "Glimpse Toast",
-        "width": 420,
-        "height": 200,
-        "x": 0,
-        "y": 0,
-        "resizable": false,
-        "decorations": false,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "transparent": true,
-        "shadow": false,
-        "center": false,
-        "focus": false,
-        "visible": false
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": "default-src 'self' asset: http://asset.localhost playback: http://playback.localhost customprotocol:; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob: https:; connect-src 'self' ipc: http://ipc.localhost https://api.github.com https://tryglimpse.cc http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
       "assetProtocol": {

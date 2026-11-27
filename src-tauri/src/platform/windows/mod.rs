@@ -2,10 +2,9 @@ pub mod crash;
 pub mod elevation;
 pub mod icons;
 pub mod live;
-pub mod overlay;
+pub mod native_window;
 pub mod quit_prompt;
 pub mod store;
-pub mod toast;
 
 use std::ffi::c_void;
 use std::path::Path;

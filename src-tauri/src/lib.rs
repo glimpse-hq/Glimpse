@@ -25,6 +25,7 @@ mod mode_context;
 mod model_language_table;
 mod music;
 mod native_i18n;
+mod native_ui;
 mod notifications;
 mod permissions;
 mod personalization;
@@ -77,10 +78,8 @@ use tauri::ActivationPolicy;
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as AutostartManagerExt};
 use tauri_plugin_opener::OpenerExt;
 
-pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 pub(crate) const SETTINGS_WINDOW_LABEL: &str = "settings";
 pub(crate) const EVENT_RECORDING_START: &str = "recording:start";
-pub(crate) const EVENT_AUDIO_SPECTRUM: &str = "audio:spectrum";
 pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_DICTATION_DISCARDED: &str = "dictation:discarded";
@@ -509,15 +508,7 @@ pub fn run() {
                 permissions::refresh_microphone_permission_detached();
             }
 
-            if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
-                let _ = window.hide();
-                platform::overlay::init(handle, &window);
-            }
-
-            if let Some(toast_window) = handle.get_webview_window(toast::WINDOW_LABEL) {
-                let _ = toast_window.hide();
-                platform::toast::init(handle, &toast_window);
-            }
+            native_ui::overlay::init(handle);
 
             analytics::set_crash_phase("tray_shortcuts");
             // The sandbox stays out of the menu bar the real app is in.
@@ -608,16 +599,12 @@ pub fn run() {
             announcements::list_announcements,
             announcements::dismiss_release_notes,
             announcements::dismiss_announcement,
-            announcements::open_toasted_announcement,
-            announcements::run_toasted_announcement,
             get_dictation_stats,
             auto_delete::preview_recording_prune,
             auto_delete::preview_transcription_prune,
             dictionary::set_dictionary,
             dictionary::get_replacements,
             dictionary::set_replacements,
-            auto_dictionary::accept_auto_dictionary_suggestion,
-            auto_dictionary::reject_auto_dictionary_suggestion,
             personalization::get_default_cleanup_instructions,
             personalization::get_personalities,
             personalization::set_personalities,
@@ -673,7 +660,6 @@ pub fn run() {
             recording::remove_recording_bookmark,
             recording::discard_recording_session,
             recording::open_system_audio_settings,
-            recording::turn_off_agent_notice,
             recording::live_window::open_live_view,
             recording::live_window::hide_live_view,
             recording::live_window::finish_from_live_view,
@@ -697,12 +683,6 @@ pub fn run() {
             cli_install::install_cli,
             cli_install::remove_cli,
             audio::list_input_devices,
-            toast::toast_dismissed,
-            toast::resize_toast_window,
-            toast::close_toast,
-            voice_prompt::voice_prompt_skip,
-            voice_prompt::voice_prompt_pick_first,
-            voice_prompt::voice_prompt_pick_second,
             actions::list_actions,
             actions::set_action_enabled,
             actions::set_action_shortcut,
@@ -716,7 +696,6 @@ pub fn run() {
             open_microphone_settings,
             open_sound_settings,
             open_input_monitoring_settings,
-            open_llm_cleanup_settings,
             open_ffmpeg_install,
             complete_onboarding,
             model_recommendation,
@@ -725,8 +704,6 @@ pub fn run() {
             pill::stop_hold_recording,
             start_microphone_test,
             stop_microphone_test,
-            view_recovered_transcriptions,
-            copy_last_transcription,
             reset_onboarding,
             toast::debug_show_toast,
             analytics::report_frontend_crash,
@@ -743,9 +720,6 @@ pub fn run() {
             apple_llm_availability,
             cleanup_model::cleanup_model_status,
             fetch_remote_speech_models,
-            open_about_page,
-            open_account_page,
-            open_models_page,
             asks::get_ask_prompt,
             asks::mark_ask_prompt_seen,
             asks::resolve_ask_prompt,
@@ -1482,11 +1456,6 @@ fn open_input_monitoring_settings() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    open_settings_page(&app, SettingsPage::Models)
-}
-
-#[tauri::command]
 fn open_ffmpeg_install(app: AppHandle<AppRuntime>) -> Result<(), String> {
     app.opener()
         .open_url(FFMPEG_HELP_URL, None::<&str>)
@@ -1871,21 +1840,10 @@ async fn fetch_remote_speech_models(
         .map_err(|error| error.user_message())
 }
 
-#[tauri::command]
-fn open_about_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    open_settings_page(&app, SettingsPage::About)
-}
-
-#[tauri::command]
 fn open_account_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
     // Only the trial and license notices offer this action.
     analytics::track_paywall_clicked(app.clone(), "trial_toast".to_string());
     open_settings_page(&app, SettingsPage::Account)
-}
-
-#[tauri::command]
-fn open_models_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    open_settings_page(&app, SettingsPage::Models)
 }
 
 fn open_settings_page(app: &AppHandle<AppRuntime>, page: SettingsPage) -> Result<(), String> {
@@ -2080,13 +2038,16 @@ pub(crate) fn notify_discarded(app: &AppHandle<AppRuntime>, notice: DiscardNotic
         DiscardNotice::NoAudio => (
             "warning",
             "native.toast.no_audio.v2",
-            Some(("open_sound_settings", "native.toast.sound_settings")),
+            Some((
+                toast::Action::OpenSoundSettings,
+                "native.toast.sound_settings",
+            )),
         ),
         DiscardNotice::Blocked => (
             "error",
             MIC_BLOCKED_KEY,
             Some((
-                "open_microphone_settings",
+                toast::Action::OpenMicrophoneSettings,
                 "native.toast.open_settings_action",
             )),
         ),
@@ -2096,8 +2057,8 @@ pub(crate) fn notify_discarded(app: &AppHandle<AppRuntime>, notice: DiscardNotic
         toast::Payload {
             toast_type: toast_type.to_string(),
             message: toast::native(app, key),
-            action: action.map(|(command, _)| command.to_string()),
-            action_label: action.map(|(_, label)| toast::native(app, label)),
+            action_label: action.as_ref().map(|(_, label)| toast::native(app, label)),
+            action: action.map(|(action, _)| action),
             ..Default::default()
         },
     );
@@ -2298,12 +2259,6 @@ pub(crate) fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<Path
     Ok(data_dir)
 }
 
-#[tauri::command]
-fn view_recovered_transcriptions(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    open_settings_page(&app, SettingsPage::History)
-}
-
-#[tauri::command]
 fn copy_last_transcription(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
@@ -2322,11 +2277,6 @@ fn copy_last_transcription(
 #[derive(Serialize, Clone)]
 pub(crate) struct RecordingStartPayload {
     pub(crate) started_at: String,
-}
-
-#[derive(Serialize, Clone)]
-pub(crate) struct AudioSpectrumPayload {
-    pub(crate) bins: Vec<u8>,
 }
 
 #[derive(Serialize, Clone)]

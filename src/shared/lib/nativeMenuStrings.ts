@@ -492,4 +492,16 @@ export const NATIVE_MENU_STRINGS = [
     message: "Recordings saved to Home.",
   }),
   msg({ id: "native.toast.view_home", message: "Open Home" }),
+  // the native toast's button labels for screen readers, and its failed action
+  msg({ id: "native.toast.close", message: "Close notification" }),
+  msg({ id: "native.toast.copy_message", message: "Copy message" }),
+  msg({ id: "native.toast.copy_done", message: "Copied" }),
+  msg({
+    id: "native.toast.action_failed",
+    message: "That didn't work. Try again.",
+  }),
+  // the native pill's status, announced to screen readers
+  msg({ id: "native.pill.listening", message: "Listening..." }),
+  msg({ id: "native.pill.processing", message: "Processing..." }),
+  msg({ id: "native.pill.error", message: "Error occurred" }),
 ];

@@ -12,7 +12,7 @@ Glimpse is a local-first dictation app for macOS and Windows (never Linux). Taur
 ## Product boundaries
 
 - Bun only, never npm or npx.
-- Four native windows, routed by label in `src/app/App.tsx`: `main` (pill overlay), `toast`, `live` (recording sidebar), `settings` (everything else).
+- Two webview windows, routed by label in `src/app/App.tsx`: `live` (recording sidebar) and `settings` (everything else). The pill and toasts are drawn in Rust with wgpu in one native window, `src-tauri/src/native_ui/`.
 - Rust owns logic, audio, storage, native windows, and anything privacy-sensitive. React renders and calls commands.
 - The hot path is shortcut → record → transcribe → insert. Nothing may add latency before insertion.
 - Local dictation is free and unlimited with every model. Paid features are the extras around it.
