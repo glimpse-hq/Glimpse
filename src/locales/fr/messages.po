@@ -1859,6 +1859,12 @@ msgid "import.subtitle"
 msgstr "{0, plural, one {Nous avons trouvé une autre application de dictée. Choisissez ce que vous souhaitez importer.} other {Nous avons trouvé d'autres applications de dictée. Choisissez ce que vous souhaitez importer.}}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "Les appels dans {0} ne peuvent être enregistrés qu'avec « Système entier »."
+
+#. js-lingui-explicit-id
 #. placeholder {0}: personality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.copy_name"
@@ -2586,6 +2592,11 @@ msgstr "Intégré à macOS"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Professionnel"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "Les appels dans ces apps ne peuvent être enregistrés qu'avec « Système entier »."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

@@ -1859,6 +1859,12 @@ msgid "import.subtitle"
 msgstr "{0, plural, one {Encontramos otra app de dictado. Elige qué importar.} other {Encontramos otras apps de dictado. Elige qué importar.}}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "Las llamadas de {0} solo se pueden grabar con «Todo el sistema»."
+
+#. js-lingui-explicit-id
 #. placeholder {0}: personality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.copy_name"
@@ -2586,6 +2592,11 @@ msgstr "Integrado en macOS"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Comercial"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "Las llamadas de estas apps solo se pueden grabar con «Todo el sistema»."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

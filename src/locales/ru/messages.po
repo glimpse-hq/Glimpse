@@ -1859,6 +1859,12 @@ msgid "import.subtitle"
 msgstr "{0, plural, one {Найдено ещё одно приложение для диктовки. Выберите, что импортировать.} other {Найдены другие приложения для диктовки. Выберите, что импортировать.}}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "Звонки в {0} можно записать только в режиме «Вся система»."
+
+#. js-lingui-explicit-id
 #. placeholder {0}: personality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.copy_name"
@@ -2586,6 +2592,11 @@ msgstr "Встроено в macOS"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Бизнес"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "Звонки в этих приложениях можно записать только в режиме «Вся система»."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

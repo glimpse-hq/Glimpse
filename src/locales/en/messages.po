@@ -1859,6 +1859,12 @@ msgid "import.subtitle"
 msgstr "{0, plural, one {We found another dictation app. Choose what to import.} other {We found other dictation apps. Choose what to import.}}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "{0} calls can only be recorded with Entire system."
+
+#. js-lingui-explicit-id
 #. placeholder {0}: personality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.copy_name"
@@ -2586,6 +2592,11 @@ msgstr "Built into macOS"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Business"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "Calls in these apps can only be recorded with Entire system."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

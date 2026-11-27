@@ -192,6 +192,8 @@ pub struct RecordingSessionState {
     pub follower: Option<String>,
     pub microphone_off: bool,
     pub system_audio_off: bool,
+    /// A chosen app played audio its capture never got.
+    pub system_audio_missed: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -285,6 +287,7 @@ struct Shared {
     // Sources the user turned off mid-recording. They record silence.
     microphone_off: AtomicBool,
     system_off: Arc<AtomicBool>,
+    system_missed: Arc<AtomicBool>,
 }
 
 impl Shared {
@@ -317,6 +320,7 @@ impl Shared {
                 .map(|(name, _)| name.clone()),
             microphone_off: self.microphone_off.load(Ordering::Relaxed),
             system_audio_off: self.system_off.load(Ordering::Relaxed),
+            system_audio_missed: self.system_missed.load(Ordering::Relaxed),
         }
     }
 
@@ -389,6 +393,7 @@ impl Shared {
         *self.follower.lock() = None;
         self.microphone_off.store(false, Ordering::Relaxed);
         self.system_off.store(false, Ordering::Relaxed);
+        self.system_missed.store(false, Ordering::Relaxed);
         self.live.end();
     }
 }
@@ -464,6 +469,7 @@ impl Default for RecordingManager {
             finished: Mutex::new(None),
             microphone_off: AtomicBool::new(false),
             system_off: Arc::new(AtomicBool::new(false)),
+            system_missed: Arc::new(AtomicBool::new(false)),
         });
         let (tx, rx) = unbounded();
         let worker_shared = Arc::clone(&shared);
@@ -741,6 +747,7 @@ impl Worker {
         self.shared
             .system_sound
             .store(SOUND_NONE, Ordering::Relaxed);
+        self.shared.system_missed.store(false, Ordering::Relaxed);
 
         let mut summary = AudioSources::default();
         let mut session = ActiveSession {
@@ -774,26 +781,28 @@ impl Worker {
                 };
                 let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
                 let failure = Arc::clone(&self.shared.write_failure);
-                let capture = system_audio::SystemAudioCapture::start(&scope, move |rate| {
-                    match TrackWriter::spawn(path, rate, "glimpse-recording-system", failure) {
-                        Ok(writer) => {
-                            let callback = sink.into_callback(writer.input());
-                            let _ = writer_tx.send(Ok(writer));
-                            callback
+                let missed = Arc::clone(&self.shared.system_missed);
+                let capture =
+                    system_audio::SystemAudioCapture::start(&scope, missed, move |rate| {
+                        match TrackWriter::spawn(path, rate, "glimpse-recording-system", failure) {
+                            Ok(writer) => {
+                                let callback = sink.into_callback(writer.input());
+                                let _ = writer_tx.send(Ok(writer));
+                                callback
+                            }
+                            Err(err) => {
+                                let _ = writer_tx.send(Err(err));
+                                Box::new(|_: &[f32]| {})
+                            }
                         }
-                        Err(err) => {
-                            let _ = writer_tx.send(Err(err));
-                            Box::new(|_: &[f32]| {})
+                    })
+                    .map_err(|err| {
+                        if err.to_string() == "permission" {
+                            anyhow!("system_audio_permission")
+                        } else {
+                            err
                         }
-                    }
-                })
-                .map_err(|err| {
-                    if err.to_string() == "permission" {
-                        anyhow!("system_audio_permission")
-                    } else {
-                        err
-                    }
-                })?;
+                    })?;
                 let writer = match writer_rx.recv() {
                     Ok(Ok(writer)) => writer,
                     Ok(Err(err)) => {

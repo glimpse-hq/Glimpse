@@ -40,6 +40,7 @@ export type RecordingSessionState = {
   // Sources turned off mid-recording; they record silence.
   microphone_off: boolean;
   system_audio_off: boolean;
+  system_audio_missed: boolean;
 };
 
 export type LiveSegment = {
