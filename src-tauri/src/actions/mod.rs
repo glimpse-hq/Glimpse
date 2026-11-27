@@ -14,7 +14,7 @@ pub(crate) use record::{
 use std::cell::Cell;
 use std::cmp::Reverse;
 use std::collections::{HashMap, VecDeque};
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock};
@@ -1751,18 +1751,73 @@ pub fn set_action_shortcut(
     Ok(())
 }
 
-#[tauri::command]
-pub fn open_actions_folder(app: AppHandle<AppRuntime>) -> Result<(), String> {
+fn ensure_folder(app: &AppHandle<AppRuntime>) -> Result<PathBuf, String> {
     let folder = folder();
     if !folder.is_dir() {
         std::fs::create_dir_all(&folder).map_err(|err| err.to_string())?;
-        watch(&app, &folder);
-        reload(&app);
-        changed(&app);
+        watch(app, &folder);
+        reload(app);
+        changed(app);
     }
+    Ok(folder)
+}
+
+#[tauri::command]
+pub fn open_actions_folder(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    let folder = ensure_folder(&app)?;
     app.opener()
         .open_path(folder.to_string_lossy(), None::<&str>)
         .map_err(|err| err.to_string())
+}
+
+/// Makes a script with starter header lines, `.sh` or `.ps1` unless the name
+/// has an extension, and shows it in Finder or File Explorer.
+#[tauri::command]
+pub fn create_action_file(name: String, app: AppHandle<AppRuntime>) -> Result<(), String> {
+    let name = name.trim();
+    if name.starts_with('.') || Path::new(name).file_name() != Some(name.as_ref()) {
+        return Err(format!("{name} can't be used as a file name"));
+    }
+    let mut path = ensure_folder(&app)?.join(name);
+    if path.extension().is_none() {
+        path.set_extension(if cfg!(windows) { "ps1" } else { "sh" });
+    }
+    let mut file = std::fs::File::create_new(&path).map_err(|err| match err.kind() {
+        std::io::ErrorKind::AlreadyExists => {
+            let file_name = path.file_name().unwrap_or_default().to_string_lossy();
+            format!("{file_name} already exists")
+        }
+        _ => err.to_string(),
+    })?;
+    file.write_all(starter(&path).as_bytes())
+        .map_err(|err| err.to_string())?;
+    reload(&app);
+    changed(&app);
+    tauri_plugin_opener::reveal_item_in_dir(&path).map_err(|err| err.to_string())
+}
+
+/// A new action's header lines, commented the way its language reads. It
+/// starts off, so the phrase does nothing until its switch is on.
+fn starter(path: &Path) -> String {
+    let extension = path
+        .extension()
+        .map(|extension| extension.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default();
+    let comment = match extension.as_str() {
+        "js" | "mjs" | "cjs" => "//",
+        "cmd" | "bat" => "::",
+        _ => "#",
+    };
+    let name = path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    format!(
+        "{comment} @glimpse.description {name}\n\
+         {comment} @glimpse.say run {phrase}\n\
+         {comment} What you say after the phrase comes in on stdin, and what this prints shows as a toast.\n",
+        phrase = name.to_lowercase(),
+    )
 }
 
 /// Moves the script to the Trash and forgets its switch, so a new file with

@@ -5,6 +5,7 @@
 - Put a script in the Actions folder, in Python, JavaScript, a shell script or any other language, and Glimpse runs it when you press its shortcut or start a dictation with its phrase. The script gets what you said and can show its answer, type it for you, or ask you a question.
 - An action can also run after every dictation, or when a Library recording is ready.
 - Actions have their own screen in the sidebar, where you turn each one on. An action's shortcuts show in Settings under its name, where you can change them.
+- The + next to Open Folder makes a new action, with a phrase to start from.
 - Scripts and AI agents can use new `glimpse` commands to show a notice (`toast`), ask you something (`ask`), use the writing model set in Settings or the one on this computer (`llm`), and clean up text (`clean`).
 
 ### New Features
@@ -15,7 +16,7 @@
 - Glimpse C1.2, a new version of the cleanup model, removes more filler and is less likely to change what you meant.
 - Cmd+F, or Ctrl+F on Windows, opens search on Home.
 
-### Changes
+### Improvements
 
 - Notices grow out of the dictation pill, and a new notice reshapes the one on screen instead of popping in again. A notice shown again, like when you press the shortcut repeatedly, no longer jumps.
 - When the pill shows your words as you speak, it grows and shrinks smoothly, and earlier words slide over as new ones arrive.
@@ -23,23 +24,27 @@
 - While Glimpse transcribes, the pill's dots are a little squarer.
 - A notice's close and copy buttons sit together in its top corner.
 - Short dictations with Parakeet on Windows take about half the time on NVIDIA graphics and 40% less on Intel graphics.
-- The 14-day trial now includes the command line, the MCP server and the API server.
-- Library now sits with Record in the sidebar.
-- Parakeet TDT V3 and Whisper Small move to Legacy. If you use Parakeet TDT V3, Glimpse switches you to Parakeet Ultra, which is more accurate at the same size and speed.
-- Each plan on the Account screen now has its own buy button, and prices show they're a one-time payment.
+- The Library opens faster.
+- Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
+- The Library groups items by day, shows recordings you haven't named by their time, and shows the matching words when you search. Cards show how each transcript begins.
 - System Audio on the Record screen shows the apps it records as their icons, and dims one that isn't playing anything.
 - Every screen now lines up on the same margins, and Start Recording sits between Pause and Bookmark.
-- The Library opens faster.
+- Models in Settings shows speech and language models side by side, so your whole setup fits on one screen.
+- On a Mac trackpad you feel a light tap when the player catches a bookmark as you drag it, and on each step when you drag the speed or the auto-pause setting.
+- Model descriptions in the Library's import and retranscribe dialogs are translated and no longer cut off.
+- Logs in About now saves one report to attach to a bug report and shows it in Finder or File Explorer. It leaves out your user name and what you dictated.
+
+### Changes
+
+- The 14-day trial now includes the command line, the MCP server and the API server.
+- Parakeet TDT V3 and Whisper Small move to Legacy. If you use Parakeet TDT V3, Glimpse switches you to Parakeet Ultra, which is more accurate at the same size and speed.
+- Library now sits with Record in the sidebar.
 - An open recording has one row at the top: where it is, search, and a menu with its details, Copy, Export and Retranscribe. Speakers moved next to the player.
 - Search is always shown at the top of the Library and an open recording.
-- On a Mac trackpad you feel a light tap when the player catches a bookmark as you drag it, and on each step when you drag the speed or the auto-pause setting.
-- The Library groups items by day, shows recordings you haven't named by their time, and shows the matching words when you search. Cards show how each transcript begins.
-- Cleanup with DeepSeek is faster: Glimpse now turns off the model's thinking step.
+- Each plan on the Account screen now has its own buy button, and prices show they're a one-time payment.
 - New xAI setups for cleanup start on Grok 4.20 non-reasoning, which is faster and costs less than Grok 4.7.
 - Fireworks AI is no longer offered for speech. It shut down its transcription service.
 - The cleanup model's name in Settings and setup now includes its version, Glimpse C1.2 2B.
-- Model descriptions in the Library's import and retranscribe dialogs are translated and no longer cut off.
-- Logs in About now saves one report to attach to a bug report and shows it in Finder or File Explorer. It leaves out your user name and what you dictated.
 
 ### Fixes
 

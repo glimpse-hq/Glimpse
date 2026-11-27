@@ -1,15 +1,21 @@
 import { useLingui } from "@lingui/react/macro";
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FolderOpen, Trash } from "@phosphor-icons/react";
+import { FolderOpen, Plus, Trash } from "@phosphor-icons/react";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
+import NameDialog from "../../../shared/ui/NameDialog";
 import ScreenHeader from "../../../shared/ui/ScreenHeader";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { showErrorToast } from "../../../shared/lib/errorToast";
 import { formatShortcutForDisplay } from "../../../shared/lib/shortcuts";
 import { detectAppPlatform } from "../../../platform/service";
-import { openActionsFolder, revealActionFile, trashActionFile } from "../api";
+import {
+  createActionFile,
+  openActionsFolder,
+  revealActionFile,
+  trashActionFile,
+} from "../api";
 import { useActions, useSetActionEnabled } from "../queries";
 import type { ActionInfo } from "../../../types";
 
@@ -27,6 +33,7 @@ const ActionsView = ({ isActive }: { isActive: boolean }) => {
   } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   useMenuKeyboard(menuRef, menu !== null, () => setMenu(null));
+  const [creating, setCreating] = useState(false);
 
   const reveal = (file: string) =>
     void revealActionFile(file).catch((err) => showErrorToast(String(err)));
@@ -76,19 +83,36 @@ const ActionsView = ({ isActive }: { isActive: boolean }) => {
 
   const openFolder = () =>
     void openActionsFolder().catch((err) => showErrorToast(String(err)));
+  const create = (name: string) =>
+    createActionFile(name).then(() => setCreating(false));
+  // Without an extension of its own, the file gets the platform's script type.
+  const scriptSuffix = (name: string) =>
+    name.lastIndexOf(".") > 0 ? null : isWindows ? ".ps1" : ".sh";
+  const newActionLabel = t({ id: "actions.new", message: "New Action" });
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col text-left">
       <ScreenHeader
         title={t({ id: "actions.title", message: "Actions" })}
         trailing={
-          <button
-            type="button"
-            onClick={openFolder}
-            className="ui-button-primary inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-lg px-3.5 ui-text-body-sm"
-          >
-            {t({ id: "actions.open_folder", message: "Open Folder" })}
-          </button>
+          <div className="flex h-8 shrink-0 gap-px">
+            <button
+              type="button"
+              onClick={openFolder}
+              className="ui-button-primary inline-flex items-center whitespace-nowrap rounded-l-lg px-5 ui-text-body-sm"
+            >
+              {t({ id: "actions.open_folder", message: "Open Folder" })}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              aria-label={newActionLabel}
+              title={newActionLabel}
+              className="ui-button-primary inline-flex w-8 items-center justify-center rounded-r-lg"
+            >
+              <Plus size={13} weight="bold" aria-hidden="true" />
+            </button>
+          </div>
         }
       />
 
@@ -208,6 +232,16 @@ const ActionsView = ({ isActive }: { isActive: boolean }) => {
           </div>
         )}
       </div>
+
+      <NameDialog
+        open={creating}
+        title={newActionLabel}
+        submitLabel={t({ id: "actions.new.create", message: "Create" })}
+        cancelLabel={t({ id: "actions.new.cancel", message: "Cancel" })}
+        suffix={scriptSuffix}
+        onCancel={() => setCreating(false)}
+        onSubmit={create}
+      />
 
       {menu &&
         createPortal(
