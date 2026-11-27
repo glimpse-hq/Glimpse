@@ -1,6 +1,5 @@
-//! System audio via WASAPI loopback. Where Windows supports process loopback,
-//! it records chosen apps or everything except Glimpse, otherwise everything the
-//! default output device plays.
+//! System audio via WASAPI loopback: everything each output device plays, or
+//! chosen apps through process loopback where Windows supports it.
 
 use std::{
     collections::{HashSet, VecDeque},
@@ -12,24 +11,25 @@ use std::{
         atomic::{AtomicBool, Ordering},
     },
     thread::JoinHandle,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use anyhow::{Result, anyhow};
 use crossbeam_channel::{Sender, bounded};
 use windows::Win32::Foundation::{CloseHandle, HANDLE, HWND, LPARAM};
+use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
 use windows::Win32::Media::Audio::{
-    AUDCLNT_BUFFERFLAGS_SILENT, AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM,
-    AUDCLNT_STREAMFLAGS_LOOPBACK, AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY,
-    AUDIOCLIENT_ACTIVATION_PARAMS, AUDIOCLIENT_ACTIVATION_PARAMS_0,
-    AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK, AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS,
-    ActivateAudioInterfaceAsync, AudioSessionStateExpired, DEVICE_STATE_ACTIVE,
-    IActivateAudioInterfaceAsyncOperation, IActivateAudioInterfaceCompletionHandler,
-    IActivateAudioInterfaceCompletionHandler_Impl, IAudioCaptureClient, IAudioClient,
-    IAudioSessionControl2, IAudioSessionManager2, IMMDeviceEnumerator, MMDeviceEnumerator,
-    PROCESS_LOOPBACK_MODE, PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
+    AUDCLNT_BUFFERFLAGS_SILENT, AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR, AUDCLNT_SHAREMODE_SHARED,
+    AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM, AUDCLNT_STREAMFLAGS_LOOPBACK,
+    AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, AUDIOCLIENT_ACTIVATION_PARAMS,
+    AUDIOCLIENT_ACTIVATION_PARAMS_0, AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
+    AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS, ActivateAudioInterfaceAsync, AudioSessionStateExpired,
+    DEVICE_STATE_ACTIVE, IActivateAudioInterfaceAsyncOperation,
+    IActivateAudioInterfaceCompletionHandler, IActivateAudioInterfaceCompletionHandler_Impl,
+    IAudioCaptureClient, IAudioClient, IAudioSessionControl2, IAudioSessionManager2, IMMDevice,
+    IMMDeviceEnumerator, ISimpleAudioVolume, MMDeviceEnumerator,
     PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE, VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK,
-    WAVEFORMATEX, WAVEFORMATEXTENSIBLE, eConsole, eRender,
+    WAVEFORMATEX, eRender,
 };
 use windows::Win32::System::Com::StructuredStorage::PROPVARIANT;
 use windows::Win32::System::Com::{
@@ -39,6 +39,7 @@ use windows::Win32::System::Com::{
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
 };
+use windows::Win32::System::Performance::{QueryPerformanceCounter, QueryPerformanceFrequency};
 use windows::Win32::System::Threading::{
     OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
 };
@@ -51,18 +52,27 @@ use windows::core::{BOOL, HRESULT, IUnknown, Interface, PWSTR, Ref, implement};
 
 use super::{AudioApp, SamplesCallback, SystemAudioScope};
 
-const FORMAT_PCM: u16 = 1;
 const FORMAT_IEEE_FLOAT: u16 = 3;
-const FORMAT_EXTENSIBLE: u16 = 0xFFFE;
 const BUFFER_HNS: i64 = 10_000_000;
 const POLL_INTERVAL: Duration = Duration::from_millis(10);
 const ACTIVATION_TIMEOUT: Duration = Duration::from_secs(5);
-// Process loopback has no mix format of its own, so it is asked for this one.
-const APP_SAMPLE_RATE: u32 = 48_000;
-const APP_CHANNELS: u16 = 2;
-// With several apps, one that goes quiet may stop delivering audio. The others
-// are written without it once this much is waiting.
-const MIX_STALL_FRAMES: usize = APP_SAMPLE_RATE as usize / 5;
+// Process loopback has no mix format of its own and output devices convert to
+// this one, so every stream mixes without resampling.
+const SAMPLE_RATE: u32 = 48_000;
+const CHANNELS: u16 = 2;
+// Streams are mixed by capture time and written this far behind it, so a
+// packet that arrives late still lands in place. Packets were measured
+// arriving up to 16 ms after capture.
+const MIX_DELAY_FRAMES: u64 = SAMPLE_RATE as u64 / 25;
+// A packet this close to where its stream's last one ended continues it, so
+// timestamp jitter leaves no gaps. Further off, as after a pause or clock
+// drift between devices, it goes where its timestamp says.
+const RESYNC_FRAMES: u64 = SAMPLE_RATE as u64 / 50;
+// How often output devices are rescanned and chosen apps are checked.
+const CHECK_INTERVAL: Duration = Duration::from_secs(1);
+const METER_INTERVAL: Duration = Duration::from_millis(100);
+// An app session at least this loud is playing something.
+const PLAYING_LEVEL: f32 = 0.01;
 
 pub(crate) fn supported() -> bool {
     true
@@ -75,12 +85,8 @@ pub(crate) fn app_selection_supported() -> bool {
     *SUPPORTED.get_or_init(|| {
         std::thread::spawn(|| {
             let _com = ComGuard::init().ok()?;
-            let client = activate_process_loopback(
-                std::process::id(),
-                PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE,
-            )
-            .ok()?;
-            initialize_app_client(&client).ok()
+            let client = activate_process_loopback(std::process::id()).ok()?;
+            initialize_client(&client).ok()
         })
         .join()
         .ok()
@@ -99,10 +105,10 @@ pub(crate) fn list_apps() -> Result<Vec<AudioApp>> {
     let processes = running_processes()?;
     let windowed = windowed_pids()?;
     let mut apps: Vec<AudioApp> = Vec::new();
-    for pid in audio_session_pids()? {
+    for (pid, _) in audio_sessions()? {
         // Audio often plays from a helper process, so the app is the nearest
         // process up the tree that shows a window. Background services have none.
-        let Some(app_pid) = windowed_ancestor(pid, &processes, &windowed) else {
+        let Some(app_pid) = ancestor(pid, &processes, |pid| windowed.contains(&pid)) else {
             continue;
         };
         if app_pid == own_pid {
@@ -138,8 +144,11 @@ pub(crate) struct SystemAudioCapture {
 }
 
 impl SystemAudioCapture {
+    /// `missed` is set once a chosen app plays audio that never reaches its
+    /// capture.
     pub(crate) fn start(
         scope: &SystemAudioScope,
+        missed: Arc<AtomicBool>,
         make_sink: impl FnOnce(u32) -> SamplesCallback + Send + 'static,
     ) -> Result<Self> {
         let targets = match scope {
@@ -163,7 +172,9 @@ impl SystemAudioCapture {
         let handle = std::thread::Builder::new()
             .name("glimpse-recording-loopback".into())
             .spawn(move || {
-                if let Err(err) = run_loopback(targets, stop_for_thread, make_sink, &ready_tx) {
+                if let Err(err) =
+                    run_loopback(targets, missed, stop_for_thread, make_sink, &ready_tx)
+                {
                     let _ = ready_tx.send(Err(err));
                 }
             })
@@ -212,77 +223,101 @@ impl Drop for ComGuard {
     }
 }
 
-struct MixFormat {
-    sample_rate: u32,
-    channels: usize,
-    float: bool,
-    bits: u16,
-}
-
 struct Stream {
     client: IAudioClient,
     capture: IAudioCaptureClient,
-    format: MixFormat,
-    pending: VecDeque<f32>,
+    source: Source,
+    // Timeline frame where the next packet continues this stream.
+    next: Option<u64>,
+    // Set once the stream stops delivering, as when its device is unplugged.
+    lost: bool,
+    // Loudest captured sample since the last check.
+    peak: f32,
 }
 
-/// Captures everything, or each app root's process tree on its own client,
-/// mixed into one track.
+enum Source {
+    /// An output device, by id.
+    Output(String),
+    App {
+        root: u32,
+        // Loudest the app's sessions metered since the last check.
+        metered: f32,
+        // Checks in a row where the app played and nothing was captured.
+        missed_checks: u8,
+    },
+}
+
+/// Captures every output device, or each app root's process tree on its own
+/// client, mixed into one track.
 fn run_loopback(
     targets: Option<Vec<u32>>,
+    missed: Arc<AtomicBool>,
     stop: Arc<AtomicBool>,
     make_sink: impl FnOnce(u32) -> SamplesCallback,
     ready_tx: &Sender<Result<()>>,
 ) -> Result<()> {
     let _com = ComGuard::init()?;
-    let mut streams = match targets {
-        // Leaves out Glimpse's own sounds, as on macOS.
-        None if app_selection_supported() => vec![open_process_loopback(
-            std::process::id(),
-            PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
-        )?],
-        None => vec![open_device_loopback()?],
-        Some(pids) => pids
-            .into_iter()
-            .map(|pid| {
-                open_process_loopback(pid, PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE)
-            })
+    let enumerator: IMMDeviceEnumerator =
+        unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL) }
+            .map_err(|err| anyhow!("Audio enumerator failed: {err}"))?;
+    // Output devices whose last open failed, so the failure is logged once.
+    let mut failed: HashSet<String> = HashSet::new();
+    let mut streams = match targets.as_deref() {
+        // Process loopback leaves out call audio, such as a Teams meeting, so
+        // the whole system comes from the output devices instead.
+        None => {
+            let mut streams = Vec::new();
+            sync_outputs(&enumerator, &mut streams, &mut failed);
+            if streams.is_empty() {
+                return Err(anyhow!("No output device could be recorded"));
+            }
+            streams
+        }
+        Some(roots) => roots
+            .iter()
+            .map(|&root| open_process_loopback(root))
             .collect::<Result<Vec<_>>>()?,
     };
-    for stream in &streams {
-        unsafe { stream.client.Start() }.map_err(|err| anyhow!("Loopback start failed: {err}"))?;
-    }
+    let mut meters = targets.as_deref().map(app_meters).unwrap_or_default();
 
-    let mut sink = make_sink(streams[0].format.sample_rate);
+    let mut sink = make_sink(SAMPLE_RATE);
     let _ = ready_tx.send(Ok(()));
 
     let mut mono: Vec<f32> = Vec::new();
     let mut mixed: Vec<f32> = Vec::new();
+    let mut timeline = Timeline::new(now_hns());
+    let (mut checked_at, mut metered_at) = (Instant::now(), Instant::now());
     while !stop.load(Ordering::Relaxed) {
         std::thread::sleep(POLL_INTERVAL);
         for stream in &mut streams {
-            drain_packets(stream, &mut mono);
+            drain_packets(stream, &mut timeline, &mut mono);
         }
-        let waiting = |stream: &Stream| stream.pending.len();
-        let shortest = streams.iter().map(waiting).min().unwrap_or(0);
-        let longest = streams.iter().map(waiting).max().unwrap_or(0);
-        let frames = if longest >= MIX_STALL_FRAMES {
-            longest
-        } else {
-            shortest
-        };
-        if frames == 0 {
-            continue;
+        let until = timeline
+            .frame_at(now_hns())
+            .saturating_sub(MIX_DELAY_FRAMES);
+        timeline.take(until, &mut mixed);
+        if !mixed.is_empty() {
+            sink(&mixed);
         }
-        mixed.clear();
-        mixed.resize(frames, 0.0);
-        for stream in &mut streams {
-            let take = frames.min(stream.pending.len());
-            for (out, sample) in mixed.iter_mut().zip(stream.pending.drain(..take)) {
-                *out += sample;
+
+        if metered_at.elapsed() >= METER_INTERVAL {
+            metered_at = Instant::now();
+            read_meters(&meters, &mut streams);
+        }
+        if checked_at.elapsed() >= CHECK_INTERVAL {
+            checked_at = Instant::now();
+            match targets.as_deref() {
+                None => sync_outputs(&enumerator, &mut streams, &mut failed),
+                Some(roots) => {
+                    for stream in &mut streams {
+                        if missed_app_audio(stream) {
+                            missed.store(true, Ordering::Relaxed);
+                        }
+                    }
+                    meters = app_meters(roots);
+                }
             }
         }
-        sink(&mixed);
     }
 
     for stream in &streams {
@@ -293,10 +328,11 @@ fn run_loopback(
     Ok(())
 }
 
-fn drain_packets(stream: &mut Stream, mono: &mut Vec<f32>) {
+fn drain_packets(stream: &mut Stream, timeline: &mut Timeline, mono: &mut Vec<f32>) {
     unsafe {
         loop {
             let Ok(packet) = stream.capture.GetNextPacketSize() else {
+                stream.lost = true;
                 break;
             };
             if packet == 0 {
@@ -305,11 +341,19 @@ fn drain_packets(stream: &mut Stream, mono: &mut Vec<f32>) {
             let mut data: *mut u8 = std::ptr::null_mut();
             let mut frames: u32 = 0;
             let mut flags: u32 = 0;
+            let mut captured_hns: u64 = 0;
             if stream
                 .capture
-                .GetBuffer(&mut data, &mut frames, &mut flags, None, None)
+                .GetBuffer(
+                    &mut data,
+                    &mut frames,
+                    &mut flags,
+                    None,
+                    Some(&mut captured_hns),
+                )
                 .is_err()
             {
+                stream.lost = true;
                 break;
             }
             if frames > 0 {
@@ -317,64 +361,198 @@ fn drain_packets(stream: &mut Stream, mono: &mut Vec<f32>) {
                     mono.clear();
                     mono.resize(frames as usize, 0.0);
                 } else {
-                    decode_frames(data, frames as usize, &stream.format, mono);
+                    decode_frames(data, frames as usize, mono);
+                    stream.peak = mono.iter().fold(stream.peak, |peak, s| peak.max(s.abs()));
                 }
-                stream.pending.extend(mono.iter());
+                let stamped = (flags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR.0 as u32 == 0
+                    && captured_hns != 0)
+                    .then(|| timeline.frame_at(captured_hns));
+                let start = match (stream.next, stamped) {
+                    (Some(next), Some(at)) if next.abs_diff(at) <= RESYNC_FRAMES => next,
+                    (next, at) => at.or(next).unwrap_or(timeline.written),
+                };
+                timeline.add(start, mono);
+                stream.next = Some(start + frames as u64);
             }
             let _ = stream.capture.ReleaseBuffer(frames);
         }
     }
 }
 
-fn open_device_loopback() -> Result<Stream> {
-    unsafe {
-        let enumerator: IMMDeviceEnumerator =
-            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)
-                .map_err(|err| anyhow!("Audio enumerator failed: {err}"))?;
-        let device = enumerator
-            .GetDefaultAudioEndpoint(eRender, eConsole)
-            .map_err(|err| anyhow!("No default output device: {err}"))?;
-        let client: IAudioClient = device
-            .Activate(CLSCTX_ALL, None)
-            .map_err(|err| anyhow!("Audio client activation failed: {err}"))?;
-        let format_ptr = client
-            .GetMixFormat()
-            .map_err(|err| anyhow!("Failed to read mix format: {err}"))?;
-        let format = parse_format(format_ptr);
-        let init = client.Initialize(
-            AUDCLNT_SHAREMODE_SHARED,
-            AUDCLNT_STREAMFLAGS_LOOPBACK,
-            BUFFER_HNS,
-            0,
-            format_ptr,
-            None,
-        );
-        CoTaskMemFree(Some(format_ptr as *const c_void));
-        init.map_err(|err| anyhow!("Loopback init failed: {err}"))?;
-        let format = format?;
-        let capture: IAudioCaptureClient = client
-            .GetService()
-            .map_err(|err| anyhow!("Capture client unavailable: {err}"))?;
-        Ok(Stream {
-            client,
-            capture,
-            format,
-            pending: VecDeque::new(),
-        })
+/// Every stream mixed by when each packet was captured, so idle devices,
+/// streams that start and stop, and drift between device clocks keep their
+/// place in time.
+struct Timeline {
+    origin_hns: u64,
+    // Frame of `samples[0]`. Everything before it has been written.
+    written: u64,
+    samples: VecDeque<f32>,
+}
+
+impl Timeline {
+    fn new(origin_hns: u64) -> Self {
+        Self {
+            origin_hns,
+            written: 0,
+            samples: VecDeque::new(),
+        }
+    }
+
+    fn frame_at(&self, hns: u64) -> u64 {
+        hns.saturating_sub(self.origin_hns) * SAMPLE_RATE as u64 / 10_000_000
+    }
+
+    fn add(&mut self, start: u64, mono: &[f32]) {
+        let late = self.written.saturating_sub(start) as usize;
+        let Some(mono) = mono.get(late..).filter(|rest| !rest.is_empty()) else {
+            return;
+        };
+        let offset = (start + late as u64 - self.written) as usize;
+        if self.samples.len() < offset + mono.len() {
+            self.samples.resize(offset + mono.len(), 0.0);
+        }
+        for (slot, sample) in self.samples.range_mut(offset..).zip(mono) {
+            *slot += sample;
+        }
+    }
+
+    /// Everything up to `until`, with silence where nothing played.
+    fn take(&mut self, until: u64, out: &mut Vec<f32>) {
+        out.clear();
+        let count = until.saturating_sub(self.written) as usize;
+        let ready = count.min(self.samples.len());
+        out.extend(self.samples.drain(..ready));
+        out.resize(count, 0.0);
+        self.written += count as u64;
     }
 }
 
-fn open_process_loopback(pid: u32, mode: PROCESS_LOOPBACK_MODE) -> Result<Stream> {
-    let client = activate_process_loopback(pid, mode)?;
-    let format = initialize_app_client(&client)?;
+/// The performance counter in 100 ns units, the clock packet timestamps use.
+fn now_hns() -> u64 {
+    let (mut counter, mut frequency) = (0i64, 0i64);
+    unsafe {
+        let _ = QueryPerformanceCounter(&mut counter);
+        let _ = QueryPerformanceFrequency(&mut frequency);
+    }
+    (counter as u128 * 10_000_000 / frequency.max(1) as u128) as u64
+}
+
+/// Drops output devices that went away and opens any that became active, such
+/// as headphones connected mid-recording.
+fn sync_outputs(
+    enumerator: &IMMDeviceEnumerator,
+    streams: &mut Vec<Stream>,
+    failed: &mut HashSet<String>,
+) {
+    streams.retain(|stream| !stream.lost);
+    for (id, device) in active_outputs(enumerator) {
+        let open = streams
+            .iter()
+            .any(|stream| matches!(&stream.source, Source::Output(open) if *open == id));
+        if open {
+            continue;
+        }
+        let opened = unsafe { device.Activate::<IAudioClient>(CLSCTX_ALL, None) }
+            .map_err(|err| anyhow!("Audio client activation failed: {err}"))
+            .and_then(|client| open_stream(client, Source::Output(id.clone())));
+        // Retried on every check, since a device can be busy or not ready yet.
+        match opened {
+            Ok(stream) => {
+                failed.remove(&id);
+                streams.push(stream);
+            }
+            Err(err) => {
+                if failed.insert(id) {
+                    tracing::warn!("Output device loopback did not open: {err}");
+                }
+            }
+        }
+    }
+}
+
+fn open_process_loopback(root: u32) -> Result<Stream> {
+    let source = Source::App {
+        root,
+        metered: 0.0,
+        missed_checks: 0,
+    };
+    open_stream(activate_process_loopback(root)?, source)
+}
+
+fn open_stream(client: IAudioClient, source: Source) -> Result<Stream> {
+    initialize_client(&client)?;
     let capture: IAudioCaptureClient = unsafe { client.GetService() }
         .map_err(|err| anyhow!("Capture client unavailable: {err}"))?;
+    unsafe { client.Start() }.map_err(|err| anyhow!("Loopback start failed: {err}"))?;
     Ok(Stream {
         client,
         capture,
-        format,
-        pending: VecDeque::new(),
+        source,
+        next: None,
+        lost: false,
+        peak: 0.0,
     })
+}
+
+fn read_meters(meters: &[(u32, IAudioMeterInformation)], streams: &mut [Stream]) {
+    for (root, meter) in meters {
+        let Ok(level) = (unsafe { meter.GetPeakValue() }) else {
+            continue;
+        };
+        for stream in streams.iter_mut() {
+            if let Source::App {
+                root: app, metered, ..
+            } = &mut stream.source
+                && app == root
+            {
+                *metered = metered.max(level);
+            }
+        }
+    }
+}
+
+/// Whether the app played for two checks in a row while its capture stayed
+/// digitally silent, as with call audio, which process loopback leaves out.
+/// Two, since a sound that starts just before a check is captured after it.
+fn missed_app_audio(stream: &mut Stream) -> bool {
+    let peak = std::mem::take(&mut stream.peak);
+    let lost = stream.lost;
+    let Source::App {
+        metered,
+        missed_checks,
+        ..
+    } = &mut stream.source
+    else {
+        return false;
+    };
+    let played = std::mem::take(metered) >= PLAYING_LEVEL;
+    *missed_checks = if played && peak == 0.0 && !lost {
+        missed_checks.saturating_add(1)
+    } else {
+        0
+    };
+    *missed_checks >= 2
+}
+
+/// Volume meters of the audible audio sessions in each app root's process tree.
+/// A muted session still meters, but no capture gets it.
+fn app_meters(roots: &[u32]) -> Vec<(u32, IAudioMeterInformation)> {
+    let (Ok(processes), Ok(sessions)) = (running_processes(), audio_sessions()) else {
+        return Vec::new();
+    };
+    sessions
+        .into_iter()
+        .filter_map(|(pid, session)| {
+            let root = ancestor(pid, &processes, |pid| roots.contains(&pid))?;
+            let volume: ISimpleAudioVolume = session.cast().ok()?;
+            let muted = unsafe { volume.GetMute() }.ok()?.as_bool();
+            let level = unsafe { volume.GetMasterVolume() }.ok()?;
+            if muted || level == 0.0 {
+                return None;
+            }
+            Some((root, session.cast().ok()?))
+        })
+        .collect()
 }
 
 #[implement(IActivateAudioInterfaceCompletionHandler)]
@@ -390,15 +568,14 @@ impl IActivateAudioInterfaceCompletionHandler_Impl for ActivationHandler_Impl {
     }
 }
 
-/// An audio client that hears `pid` and every process it started, or everything
-/// but them.
-fn activate_process_loopback(pid: u32, mode: PROCESS_LOOPBACK_MODE) -> Result<IAudioClient> {
+/// An audio client that hears `pid` and every process it started.
+fn activate_process_loopback(pid: u32) -> Result<IAudioClient> {
     let mut params = AUDIOCLIENT_ACTIVATION_PARAMS {
         ActivationType: AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
         Anonymous: AUDIOCLIENT_ACTIVATION_PARAMS_0 {
             ProcessLoopbackParams: AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS {
                 TargetProcessId: pid,
-                ProcessLoopbackMode: mode,
+                ProcessLoopbackMode: PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE,
             },
         },
     };
@@ -437,13 +614,13 @@ fn activate_process_loopback(pid: u32, mode: PROCESS_LOOPBACK_MODE) -> Result<IA
         .map_err(|err| anyhow!("App audio client unavailable: {err}"))
 }
 
-fn initialize_app_client(client: &IAudioClient) -> Result<MixFormat> {
-    let block_align = APP_CHANNELS * 4;
+fn initialize_client(client: &IAudioClient) -> Result<()> {
+    let block_align = CHANNELS * 4;
     let format = WAVEFORMATEX {
         wFormatTag: FORMAT_IEEE_FLOAT,
-        nChannels: APP_CHANNELS,
-        nSamplesPerSec: APP_SAMPLE_RATE,
-        nAvgBytesPerSec: APP_SAMPLE_RATE * block_align as u32,
+        nChannels: CHANNELS,
+        nSamplesPerSec: SAMPLE_RATE,
+        nAvgBytesPerSec: SAMPLE_RATE * block_align as u32,
         nBlockAlign: block_align,
         wBitsPerSample: 32,
         cbSize: 0,
@@ -460,29 +637,17 @@ fn initialize_app_client(client: &IAudioClient) -> Result<MixFormat> {
             None,
         )
     }
-    .map_err(|err| anyhow!("App loopback init failed: {err}"))?;
-    Ok(MixFormat {
-        sample_rate: APP_SAMPLE_RATE,
-        channels: APP_CHANNELS as usize,
-        float: true,
-        bits: 32,
-    })
+    .map_err(|err| anyhow!("Loopback init failed: {err}"))
 }
 
-/// Processes with an audio session on any active output device.
-fn audio_session_pids() -> Result<Vec<u32>> {
-    let mut pids = Vec::new();
+/// Live app sessions on every active output device, with their process ids.
+fn audio_sessions() -> Result<Vec<(u32, IAudioSessionControl2)>> {
+    let mut found = Vec::new();
     unsafe {
         let enumerator: IMMDeviceEnumerator =
             CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)
                 .map_err(|err| anyhow!("Audio enumerator failed: {err}"))?;
-        let devices = enumerator
-            .EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE)
-            .map_err(|err| anyhow!("Failed to list output devices: {err}"))?;
-        for device_index in 0..devices.GetCount().unwrap_or(0) {
-            let Ok(device) = devices.Item(device_index) else {
-                continue;
-            };
+        for (_, device) in active_outputs(&enumerator) {
             let Ok(manager) = device.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None) else {
                 continue;
             };
@@ -503,14 +668,31 @@ fn audio_session_pids() -> Result<Vec<u32>> {
                 }
                 if let Ok(pid) = session.GetProcessId()
                     && pid != 0
-                    && !pids.contains(&pid)
                 {
-                    pids.push(pid);
+                    found.push((pid, session));
                 }
             }
         }
     }
-    Ok(pids)
+    Ok(found)
+}
+
+/// Active output devices with their ids.
+fn active_outputs(enumerator: &IMMDeviceEnumerator) -> Vec<(String, IMMDevice)> {
+    unsafe {
+        let Ok(devices) = enumerator.EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE) else {
+            return Vec::new();
+        };
+        (0..devices.GetCount().unwrap_or(0))
+            .filter_map(|index| {
+                let device = devices.Item(index).ok()?;
+                let raw = device.GetId().ok()?;
+                let id = raw.to_string().ok();
+                CoTaskMemFree(Some(raw.0 as *const c_void));
+                Some((id?, device))
+            })
+            .collect()
+    }
 }
 
 /// Processes with a visible top-level window, what Task Manager counts as apps.
@@ -538,15 +720,16 @@ fn windowed_pids() -> Result<HashSet<u32>> {
     Ok(pids)
 }
 
-fn windowed_ancestor(
+/// The nearest of `pid` and its ancestors that `matches`.
+fn ancestor(
     pid: u32,
     processes: &[(u32, u32, String)],
-    windowed: &HashSet<u32>,
+    matches: impl Fn(u32) -> bool,
 ) -> Option<u32> {
     let mut current = pid;
     // Bounded, since a reused parent pid can form a loop.
     for _ in 0..16 {
-        if windowed.contains(&current) {
+        if matches(current) {
             return Some(current);
         }
         current = processes
@@ -634,47 +817,13 @@ fn exe_stem(path: &Path) -> String {
         .map_or_default(|stem| stem.to_string_lossy().into_owned())
 }
 
-fn parse_format(ptr: *const WAVEFORMATEX) -> Result<MixFormat> {
-    if ptr.is_null() {
-        return Err(anyhow!("Null mix format"));
-    }
-    // WAVEFORMATEX is packed, so fields are copied out rather than borrowed.
-    let format = unsafe { std::ptr::read_unaligned(ptr) };
-    let mut tag = format.wFormatTag;
-    if tag == FORMAT_EXTENSIBLE {
-        let extensible = unsafe { std::ptr::read_unaligned(ptr as *const WAVEFORMATEXTENSIBLE) };
-        // The first GUID field of SubFormat carries the wave format tag.
-        tag = extensible.SubFormat.data1 as u16;
-    }
-    let bits = format.wBitsPerSample;
-    let float = tag == FORMAT_IEEE_FLOAT;
-    if !float && tag != FORMAT_PCM {
-        return Err(anyhow!("Unsupported loopback format tag {tag}"));
-    }
-    if (float && bits != 32) || (!float && bits != 16) {
-        return Err(anyhow!("Unsupported loopback bit depth {bits}"));
-    }
-    Ok(MixFormat {
-        sample_rate: format.nSamplesPerSec,
-        channels: format.nChannels.max(1) as usize,
-        float,
-        bits,
-    })
-}
-
-fn decode_frames(data: *const u8, frames: usize, format: &MixFormat, mono: &mut Vec<f32>) {
+fn decode_frames(data: *const u8, frames: usize, mono: &mut Vec<f32>) {
+    let channels = CHANNELS as usize;
+    let samples = unsafe { std::slice::from_raw_parts(data as *const f32, frames * channels) };
     mono.clear();
-    let channels = format.channels;
-    if format.float && format.bits == 32 {
-        let samples = unsafe { std::slice::from_raw_parts(data as *const f32, frames * channels) };
-        for frame in samples.chunks_exact(channels) {
-            mono.push(frame.iter().sum::<f32>() / channels as f32);
-        }
-    } else {
-        let samples = unsafe { std::slice::from_raw_parts(data as *const i16, frames * channels) };
-        for frame in samples.chunks_exact(channels) {
-            let sum: f32 = frame.iter().map(|s| *s as f32).sum();
-            mono.push(sum / channels as f32 / i16::MAX as f32);
-        }
-    }
+    mono.extend(
+        samples
+            .chunks_exact(channels)
+            .map(|frame| frame.iter().sum::<f32>() / channels as f32),
+    );
 }

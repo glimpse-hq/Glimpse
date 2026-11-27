@@ -1726,9 +1726,6 @@ msgstr "Lokaal Whisper-model, meertalig en met woordenboekondersteuning."
 #~ msgid "record.setup.apps.closed_one"
 #~ msgstr "{0} speelt geen audio af en wordt daarom niet opgenomen."
 
-
-
-
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -1820,6 +1817,12 @@ msgstr "{0, plural, one {# bestand in een niet-ondersteunde indeling overgeslage
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
 msgstr "{0, plural, one {We hebben een andere dictee-app gevonden. Kies wat je wilt importeren.} other {We hebben andere dictee-apps gevonden. Kies wat je wilt importeren.}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.app"
+msgstr "Gesprekken in {0} kunnen alleen worden opgenomen met “Volledig systeem”."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: personality.name
@@ -2559,6 +2562,11 @@ msgstr "Ingebouwd in macOS"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_business"
 msgstr "Zakelijk"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.missed.apps"
+msgstr "Gesprekken in deze apps kunnen alleen worden opgenomen met “Volledig systeem”."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
