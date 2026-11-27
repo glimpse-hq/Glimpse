@@ -31,6 +31,7 @@ import LibraryFolderDialog, {
   type FolderDialogState,
 } from "./LibraryFolderDialog";
 import { areSameDay, formatDayLabel } from "../../../shared/lib/dayLabel";
+import { isFindShortcut } from "../../../shared/lib/shortcuts";
 import LibraryDetail from "./LibraryDetail";
 import LibraryDeleteDialog from "./LibraryDeleteDialog";
 import LibraryRetranscribeModal, {
@@ -164,8 +165,7 @@ const LibraryView = ({
   useEffect(() => {
     if (!isActive || selectedItemId) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "f")
-        return;
+      if (!isFindShortcut(event)) return;
       event.preventDefault();
       searchInputRef.current?.focus();
       searchInputRef.current?.select();

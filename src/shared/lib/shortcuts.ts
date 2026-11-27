@@ -208,3 +208,19 @@ export function formatShortcutForDisplay(
 ): string {
   return shortcutDisplayParts(shortcut, options).join(" + ");
 }
+
+export function isFindShortcut({
+  key,
+  code,
+  metaKey,
+  ctrlKey,
+  altKey,
+  shiftKey,
+}: KeyboardEvent): boolean {
+  // Ctrl+Cmd+F is full screen on a Mac, and Ctrl+F moves the cursor there.
+  const mod = isMacPlatform ? metaKey && !ctrlKey : ctrlKey && !metaKey;
+  // Non-Latin layouts on Windows can report their own letter as the key.
+  const isF =
+    key.toLowerCase() === "f" || (code === "KeyF" && !/^[a-z]$/i.test(key));
+  return mod && !altKey && !shiftKey && isF;
+}
