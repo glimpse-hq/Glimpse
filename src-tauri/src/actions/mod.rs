@@ -1782,18 +1782,30 @@ pub fn create_action_file(name: String, app: AppHandle<AppRuntime>) -> Result<()
     if path.extension().is_none() {
         path.set_extension(if cfg!(windows) { "ps1" } else { "sh" });
     }
-    let mut file = std::fs::File::create_new(&path).map_err(|err| match err.kind() {
-        std::io::ErrorKind::AlreadyExists => {
-            let file_name = path.file_name().unwrap_or_default().to_string_lossy();
-            format!("{file_name} already exists")
-        }
-        _ => err.to_string(),
-    })?;
+    let file_name = path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
+    if path.exists() {
+        return Err(format!("{file_name} already exists"));
+    }
+    // A script deleted outside Glimpse keeps its switch, which a new file with
+    // the same name would inherit.
+    app.state::<AppState>()
+        .persist_settings_with(|_, next| {
+            next.enabled_actions.retain(|enabled| *enabled != file_name)
+        })
+        .map_err(|err| err.to_string())?;
+    let mut file = std::fs::File::create_new(&path).map_err(|err| err.to_string())?;
     file.write_all(starter(&path).as_bytes())
         .map_err(|err| err.to_string())?;
     reload(&app);
     changed(&app);
-    tauri_plugin_opener::reveal_item_in_dir(&path).map_err(|err| err.to_string())
+    if let Err(err) = tauri_plugin_opener::reveal_item_in_dir(&path) {
+        tracing::warn!("New action file was not revealed: {err}");
+    }
+    Ok(())
 }
 
 /// A new action's header lines, commented the way its language reads. It

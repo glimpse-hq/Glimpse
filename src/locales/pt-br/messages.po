@@ -1462,11 +1462,6 @@ msgid "live.missed.apps"
 msgstr "As chamadas nesses apps só podem ser gravadas com “Sistema inteiro”."
 
 #. js-lingui-explicit-id
-#: src/features/actions/components/ActionsView.tsx
-msgid "actions.new.cancel"
-msgstr "Cancelar"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.cancel"
 msgstr "Cancelar"
@@ -1521,6 +1516,11 @@ msgstr "Cancelar"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.cancel"
+msgstr "Cancelar"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.cancel"
 msgstr "Cancelar"
 
 #. js-lingui-explicit-id
@@ -2265,14 +2265,14 @@ msgid "onboarding.license_step.tile_devices.v2"
 msgstr "Válido para seus dispositivos"
 
 #. js-lingui-explicit-id
-#: src/features/actions/components/ActionsView.tsx
-msgid "actions.new.create"
-msgstr "Criar"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryFolderDialog.tsx
 msgid "library.folder.create"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.create"
+msgstr "Criar"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx

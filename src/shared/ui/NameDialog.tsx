@@ -72,13 +72,15 @@ const NameForm = ({
 }: Omit<NameDialogProps, "open"> & { titleId: string }) => {
   const [name, setName] = useState(initialName);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const trimmed = name.trim();
   const shownSuffix = suffix?.(trimmed);
   const submit = () => {
-    if (!trimmed) return;
-    void Promise.resolve(onSubmit(trimmed)).catch((err) =>
-      setError(String(err)),
-    );
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    void Promise.resolve(onSubmit(trimmed))
+      .catch((err) => setError(String(err)))
+      .finally(() => setSubmitting(false));
   };
 
   return (
@@ -135,7 +137,7 @@ const NameForm = ({
         <button
           type="button"
           onClick={submit}
-          disabled={!trimmed}
+          disabled={!trimmed || submitting}
           className="ui-button-primary rounded-lg px-4 py-2 ui-text-body-sm disabled:opacity-50"
         >
           {submitLabel}

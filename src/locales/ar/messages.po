@@ -2599,11 +2599,6 @@ msgid "live.missed.apps"
 msgstr "يمكن تسجيل المكالمات في هذه التطبيقات فقط باستخدام «النظام بأكمله»."
 
 #. js-lingui-explicit-id
-#: src/features/actions/components/ActionsView.tsx
-msgid "actions.new.cancel"
-msgstr "إلغاء"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.cancel"
 msgstr "إلغاء"
@@ -2658,6 +2653,11 @@ msgstr "إلغاء"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.cancel"
+msgstr "إلغاء"
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.cancel"
 msgstr "إلغاء"
 
 #. js-lingui-explicit-id
@@ -3402,14 +3402,14 @@ msgid "onboarding.license_step.tile_devices.v2"
 msgstr "يغطي أجهزتك"
 
 #. js-lingui-explicit-id
-#: src/features/actions/components/ActionsView.tsx
-msgid "actions.new.create"
-msgstr "إنشاء"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryFolderDialog.tsx
 msgid "library.folder.create"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/actions/components/ActionsView.tsx
+msgid "actions.new.create"
+msgstr "إنشاء"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
